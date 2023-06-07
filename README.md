@@ -7,7 +7,7 @@ We provide a sample dataset and analysis for Seal Salamanders (Desmognathus mont
 
 The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore mirror a 'STRUCTURE'-type analysis including individual ancestry coefficients, but represent an unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for integative taxonomy. 
 
-# Example - Desmognathus monticola, the Seal Salamander
+# Example - _Desmognathus monticola_, the Seal Salamander
 
 # References
 
