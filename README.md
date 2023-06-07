@@ -216,6 +216,75 @@ map.scale(-81.2,31.1)
 
 We can also produce a basic sample map. The match.k() function uses a CLUMPP-like algorithm to synchronize the cluster labels to the DAPC results from earlier.
 
+```
+x <- q_mat[order(q_mat[,1]),]
+n <- hclust(dist(x),"single")$order
+make.structure.plot(admix.proportions = x[n,], sample.names = rownames(x[n,]), mar = c(8,4,2,2), layer.colors = cols, sort.by = 1)
+```
+
+A STRUCTURE-type plot, organized hierarchically by dominant cluster membership.
+
+```
+par(mfrow=c(2,1))
+
+#Cell distances #
+plot(som_model, type="dist.neighbours", main = "", palette.name = magma)
+title("SOM neighbour distances",line=-0.1)
+
+#SOM Clusters#
+som.cols <- setNames(cols[labels[,max.K]],cluster_assignment)#Get colors to match original SOM clusters
+som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
+
+#plot cluster
+plot(som_model, shape="straight", type="mapping", bgcol = som.cols[som_cluster], main = "", pch=19, col="red")
+add.cluster.boundaries(som_model, som_cluster,col="red");title("SOM clusters",line=-0.1)
+```
+
+![model](https://github.com/rpyron/delim-SOM/assets/583099/19442271-6f88-47ad-afc0-f2338c2f9383)
+
+An example SOM grid from one learned output model.
+
+```
+#map
+par(mar=c(0,0,0,0),mgp=c(3,0.5,0))
+layout(mat = matrix(c(1, 2, 1, 3), 
+                    nrow = 2, 
+                    ncol = 2))
+maps::map(database = 'world', xlim = range(xy[,1]) + c(-7,7), ylim = range(xy[,2]) + c(-0.5,0.5), col="white")
+map.axes()
+maps::map(database = 'county', xlim = range(xy[,1]) + c(-7,7), ylim = range(xy[,2]) + c(-0.5,0.5), col="gray",add=T)
+maps::map(database = 'state', xlim = range(xy[,1]) + c(-7,7), ylim = range(xy[,2]) + c(-0.5,0.5), add = T)
+maps::map(database = 'world', xlim = range(xy[,1]) + c(-7,7), ylim = range(xy[,2]) + c(-0.5,0.5), add = T)
+make.admix.pie.plot(q_mat,xy,layer.colors = cols,radii=2,add = T)
+legend(-92.5,38,legend=c(expression(italic("D. cheaha")),
+                       expression(italic("D. monticola"))),
+       cex=2,pt.bg=rev(viridis(2)),pch=21);map.scale(-80,32)
+
+#K by frequency
+par(mar=c(4,4,1,0.5))
+all_k <- apply(c_mat,2,max) # Get the K for each run
+table(all_k)#How many different Ks were learned?
+max.K <- max(c_mat)#What is the highest K?
+cols <- viridis(max.K)#Set colors
+barplot(table(factor(all_k,levels=1:k.max)),ylab="Posterior Samples (%)",col="black",cex.names=1,cex.axis=1,main=expression(paste(bold("Clusters ("),bolditalic("K"),")")))
+
+#weights
+colMeans(d_mat)
+layers <- rev(sort(sqrt(1/colMeans(d_mat))))
+layer.cols <- setNames(c("black","red","green","blue"),
+                       c("alleles","space","climate","traits"))
+barplot(layers,main="Layer Weights",col=layer.cols[names(layers)],ylab="Relative Weight - sqrt(1/w)")
+```
+
+![pub](https://github.com/rpyron/delim-SOM/assets/583099/4bcd082f-afe0-4ee7-a4c3-a1f004d930c5)
+
+A nice summary figure for publication!
+
+```
+save.image(file="Trait_SuperSOM.RData")
+```
+
+Finally, we can save all of our results.
 
 # Hyperparameters
 
