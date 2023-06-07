@@ -9,7 +9,7 @@ The contribution of each layer to the final model output is recorded, along with
 
 We provide a sample dataset and analysis for Seal Salamanders (_Desmognathus monticola_), which represent two species in the Appalachian Mountains and Piedmont of the eastern United States, based on four datasets comprising a SNP matrix from Genotype-By-Sequencing (GBS) analysis, lat/long/elevation (xyz), environment (climate, hydrology, and ecoregion), and phenotype (17 linear morphometric measurements).
 
-The genetic, spatial, and environmental data come from 71 individuals from 71 sites, while the phenotypic data are expanded to include 156 specimens from those sites, with the mean of each measurement taken after size correction. The allele frequencies come from a GBS matrix of 7,809 SNPs, trimmed to 80% completeness.
+The genetic, spatial, and environmental data come from 71 individuals from 71 sites, while the phenotypic data are expanded to include 156 specimens from those sites, with the mean of each measurement taken after size correction. The allele frequencies come from a GBS matrix of 5,174 SNPs and 10,526 alleles after trimming to 80% completeness.
 
 The climate variables are Level IV Ecoregion (https://www.epa.gov/eco-research/level-iii-and-iv-ecoregions-continental-united-states), HUC4 watershed (https://www.usgs.gov/national-hydrography/watershed-boundary-dataset), ENVIREM - monthCountByTemp10 (https://envirem.github.io/), and WorldClim - BIO15 (https://www.worldclim.org/data/bioclim.html).
 
