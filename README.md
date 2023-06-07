@@ -16,7 +16,7 @@ library(caret);library(GroupStruct);library(vcfR);library(dartR)
 
 Some of these may have to be installed manually or from various non-CRAN sources.
 
-Overall, the method is extremely flexible and can take almost any data type or format, as long as it is introduced as a matrix in R. The matrices must be added in order, named struc_matrix, space, climate, and traits. Adding each of those matrices in sequence allows one to run SOMs based on DNA, DNA + xyz, DNA + xyz + environment, and DNA + xyz + environment + phenotypes. The primary requirement is to have individuals in rows in the same order in each matrix, and variables in columns, with no missing data and the same set of individuals in each matrix.
+Overall, the method is extremely flexible and can take almost any data type or format, as long as it is introduced as a matrix in R. The matrices must be added in order, named struc_matrix, space, climate, and traits. Adding each of those matrices in sequence allows one to run SOMs based on DNA, DNA + xyz, DNA + xyz + environment, and DNA + xyz + environment + phenotypes. The primary requirement is to have individuals in rows in the same order in each matrix, and variables in columns, with no missing data and the same set of individuals in each matrix. I also min-max normalize the space, climate, and traits matrices to be on the same scale as the allele frequencies.
 
 # Example: _Desmognathus monticola_, the Seal Salamander
 
@@ -37,8 +37,6 @@ The phenotype variables are 17 linear morphometric measurements to 0.01mm precis
 With all of the files (kohonen_code.R, monticola_models.R, seal_in.str, seal_clim.csv, and seal_morph.csv) in the same directory, we can simply execute monticola_models.R. The main pieces are as follows.
 
 ```
-###MOLECULAR DATA
-#Load the *.str file from PEA23
 a <- read.structure("./seal_in.str",
                     n.ind = 71,
                     n.loc = 7809,
@@ -62,8 +60,27 @@ struc <- makefreq(a)
 alleles <- matrix(unlist(as.numeric(struc)), nrow=nrow(struc))
 ```
 
-The alleles matrix can be in nearly any format, with individuals in rows and allele frequencies or counts in columns. Here, I am simply loading in the STRUCTURE-formatted file from ipyrad as a genind object in adegenet (Jombart 2008), trimming it to 20% missing data, converting the counts to frequencies, and converting it to a matrix.
+The alleles matrix can be in nearly any format, with individuals in rows and allele frequencies or counts in columns. Here, I am simply loading in the STRUCTURE-formatted file from ipyrad as a genind object in 'adegenet' (Jombart 2008: https://adegenet.r-forge.r-project.org/), trimming it to 20% missing data, converting the counts to frequencies, and converting it to a matrix.
 
+```
+dat <- read.csv("./seal_clim.csv",row.names = "Specimen")
+xyz <- dat[,c("LONG","LAT","elevation")]
+space <- data.frame(lon=xyz$LONG,lat=xyz$LAT,elev=xyz$elev)
+space <- apply(space,2,minmax)
+climate <- apply(dat[,c(5:9)],2,minmax)#These variables were identified as most important
+```
+
+Similarly, these are just the lat, long, elevation, and climate data from Pyron et al. (2023).
+
+```
+morph <- read.csv("./seal_morph.csv",row.names="Specimen")#Read in trait data, 156 specimens from 71 sites with 17 measurements 
+morph_log <- data.frame(pop="seal",exp(morph[,2:18]))#un-log the measurements for GroupStruct
+morph_allom <- allom(morph_log,"population2")#correct for allometry using GroupStruct
+morph_mean <- aggregate(morph_allom[,-1],list(morph$pop),mean)#take mean by locality - this is a simplistic approach
+traits <- apply(morph_mean[,-1],2,minmax)#could also use PC1-3 or similar transformation
+```
+
+Finally, the morphological dataset from Pyron et al. (2023) trimmed to the 156 specimens from the 71 genetic localities. The log-transformed data are read in, exponentiated for analysis, assigned the same "species" of "seal," corrected for allometry using 'GroupStruct,' taking the mean by site, and min-max normalizing the resulting matrix.
 
 
 
