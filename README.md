@@ -82,7 +82,53 @@ traits <- apply(morph_mean[,-1],2,minmax)#could also use PC1-3 or similar transf
 
 Finally, the morphological dataset from Pyron et al. (2023) trimmed to the 156 specimens from the 71 genetic localities. The log-transformed data are read in, exponentiated for analysis, assigned the same "species" of "seal," corrected for allometry using 'GroupStruct,' taking the mean by site, and min-max normalizing the resulting matrix.
 
+```
+#choose a max K
+k.max <- 10
 
+#get labels for different K values
+labels <- data.frame(V1=rep(NA,dim(a$tab)[1]),row.names = rownames(a$tab))
+for (i in 1:k.max){labels[,i] <- find.clusters(a,n.clust=i,n.pca = dim(a$tab)[1])$grp}
+```
+
+Next, we will produce a baseline clustering estimate under various _K_ values to more easily synchronize cluster labels later on using the CLUMPP-like algorithm (Jakobson and Rosenberg 2007).
+
+```
+#Size of Grid
+g <- round(sqrt(5*sqrt(length(rownames(a$tab)))))#common rule of thumb
+
+#Create an output grid of size sqrt(n)
+som_grid <- somgrid(xdim = g,
+                    ydim = g,
+                    topo="hexagonal",
+                    neighbourhood.fct = "gaussian")
+
+#Number of Replicates - can increase if you like
+n <- 100
+
+#Number of steps - doesn't usually matter beyond ~100
+m <- 100
+```
+
+Next, we set the parameters for the SOM estimates. We can evaluate _m_ using the hyperparameter exploration below, but these are good default values.
+
+```
+res <- Trait.SOM()
+
+#Output
+c_mat              <- res$c_mat#Get classifiers
+d_mat              <- res$d_mat#Get weights
+l_mat1             <- res$l_mat1#Get learning
+l_mat2             <- res$l_mat2#Get learning
+l_mat3             <- res$l_mat3#Get learning
+l_mat4             <- res$l_mat4#Get learning
+w_mat              <- res$w_mat#Get WSS
+som_model          <- res$som_model#Get last SOM
+som_cluster        <- res$som_cluster#Get last clusters
+cluster_assignment <- res$cluster_assignment#Get last assignments
+```
+
+We use Trait.SOM() to produce our estimates. We could also use DNA.SOM(), Space.SOM(), or Climate.SOM() if we only had those layers. The output is then stored to local variables for later analysis.
 
 # Hyperparameters
 
@@ -93,6 +139,8 @@ Finally, the morphological dataset from Pyron et al. (2023) trimmed to the 156 s
 Chan, K.O. & Grismer, L. L. (2021). A standardized and statistically defensible framework for quantitative morphological analyses in taxonomic studies. Zootaxa, 5023: 293-300.
 
 Chan, K.O. and Grismer, L.L., 2022. GroupStruct: an R package for allometric size correction. Zootaxa, 5124(4), pp.471-482.
+
+Jakobsson, M. and Rosenberg, N.A., 2007. CLUMPP: a cluster matching and permutation program for dealing with label switching and multimodality in analysis of population structure. Bioinformatics, 23(14), pp.1801-1806.
 
 Jombart, T., 2008. adegenet: a R package for the multivariate analysis of genetic markers. Bioinformatics, 24(11), pp.1403-1405.
 
