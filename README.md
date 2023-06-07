@@ -130,6 +130,42 @@ cluster_assignment <- res$cluster_assignment#Get last assignments
 
 We use Trait.SOM() to produce our estimates. We could also use DNA.SOM(), Space.SOM(), or Climate.SOM() if we only had those layers. The output is then stored to local variables for later analysis.
 
+```
+par(mar = c(5, 4, 4, 4) + 0.3)  # Leave space for z axis
+plot(som_model, type="changes", axes=F, 
+     ylim=range(unlist(l_mat1[,1]))*c(0.9,1.1), main=NA, col="white")
+for(i in 1:n){lines(l_mat1[,i],col=alpha("black",0.1))}
+
+par(new = TRUE)
+plot(l_mat2[,1], type="l", col="white",axes=F, 
+     ylim=range(unlist(l_mat2[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
+for(i in 1:n){lines(l_mat2[,i],col=alpha("red",0.1))}
+
+par(new = TRUE)
+plot(l_mat3[,1], type="l", col="white",axes=F, 
+     ylim=range(unlist(l_mat3[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
+for(i in 1:n){lines(l_mat3[,i],col=alpha("green",0.1))}
+
+par(new = TRUE)
+plot(l_mat4[,1], type="l", col="white",axes=F,
+     ylim=range(unlist(l_mat4[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
+for(i in 1:n){lines(l_mat4[,i],col=alpha("blue",0.1))}
+
+axis(1);title("Training progress (steps)",line=-1)
+axis(2,at=round(range(unlist(l_mat1[,1])),3)*c(0.9,1.75),las=3)
+```
+
+![learning](https://github.com/rpyron/delim-SOM/assets/583099/78daa902-9f22-4e24-85e4-1d8902939069)
+
+We can then plot our learning estimates across the runs.
+
+
+
+
+
+
+
+
 # Hyperparameters
 
 
