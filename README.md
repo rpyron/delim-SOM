@@ -159,11 +159,62 @@ axis(2,at=round(range(unlist(l_mat1[,1])),3)*c(0.9,1.75),las=3)
 
 We can then plot our learning estimates across the runs.
 
+```
+colMeans(d_mat)
+layers <- rev(sort(sqrt(1/colMeans(d_mat))))
+layer.cols <- setNames(c("black","red","green","blue"),
+                       c("alleles","space","climate","traits"))
+barplot(layers,main="Layer Weights",col=layer.cols[names(layers)])
+```
 
+![weights](https://github.com/rpyron/delim-SOM/assets/583099/945e86f5-a009-4ed9-8432-be1cebb24b7e)
 
+Next, we can see the layer weights.
 
+```
+par(mfrow=c(3,1),mar=c(0.5,4,1,0.5))
 
+#by absolute BIC
+boxplot(t(w_mat),outline=F,notch=T,axes=F, ylab="WSS",ylim=range(unlist(w_mat)))
+axis(1,at=1:(k.max+1),labels=NA);axis(2,at=round(range(unlist(w_mat))),las=3);title("Number of clusters (k)", line=0)
 
+#by delta BIC
+d_wss <- apply(w_mat,2,function(x){diff(diff(x))});rownames(d_wss)<-2:k.max;plot_dwss <- rbind(NA,d_wss,NA)
+boxplot(t(plot_dwss),outline=F,notch=T,axes=F, ylab="dWSS")
+axis(1,at=1:(k.max+1),labels=NA);axis(2,at=sort(c(0,round(range(unlist(d_wss))))),las=3)
+
+#by frequency
+par(mar=c(4,4,1,0.5))
+all_k <- apply(c_mat,2,max) # Get the K for each run
+table(all_k)#How many different Ks were learned?
+max.K <- max(c_mat)#What is the highest K?
+cols <- viridis(max.K)#Set colors
+barplot(table(factor(all_k,levels=1:k.max)),ylab="Posterior Samples")
+```
+
+![clusters](https://github.com/rpyron/delim-SOM/assets/583099/329eff4f-f06e-423d-b519-21095c795192)
+
+Then, we can see the optimal values of _K_.
+
+```
+q_mat <- match.k()#get admixture coefficients
+
+par(mfrow=c(1,1),
+    mar=c(0,0,0,0))
+xy <- xyz[,1:2]
+maps::map(database = 'county', xlim = range(xy[,1]) + c(-0.5,0.5), ylim = range(xy[,2]) + c(-0.5,0.5), col="white")
+map.axes()
+maps::map(database = 'county', xlim = range(xy[,1]) + c(-0.5,0.5), ylim = range(xy[,2]) + c(-0.5,0.5), col="gray",add=T)
+maps::map(database = 'state', xlim = range(xy[,1]) + c(-0.5,0.5), ylim = range(xy[,2]) + c(-0.5,0.5), add = T)
+make.admix.pie.plot(q_mat,xy,layer.colors = cols,radii=2.5,add = T)
+legend(-88,38,legend=c(expression(italic("D. cheaha")),
+         expression(italic("D. monticola"))),cex=2,pt.bg=rev(viridis(2)),pch=21)
+map.scale(-81.2,31.1)
+```
+
+![map](https://github.com/rpyron/delim-SOM/assets/583099/f28a9ea7-91d8-421a-89de-52101c7a60e2)
+
+We can also produce a basic sample map. The match.k() function uses a CLUMPP-like algorithm to synchronize the cluster labels to the DAPC results from earlier.
 
 
 # Hyperparameters
