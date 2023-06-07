@@ -16,6 +16,8 @@ library(caret);library(GroupStruct);library(vcfR);library(dartR)
 
 Some of these may have to be installed manually or from various non-CRAN sources.
 
+Overall, the method is extremely flexible and can take almost any data type or format, as long as it is introduced as a matrix in R. The matrices must be added in order, named struc_matrix, space, climate, and traits. Adding each of those matrices in sequence allows one to run SOMs based on DNA, DNA + xyz, DNA + xyz + environment, and DNA + xyz + environment + phenotypes. The primary requirement is to have individuals in rows in the same order in each matrix, and variables in columns, with no missing data and the same set of individuals in each matrix.
+
 # Example: _Desmognathus monticola_, the Seal Salamander
 
 ![Pyron_et_al_Figure_3](https://github.com/rpyron/delim-SOM/assets/583099/9f28c7f0-0790-4a47-a7a4-25c98024a087)
@@ -30,6 +32,43 @@ The climate variables are Level IV Ecoregion (https://www.epa.gov/eco-research/l
 
 The phenotype variables are 17 linear morphometric measurements to 0.01mm precision: SVL (snout-vent length), TL (tail length), AG (axilla-groin length), CW (chest width), FL (femur length [rather than hindlimb length]), HL (humerus length [rather than forelimb length]), SG (snout-gular length), TW(tail width at rear of vent), TO (length of third toe), FI (length of third finger), HW (head width), ED (eye diameter), IN (internarial distance), ES (eye-snout distance), ON (orbito-narial distance), IO (inter-orbital distance), and IC (inter-canthal distance). Here, I size-correct these by SVL using pooled groups ("population2") in 'GroupStruct' (Chan and Grismer 2021, 2022): https://github.com/chankinonn/GroupStruct, then take the mean by site.
 
+# Running the Code
+
+With all of the files (kohonen_code.R, monticola_models.R, seal_in.str, seal_clim.csv, and seal_morph.csv) in the same directory, we can simply execute monticola_models.R. The main pieces are as follows.
+
+```
+###MOLECULAR DATA
+#Load the *.str file from PEA23
+a <- read.structure("./seal_in.str",
+                    n.ind = 71,
+                    n.loc = 7809,
+                    onerowperind = FALSE,
+                    col.lab = 1,
+                    col.pop = 0,
+                    col.others = 0,
+                    row.marknames = 0,
+                    NA.char = -9)
+
+##Dimensions
+locmiss = propTyped(a, by = "loc")
+barplot(sort(1-locmiss), ylim = c(0,1), ylab = "Complete genotypes (proportion)", xlab = "Locus", las = 2, cex.names = 0.7)
+a = missingno(a, type = "loci", cutoff = 0.20);abline(h=0.2,col="red",lty=2)
+a#trimmed to 20% missing data
+
+#Convert genind object from adegenet to allele frequencies
+struc <- makefreq(a)
+
+#Convert allele frequences to matrix
+alleles <- matrix(unlist(as.numeric(struc)), nrow=nrow(struc))
+```
+
+The alleles matrix can be in nearly any format, with individuals in rows and allele frequencies or counts in columns. Here, I am simply loading in the STRUCTURE-formatted file from ipyrad as a genind object in adegenet (Jombart 2008), trimming it to 20% missing data, converting the counts to frequencies, and converting it to a matrix.
+
+
+
+
+# Hyperparameters
+
 
 
 # References
@@ -37,6 +76,8 @@ The phenotype variables are 17 linear morphometric measurements to 0.01mm precis
 Chan, K.O. & Grismer, L. L. (2021). A standardized and statistically defensible framework for quantitative morphological analyses in taxonomic studies. Zootaxa, 5023: 293-300.
 
 Chan, K.O. and Grismer, L.L., 2022. GroupStruct: an R package for allometric size correction. Zootaxa, 5124(4), pp.471-482.
+
+Jombart, T., 2008. adegenet: a R package for the multivariate analysis of genetic markers. Bioinformatics, 24(11), pp.1403-1405.
 
 Pyron, R.A., O’Connell, K.A., Duncan, S.C., Burbrink, F.T. and Beamer, D.A., 2023. Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for Seal Salamanders (Desmognathus monticola). Systematic Biology, 72(1), pp.179-197.
 
