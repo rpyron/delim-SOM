@@ -5,7 +5,7 @@ This repository expands the use of Kohonen maps as described in Pyron et al. (20
 
 The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore mirror a 'STRUCTURE'-type analysis including individual ancestry coefficients, but represent an unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for integative taxonomy. 
 
-# Example - _Desmognathus monticola_, the Seal Salamander
+# Example: _Desmognathus monticola_, the Seal Salamander
 
 ![Pyron_et_al_Figure_3](https://github.com/rpyron/delim-SOM/assets/583099/9f28c7f0-0790-4a47-a7a4-25c98024a087)
 
