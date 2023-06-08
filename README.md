@@ -292,7 +292,7 @@ Finally, we can save all of our results.
 
 # Possible Improvements
 
-I have not explored different data types for allele frequencies (e.g., allele counts). I also haven't explored the impact of normalization, although this should be minimal. Selection of _K_ for each run might deserve a bit more scrutiny, includign the use of AIC/BIC instead of the raw Weighted Sum of Squares (WSS) values. Some possibilities are discussed here: https://bgstieber.github.io/post/an-introduction-to-the-kmeans-algorithm/.
+I have not explored different data types for allele frequencies (e.g., allele counts). I also haven't explored the impact of normalization, although this should be minimal. Selection of _K_ for each run might deserve a bit more scrutiny, including the use of AIC/BIC instead of the raw Weighted Sum of Squares (WSS) values. Some possibilities are discussed here: https://bgstieber.github.io/post/an-introduction-to-the-kmeans-algorithm/. As currently implemented, it can theoretically support _K_=1 (Jaynes et al. 2017), but this should be explored in depth for this and other methods (e.g., Derkarabetian et al. 2019).
 
 
 # References
@@ -301,7 +301,11 @@ Chan, K.O. & Grismer, L. L. (2021). A standardized and statistically defensible 
 
 Chan, K.O. and Grismer, L.L., 2022. GroupStruct: an R package for allometric size correction. Zootaxa, 5124(4), pp.471-482.
 
+Derkarabetian, S., Castillo, S., Koo, P.K., Ovchinnikov, S. and Hedin, M., 2019. A demonstration of unsupervised machine learning in species delimitation. Molecular phylogenetics and evolution, 139, p.106562.
+
 Jakobsson, M. and Rosenberg, N.A., 2007. CLUMPP: a cluster matching and permutation program for dealing with label switching and multimodality in analysis of population structure. Bioinformatics, 23(14), pp.1801-1806.
+
+Janes, J.K., Miller, J.M., Dupuis, J.R., Malenfant, R.M., Gorrell, J.C., Cullingham, C.I. and Andrew, R.L., 2017. The K= 2 conundrum. Molecular Ecology, 26(14), pp.3594-3602.
 
 Jombart, T., 2008. adegenet: a R package for the multivariate analysis of genetic markers. Bioinformatics, 24(11), pp.1403-1405.
 
