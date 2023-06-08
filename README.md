@@ -294,7 +294,7 @@ Many default implementations of SOMs have paid little attention to the hyperpara
 
 ![hypers](https://github.com/rpyron/delim-SOM/assets/583099/0b286a66-07d1-4517-94d0-5182f14ec190)
 
-The kohonen_hyper.R file contains a brief exploration of the hyperparameters, including the learning rates and run length. Generally speaking, these don't have much of an impact for rlen > 100 and alpha > 0.1 for the alleles matrix in the _D. monticola_ dataset. Longer runs (rlen/m) may have a small impact on final learning estimates and precision.
+The kohonen_hyper.R file contains a brief exploration of the hyperparameters, including the learning rates and run length. Generally speaking, these don't have much of an impact for rlen > 100 and alpha > 0.1 for the alleles matrix in the _D. monticola_ dataset. Longer runs (rlen/m) may have a small impact on final learning estimates and precision. These curves are estimated from only 25 estimates and may normalize after additional replicates.
 
 # Possible Improvements
 
