@@ -73,14 +73,14 @@ climate <- apply(dat[,c(5:9)],2,minmax)#These variables were identified as most 
 Similarly, these are just the lat, long, elevation, and climate data from Pyron et al. (2023).
 
 ```
-morph <- read.csv("./seal_morph.csv",row.names="Specimen")#Read in trait data, 156 specimens from 71 sites with 17 measurements 
+morph <- read.csv("./seal_morph.csv",row.names="Specimen")#Read in trait data, 163 specimens from 71 sites with 17 measurements 
 morph_log <- data.frame(pop="seal",exp(morph[,2:18]))#un-log the measurements for GroupStruct
 morph_allom <- allom(morph_log,"population2")#correct for allometry using GroupStruct
 morph_mean <- aggregate(morph_allom[,-1],list(morph$pop),mean)#take mean by locality - this is a simplistic approach
 traits <- apply(morph_mean[,-1],2,minmax)#could also use PC1-3 or similar transformation
 ```
 
-Finally, the morphological dataset from Pyron et al. (2023) trimmed to the 156 specimens from the 71 genetic localities. The log-transformed data are read in, exponentiated for analysis, assigned the same "species" of "seal," corrected for allometry using 'GroupStruct,' taking the mean by site, and min-max normalizing the resulting matrix.
+Finally, the morphological dataset from Pyron et al. (2023) trimmed to the 163 specimens from the 71 genetic localities. The log-transformed data are read in, exponentiated for analysis, assigned the same "species" of "seal," corrected for allometry using 'GroupStruct,' taking the mean by site, and min-max normalizing the resulting matrix.
 
 ```
 #choose a max K
