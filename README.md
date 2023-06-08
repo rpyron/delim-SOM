@@ -157,7 +157,7 @@ axis(2,at=round(range(unlist(l_mat1[,1])),3)*c(0.9,1.75),las=3)
 
 ![learning](https://github.com/rpyron/delim-SOM/assets/583099/78daa902-9f22-4e24-85e4-1d8902939069)
 
-We can then plot our learning estimates across the runs.
+We can then plot our learning estimates across the runs. The shape of this learning curve (slow decline, then sudden plateau) is inherent in the way the algorithm learns; longer runs produce the same shape, rather than a longer plateau. The scale of each variable determines the location of its plateau; we expect each matrix to stabilize, but not necessarily to converge to the same relative distance to closest unit.
 
 ```
 colMeans(d_mat)
