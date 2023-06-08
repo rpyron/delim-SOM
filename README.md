@@ -180,7 +180,7 @@ barplot(layers,main="Layer Weights",col=layer.cols[names(layers)])
 
 ![weights](https://github.com/rpyron/delim-SOM/assets/583099/a0297d45-72e0-436b-824f-b233d15570ca)
 
-Next, we can see the layer weights. Unsurprisingly, alleles dwarf everything else, but traits are slightly more important than climate, and both are greater than space alone.
+Next, we can see the layer weights. Unsurprisingly, alleles dwarf everything else, but traits are more important than climate, and both are greater than space alone.
 
 ```
 par(mfrow=c(3,1),mar=c(0.5,4,1,0.5))
