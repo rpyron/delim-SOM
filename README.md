@@ -290,6 +290,12 @@ Finally, we can save all of our results.
 
 # Hyperparameters
 
+Many default implementations of SOMs have paid little attention to the hyperparameters of neighborhood type, learning rate, and run length (number of steps), finding them to have relatively small impacts on learning outcomes (Wehrens and Kruisselbrink 2018; Pyron et al. 2023). Given the importance of accurately quantifying layer contributions, we expand on this concern here. Previous studies have found that Gaussian neighborhoods (rather than bubble or heuristic) and linear learning-rates typically yield optimal results under a wide range of conditions (Stefanovič and Kurasova 2011; Natita et al. 2016). Consequently, we employ these here as our default conditions. 
+
+
+
+The kohonen_hyper.R file contains a brief exploration of the hyperparameters, including the learning rates and run length. Generally speaking, these don't have much of an impact for rlen > 100 and alpha > 0.1 for the alleles matrix in the _D. monticola_ dataset. 
+
 # Possible Improvements
 
 I have not explored different data types for allele frequencies (e.g., allele counts). I also haven't explored the impact of normalization, although this should be minimal. Selection of _K_ for each run might deserve a bit more scrutiny, including the use of AIC/BIC instead of the raw Weighted Sum of Squares (WSS) values. Some possibilities are discussed here: https://bgstieber.github.io/post/an-introduction-to-the-kmeans-algorithm/. As currently implemented, it can theoretically support _K_=1 (Jaynes et al. 2017), but this should be explored in depth for this and other methods (e.g., Derkarabetian et al. 2019).
@@ -309,6 +315,13 @@ Janes, J.K., Miller, J.M., Dupuis, J.R., Malenfant, R.M., Gorrell, J.C., Culling
 
 Jombart, T., 2008. adegenet: a R package for the multivariate analysis of genetic markers. Bioinformatics, 24(11), pp.1403-1405.
 
+Natita W., Wiboonsak W., Dusadee S. 2016. Appropriate Learning Rate and Neighborhood Function of Self-organizing Map (SOM) for Specific Humidity Pattern Classification over Southern Thailand. IJMO. 6:61–65.
+
 Pyron, R.A., O’Connell, K.A., Duncan, S.C., Burbrink, F.T. and Beamer, D.A., 2023. Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for Seal Salamanders (Desmognathus monticola). Systematic Biology, 72(1), pp.179-197.
 
+Stefanovič P., Kurasova O. 2011. Influence of Learning Rates and Neighboring Functions on Self-Organizing Maps. Advances in Self-Organizing Maps.:141–150.
+
 Wehrens, R. and Buydens, L.M., 2007. Self-and super-organizing maps in R: the Kohonen package. Journal of Statistical Software, 21, pp.1-19.
+
+Wehrens R., Kruisselbrink J. 2018. Flexible Self-Organizing Maps in kohonen 3.0. J. Stat. Soft. 87.
+
