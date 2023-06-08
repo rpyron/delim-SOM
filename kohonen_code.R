@@ -145,7 +145,7 @@ Climate.SOM <- function()
                                    space,
                                    climate),
                          grid=som_grid,
-                         maxNA.fraction=0.99,
+                         maxNA.fraction=0.9,
                          alpha=c(0.5,0.1),
                          rlen=m)
   l_mat1[,j] <- som_model$changes[,1]; l_mat2[,j] <- som_model$changes[,2]; l_mat3[,j] <- som_model$changes[,3]#store learning
