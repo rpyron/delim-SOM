@@ -165,7 +165,7 @@ axis(1);title("Training progress (steps)",line=-1)
 axis(2,at=round(range(unlist(l_mat1[,1])),3)*c(0.9,1.75),las=3)
 ```
 
-![learning](https://github.com/rpyron/delim-SOM/assets/583099/78daa902-9f22-4e24-85e4-1d8902939069)
+![learning](https://github.com/rpyron/delim-SOM/assets/583099/9799612c-c364-4c23-9c52-7e513bfd30e7)
 
 We can then plot our learning estimates across the runs. The shape of this learning curve (slow decline, then sudden plateau) is inherent in the way the algorithm learns; longer runs produce the same shape, rather than a longer plateau. The scale of each variable determines the location of its plateau; we expect each matrix to stabilize, but not necessarily to converge to the same relative distance to closest unit.
 
@@ -177,7 +177,7 @@ layer.cols <- setNames(c("black","red","green","blue"),
 barplot(layers,main="Layer Weights",col=layer.cols[names(layers)])
 ```
 
-![weights](https://github.com/rpyron/delim-SOM/assets/583099/945e86f5-a009-4ed9-8432-be1cebb24b7e)
+![weights](https://github.com/rpyron/delim-SOM/assets/583099/a0297d45-72e0-436b-824f-b233d15570ca)
 
 Next, we can see the layer weights. Unsurprisingly, alleles dwarf everything else, but traits are slightly more important than climate, and both are greater than space alone.
 
@@ -202,7 +202,7 @@ cols <- viridis(max.K)#Set colors
 barplot(table(factor(all_k,levels=1:k.max)),ylab="Posterior Samples")
 ```
 
-![clusters](https://github.com/rpyron/delim-SOM/assets/583099/329eff4f-f06e-423d-b519-21095c795192)
+![clusters](https://github.com/rpyron/delim-SOM/assets/583099/1cb3bda5-4150-47ab-ae82-1b6abdf51f27)
 
 Then, we can see the optimal values of _K_.
 
@@ -222,7 +222,7 @@ legend(-88,38,legend=c(expression(italic("D. cheaha")),
 map.scale(-81.2,31.1)
 ```
 
-![map](https://github.com/rpyron/delim-SOM/assets/583099/f28a9ea7-91d8-421a-89de-52101c7a60e2)
+![map](https://github.com/rpyron/delim-SOM/assets/583099/a7386dcd-6435-4442-96ab-88f0c7abfd3d)
 
 We can also produce a basic sample map. The match.k() function uses a CLUMPP-like algorithm to synchronize the cluster labels to the DAPC results from earlier.
 
@@ -232,7 +232,7 @@ n <- hclust(dist(x),"single")$order
 make.structure.plot(admix.proportions = x[n,], sample.names = rownames(x[n,]), mar = c(8,4,2,2), layer.colors = cols, sort.by = 1)
 ```
 
-![struc](https://github.com/rpyron/delim-SOM/assets/583099/be19873f-a2c9-4a1b-80aa-57064f19077f)
+![struc](https://github.com/rpyron/delim-SOM/assets/583099/32a53ff0-5525-4ba2-a2f7-0977ff41e272)
 
 A STRUCTURE-type plot, organized hierarchically by dominant cluster membership. Given the extensive differences between these two species in terms of genetics, geography, ecology, and phenotype, the species coefficients are sharply bimodal comapred to the individual ancestry coefficients estimated from the SNP matrix alone (see Pyron et al. 2023).
 
@@ -252,7 +252,7 @@ plot(som_model, shape="straight", type="mapping", bgcol = som.cols[som_cluster],
 add.cluster.boundaries(som_model, som_cluster,col="red");title("SOM clusters",line=-0.1)
 ```
 
-![model](https://github.com/rpyron/delim-SOM/assets/583099/19442271-6f88-47ad-afc0-f2338c2f9383)
+![model](https://github.com/rpyron/delim-SOM/assets/583099/58d600a3-d167-4533-874f-4eba055f4d35)
 
 An example SOM grid from one learned output model.
 
@@ -288,7 +288,7 @@ layer.cols <- setNames(c("black","red","green","blue"),
 barplot(layers,main="Layer Weights",col=layer.cols[names(layers)],ylab="Relative Weight - sqrt(1/w)")
 ```
 
-![pub](https://github.com/rpyron/delim-SOM/assets/583099/4bcd082f-afe0-4ee7-a4c3-a1f004d930c5)
+![pub](https://github.com/rpyron/delim-SOM/assets/583099/3c6b70f0-a055-41e5-9eb7-0de652f3261a)
 
 A nice summary figure for publication!
 
