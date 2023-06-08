@@ -222,6 +222,8 @@ n <- hclust(dist(x),"single")$order
 make.structure.plot(admix.proportions = x[n,], sample.names = rownames(x[n,]), mar = c(8,4,2,2), layer.colors = cols, sort.by = 1)
 ```
 
+![struc](https://github.com/rpyron/delim-SOM/assets/583099/be19873f-a2c9-4a1b-80aa-57064f19077f)
+
 A STRUCTURE-type plot, organized hierarchically by dominant cluster membership.
 
 ```
