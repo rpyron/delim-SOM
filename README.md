@@ -288,6 +288,9 @@ Finally, we can save all of our results.
 
 # Hyperparameters
 
+# Possible Improvements
+
+I have not explored different data types for allele frequencies (e.g., allele counts). I also haven't explored the impact of normalization, although this should be minimal. Selection of _K_ for each run might deserve a bit more scrutiny, includign the use of AIC/BIC instead of the raw Weighted Sum of Squares (WSS) values. Some possibilities are discussed here: https://bgstieber.github.io/post/an-introduction-to-the-kmeans-algorithm/.
 
 
 # References
