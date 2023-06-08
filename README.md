@@ -298,7 +298,7 @@ The kohonen_hyper.R file contains a brief exploration of the hyperparameters, in
 
 # Possible Improvements
 
-I have not explored different data types for allele frequencies (e.g., allele counts). I also haven't explored the impact of normalization, although this should be minimal. Selection of _K_ for each run might deserve a bit more scrutiny, including the use of AIC/BIC instead of the raw Weighted Sum of Squares (WSS) values. Some possibilities are discussed here: https://bgstieber.github.io/post/an-introduction-to-the-kmeans-algorithm/. As currently implemented, it can theoretically support _K_=1 (Jaynes et al. 2017), but this should be explored in depth for this and other methods (e.g., Derkarabetian et al. 2019).
+I have not explored different data types for molecular datasets (e.g., allele counts, structural variants). I also haven't explored the impact of normalization, although this should be minimal. Selection of _K_ for each run might deserve a bit more scrutiny, including the use of AIC/BIC instead of the raw Weighted Sum of Squares (WSS) values. Some possibilities are discussed here: https://bgstieber.github.io/post/an-introduction-to-the-kmeans-algorithm/. As currently implemented, it can theoretically support _K_=1 (see Jaynes et al. 2017), but this should be explored in depth for this and other methods (e.g., Derkarabetian et al. 2019).
 
 
 # References
