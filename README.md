@@ -22,7 +22,7 @@ Overall, the method is extremely flexible and can take almost any data type or f
 
 ![Pyron_et_al_Figure_3](https://github.com/rpyron/delim-SOM/assets/583099/9f28c7f0-0790-4a47-a7a4-25c98024a087)
 
-Original SOM results from Pyron et al. (2023)
+_Original SOM results from Pyron et al. (2023)_
 
 We provide a sample dataset and analysis for Seal Salamanders (_Desmognathus monticola_), which represent two species in the Appalachian Mountains and Piedmont of the eastern United States, based on four datasets comprising a SNP matrix from Genotype-By-Sequencing (GBS) analysis, lat/long/elevation (xyz), environment (climate, hydrology, and ecoregion), and phenotype (17 linear morphometric measurements and larval spot count).
 
