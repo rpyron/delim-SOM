@@ -224,7 +224,7 @@ make.structure.plot(admix.proportions = x[n,], sample.names = rownames(x[n,]), m
 
 ![struc](https://github.com/rpyron/delim-SOM/assets/583099/be19873f-a2c9-4a1b-80aa-57064f19077f)
 
-A STRUCTURE-type plot, organized hierarchically by dominant cluster membership.
+A STRUCTURE-type plot, organized hierarchically by dominant cluster membership. Given the extensive differences between these two species in terms of genetics, geography, ecology, and phenotype, the species coefficients are sharply bimodal comapred to the individual ancestry coefficients estimated from the SNP matrix alone (see Pyron et al. 2023).
 
 ```
 par(mfrow=c(2,1))
