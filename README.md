@@ -205,7 +205,7 @@ barplot(table(factor(all_k,levels=1:k.max)),ylab="Posterior Samples")
 
 ![clusters](https://github.com/rpyron/delim-SOM/assets/583099/1cb3bda5-4150-47ab-ae82-1b6abdf51f27)
 
-Then, we can see the optimal values of _K_.
+Then, we can see the optimal values of _K_. In this case, only _K_=2 was sampled across the 100 replicates.
 
 ```
 q_mat <- match.k()#get admixture coefficients
