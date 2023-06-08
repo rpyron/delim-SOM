@@ -63,6 +63,7 @@ alleles <- matrix(unlist(as.numeric(struc)), nrow=nrow(struc))
 The alleles matrix can be in nearly any format, with individuals in rows and allele frequencies or counts in columns. Here, I am simply loading in the STRUCTURE-formatted file from ipyrad as a genind object in 'adegenet' (Jombart 2008: https://adegenet.r-forge.r-project.org/), trimming it to 20% missing data, converting the counts to frequencies, and converting it to a matrix.
 
 ```
+#read in data
 dat <- read.csv("./seal_clim.csv",row.names = "Specimen")
 xyz <- dat[,c("LONG","LAT","elevation")]
 space <- data.frame(lon=xyz$LONG,lat=xyz$LAT,elev=xyz$elev)
