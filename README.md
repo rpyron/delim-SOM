@@ -303,7 +303,7 @@ Finally, we can save all of our results.
 
 Many default implementations of SOMs have paid little attention to the hyperparameters of neighborhood type, learning rate, and run length (number of steps), finding them to have relatively small impacts on learning outcomes (Wehrens and Kruisselbrink 2018; Pyron et al. 2023). Given the importance of accurately quantifying layer contributions, we expand on this concern here. Previous studies have found that Gaussian neighborhoods (rather than bubble or heuristic) and linear learning-rates typically yield optimal results under a wide range of conditions (Stefanovič and Kurasova 2011; Natita et al. 2016). Consequently, we employ these as our default conditions. 
 
-![hypers](https://github.com/rpyron/delim-SOM/assets/583099/0b286a66-07d1-4517-94d0-5182f14ec190)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/c1a352c3-b14f-4ffe-9e8e-326f16372eda)
 
 The kohonen_hyper.R file contains a brief exploration of the hyperparameters, including the learning rates and run length. Generally speaking, these don't have much of an impact for rlen > 100 and alpha > 0.1 for the alleles matrix in the _D. monticola_ dataset. Longer runs (rlen/m) may have a small impact on final learning estimates and precision. These curves are estimated from only 25 estimates and may normalize after additional replicates.
 
