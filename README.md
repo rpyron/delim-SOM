@@ -139,7 +139,7 @@ The genetic, spatial, and environmental data come from 71 individuals from 71 si
 
 The climate variables are Level IV Ecoregion (https://www.epa.gov/eco-research/level-iii-and-iv-ecoregions-continental-united-states), HUC4 watershed (https://www.usgs.gov/national-hydrography/watershed-boundary-dataset), ENVIREM - monthCountByTemp10 (https://envirem.github.io/), and WorldClim - BIO15 (https://www.worldclim.org/data/bioclim.html).
 
-The phenotype variables are 17 linear morphometric measurements to 0.01mm precision: SVL (snout-vent length), TL (tail length), AG (axilla-groin length), CW (chest width), FL (femur length [rather than hindlimb length]), HL (humerus length [rather than forelimb length]), SG (snout-gular length), TW(tail width at rear of vent), TO (length of third toe), FI (length of third finger), HW (head width), ED (eye diameter), IN (internarial distance), ES (eye-snout distance), ON (orbito-narial distance), IO (inter-orbital distance), and IC (inter-canthal distance). Here, I size-correct these by SVL using pooled groups ("population2") in 'GroupStruct' (Chan and Grismer 2021, 2022): https://github.com/chankinonn/GroupStruct, then take the mean by site.
+The phenotype variables are 17 linear morphometric measurements to 0.01mm precision: SVL (snout-vent length), TL (tail length), AG (axilla-groin length), CW (chest width), FL (femur length [rather than hindlimb length]), HL (humerus length [rather than forelimb length]), SG (snout-gular length), TW(tail width at rear of vent), TO (length of third toe), FI (length of third finger), HW (head width), ED (eye diameter), IN (internarial distance), ES (eye-snout distance), ON (orbito-narial distance), IO (inter-orbital distance), and IC (inter-canthal distance). Here, I size-correct these by SVL using pooled groups ("population2") in 'GroupStruct' (Chan and Grismer 2021, 2022): https://github.com/chankinonn/GroupStruct, then take the mean by site. I also include the mean left and right larvat-spot counts by site for 66 individuals from 40 sites; the remaining rows are _'NA'_.
 
 # Running the Code
 
@@ -291,71 +291,7 @@ A STRUCTURE-type plot, organized hierarchically by dominant cluster membership. 
 
 ```
 png("./Pyron_UML_Graphical_Abstract.png",1328,531)
-#map
-par(mar=c(0,0,0,0),mgp=c(3,0.75,0))
-layout(mat = matrix(c(1,1,1,1,1,2,2,3,3,
-                      1,1,1,1,1,2,2,3,3,
-                      1,1,1,1,1,4,4,5,5,
-                      1,1,1,1,1,4,4,5,5), 
-                    ncol = 9,byrow=T))
-maps::map(database = 'world', xlim = range(xy[,1]) + c(-4,4), ylim = range(xy[,2]) + c(-1,1), col="white")
-map.axes(cex.axis=1.5);title(main="Self-Organizing Maps for Integrative Species Delimitation",line=1,cex.main=2.5)
-maps::map(database = 'county', xlim = range(xy[,1]) + c(-4,4), ylim = range(xy[,2]) + c(-1,1), col="gray",add=T)
-maps::map(database = 'state', xlim = range(xy[,1]) + c(-4,4), ylim = range(xy[,2]) + c(-1,1), add = T)
-maps::map(database = 'world', xlim = range(xy[,1]) + c(-4,4), ylim = range(xy[,2]) + c(-1,1), add = T)
-make.admix.pie.plot(q_mat,xy,layer.colors = k.cols,radii=2.5,add = T)
-legend(-91.5,38,legend=c(expression(italic("D. cheaha")),
-                       expression(italic("D. monticola"))),
-       cex=3,pt.bg=k.cols[2:1],pch=21);map.scale(-80,31.5,cex=2)
-
-#K by frequency
-par(mar=c(4,4,1,0.5))
-all_k <- apply(res$c_mat,2,max) # Get the K for each run
-table(all_k)#How many different Ks were learned?
-max.K <- max(res$c_mat)#What is the highest K?
-barplot(table(factor(all_k,levels=1:10))/n,ylab="Sampling Proportion",ylim=c(0,1),
-        col="black",cex.lab=1.5,cex.axis=1.5,cex.names=1.5)
-title(main=expression(paste(bold("Clusters ("),bolditalic("K"),")")),
-      cex.main=2.5,line=-0.25)
-
-#weights
-par(mar=c(4,4.5,1,0.5),mgp=c(2.5,0.75,0))
-print(colMeans(res$d_mat))
-layers <- rev(sort(sqrt(1/colMeans(res$d_mat))))
-barplot(layers,col=layer.cols[names(layers)],ylab="Relative Weights - sqrt(1/w)",cex.lab=1.5,cex.names=1.5,cex.axis=1.5)
-title(main="Layer Weights",cex.main=2.5,adj=0.65,line=-0.5)
-
-#learning
-par(mar = c(4, 5, 2, 2) + 0.3,mgp=c(2.5,0.75,0))  # Leave space for z axis
-plot(res$som_model, type="changes", axes=F, cex.lab=1.5,
-     ylim=range(unlist(res$l_mat1[,1]))*c(0.9,1.1), main=NA, col="white")
-for(i in 1:n){lines(res$l_mat1[,i],col=alpha(layer.cols[1],0.1))}
-
-par(new = TRUE)
-plot(res$l_mat2[,1], type="l", col="white",axes=F, 
-     ylim=range(unlist(res$l_mat2[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
-for(i in 1:n){lines(res$l_mat2[,i],col=alpha(layer.cols[2],0.1))}
-
-par(new = TRUE)
-plot(res$l_mat3[,1], type="l", col="white",axes=F, 
-     ylim=range(unlist(res$l_mat3[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
-for(i in 1:n){lines(res$l_mat3[,i],col=alpha(layer.cols[3],0.1))}
-
-par(new = TRUE)
-plot(res$l_mat4[,1], type="l", col="white",axes=F,
-     ylim=range(unlist(res$l_mat4[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
-for(i in 1:n){lines(res$l_mat4[,i],col=alpha(layer.cols[4],0.1))}
-
-axis(1,cex.axis=1.5,cex=1.5);title("Training progress",line=0,cex.main=2.5)
-axis(2,cex.axis=1.5,cex=1.5)
-
-#SOM
-som.cols <- setNames(k.cols[labels[,max(res$c_mat)]],res$cluster_assignment)#Get colors to match original SOM clusters
-som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
-
-#plot cluster
-plot(res$som_model, shape="straight", type="mapping", bgcol = som.cols[res$som_cluster], main = "", pch=19, col="red")
-add.cluster.boundaries(res$som_model, res$som_cluster, col="red");title("SOM clusters",line=-0.1,cex.main=2.5)
+#SEE CODE IN FILE!
 dev.off()
 ```
 
