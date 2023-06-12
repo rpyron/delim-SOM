@@ -351,7 +351,7 @@ text(0.675,0.05,"b) Species Coefficients",font=2,cex=1.25)
 
 ![Figure_4](https://github.com/rpyron/delim-SOM/assets/583099/7ecb77c3-eab6-40dd-846d-306b428d2de0)
 
-Estimates from the DNA-only SOM are linear between 30-70% ancestry but essentially binary outside of that range, as parental cluster assignment is less variable in the tails. Species coefficients from the trait-based SuperSOM are essentially binary for all individual. This is unsurprising given that even admixed populations near the hybrid zone tend to be either montane or Piedmont and have the strongly diagnostic character of 4–5 versus 6–7 larval spots in D. monticola compared to D. cheaha (Pyron et al., 2023). I do note that the sample size here is relatively small, as individual ancestry coefficients were already sharply bimodal with relatively few hybrid or admixed individuals.
+Estimates from the DNA-only SOM are linear between ~30-70% ancestry but essentially binary outside of that range, as parental cluster assignment is less variable in the tails. Species coefficients from the trait-based SuperSOM are essentially binary for all individual. This is unsurprising given that even admixed populations near the hybrid zone tend to be either montane or Piedmont and have the strongly diagnostic character of 4–5 versus 6–7 larval spots in D. monticola compared to D. cheaha (Pyron et al., 2023). I do note that the sample size here is relatively small, as individual ancestry coefficients were already sharply bimodal with relatively few hybrid or admixed individuals.
 
 # Simulations
 
@@ -487,6 +487,8 @@ make.structure.plot(admix.proportions = x[z,],
 Finally, reduce impact of null alleles to ~0 to demonstrate inclusion of signal from the three other empirical layers.
 
 ![Figure_5](https://github.com/rpyron/delim-SOM/assets/583099/420212e0-185b-4e0e-a5bf-b1cab55802e0)
+
+The method strongly supports _K_=1 when little genetic structure is present, even when space, climate, and traits vary (first and second columns). In contrast, when the signal of the alleles layer is reduced to ~0, the impact of the other three layers is reflected in the output, still estimating a roughly binary division corresponding to D. cheaha in the south and D. monticola in the north while sampling multiple possible ancestries (third and fourth columns). These simulations reveal that the SOM/SuperSOM approach can detect _K_=1, does not over-split, reflects contributions from all layers with signal, and does not allow layer size (e.g., large-scale genetic matrices) to overwhelm other datasets.
 
 # Possible Improvements
 
