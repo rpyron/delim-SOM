@@ -18,6 +18,115 @@ Some of these may have to be installed manually or from various non-CRAN sources
 
 Overall, the method is extremely flexible and can take almost any data type or format, as long as it is introduced as a matrix in R. The matrices must be added in order, named alleles, space, climate, and traits. Adding each of those matrices in sequence allows one to run SOMs based on DNA, DNA + xyz, DNA + xyz + environment, and DNA + xyz + environment + phenotypes. The primary requirement is to have individuals in rows in the same order in each matrix, and variables in columns, with <10% missing data and the same set of individuals in each matrix. I also min-max normalize the space, climate, and traits matrices to be on the same scale as the allele frequencies. You could modify the code to allow >10% missing data (maxNA.frac) if necessary, but the effects are unknown.
 
+# Run this on your data
+
+SuperSOMs require (up to) four data layers as input matrices, called 'alleles,' 'space,' 'climate,' and 'traits.' These should each have the same number of rows (individuals, specimens, or populations), and any number of columns (however many SNPs or other variables you have). I suggest using allele frequencies for 'alleles,' and normalizing the other matrices to [0,1] for the same scale.
+
+```
+alleles <- matrix()#Molecular data as allele frequencies per locus
+space <- matrix()#Typically lat, long, and elevation
+climate <- matrix()#Relevant environmental data
+traits <- matrix()#Phenotypic data (e.g., morphometrics, behavior)
+```
+
+You will also want baseline clustering estimates from the molecular data to guide label synchronization:
+
+```
+#############################
+###Baseline DAPC assignments#
+#for synchronizing clusters #
+#############################
+
+#get labels for different K values
+labels <- data.frame(V1=rep(NA,dim(alleles)[1]),row.names = rownames(alleles))
+for (i in 1:10){labels[,i] <- find.clusters(a,n.clust=i,n.pca = dim(alleles)[1])$grp}
+```
+
+Then, construct a SOM grid:
+
+```
+###Parameters for runs
+#Size of Grid
+g <- round(sqrt(5*sqrt(length(rownames(alleles)))))#common rule of thumb
+
+#Create an output grid of size sqrt(n)
+som_grid <- somgrid(xdim = g,
+                    ydim = g,
+                    topo="hexagonal",
+                    neighbourhood.fct = "gaussian")
+
+#Number of Replicates - can increase if you like
+n <- 100
+
+#Number of steps - doesn't usually matter beyond ~100
+m <- 100
+```
+
+Run a SuperSOM:
+
+```
+##############
+###Run SOMs###
+##############
+res <- Trait.SOM()
+```
+
+Visualize the output:
+
+ ```
+ #Plot Learning#
+plotLearning.Traits(res)
+
+#Layer Weights#
+plotLayers(res)
+
+#Optimize K#
+plotK(res)
+```
+
+Look at a representative SOM grid:
+
+```
+#Example outputs from one model#
+par(mfrow=c(2,1))
+
+#Cell distances #
+plot(res$som_model, type="dist.neighbours", main = "", palette.name = viridis)
+title("SOM neighbour distances",line=-0.1)
+
+#SOM Clusters#
+som.cols <- setNames(k.cols[labels[,max(res$c_mat)]],res$cluster_assignment)#Get colors to match original SOM clusters
+som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
+
+#plot cluster
+plot(res$som_model, shape="straight", type="mapping", bgcol = som.cols[res$som_cluster], main = "", pch=19, col="red")
+add.cluster.boundaries(res$som_model, res$som_cluster,col="red");title("SOM clusters",line=-0.1)
+```
+
+Review a map, where _'xyz'_ is your long/lat/elevation matrix:
+
+```
+#Sample Map#
+q_mat <- match.k(res)#get admixture coefficients
+
+par(mar=c(0,0,0,0))
+xy <- xyz[,1:2]
+maps::map(database = 'world', xlim = range(xy[,1]) + c(-1,1), ylim = range(xy[,2]) + c(-1,1), col="white")
+map.axes()
+maps::map(database = 'world', xlim = range(xy[,1]) + c(-1,1), ylim = range(xy[,2]) + c(-1,1), add = T)
+make.admix.pie.plot(q_mat,xy,layer.colors = k.cols,radii=2.5,add = T)
+map.scale()
+```
+
+And a STRUCTURE-type barplot:
+```
+make.structure.plot(admix.proportions = q_mat, 
+                    sample.names = rownames(q_mat), 
+                    mar = c(8,4,2,2), 
+                    layer.colors = k.cols, 
+                    sort.by = 1)
+```
+
 # Example: _Desmognathus monticola_, the Seal Salamander
 
 ![Pyron_et_al_Figure_3](https://github.com/rpyron/delim-SOM/assets/583099/9f28c7f0-0790-4a47-a7a4-25c98024a087)
