@@ -24,7 +24,7 @@ SuperSOMs require (up to) four data layers as input matrices, called 'alleles,' 
 
 ```
 alleles <- matrix()#Molecular data as allele frequencies per locus
-space <- matrix()#Typically lat, long, and elevation
+space <- matrix()#Typically long, lat, and elevation
 climate <- matrix()#Relevant environmental data
 traits <- matrix()#Phenotypic data (e.g., morphometrics, behavior)
 ```
@@ -133,7 +133,7 @@ make.structure.plot(admix.proportions = q_mat,
 
 _Original SOM results from Pyron et al. (2023)_
 
-We provide a sample dataset and analysis for Seal Salamanders (_Desmognathus monticola_), which now represents two species in the Appalachian Mountains and Piedmont of the eastern United States, based on four datasets comprising a SNP matrix from Genotype-By-Sequencing (GBS) analysis, lat/long/elevation (xyz), environment (climate, hydrology, and ecoregion), and phenotype (17 linear morphometric measurements and larval spot count).
+We provide a sample dataset and analysis for Seal Salamanders (_Desmognathus monticola_), which now represents two species in the Appalachian Mountains and Piedmont of the eastern United States, based on four datasets comprising a SNP matrix from Genotype-By-Sequencing (GBS) analysis, long/lat/elevation (xyz), environment (climate, hydrology, and ecoregion), and phenotype (17 linear morphometric measurements and larval spot count).
 
 The genetic, spatial, and environmental data come from 71 individuals from 71 sites, while the phenotypic data are expanded to include up to 163 specimens from those sites, with the mean of each measurement taken after size correction. The allele frequencies come from a GBS matrix of 5,174 SNPs and 10,526 alleles after trimming to 80% completeness.
 
@@ -178,7 +178,7 @@ space <- apply(space,2,minmax)
 climate <- apply(dat[,c(5:9)],2,minmax)#These variables were identified as most important
 ```
 
-Similarly, these are just the lat, long, elevation, and climate data from Pyron et al. (2023).
+Similarly, these are just the long, lat, elevation, and climate data from Pyron et al. (2023).
 
 ```
 morph <- read.csv("./seal_morph.csv",row.names=1)#Read in trait data, 163 specimens from 71 sites with 17 measurements 
