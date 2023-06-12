@@ -9,9 +9,9 @@ The requisite functions are in the 'kohonen_code.R' file, which loads the variou
 
 ```
 library(adegenet); library(maps); library(viridis);library(scales)
-library(LEA); library(conStruct);library(poppr); library(kohonen)
-library(lsr);library(combinat);library(caret);library(elevatr)
-library(caret);library(GroupStruct);library(vcfR);library(dartR)
+library(LEA); library(conStruct);library(poppr);library(kohonen)
+library(lsr);library(combinat);library(caret);library(GroupStruct)
+library(vcfR);library(dartR)
 ```
 
 Some of these may have to be installed manually or from various non-CRAN sources.
@@ -47,10 +47,8 @@ a <- read.structure("./seal_in.str",
                     row.marknames = 0,
                     NA.char = -9)
 
-##Dimensions
-locmiss = propTyped(a, by = "loc")
-barplot(sort(1-locmiss), ylim = c(0,1), ylab = "Complete genotypes (proportion)", xlab = "Locus", las = 2, cex.names = 0.7)
-a = missingno(a, type = "loci", cutoff = 0.20);abline(h=0.2,col="red",lty=2)
+#Trim missingness
+a = missingno(a, type = "loci", cutoff = 0.20)
 a#trimmed to 20% missing data
 
 #Convert genind object from adegenet to allele frequencies
@@ -58,12 +56,12 @@ struc <- makefreq(a)
 
 #Convert allele frequences to matrix
 alleles <- matrix(unlist(as.numeric(struc)), nrow=nrow(struc))
+rownames(alleles) <- rownames(struc);colnames(alleles) <- colnames(struc)
 ```
 
 The alleles matrix can be in nearly any format, with individuals in rows and allele frequencies or counts in columns. Here, I am simply loading in the STRUCTURE-formatted file from ipyrad as a genind object in 'adegenet' (Jombart 2008: https://adegenet.r-forge.r-project.org/), trimming it to 20% missing data, converting the counts to frequencies, and converting it to a matrix.
 
 ```
-#read in data
 dat <- read.csv("./seal_clim.csv",row.names = "Specimen")
 xyz <- dat[,c("LONG","LAT","elevation")]
 space <- data.frame(lon=xyz$LONG,lat=xyz$LAT,elev=xyz$elev)
@@ -74,7 +72,6 @@ climate <- apply(dat[,c(5:9)],2,minmax)#These variables were identified as most 
 Similarly, these are just the lat, long, elevation, and climate data from Pyron et al. (2023).
 
 ```
-#linear morphometrics
 morph <- read.csv("./seal_morph.csv",row.names=1)#Read in trait data, 163 specimens from 71 sites with 17 measurements 
 morph_log <- data.frame(pop="seal",exp(morph[,2:18]))#un-log the measurements for GroupStruct
 morph_allom <- allom(morph_log,"population2")#correct for allometry using GroupStruct
@@ -94,19 +91,15 @@ traits <- as.matrix(cbind(morph_norm,spot_norm))
 Finally, the morphological dataset from Pyron et al. (2023) trimmed to the 163 specimens from the 71 genetic localities. The log-transformed data are read in, exponentiated for analysis, assigned the same "species" of "seal," corrected for allometry using 'GroupStruct,' taking the mean by site, and min-max normalizing the resulting matrix.
 
 ```
-#choose a max K
-k.max <- 10
-
-#get labels for different K values
-labels <- data.frame(V1=rep(NA,dim(a$tab)[1]),row.names = rownames(a$tab))
-for (i in 1:k.max){labels[,i] <- find.clusters(a,n.clust=i,n.pca = dim(a$tab)[1])$grp}
+labels <- data.frame(V1=rep(NA,dim(alleles)[1]),row.names = rownames(alleles))
+for (i in 1:10){labels[,i] <- find.clusters(a,n.clust=i,n.pca = dim(alleles)[1])$grp}
 ```
 
 Next, we will produce a baseline clustering estimate under various _K_ values to more easily synchronize cluster labels later on using the CLUMPP-like algorithm (Jakobson and Rosenberg 2007).
 
 ```
 #Size of Grid
-g <- round(sqrt(5*sqrt(length(rownames(a$tab)))))#common rule of thumb
+g <- round(sqrt(5*sqrt(length(rownames(alleles)))))#common rule of thumb
 
 #Create an output grid of size sqrt(n)
 som_grid <- somgrid(xdim = g,
@@ -125,90 +118,36 @@ Next, we set the parameters for the SOM estimates. We can evaluate _m_ using the
 
 ```
 res <- Trait.SOM()
-
-#Output
-c_mat              <- res$c_mat#Get classifiers
-d_mat              <- res$d_mat#Get weights
-l_mat1             <- res$l_mat1#Get learning
-l_mat2             <- res$l_mat2#Get learning
-l_mat3             <- res$l_mat3#Get learning
-l_mat4             <- res$l_mat4#Get learning
-w_mat              <- res$w_mat#Get WSS
-som_model          <- res$som_model#Get last SOM
-som_cluster        <- res$som_cluster#Get last clusters
-cluster_assignment <- res$cluster_assignment#Get last assignments
 ```
 
 We use Trait.SOM() to produce our estimates. We could also use DNA.SOM(), Space.SOM(), or Climate.SOM() if we only had those layers. The output is then stored to local variables for later analysis.
 
 ```
-par(mar = c(5, 4, 4, 4) + 0.3)  # Leave space for z axis
-plot(som_model, type="changes", axes=F, 
-     ylim=range(unlist(l_mat1[,1]))*c(0.9,1.1), main=NA, col="white")
-for(i in 1:n){lines(l_mat1[,i],col=alpha("black",0.1))}
-
-par(new = TRUE)
-plot(l_mat2[,1], type="l", col="white",axes=F, 
-     ylim=range(unlist(l_mat2[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
-for(i in 1:n){lines(l_mat2[,i],col=alpha("red",0.1))}
-
-par(new = TRUE)
-plot(l_mat3[,1], type="l", col="white",axes=F, 
-     ylim=range(unlist(l_mat3[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
-for(i in 1:n){lines(l_mat3[,i],col=alpha("green",0.1))}
-
-par(new = TRUE)
-plot(l_mat4[,1], type="l", col="white",axes=F,
-     ylim=range(unlist(l_mat4[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
-for(i in 1:n){lines(l_mat4[,i],col=alpha("blue",0.1))}
-
-axis(1);title("Training progress (steps)",line=-1)
-axis(2,at=round(range(unlist(l_mat1[,1])),3)*c(0.9,1.75),las=3)
+plotLearning.Traits(res)
 ```
 
-![learning](https://github.com/rpyron/delim-SOM/assets/583099/9799612c-c364-4c23-9c52-7e513bfd30e7)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/50b2dd49-b89c-4881-a710-3dd8ef5465fb)
 
 We can then plot our learning estimates across the runs. The shape of this learning curve (slow decline, then sudden plateau) is inherent in the way the algorithm learns; longer runs produce the same shape, rather than a longer plateau. The scale of each variable determines the location of its plateau; we expect each matrix to stabilize, but not necessarily to converge to the same relative distance to closest unit.
 
 ```
-colMeans(d_mat)
-layers <- rev(sort(sqrt(1/colMeans(d_mat))))
-layer.cols <- setNames(c("black","red","green","blue"),
-                       c("alleles","space","climate","traits"))
-barplot(layers,main="Layer Weights",col=layer.cols[names(layers)])
+plotLayers(res)
 ```
 
-![weights](https://github.com/rpyron/delim-SOM/assets/583099/a0297d45-72e0-436b-824f-b233d15570ca)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/1ed8cea5-cc42-4902-80c2-cf639e83bd75)
 
 Next, we can see the layer weights. Unsurprisingly, alleles dwarf everything else, but traits are more important than climate, and both are greater than space alone.
 
 ```
-par(mfrow=c(3,1),mar=c(0.5,4,1,0.5))
-
-#by absolute BIC
-boxplot(t(w_mat),outline=F,notch=T,axes=F, ylab="WSS",ylim=range(unlist(w_mat)))
-axis(1,at=1:(k.max+1),labels=NA);axis(2,at=round(range(unlist(w_mat))),las=3);title("Number of clusters (k)", line=0)
-
-#by delta BIC
-d_wss <- apply(w_mat,2,function(x){diff(diff(x))});rownames(d_wss)<-2:k.max;plot_dwss <- rbind(NA,d_wss,NA)
-boxplot(t(plot_dwss),outline=F,notch=T,axes=F, ylab="dWSS")
-axis(1,at=1:(k.max+1),labels=NA);axis(2,at=sort(c(0,round(range(unlist(d_wss))))),las=3)
-
-#by frequency
-par(mar=c(4,4,1,0.5))
-all_k <- apply(c_mat,2,max) # Get the K for each run
-table(all_k)#How many different Ks were learned?
-max.K <- max(c_mat)#What is the highest K?
-cols <- viridis(max.K)#Set colors
-barplot(table(factor(all_k,levels=1:k.max)),ylab="Posterior Samples")
+plotK(res)
 ```
 
-![clusters](https://github.com/rpyron/delim-SOM/assets/583099/1cb3bda5-4150-47ab-ae82-1b6abdf51f27)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/8d00f902-2436-443f-b397-6bed47e21e9a)
 
 Then, we can see the optimal values of _K_. In this case, only _K_=2 was sampled across the 100 replicates.
 
 ```
-q_mat <- match.k()#get admixture coefficients
+q_mat <- match.k(res)#get admixture coefficients
 
 par(mfrow=c(1,1),
     mar=c(0,0,0,0))
@@ -217,79 +156,101 @@ maps::map(database = 'county', xlim = range(xy[,1]) + c(-0.5,0.5), ylim = range(
 map.axes()
 maps::map(database = 'county', xlim = range(xy[,1]) + c(-0.5,0.5), ylim = range(xy[,2]) + c(-0.5,0.5), col="gray",add=T)
 maps::map(database = 'state', xlim = range(xy[,1]) + c(-0.5,0.5), ylim = range(xy[,2]) + c(-0.5,0.5), add = T)
-make.admix.pie.plot(q_mat,xy,layer.colors = cols,radii=2.5,add = T)
+make.admix.pie.plot(q_mat,xy,layer.colors = k.cols,radii=2.5,add = T)
 legend(-88,38,legend=c(expression(italic("D. cheaha")),
-         expression(italic("D. monticola"))),cex=2,pt.bg=rev(viridis(2)),pch=21)
+         expression(italic("D. monticola"))),cex=2,pt.bg=k.cols[2:1],pch=21)
 map.scale(-81.2,31.1)
 ```
 
-![map](https://github.com/rpyron/delim-SOM/assets/583099/a7386dcd-6435-4442-96ab-88f0c7abfd3d)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/8f020274-4b86-4043-8d6e-e1f07ee966c1)
 
 We can also produce a basic sample map. The match.k() function uses a CLUMPP-like algorithm to synchronize the cluster labels to the DAPC results from earlier.
 
 ```
 x <- q_mat[order(q_mat[,1]),]
-n <- hclust(dist(x),"single")$order
-make.structure.plot(admix.proportions = x[n,], sample.names = rownames(x[n,]), mar = c(8,4,2,2), layer.colors = cols, sort.by = 1)
+z <- hclust(dist(x),"single")$order
+make.structure.plot(admix.proportions = x[z,], 
+                    sample.names = rownames(x[z,]), 
+                    mar = c(8,4,2,2), 
+                    layer.colors = k.cols, 
+                    sort.by = 1)
 ```
 
-![struc](https://github.com/rpyron/delim-SOM/assets/583099/32a53ff0-5525-4ba2-a2f7-0977ff41e272)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/d9d472b1-2f9d-4cbe-914b-bb897cda5faf)
 
 A STRUCTURE-type plot, organized hierarchically by dominant cluster membership. Given the extensive differences between these two species in terms of genetics, geography, ecology, and phenotype, the species coefficients are sharply bimodal comapred to the individual ancestry coefficients estimated from the SNP matrix alone (see Pyron et al. 2023).
 
 ```
-par(mfrow=c(2,1))
-
-#Cell distances #
-plot(som_model, type="dist.neighbours", main = "", palette.name = magma)
-title("SOM neighbour distances",line=-0.1)
-
-#SOM Clusters#
-som.cols <- setNames(cols[labels[,max.K]],cluster_assignment)#Get colors to match original SOM clusters
-som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
-
-#plot cluster
-plot(som_model, shape="straight", type="mapping", bgcol = som.cols[som_cluster], main = "", pch=19, col="red")
-add.cluster.boundaries(som_model, som_cluster,col="red");title("SOM clusters",line=-0.1)
-```
-
-![model](https://github.com/rpyron/delim-SOM/assets/583099/58d600a3-d167-4533-874f-4eba055f4d35)
-
-An example SOM grid from one learned output model.
-
-```
+png("./Pyron_UML_Graphical_Abstract.png",1328,531)
 #map
-par(mar=c(0,0,0,0),mgp=c(3,0.5,0))
-layout(mat = matrix(c(1, 2, 1, 3), 
-                    nrow = 2, 
-                    ncol = 2))
-maps::map(database = 'world', xlim = range(xy[,1]) + c(-7,7), ylim = range(xy[,2]) + c(-0.5,0.5), col="white")
-map.axes()
-maps::map(database = 'county', xlim = range(xy[,1]) + c(-7,7), ylim = range(xy[,2]) + c(-0.5,0.5), col="gray",add=T)
-maps::map(database = 'state', xlim = range(xy[,1]) + c(-7,7), ylim = range(xy[,2]) + c(-0.5,0.5), add = T)
-maps::map(database = 'world', xlim = range(xy[,1]) + c(-7,7), ylim = range(xy[,2]) + c(-0.5,0.5), add = T)
-make.admix.pie.plot(q_mat,xy,layer.colors = cols,radii=2,add = T)
-legend(-92.5,38,legend=c(expression(italic("D. cheaha")),
+par(mar=c(0,0,0,0),mgp=c(3,0.75,0))
+layout(mat = matrix(c(1,1,1,1,1,2,2,3,3,
+                      1,1,1,1,1,2,2,3,3,
+                      1,1,1,1,1,4,4,5,5,
+                      1,1,1,1,1,4,4,5,5), 
+                    ncol = 9,byrow=T))
+maps::map(database = 'world', xlim = range(xy[,1]) + c(-4,4), ylim = range(xy[,2]) + c(-1,1), col="white")
+map.axes(cex.axis=1.5);title(main="Self-Organizing Maps for Integrative Species Delimitation",line=1,cex.main=2.5)
+maps::map(database = 'county', xlim = range(xy[,1]) + c(-4,4), ylim = range(xy[,2]) + c(-1,1), col="gray",add=T)
+maps::map(database = 'state', xlim = range(xy[,1]) + c(-4,4), ylim = range(xy[,2]) + c(-1,1), add = T)
+maps::map(database = 'world', xlim = range(xy[,1]) + c(-4,4), ylim = range(xy[,2]) + c(-1,1), add = T)
+make.admix.pie.plot(q_mat,xy,layer.colors = k.cols,radii=2.5,add = T)
+legend(-91.5,38,legend=c(expression(italic("D. cheaha")),
                        expression(italic("D. monticola"))),
-       cex=2,pt.bg=rev(viridis(2)),pch=21);map.scale(-80,32)
+       cex=3,pt.bg=k.cols[2:1],pch=21);map.scale(-80,31.5,cex=2)
 
 #K by frequency
 par(mar=c(4,4,1,0.5))
-all_k <- apply(c_mat,2,max) # Get the K for each run
+all_k <- apply(res$c_mat,2,max) # Get the K for each run
 table(all_k)#How many different Ks were learned?
-max.K <- max(c_mat)#What is the highest K?
-cols <- viridis(max.K)#Set colors
-barplot(table(factor(all_k,levels=1:k.max)),ylab="Posterior Samples (%)",col="black",cex.names=1,cex.axis=1,main=expression(paste(bold("Clusters ("),bolditalic("K"),")")))
+max.K <- max(res$c_mat)#What is the highest K?
+barplot(table(factor(all_k,levels=1:10))/n,ylab="Sampling Proportion",ylim=c(0,1),
+        col="black",cex.lab=1.5,cex.axis=1.5,cex.names=1.5)
+title(main=expression(paste(bold("Clusters ("),bolditalic("K"),")")),
+      cex.main=2.5,line=-0.25)
 
 #weights
-colMeans(d_mat)
-layers <- rev(sort(sqrt(1/colMeans(d_mat))))
-layer.cols <- setNames(c("black","red","green","blue"),
-                       c("alleles","space","climate","traits"))
-barplot(layers,main="Layer Weights",col=layer.cols[names(layers)],ylab="Relative Weight - sqrt(1/w)")
+par(mar=c(4,4.5,1,0.5),mgp=c(2.5,0.75,0))
+print(colMeans(res$d_mat))
+layers <- rev(sort(sqrt(1/colMeans(res$d_mat))))
+barplot(layers,col=layer.cols[names(layers)],ylab="Relative Weights - sqrt(1/w)",cex.lab=1.5,cex.names=1.5,cex.axis=1.5)
+title(main="Layer Weights",cex.main=2.5,adj=0.65,line=-0.5)
+
+#learning
+par(mar = c(4, 5, 2, 2) + 0.3,mgp=c(2.5,0.75,0))  # Leave space for z axis
+plot(res$som_model, type="changes", axes=F, cex.lab=1.5,
+     ylim=range(unlist(res$l_mat1[,1]))*c(0.9,1.1), main=NA, col="white")
+for(i in 1:n){lines(res$l_mat1[,i],col=alpha(layer.cols[1],0.1))}
+
+par(new = TRUE)
+plot(res$l_mat2[,1], type="l", col="white",axes=F, 
+     ylim=range(unlist(res$l_mat2[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
+for(i in 1:n){lines(res$l_mat2[,i],col=alpha(layer.cols[2],0.1))}
+
+par(new = TRUE)
+plot(res$l_mat3[,1], type="l", col="white",axes=F, 
+     ylim=range(unlist(res$l_mat3[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
+for(i in 1:n){lines(res$l_mat3[,i],col=alpha(layer.cols[3],0.1))}
+
+par(new = TRUE)
+plot(res$l_mat4[,1], type="l", col="white",axes=F,
+     ylim=range(unlist(res$l_mat4[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
+for(i in 1:n){lines(res$l_mat4[,i],col=alpha(layer.cols[4],0.1))}
+
+axis(1,cex.axis=1.5,cex=1.5);title("Training progress",line=0,cex.main=2.5)
+axis(2,cex.axis=1.5,cex=1.5)
+
+#SOM
+som.cols <- setNames(k.cols[labels[,max(res$c_mat)]],res$cluster_assignment)#Get colors to match original SOM clusters
+som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
+
+#plot cluster
+plot(res$som_model, shape="straight", type="mapping", bgcol = som.cols[res$som_cluster], main = "", pch=19, col="red")
+add.cluster.boundaries(res$som_model, res$som_cluster, col="red");title("SOM clusters",line=-0.1,cex.main=2.5)
+dev.off()
 ```
 
-![pub](https://github.com/rpyron/delim-SOM/assets/583099/3c6b70f0-a055-41e5-9eb7-0de652f3261a)
+![Pyron_UML_Graphical_Abstract](https://github.com/rpyron/delim-SOM/assets/583099/f1a64348-832e-49f9-bf28-b6c81bf7a30f)
 
 A nice summary figure for publication!
 
@@ -307,9 +268,11 @@ Many default implementations of SOMs have paid little attention to the hyperpara
 
 The kohonen_hyper.R file contains a brief exploration of the hyperparameters, including the learning rates and run length. Generally speaking, these don't have much of an impact for rlen > 100 and alpha > 0.1 for the alleles matrix in the _D. monticola_ dataset. Longer runs (rlen/m) may have a small impact on final learning estimates and precision. These curves are estimated from 100 estimates and may normalize after additional replicates.
 
+# Simulations
+
 # Possible Improvements
 
-I have not explored different data types for molecular datasets (e.g., allele counts, structural variants). I also haven't explored the impact of normalization, although this should be minimal. Selection of _K_ for each run might deserve a bit more scrutiny, including the use of AIC/BIC instead of the raw Weighted Sum of Squares (WSS) values. Some possibilities are discussed here: https://bgstieber.github.io/post/an-introduction-to-the-kmeans-algorithm/. As currently implemented, it can theoretically support _K_=1 (see Jaynes et al. 2017), but this should be explored in depth for this and other methods (e.g., Derkarabetian et al. 2019).
+I have not explored different data types for molecular datasets (e.g., allele counts, structural variants). I also haven't explored the impact of normalization, although this should be minimal. Selection of _K_ for each run might deserve a bit more scrutiny. Some possibilities are discussed here: https://bgstieber.github.io/post/an-introduction-to-the-kmeans-algorithm/. As currently implemented, it can support _K_=1 (see Jaynes et al. 2017), but this should be explored in depth for this and other methods (e.g., Derkarabetian et al. 2019).
 
 
 # References
