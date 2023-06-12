@@ -313,6 +313,46 @@ Many default implementations of SOMs have paid little attention to the hyperpara
 
 The kohonen_hyper.R file contains a brief exploration of the hyperparameters, including the learning rates and run length. Generally speaking, these don't have much of an impact for rlen > 100 and alpha > 0.1 for the alleles matrix in the _D. monticola_ dataset. Longer runs (rlen/m) may have a small impact on final learning estimates and precision. These curves are estimated from 100 estimates and may normalize after additional replicates.
 
+# Comparison to other methods
+
+We can compare DNA-only SOM and trait-based SuperSOM estimates of individual ancestry (DNA-only) or species coefficients (SuperSOM) to the admixture values from sNMF presented by Pyron et al. (2023).
+
+```
+#Trait-based SuperSOM
+res <- Trait.SOM()
+q_mat <- match.k(res)#get admixture coefficients
+
+#DNA-only SOM results
+res1 <- DNA.SOM()
+q_mat.DNA <- match.k(res1)#get admixture coefficients
+
+#sNMF values from previous analysis
+sNMF_q_mat <- read.csv("./seal_q.mat.csv",row.names=1)
+
+par(mfrow=c(2,1),mar=c(1,4.5,0.5,2),mgp=c(2,0.5,0))
+plot(sNMF_q_mat[,1],q_mat.DNA[,1],pch=21,bg=layer.cols[1],xaxt='n',xlab=NA,
+     ylab="DNA SOM",xlim=c(0,1),ylim=c(0,1),cex=2)
+axis(side = 1, at = c(0,0.2,0.4,0.6,0.8,1), labels = FALSE)
+b.sp <- cor(sNMF_q_mat[,1],q_mat.DNA[,1],method=c("spearman"))
+b.pe <- cor(sNMF_q_mat[,1],q_mat.DNA[,1],method=c("pearson"))
+text(0.2,0.9,paste0("Spearman's = ",round(b.sp,2)))
+text(0.2,0.85,paste0("Pearson's = ",round(b.pe,2)))
+text(0.675,0.05,"a) Individual Ancestries",font=2,cex=1.25)
+
+par(mar=c(4,4.5,0.5,2))
+plot(sNMF_q_mat[,1],q_mat[,1],pch=21,bg=layer.cols[4],
+     xlab="sNMF Admixture Estimates",ylab="Trait SuperSOM",xlim=c(0,1),ylim=c(0,1),cex=2)
+c.sp <- cor(sNMF_q_mat[,1],q_mat[,1],method=c("spearman"))
+c.pe <- cor(sNMF_q_mat[,1],q_mat[,1],method=c("pearson"))
+text(0.2,0.9,paste0("Spearman's = ",round(c.sp,2)))
+text(0.2,0.84,paste0("Pearson's = ",round(c.pe,2)))
+text(0.675,0.05,"b) Species Coefficients",font=2,cex=1.25)
+```
+
+![Figure_4](https://github.com/rpyron/delim-SOM/assets/583099/7ecb77c3-eab6-40dd-846d-306b428d2de0)
+
+Estimates from the DNA-only SOM are linear between 30-70% ancestry but essentially binary outside of that range, as parental cluster assignment is less variable in the tails. Species coefficients from the trait-based SuperSOM are essentially binary for all individual. This is unsurprising given that even admixed populations near the hybrid zone tend to be either montane or Piedmont and have the strongly diagnostic character of 4–5 versus 6–7 larval spots in D. monticola compared to D. cheaha (Pyron et al., 2023). I do note that the sample size here is relatively small, as individual ancestry coefficients were already sharply bimodal with relatively few hybrid or admixed individuals.
+
 # Simulations
 
 Some basic simulations to demonstrate desirable performance under a wide variety of conditions.
