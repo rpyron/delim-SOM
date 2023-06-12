@@ -270,6 +270,139 @@ The kohonen_hyper.R file contains a brief exploration of the hyperparameters, in
 
 # Simulations
 
+Some basic simulations to demonstrate desirable performance under a wide variety of conditions.
+```
+###########################
+#Simulate a K=1 SNP matrix#
+###########################
+simGeno(71, 5174)
+alleles <- simG/2
+rownames(alleles) <- paste("a",1:71,sep="")
+colnames(alleles) <- paste("snp",1:5174,sep="")
+```
+First, simulate a _K_=1 SNP matrix.
+
+```
+################################
+#Get space, climate, and traits#
+#from Desmognathus dataset     #
+################################
+
+###SPATIAL & CLIMATIC DATA
+#read in data
+dat <- read.csv("./seal_clim.csv",row.names = "Specimen")
+xyz <- dat[,c("LONG","LAT","elevation")]
+space <- data.frame(lon=xyz$LONG,lat=xyz$LAT,elev=xyz$elev)
+space <- apply(space,2,minmax)
+climate <- apply(dat[,c(5:9)],2,minmax)#These variables were identified as most important by SDM
+
+###PHENOTYPIC DATA
+#linear morphometrics
+morph <- read.csv("./seal_morph.csv",row.names=1)#Read in trait data, 163 specimens from 71 sites with 17 measurements 
+morph_log <- data.frame(pop="seal",exp(morph[,2:18]))#un-log the measurements for GroupStruct
+morph_allom <- allom(morph_log,"population2")#correct for allometry using GroupStruct
+morph_mean <- aggregate(morph_allom[,-1],list(morph$pop),mean)#take mean by locality
+morph_norm <- apply(morph_mean[,-1],2,minmax)#could also use PC1-3 or similar transformation
+
+#larval spot count
+spots <- read.csv("seal_spots.csv",row.names=1)
+spot_mean <- aggregate(sqrt(spots[,1:2]),list(spots$pop),mean)
+spot_norm <- spot_mean[,-1]
+spot_norm[-which(is.na(spot_mean[,2:3])),] <- apply(na.omit(spot_mean)[,-1],2,minmax)
+
+#merge into traits
+traits <- as.matrix(cbind(morph_norm,spot_norm))
+```
+Second, load the empirical space, climate, and trait layers.
+
+```
+##########
+##########
+#DNA ONLY#
+##########
+##########
+res <- DNA.SOM()
+
+#Plot Learning#
+plotLearning.DNA(res)
+
+#Optimize K#
+plotK(res)
+```
+
+Run a DNA-only SOM to show strong support for _K_=1 using the standard model-selection criteria under minimum BIC.
+
+```
+##########
+##########
+#TRAITS  #
+##########
+##########
+res1 <- Trait.SOM()
+
+#Plot Learning#
+plotLearning.Traits(res1)
+
+#Layer Weights#
+plotLayers(res1)
+
+#Optimize K#
+plotK(res1)
+```
+
+Repeat including the other empirical data layers.
+
+```
+############
+############
+#TRAITS/dim#
+############
+############
+alleles <- alleles/1000#reduce signal from alleles
+
+#get labels for different K values
+labels <- data.frame(V1=rep(NA,dim(alleles)[1]),row.names = rownames(alleles))
+for (i in 1:10){labels[,i] <- find.clusters(alleles,n.clust=i,n.pca = dim(alleles)[1])$grp}
+
+###Kohonen maps###
+res2 <- Trait.SOM()
+
+#Plot Learning#
+plotLearning.Traits(res2)
+
+#Layer Weights#
+plotLayers(res2)
+
+#Optimize K#
+plotK(res2)
+
+#Sample Map#
+q_mat <- match.k(res2)#get admixture coefficients
+
+par(mfrow=c(1,1),
+    mar=c(0,0,0,0))
+xy <- xyz[,1:2]
+maps::map(database = 'county', xlim = range(xy[,1]) + c(-0.5,0.5), ylim = range(xy[,2]) + c(-0.5,0.5), col="white")
+map.axes()
+maps::map(database = 'county', xlim = range(xy[,1]) + c(-0.5,0.5), ylim = range(xy[,2]) + c(-0.5,0.5), col="gray",add=T)
+maps::map(database = 'state', xlim = range(xy[,1]) + c(-0.5,0.5), ylim = range(xy[,2]) + c(-0.5,0.5), add = T)
+make.admix.pie.plot(q_mat,xy,layer.colors = k.cols,radii=2.5,add = T)
+map.scale(-81.2,31.1)
+
+#Structure Plot#
+x <- q_mat[order(q_mat[,1]),]
+z <- hclust(dist(x),"single")$order
+make.structure.plot(admix.proportions = x[z,], 
+                    sample.names = rownames(x[z,]), 
+                    mar = c(8,4,2,2), 
+                    layer.colors = k.cols, 
+                    sort.by = 1)
+```
+
+Finally, reduce impact of null alleles to ~0 to demonstrate inclusion of signal from the three other empirical layers.
+
+![Figure_5](https://github.com/rpyron/delim-SOM/assets/583099/420212e0-185b-4e0e-a5bf-b1cab55802e0)
+
 # Possible Improvements
 
 I have not explored different data types for molecular datasets (e.g., allele counts, structural variants). I also haven't explored the impact of normalization, although this should be minimal. Selection of _K_ for each run might deserve a bit more scrutiny. Some possibilities are discussed here: https://bgstieber.github.io/post/an-introduction-to-the-kmeans-algorithm/. As currently implemented, it can support _K_=1 (see Jaynes et al. 2017), but this should be explored in depth for this and other methods (e.g., Derkarabetian et al. 2019).
