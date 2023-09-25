@@ -3,11 +3,10 @@
 ##########################################
 
 #Load libraries
-library(adegenet); library(maps); library(viridis);library(scales)
-library(LEA); library(conStruct);library(poppr);library(kohonen)
-library(lsr);library(combinat);library(caret);library(GroupStruct)
-library(vcfR);library(dartR)
-set.seed(1)
+library(adegenet);library(maps);library(scales)
+library(conStruct);library(poppr);library(kohonen)
+library(lsr);library(combinat);library(GroupStruct)
+library(viridis);set.seed(1)
 
 #auxiliary function to normalize input features
 #other normalizations are possible, but we will
