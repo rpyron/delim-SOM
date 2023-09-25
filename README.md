@@ -8,10 +8,10 @@ The contribution of each layer to the final model output is recorded, along with
 The requisite functions are in the 'kohonen_code.R' file, which loads the various dependencies:
 
 ```
-library(adegenet); library(maps); library(viridis);library(scales)
-library(LEA); library(conStruct);library(poppr);library(kohonen)
-library(lsr);library(combinat);library(caret);library(GroupStruct)
-library(vcfR);library(dartR)
+library(adegenet);library(maps);library(scales)
+library(conStruct);library(poppr);library(kohonen)
+library(lsr);library(combinat);library(GroupStruct)
+library(viridis);set.seed(1)
 ```
 
 Some of these may have to be installed manually or from various non-CRAN sources.
