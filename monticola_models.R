@@ -59,16 +59,6 @@ spot_norm[-which(is.na(spot_mean[,2:3])),] <- apply(na.omit(spot_mean)[,-1],2,mi
 traits <- as.matrix(cbind(morph_norm,spot_norm))
 
 
-#############################
-###Baseline DAPC assignments#
-#for synchronizing clusters #
-#############################
-
-#get labels for different K values
-labels <- data.frame(V1=rep(NA,dim(alleles)[1]),row.names = rownames(alleles))
-for (i in 1:10){labels[,i] <- find.clusters(a,n.clust=i,n.pca = dim(alleles)[1])$grp}
-
-
 ##################
 ###Kohonen maps###
 ##################

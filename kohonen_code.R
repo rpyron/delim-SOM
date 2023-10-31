@@ -276,12 +276,15 @@ Trait.SOM <- function()
 
 match.k <- function(res)
   {
+#get labels for different K values
+labels <- rbind.data.frame(lapply(1:10,function(x){find.clusters(a,n.clust=x,n.pca = dim(alleles)[1])$grp}))
+rownames(labels) <- rownames(alleles);colnames(labels) <- paste("K",1:10,sep='')
 
 #get clusters
 c_mat <- res$c_mat
 all_k <- apply(c_mat,2,max) # Get the K for each run
   
-# Only save runs with knowable K
+# Only save runs with knowable K (i.e., <10)
 cc <- c_mat[,which(all_k<=10)]
 
 #Create duplicate c_mat for translation
