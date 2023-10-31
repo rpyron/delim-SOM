@@ -20,7 +20,7 @@ Overall, the method is extremely flexible and can take almost any data type or f
 
 # Run this on your data
 
-SuperSOMs require (up to) four data layers as input matrices, called 'alleles,' 'space,' 'climate,' and 'traits.' These should each have the same number of rows (individuals, specimens, or populations), and any number of columns (however many SNPs or other variables you have). I suggest using allele frequencies for 'alleles,' and normalizing the other matrices to [0,1] for the same scale.
+SuperSOMs require (up to) four data layers as input matrices, called 'alleles,' 'space,' 'climate,' and 'traits.' These should each have the same number of rows (individuals, specimens, or populations), and any number of columns (however many SNPs or other variables you have). I suggest using allele frequencies for 'alleles,' and normalizing the other matrices to [0,1] for the same scale. This would include one-hot encoding factors.
 
 ```
 alleles <- matrix()#Molecular data as allele frequencies per locus
@@ -29,7 +29,7 @@ climate <- matrix()#Relevant environmental data
 traits <- matrix()#Phenotypic data (e.g., morphometrics, behavior)
 ```
 
-You will also want baseline clustering estimates from the molecular data to guide label synchronization. To achieve this using the match.k() function (see below), you will need an object called 'a' with the specimens in rows (with rownames set to specimen IDs) and numerical data (e.g., alleles) in the columns. The 'a' object will be analyzed by the find.clusters() function from 'adegenet' (Jombart et al. 2008), described here: https://www.rdocumentation.org/packages/adegenet/versions/2.1.10/topics/find.clusters
+You will also want baseline clustering estimates from the molecular data to guide cluster label synchronizing later on using the CLUMPP-like algorithm (Jakobson and Rosenberg 2007). To achieve this using the match.k() function (see below), you will need an object called 'a' with the specimens in rows (with rownames set to specimen IDs) and numerical data (e.g., alleles) in the columns. The 'a' object will be analyzed by the find.clusters() function from 'adegenet' (Jombart et al. 2008), described here: https://www.rdocumentation.org/packages/adegenet/versions/2.1.10/topics/find.clusters
 
 "find.clusters is a generic function with methods for the following types of objects:
 
@@ -205,13 +205,6 @@ traits <- as.matrix(cbind(morph_norm,spot_norm))
 ```
 
 Finally, the morphological dataset from Pyron et al. (2023) trimmed to the 163 specimens from the 71 genetic localities. The log-transformed data are read in, exponentiated for analysis, assigned the same "species" of "seal," corrected for allometry using 'GroupStruct,' taking the mean by site, and min-max normalizing the resulting matrix.
-
-```
-labels <- data.frame(V1=rep(NA,dim(alleles)[1]),row.names = rownames(alleles))
-for (i in 1:10){labels[,i] <- find.clusters(a,n.clust=i,n.pca = dim(alleles)[1])$grp}
-```
-
-Next, we will produce a baseline clustering estimate under various _K_ values to more easily synchronize cluster labels later on using the CLUMPP-like algorithm (Jakobson and Rosenberg 2007).
 
 ```
 #Size of Grid
