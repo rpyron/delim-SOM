@@ -44,7 +44,7 @@ genlight objects (genome-wide SNPs)"
 A simple way to do this is just to create a genind object called 'a' and use that for 'alleles' such as:
 
 ```
-a <- df2genind(X)#Where X is an allele matrix imported into R as a data.frame
+a <- df2genind(X)#Where X is a SNP matrix imported into R as a data.frame
 alleles <- makefreq(a)#Calculates allele frequencies from the genind object 'a'
 ```
 
