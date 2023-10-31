@@ -289,12 +289,6 @@ make.structure.plot(admix.proportions = x[z,],
 
 A STRUCTURE-type plot, organized hierarchically by dominant cluster membership. Given the extensive differences between these two species in terms of genetics, geography, ecology, and phenotype, the species coefficients are sharply bimodal comapred to the individual ancestry coefficients estimated from the SNP matrix alone (see Pyron et al. 2023).
 
-```
-png("./Pyron_UML_Graphical_Abstract.png",1328,531)
-#SEE CODE IN FILE!
-dev.off()
-```
-
 ![Pyron_UML_Graphical_Abstract](https://github.com/rpyron/delim-SOM/assets/583099/f1a64348-832e-49f9-bf28-b6c81bf7a30f)
 
 A nice summary figure for publication!
