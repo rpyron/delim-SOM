@@ -89,6 +89,9 @@ plotLayers(res)
 
 #Optimize K#
 plotK(res)
+
+#Get species coefficients
+q_mat <- match.k(res)
 ```
 
 Look at a representative SOM grid:
@@ -102,7 +105,7 @@ plot(res$som_model, type="dist.neighbours", main = "", palette.name = viridis)
 title("SOM neighbour distances",line=-0.1)
 
 #SOM Clusters#
-som.cols <- setNames(k.cols[labels[,max(res$c_mat)]],res$cluster_assignment)#Get colors to match original SOM clusters
+som.cols <- setNames(k.cols[max.col(q_mat)],res$cluster_assignment)#Get colors to match original SOM clusters
 som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
 
 #plot cluster
@@ -114,7 +117,6 @@ Review a map, where _'xyz'_ is your long/lat/elevation matrix:
 
 ```
 #Sample Map#
-q_mat <- match.k(res)#get admixture coefficients
 
 par(mar=c(0,0,0,0))
 xy <- xyz[,1:2]
@@ -171,8 +173,7 @@ a#trimmed to 20% missing data
 struc <- makefreq(a)
 
 #Convert allele frequences to matrix
-alleles <- matrix(unlist(as.numeric(struc)), nrow=nrow(struc))
-rownames(alleles) <- rownames(struc);colnames(alleles) <- colnames(struc)
+alleles <- makefreq(a)
 ```
 
 The alleles matrix can be in nearly any format, with individuals in rows and allele frequencies or counts in columns. Here, I am simply loading in the STRUCTURE-formatted file from ipyrad as a genind object in 'adegenet' (Jombart 2008: https://adegenet.r-forge.r-project.org/), trimming it to 20% missing data, converting the counts to frequencies, and converting it to a matrix.
