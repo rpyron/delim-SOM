@@ -29,18 +29,25 @@ climate <- matrix()#Relevant environmental data
 traits <- matrix()#Phenotypic data (e.g., morphometrics, behavior)
 ```
 
-You will also want baseline clustering estimates from the molecular data to guide label synchronization:
+You will also want baseline clustering estimates from the molecular data to guide label synchronization. To achieve this using the match.k() function (see below), you will need an object called 'a' with the specimens in rows (with rownames set to specimen IDs) and numerical data (e.g., alleles) in the columns. The 'a' object will be analyzed by the find.clusters() function from 'adegenet' (Jombart et al. 2008), described here: https://www.rdocumentation.org/packages/adegenet/versions/2.1.10/topics/find.clusters
+
+"find.clusters is a generic function with methods for the following types of objects:
+
+data.frame (only numeric data)
+
+matrix (only numeric data)
+
+genind objects (genetic markers)
+
+genlight objects (genome-wide SNPs)"
+
+A simple way to do this is just to create a genind object called 'a' and use that for 'alleles' such as:
 
 ```
-#############################
-###Baseline DAPC assignments#
-#for synchronizing clusters #
-#############################
-
-#get labels for different K values
-labels <- data.frame(V1=rep(NA,dim(alleles)[1]),row.names = rownames(alleles))
-for (i in 1:10){labels[,i] <- find.clusters(a,n.clust=i,n.pca = dim(alleles)[1])$grp}
+a <- df2genind(x)#Where X is an allele matrix imported into R as a data.frame
+alleles <- makefreq(a)#Calculates allele frequencies from the genind object 'a'
 ```
+
 
 Then, construct a SOM grid:
 
