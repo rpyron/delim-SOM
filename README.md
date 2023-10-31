@@ -290,6 +290,27 @@ make.structure.plot(admix.proportions = x[z,],
 
 A STRUCTURE-type plot, organized hierarchically by dominant cluster membership. Given the extensive differences between these two species in terms of genetics, geography, ecology, and phenotype, the species coefficients are sharply bimodal comapred to the individual ancestry coefficients estimated from the SNP matrix alone (see Pyron et al. 2023).
 
+```
+#Example outputs from one model#
+par(mfrow=c(2,1))
+
+#Cell distances #
+plot(res$som_model, type="dist.neighbours", main = "", palette.name = viridis)
+title("SOM neighbour distances",line=-0.1)
+
+#SOM Clusters#
+som.cols <- setNames(k.cols[max.col(q_mat)],res$cluster_assignment)#Get colors to match original SOM clusters
+som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
+
+#plot cluster
+plot(res$som_model, shape="straight", type="mapping", bgcol = som.cols[res$som_cluster], main = "", pch=19, col="red")
+add.cluster.boundaries(res$som_model, res$som_cluster,col="red");title("SOM clusters",line=-0.1)
+```
+
+![image](https://github.com/rpyron/delim-SOM/assets/583099/063cba90-ab22-4b6c-9d61-acf75a40b665)
+
+An example SOM plot looking at the results from one model in terms of sample assignment to cells, cell distances, and boundaries between cell clusters.
+
 ![Pyron_UML_Graphical_Abstract](https://github.com/rpyron/delim-SOM/assets/583099/f1a64348-832e-49f9-bf28-b6c81bf7a30f)
 
 A nice summary figure for publication!
