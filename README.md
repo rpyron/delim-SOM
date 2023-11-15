@@ -99,7 +99,7 @@ Review a map, where _'xyz'_ is your long/lat/elevation matrix:
 ```
 #Get species coefficients#
 labels <- match.labels(a)
-q_mat <- match.k(res)
+q_mat <- match.k(res,labels)
 
 #Sample Map#
 par(mar=c(0,0,0,0))
