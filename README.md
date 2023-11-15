@@ -90,19 +90,18 @@ plotLayers(res)
 #Optimize K#
 plotK(res)
 
-#Get species coefficients
-labels <- match.labels(a)
-q_mat <- match.k(res)
-
-#Look at a representative SOM grid:
+#Look at a representative SOM grid#
 plotModels(res)
 ```
 
 Review a map, where _'xyz'_ is your long/lat/elevation matrix:
 
 ```
-#Sample Map#
+#Get species coefficients#
+labels <- match.labels(a)
+q_mat <- match.k(res)
 
+#Sample Map#
 par(mar=c(0,0,0,0))
 xy <- xyz[,1:2]
 maps::map(database = 'world', xlim = range(xy[,1]) + c(-1,1), ylim = range(xy[,2]) + c(-1,1), col="white")
@@ -153,9 +152,6 @@ a <- read.structure("./seal_in.str",
 #Trim missingness
 a = missingno(a, type = "loci", cutoff = 0.20)
 a#trimmed to 20% missing data
-
-#Convert genind object from adegenet to allele frequencies
-struc <- makefreq(a)
 
 #Convert allele frequences to matrix
 alleles <- makefreq(a)
@@ -242,7 +238,9 @@ plotK(res)
 Then, we can see the optimal values of _K_. In this case, only _K_=2 was sampled across the 100 replicates.
 
 ```
-q_mat <- match.k(res)#get admixture coefficients
+set.seed(1)
+labels <- match.labels(a)#get DAPC labels
+q_mat <- match.k(res,labels)#get admixture coefficients
 
 par(mfrow=c(1,1),
     mar=c(0,0,0,0))
@@ -277,19 +275,7 @@ A STRUCTURE-type plot, organized hierarchically by dominant cluster membership. 
 
 ```
 #Example outputs from one model#
-par(mfrow=c(2,1))
-
-#Cell distances #
-plot(res$som_model, type="dist.neighbours", main = "", palette.name = viridis)
-title("SOM neighbour distances",line=-0.1)
-
-#SOM Clusters#
-som.cols <- setNames(k.cols[max.col(q_mat)],res$cluster_assignment)#Get colors to match original SOM clusters
-som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
-
-#plot cluster
-plot(res$som_model, shape="straight", type="mapping", bgcol = som.cols[res$som_cluster], main = "", pch=19, col="red")
-add.cluster.boundaries(res$som_model, res$som_cluster,col="red");title("SOM clusters",line=-0.1)
+plotModel(res)
 ```
 
 ![image](https://github.com/rpyron/delim-SOM/assets/583099/063cba90-ab22-4b6c-9d61-acf75a40b665)
