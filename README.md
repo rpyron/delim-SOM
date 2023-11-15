@@ -91,26 +91,11 @@ plotLayers(res)
 plotK(res)
 
 #Get species coefficients
+labels <- match.labels(a)
 q_mat <- match.k(res)
-```
 
-Look at a representative SOM grid:
-
-```
-#Example outputs from one model#
-par(mfrow=c(2,1))
-
-#Cell distances #
-plot(res$som_model, type="dist.neighbours", main = "", palette.name = viridis)
-title("SOM neighbour distances",line=-0.1)
-
-#SOM Clusters#
-som.cols <- setNames(k.cols[max.col(q_mat)],res$cluster_assignment)#Get colors to match original SOM clusters
-som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
-
-#plot cluster
-plot(res$som_model, shape="straight", type="mapping", bgcol = som.cols[res$som_cluster], main = "", pch=19, col="red")
-add.cluster.boundaries(res$som_model, res$som_cluster,col="red");title("SOM clusters",line=-0.1)
+#Look at a representative SOM grid:
+plotModels(res)
 ```
 
 Review a map, where _'xyz'_ is your long/lat/elevation matrix:
