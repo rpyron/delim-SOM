@@ -26,9 +26,6 @@ a <- read.structure("./seal_in.str",
 a = missingno(a, type = "loci", cutoff = 0.20)
 a#trimmed to 20% missing data
 
-#Convert genind object from adegenet to allele frequencies
-struc <- makefreq(a)
-
 #Convert allele frequences to matrix
 alleles <- makefreq(a)
 
@@ -94,7 +91,9 @@ plotLayers(res)
 plotK(res)
 
 #Sample Map#
-q_mat <- match.k(res)#get admixture coefficients
+set.seed(1)
+labels <- match.labels(a)#get DAPC labels
+q_mat <- match.k(res,labels)#get admixture coefficients
 
 par(mfrow=c(1,1),
     mar=c(0,0,0,0))
@@ -118,20 +117,7 @@ make.structure.plot(admix.proportions = x[z,],
                     sort.by = 1)
 
 #Example outputs from one model#
-par(mfrow=c(2,1))
-
-#Cell distances #
-plot(res$som_model, type="dist.neighbours", main = "", palette.name = viridis)
-title("SOM neighbour distances",line=-0.1)
-
-#SOM Clusters#
-som.cols <- setNames(k.cols[max.col(q_mat)],res$cluster_assignment)#Get colors to match original SOM clusters
-som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
-
-#plot cluster
-plot(res$som_model, shape="straight", type="mapping", bgcol = som.cols[res$som_cluster], main = "", pch=19, col="red")
-add.cluster.boundaries(res$som_model, res$som_cluster,col="red");title("SOM clusters",line=-0.1)
-
+plotModel(res)
 
 #################
 #Compare to sNMF#

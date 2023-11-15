@@ -16,6 +16,8 @@ minmax <- function(x){(x-min(x))/(max(x)-min(x))}
 #colors
 k.cols <- c("#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf")
 layer.cols <- setNames(c("#603e95","#009da1","#fac22b","#d7255d"),c("alleles","space","climate","traits"))
+
+
 #############################################################
 #DNA only: #Single-layer SOM based on the allele frequencies#
 #############################################################
@@ -264,6 +266,19 @@ Trait.SOM <- function()
               cluster_assignment=cluster_assignment))
 }
 
+
+###############################
+#Generate baseline DAPC labels#
+#Needed to sync clusters/runs #
+###############################
+#get labels for different K values
+match.labels <- function(a){
+  labels <- rbind.data.frame(lapply(1:10,function(x){find.clusters(a,n.clust=x,n.pca = dim(a$tab)[1])$grp}))
+  rownames(labels) <- rownames(a$tab);colnames(labels) <- paste("K",1:10,sep='')
+  labels
+  }
+
+
 #############################
 #Summarize across K for Qmat#
 #Synchronize cluster labels #
@@ -274,11 +289,8 @@ Trait.SOM <- function()
 #but scaled to the DAPC labels as a reference
 #thx to Gideon Bradburd for the tip
 
-match.k <- function(res)
+match.k <- function(res,labels)
   {
-#get labels for different K values
-labels <- rbind.data.frame(lapply(1:10,function(x){find.clusters(a,n.clust=x,n.pca = dim(alleles)[1])$grp}))
-rownames(labels) <- rownames(alleles);colnames(labels) <- paste("K",1:10,sep='')
 
 #get clusters
 c_mat <- res$c_mat
@@ -310,6 +322,7 @@ q_mat <- t(apply(cc,1,FUN=function(x){table(factor(unlist(x),levels=1:max(all_k)
 q_mat
 }
 
+
 ########################
 ###Plotting Functions###
 ########################
@@ -318,6 +331,45 @@ plotLearning.DNA <- function(res)
 plot(res$som_model, type="changes", axes=T, 
      ylim=range(unlist(res$l_mat[,1]))*c(0.9,1.1), col="white")
 for(i in 1:n){lines(res$l_mat[,i],col=alpha(layer.cols[1],0.1))}
+}
+
+plotLearning.Space <- function(res)
+{
+  par(mar = c(5, 6, 4, 4) + 0.3)  # Leave space for z axis
+  plot(res$som_model, type="changes", axes=F, 
+       ylim=range(unlist(res$l_mat1[,1]))*c(0.9,1.1), main=NA, col="white")
+  for(i in 1:n){lines(res$l_mat1[,i],col=alpha(layer.cols[1],0.1))}
+  
+  par(new = TRUE)
+  plot(res$l_mat2[,1], type="l", col="white",axes=F, 
+       ylim=range(unlist(res$l_mat2[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
+  for(i in 1:n){lines(res$l_mat2[,i],col=alpha(layer.cols[2],0.1))}
+ 
+  axis(1);title("Training progress (steps)",line=0)
+  axis(2)
+  #axis(2,at=round(range(unlist(res$l_mat1[,1])),3)*c(0.9,1.75),las=3)
+}
+
+plotLearning.Climate <- function(res)
+{
+  par(mar = c(5, 6, 4, 4) + 0.3)  # Leave space for z axis
+  plot(res$som_model, type="changes", axes=F, 
+       ylim=range(unlist(res$l_mat1[,1]))*c(0.9,1.1), main=NA, col="white")
+  for(i in 1:n){lines(res$l_mat1[,i],col=alpha(layer.cols[1],0.1))}
+  
+  par(new = TRUE)
+  plot(res$l_mat2[,1], type="l", col="white",axes=F, 
+       ylim=range(unlist(res$l_mat2[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
+  for(i in 1:n){lines(res$l_mat2[,i],col=alpha(layer.cols[2],0.1))}
+  
+  par(new = TRUE)
+  plot(res$l_mat3[,1], type="l", col="white",axes=F, 
+       ylim=range(unlist(res$l_mat3[,1]))*c(0.9,1.1), main=NA,xlab=NA,ylab=NA,bty="n")
+  for(i in 1:n){lines(res$l_mat3[,i],col=alpha(layer.cols[3],0.1))}
+ 
+  axis(1);title("Training progress (steps)",line=0)
+  axis(2)
+  #axis(2,at=round(range(unlist(res$l_mat1[,1])),3)*c(0.9,1.75),las=3)
 }
 
 plotLearning.Traits <- function(res)
@@ -374,5 +426,31 @@ plotLayers <- function(res)
   print(colMeans(res$d_mat))
   layers <- rev(sort(sqrt(1/colMeans(res$d_mat))))
   barplot(layers,main="Layer Weights",col=layer.cols[names(layers)],ylab="Relative Weights - sqrt(1/w)")
+}
+
+
+plotModel <- function(res)
+{
+  par(mfrow=c(2,1))
+  #Cell distances
+  plot(res$som_model, type="dist.neighbours", main = "", palette.name = viridis)
+  title("SOM neighbour distances",line=0)
+  
+  #SOM cluster colors
+  run.k <- max(res$som_cluster)#What is the K for this run
+  run.labels <- as.numeric(labels[,run.k])#pull the DAPC labels that match K
+  refactor <- data.frame(row.names=rownames(labels))#Make a data frame to hold the possible relabelings
+  label.perm <- permn(1:run.k)#How many label permutations are needed?
+  for (j in 1:length(label.perm)){refactor[,j] <- res$cluster_assignment}#Fill a data frame with K repeats for relabeling
+  for(k in 1:length(label.perm)){refactor[,k] <- as.numeric(permuteLevels(factor(refactor[,k]),
+                                                                          perm=label.perm[[k]]))}#Relabel each repeat with all possible permutations of cluster labels
+  run.labels <- refactor[,which.min(apply(refactor,2,function(x){sum(abs(x-run.labels))}))]#Save closest relabeling to DAPC
+  
+  som.cols <- setNames(run.labels,res$cluster_assignment)#Get colors to match original SOM clusters
+  som.cols <- unique(som.cols[sort(names(som.cols))])#Set to refactored labels
+  
+  #plot cluster
+  plot(res$som_model, shape="straight", type="mapping", bgcol = k.cols[som.cols][res$som_cluster], main = "", pch=19, col="red")
+  add.cluster.boundaries(res$som_model, res$som_cluster,col="red");title("SOM clusters",line=0)
 }
 
