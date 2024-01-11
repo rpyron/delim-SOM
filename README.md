@@ -304,9 +304,9 @@ text(0.2,0.84,paste0("Pearson's = ",round(c.pe,2)))
 text(0.675,0.05,"b) Species Coefficients",font=2,cex=1.25)
 ```
 
-![Figure_4](https://github.com/rpyron/delim-SOM/assets/583099/7ecb77c3-eab6-40dd-846d-306b428d2de0)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/58892f78-62e3-445c-a44d-5552431f9272)
 
-Estimates from the DNA-only SOM are linear between ~30-70% ancestry but essentially binary outside of that range, as parental cluster assignment is less variable in the tails. Species coefficients from the trait-based SuperSOM are essentially binary for all individual. This is unsurprising given that even admixed populations near the hybrid zone tend to be either montane or Piedmont and have the strongly diagnostic character of 4–5 versus 6–7 larval spots in D. monticola compared to D. cheaha (Pyron et al., 2023). I do note that the sample size here is relatively small, as individual ancestry coefficients were already sharply bimodal with relatively few hybrid or admixed individuals.
+Estimates from the DNA-only SOM are linear between ~30-70% ancestry but essentially binary outside of that range, as parental cluster assignment is less variable in the tails. Species coefficients from the trait-based SuperSOM are essentially binary for all individual. This is unsurprising given that even admixed populations near the hybrid zone tend to be either montane or Piedmont and have the strongly diagnostic character of 4–5 versus 6–7 larval spots in D. monticola compared to D. cheaha (Pyron et al., 2023). I do note that the sample size here is relatively small, as individual ancestry coefficients were already sharply bimodal with relatively few hybrid or admixed individuals. One specimen with relatively high genomic ancestry is more mixed in the integrative model, due to its intermediate morphology and geographic position.
 
 # Simulations
 
