@@ -1,6 +1,8 @@
 ##########################################
 # SOM/UML SPECIES DELIMITATION - kohonen #
 ##########################################
+source("../R/kohonen_code.R")
+set.seed(1)
 
 #Load libraries and set seed
 library(adegenet); library(maps); library(viridis);library(scales)
@@ -12,7 +14,7 @@ set.seed(1)
 #Here, I test a DNA-only SOM (alleles) under various hyperparameters#
 #####################################################################
 #Load the *.str file from PEA23
-a <- read.structure("./seal_in.str",
+a <- read.structure("../data/seal_in_c90.str",
                     n.ind = 71,
                     n.loc = 7809,
                     onerowperind = FALSE,
@@ -26,11 +28,8 @@ a <- read.structure("./seal_in.str",
 a = missingno(a, type = "loci", cutoff = 0.20)
 a#trimmed to 20% missing data
 
-#Convert genind object from adegenet to allele frequencies
-struc <- makefreq(a)
-
 #Convert allele frequences to matrix
-alleles <- matrix(unlist(as.numeric(struc)), nrow=nrow(struc))
+alleles <- makefreq(a)
 
 
 #################
@@ -150,7 +149,6 @@ for (j in 1:n)
 #Plot various learning and length combinations  #
 #to evaluate impacts on final learning estimates#
 #################################################
-pdf("../../Figure_3.pdf",8,8)
 hyper.colors <- c("#ff6961","#ffb480","#f8f38d","#42d6a4","#08cad1","#59adf6","#9d94ff","#c780e8")
 plot(density(unlist(l_mat0.1_0.1[100,])),xlim=range(unlist(l_mat0.1_0.1[100,]))*c(0.9,1.1),ylim=c(0,2500),
      col=hyper.colors[1],main="Final Learning Distances",lwd=2,xlab="Relative Distance to Closest Unit")
@@ -171,6 +169,3 @@ legend(0.00675,2500,
            "alpha0.5/0.1m200",
            "alpha0.5/0.1m1000"),fill=hyper.colors)
 #Seemingly very little impact for rlen>100 and alpha>0.1
-dev.off()
-
-save.image(file="SOM_Hyperparameters.RData")

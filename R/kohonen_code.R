@@ -1,12 +1,12 @@
 ##########################################
 # SOM/UML SPECIES DELIMITATION - kohonen #
 ##########################################
+set.seed(1)
 
 #Load libraries
 library(adegenet);library(maps);library(scales)
 library(conStruct);library(poppr);library(kohonen)
-library(lsr);library(combinat);library(GroupStruct)
-library(viridis);set.seed(1)
+library(lsr);library(combinat);library(viridis)
 
 #auxiliary function to normalize input features
 #other normalizations are possible, but we will

@@ -76,7 +76,7 @@ plotK(res)
 
 #Sample Map#
 set.seed(1)
-labels <- match.labels(a)#get DAPC labels
+labels <- match.labels(alleles)#get DAPC labels
 q_mat <- match.k(res,labels)#get admixture coefficients
 
 par(mfrow=c(1,1),
@@ -132,11 +132,3 @@ c.pe <- cor(sNMF_q_mat[,1],q_mat[,1],method=c("pearson"))
 text(0.2,0.9,paste0("Spearman's = ",round(c.sp,2)))
 text(0.2,0.84,paste0("Pearson's = ",round(c.pe,2)))
 text(0.675,0.05,"b) Species Coefficients",font=2,cex=1.25)
-
-
-#############
-#Save output#
-#############
-
-save.image(file="./data/seal_Trait_SuperSOM.RData")
-

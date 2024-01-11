@@ -1,5 +1,5 @@
 ###Basic simulations for kohonen species delimitation
-source("./kohonen_code.R")
+source("../R/kohonen_code.R")
 library(simulMGF)
 set.seed(1)
 
@@ -16,30 +16,14 @@ colnames(alleles) <- paste("snp",1:5174,sep="")
 #from Desmognathus dataset     #
 ################################
 
-###SPATIAL & CLIMATIC DATA
-#read in data
-dat <- read.csv("./seal_clim.csv",row.names = "Specimen")
-xyz <- dat[,c("LONG","LAT","elevation")]
-space <- data.frame(lon=xyz$LONG,lat=xyz$LAT,elev=xyz$elev)
-space <- apply(space,2,minmax)
-climate <- apply(dat[,c(5:9)],2,minmax)#These variables were identified as most important by SDM
+#Sample data
+dat <- read.csv("../data/seal_data.csv",header=T,row.names=1)
+xyz <- dat[,2:4]
 
-###PHENOTYPIC DATA
-#linear morphometrics
-morph <- read.csv("./seal_morph.csv",row.names=1)#Read in trait data, 163 specimens from 71 sites with 17 measurements 
-morph_log <- data.frame(pop="seal",exp(morph[,2:18]))#un-log the measurements for GroupStruct
-morph_allom <- allom(morph_log,"population2")#correct for allometry using GroupStruct
-morph_mean <- aggregate(morph_allom[,-1],list(morph$pop),mean)#take mean by locality
-morph_norm <- apply(morph_mean[,-1],2,minmax)#could also use PC1-3 or similar transformation
-
-#larval spot count
-spots <- read.csv("seal_spots.csv",row.names=1)
-spot_mean <- aggregate(sqrt(spots[,1:2]),list(spots$pop),mean)
-spot_norm <- spot_mean[,-1]
-spot_norm[-which(is.na(spot_mean[,2:3])),] <- apply(na.omit(spot_mean)[,-1],2,minmax)
-
-#merge into traits
-traits <- as.matrix(cbind(morph_norm,spot_norm))
+###SPATIAL, CLIMATIC, AND TRAIT DATA
+space <- as.matrix(read.csv("../data/seal_space.csv",header=T,row.names=1))
+climate <- as.matrix(read.csv("../data/seal_climate.csv",header=T,row.names=1))
+traits <- as.matrix(read.csv("../data/seal_traits.csv",header=T,row.names=1))
 
 #########################
 ###Parameters for runs###
@@ -55,6 +39,7 @@ som_grid <- somgrid(xdim = g,
 
 n <- 100#Number of Replicates - can increase if you like
 m <- 100#Number of steps - doesn't usually matter beyond ~100
+
 
 ##########
 ##########
@@ -111,7 +96,8 @@ plotLayers(res2)
 plotK(res2)
 
 #Sample Map#
-q_mat <- match.k(res2)#get admixture coefficients
+labels <- match.labels(alleles)#get DAPC labels
+q_mat <- match.k(res2,labels)#get admixture coefficients
 
 par(mfrow=c(1,1),
     mar=c(0,0,0,0))
@@ -132,12 +118,8 @@ make.structure.plot(admix.proportions = x[z,],
                     layer.colors = k.cols, 
                     sort.by = 1)
 
-#Save Results
-save.image(file="Sim_SuperSOM.RData")
 
-
-###MPE FIGURE
-pdf("../../Figure_sim.pdf",12,8)
+###SIM FIGURE
 # res, res1, res2 K & weights/map for res2
 layout(mat = matrix(c(1,1,4,4,7,7,10,10,10,
                       1,1,4,4,7,7,10,10,10,
@@ -146,6 +128,7 @@ layout(mat = matrix(c(1,1,4,4,7,7,10,10,10,
                       3,3,6,6,9,9,12,12,12,
                       3,3,6,6,9,9,12,12,12),ncol=9,byrow=T))
 par(mar=c(2.5,4.5,2,1),mgp=c(2,0.5,0))
+
 #####RESK
 #by absolute WSS
 w_mat <- res$w_mat#Get WSS
@@ -164,8 +147,8 @@ all_k <- apply(res$c_mat,2,max) # Get the K for each run
 barplot(table(factor(all_k,levels=1:10))/n,ylab="Sampling Frequency",ylim=c(0,1),col=k.cols)
 text(3,0.9,"c)",font=2,cex=1.5)
 
-par(mar=c(2.5,4.5,2,1))
 #####RES1K
+par(mar=c(2.5,4.5,2,1))
 #by absolute WSS
 w_mat <- res1$w_mat#Get WSS
 boxplot(t(w_mat)[,-11],outline=F,notch=T,axes=F, ylab=NA,ylim=range(unlist(w_mat[,-11])),col=k.cols)
@@ -183,8 +166,8 @@ all_k <- apply(res1$c_mat,2,max) # Get the K for each run
 barplot(table(factor(all_k,levels=1:10))/n,ylab=NA,ylim=c(0,1),col=k.cols)
 text(3,0.9,"f)",font=2,cex=1.5)
 
-par(mar=c(2.5,4.5,2,1))
 #####RES2K
+par(mar=c(2.5,4.5,2,1))
 #by absolute WSS
 w_mat <- res2$w_mat#Get WSS
 boxplot(t(w_mat)[,-11],outline=F,notch=T,axes=F, ylab=NA,ylim=range(unlist(w_mat[,-11])),col=k.cols)
@@ -203,6 +186,7 @@ barplot(table(factor(all_k,levels=1:10))/n,ylab=NA,ylim=c(0,1),col=k.cols)
 text(3,0.9,"i)",font=2,cex=1.5)
 
 par(mar=c(2,4.5,2,2))
+
 #LAYERS
 plotLayers(res2);text(4,1.1,"j)",font=2,cex=1.5)
 
@@ -224,6 +208,3 @@ make.structure.plot(admix.proportions = x[z,],
                     layer.colors = k.cols, 
                     sort.by = 1)
 text(-4,-0.125,"l)",font=2,cex=1.5,xpd=T)
-
-dev.off()
-
