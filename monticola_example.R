@@ -6,7 +6,7 @@ set.seed(1)
 
 #################################################
 #Data from Pyron et al. 2023, Systematic Biology# 
-#71 genetic  and 163 morphological specimens    #
+# 71 genetic  and 163 morphological specimens.  #
 #from 71 sites across the range of D. monticola #
 #################################################
 
