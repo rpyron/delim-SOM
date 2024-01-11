@@ -310,7 +310,7 @@ Estimates from the DNA-only SOM are linear between ~30-70% ancestry but essentia
 
 # Simulations
 
-Some basic simulations to demonstrate desirable performance under a wide variety of conditions.
+Some basic simulations to demonstrate desirable performance under a wide variety of conditions. Requires the 'simulMGF' package of Sikorska et al. (2013): https://cran.r-project.org/web/packages/simulMGF/index.html.
 ```
 ###########################
 #Simulate a K=1 SNP matrix#
@@ -328,30 +328,14 @@ First, simulate a _K_=1 SNP matrix.
 #from Desmognathus dataset     #
 ################################
 
-###SPATIAL & CLIMATIC DATA
-#read in data
-dat <- read.csv("./seal_clim.csv",row.names = "Specimen")
-xyz <- dat[,c("LONG","LAT","elevation")]
-space <- data.frame(lon=xyz$LONG,lat=xyz$LAT,elev=xyz$elev)
-space <- apply(space,2,minmax)
-climate <- apply(dat[,c(5:9)],2,minmax)#These variables were identified as most important by SDM
+#Sample data
+dat <- read.csv("../data/seal_data.csv",header=T,row.names=1)
+xyz <- dat[,2:4]
 
-###PHENOTYPIC DATA
-#linear morphometrics
-morph <- read.csv("./seal_morph.csv",row.names=1)#Read in trait data, 163 specimens from 71 sites with 17 measurements 
-morph_log <- data.frame(pop="seal",exp(morph[,2:18]))#un-log the measurements for GroupStruct
-morph_allom <- allom(morph_log,"population2")#correct for allometry using GroupStruct
-morph_mean <- aggregate(morph_allom[,-1],list(morph$pop),mean)#take mean by locality
-morph_norm <- apply(morph_mean[,-1],2,minmax)#could also use PC1-3 or similar transformation
-
-#larval spot count
-spots <- read.csv("seal_spots.csv",row.names=1)
-spot_mean <- aggregate(sqrt(spots[,1:2]),list(spots$pop),mean)
-spot_norm <- spot_mean[,-1]
-spot_norm[-which(is.na(spot_mean[,2:3])),] <- apply(na.omit(spot_mean)[,-1],2,minmax)
-
-#merge into traits
-traits <- as.matrix(cbind(morph_norm,spot_norm))
+###SPATIAL, CLIMATIC, AND TRAIT DATA
+space <- as.matrix(read.csv("../data/seal_space.csv",header=T,row.names=1))
+climate <- as.matrix(read.csv("../data/seal_climate.csv",header=T,row.names=1))
+traits <- as.matrix(read.csv("../data/seal_traits.csv",header=T,row.names=1))
 ```
 Second, load the empirical space, climate, and trait layers.
 
@@ -417,6 +401,7 @@ plotLayers(res2)
 plotK(res2)
 
 #Sample Map#
+labels <- match.labels(alleles)#get DAPC labels
 q_mat <- match.k(res2)#get admixture coefficients
 
 par(mfrow=c(1,1),
@@ -471,6 +456,8 @@ Jombart, T., 2008. adegenet: a R package for the multivariate analysis of geneti
 Natita W., Wiboonsak W., Dusadee S. 2016. Appropriate Learning Rate and Neighborhood Function of Self-organizing Map (SOM) for Specific Humidity Pattern Classification over Southern Thailand. IJMO. 6:61–65.
 
 Pyron, R.A., O’Connell, K.A., Duncan, S.C., Burbrink, F.T. and Beamer, D.A., 2023. Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for Seal Salamanders (Desmognathus monticola). Systematic Biology, 72(1), pp.179-197.
+
+Sikorska, K., Lesaffre, E., Groenen, P.F. et al. GWAS on your notebook: fast semi-parallel linear and logistic regression for genome-wide association studies. BMC Bioinformatics 14, 166 (2013). https://doi.org/10.1186/1471-2105-14-166
 
 Stefanovič P., Kurasova O. 2011. Influence of Learning Rates and Neighboring Functions on Self-Organizing Maps. Advances in Self-Organizing Maps.:141–150.
 
