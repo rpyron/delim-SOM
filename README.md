@@ -154,26 +154,7 @@ climate <- as.matrix(read.csv("./data/seal_climate.csv",header=T,row.names=1))
 traits <- as.matrix(read.csv("./data/seal_traits.csv",header=T,row.names=1))
 ```
 
-Similarly, these are just the long, lat, elevation, and climate data from Pyron et al. (2023).
-
-```
-morph <- read.csv("./seal_morph.csv",row.names=1)#Read in trait data, 163 specimens from 71 sites with 17 measurements 
-morph_log <- data.frame(pop="seal",exp(morph[,2:18]))#un-log the measurements for GroupStruct
-morph_allom <- allom(morph_log,"population2")#correct for allometry using GroupStruct
-morph_mean <- aggregate(morph_allom[,-1],list(morph$pop),mean)#take mean by locality - this is a simplistic approach
-morph_norm <- apply(morph_mean[,-1],2,minmax)#could also use PC1-3 or similar transformation
-
-#larval spot count
-spots <- read.csv("seal_spots.csv",row.names=1)
-spot_mean <- aggregate(sqrt(spots[,1:2]),list(spots$pop),mean)
-spot_norm <- spot_mean[,-1]
-spot_norm[-which(is.na(spot_mean[,2:3])),] <- apply(na.omit(spot_mean)[,-1],2,minmax)
-
-#merge into traits
-traits <- as.matrix(cbind(morph_norm,spot_norm))
-```
-
-Finally, the morphological dataset from Pyron et al. (2023) trimmed to the 163 specimens from the 71 genetic localities. The log-transformed data are read in, exponentiated for analysis, assigned the same "species" of "seal," corrected for allometry using 'GroupStruct,' taking the mean by site, and min-max normalizing the resulting matrix.
+Similarly, these are just the long, lat, elevation, climate (including ecoregions and river drainages), and trait data from Pyron et al. (2023). The morphological is trimmed to the 163 specimens from the 71 genetic localities including larval spot counts, with linear traits corrected for allometry (by SVL) using 'GroupStruct' (Chan and Grismer 2022), taking the mean by site, and min-max normalizing the resulting matrix.
 
 ```
 #Size of Grid
@@ -204,7 +185,7 @@ We use Trait.SOM() to produce our estimates. We could also use DNA.SOM(), Space.
 plotLearning.Traits(res)
 ```
 
-![image](https://github.com/rpyron/delim-SOM/assets/583099/50b2dd49-b89c-4881-a710-3dd8ef5465fb)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/2d4bfddc-0048-4844-af81-54a51be17ab0)
 
 We can then plot our learning estimates across the runs. The shape of this learning curve (slow decline, then sudden plateau) is inherent in the way the algorithm learns; longer runs produce the same shape, rather than a longer plateau. The scale of each variable determines the location of its plateau; we expect each matrix to stabilize, but not necessarily to converge to the same relative distance to closest unit.
 
@@ -212,21 +193,21 @@ We can then plot our learning estimates across the runs. The shape of this learn
 plotLayers(res)
 ```
 
-![image](https://github.com/rpyron/delim-SOM/assets/583099/1ed8cea5-cc42-4902-80c2-cf639e83bd75)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/b109bd9f-8e6a-468f-8b1f-70853419fd5c)
 
-Next, we can see the layer weights. Unsurprisingly, alleles dwarf everything else, but traits are more important than climate, and both are greater than space alone.
+Next, we can see the layer weights. Unsurprisingly, alleles dwarf everything else, but climate is more important than traits, and both are greater than space alone. Note that this does not match Pyron (2023) exactly; the factor levels for the categorical variables were not being handled properly before, but are now incorporated correctly with one-hot encoding. Check this in your data!
 
 ```
 plotK(res)
 ```
 
-![image](https://github.com/rpyron/delim-SOM/assets/583099/8d00f902-2436-443f-b397-6bed47e21e9a)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/0f0e97bc-5053-4572-a001-9020f5b5ab57)
 
 Then, we can see the optimal values of _K_. In this case, only _K_=2 was sampled across the 100 replicates.
 
 ```
 set.seed(1)
-labels <- match.labels(a)#get DAPC labels
+labels <- match.labels(alleles)#get DAPC labels
 q_mat <- match.k(res,labels)#get admixture coefficients
 
 par(mfrow=c(1,1),
