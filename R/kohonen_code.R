@@ -272,12 +272,11 @@ Trait.SOM <- function()
 #Needed to sync clusters/runs #
 ###############################
 #get labels for different K values
-match.labels <- function(a){
-  labels <- rbind.data.frame(lapply(1:10,function(x){find.clusters(a,n.clust=x,n.pca = dim(a$tab)[1])$grp}))
-  rownames(labels) <- rownames(a$tab);colnames(labels) <- paste("K",1:10,sep='')
-  labels
-  }
-
+match.labels <- function(alleles)
+  {a <- alleles;a[which(is.na(a))] <- 0.5
+  labels <- rbind.data.frame(lapply(1:10,function(x){kmeans(a,x)$cluster}))
+  rownames(labels) <- rownames(alleles);colnames(labels) <- paste("K",1:10,sep='')
+  labels}
 
 #############################
 #Summarize across K for Qmat#
@@ -442,8 +441,7 @@ plotModel <- function(res)
   refactor <- data.frame(row.names=rownames(labels))#Make a data frame to hold the possible relabelings
   label.perm <- permn(1:run.k)#How many label permutations are needed?
   for (j in 1:length(label.perm)){refactor[,j] <- res$cluster_assignment}#Fill a data frame with K repeats for relabeling
-  for(k in 1:length(label.perm)){refactor[,k] <- as.numeric(permuteLevels(factor(refactor[,k]),
-                                                                          perm=label.perm[[k]]))}#Relabel each repeat with all possible permutations of cluster labels
+  for(k in 1:length(label.perm)){refactor[,k] <- as.numeric(permuteLevels(factor(refactor[,k]),perm=label.perm[[k]]))}#Relabel each repeat with all possible permutations of cluster labels
   run.labels <- refactor[,which.min(apply(refactor,2,function(x){sum(abs(x-run.labels))}))]#Save closest relabeling to DAPC
   
   som.cols <- setNames(run.labels,res$cluster_assignment)#Get colors to match original SOM clusters

@@ -1,7 +1,7 @@
 ##########################################
 # SOM/UML SPECIES DELIMITATION - kohonen #
 ##########################################
-source("./kohonen_code.R")
+source("./R/kohonen_code.R")
 set.seed(1)
 
 #################################################
@@ -12,7 +12,7 @@ set.seed(1)
 
 ###MOLECULAR DATA
 #Load the *.str file from PEA23
-a <- read.structure("./seal_in.str",
+a <- read.structure("./data/seal_in_c90.str",
                     n.ind = 71,
                     n.loc = 7809,
                     onerowperind = FALSE,
@@ -29,30 +29,14 @@ a#trimmed to 20% missing data
 #Convert allele frequences to matrix
 alleles <- makefreq(a)
 
-###SPATIAL & CLIMATIC DATA
-#read in data
-dat <- read.csv("./seal_clim.csv",row.names = "Specimen")
-xyz <- dat[,c("LONG","LAT","elevation")]
-space <- data.frame(lon=xyz$LONG,lat=xyz$LAT,elev=xyz$elev)
-space <- apply(space,2,minmax)
-climate <- apply(dat[,c(5:9)],2,minmax)#These variables were identified as most important
+#Sample data
+dat <- read.csv("./data/seal_data.csv",header=T,row.names=1)
+xyz <- dat[,2:4]
 
-###PHENOTYPIC DATA
-#linear morphometrics
-morph <- read.csv("./seal_morph.csv",row.names=1)#Read in trait data, 163 specimens from 71 sites with 17 measurements 
-morph_log <- data.frame(pop="seal",exp(morph[,2:18]))#un-log the measurements for GroupStruct
-morph_allom <- allom(morph_log,"population2")#correct for allometry using GroupStruct
-morph_mean <- aggregate(morph_allom[,-1],list(morph$pop),mean)#take mean by locality - this is a simplistic approach
-morph_norm <- apply(morph_mean[,-1],2,minmax)#could also use PC1-3 or similar transformation
-
-#larval spot count
-spots <- read.csv("seal_spots.csv",row.names=1)
-spot_mean <- aggregate(sqrt(spots[,1:2]),list(spots$pop),mean)
-spot_norm <- spot_mean[,-1]
-spot_norm[-which(is.na(spot_mean[,2:3])),] <- apply(na.omit(spot_mean)[,-1],2,minmax)
-
-#merge into traits
-traits <- as.matrix(cbind(morph_norm,spot_norm))
+###SPATIAL, CLIMATIC, AND TRAIT DATA
+space <- as.matrix(read.csv("./data/seal_space.csv",header=T,row.names=1))
+climate <- as.matrix(read.csv("./data/seal_climate.csv",header=T,row.names=1))
+traits <- as.matrix(read.csv("./data/seal_traits.csv",header=T,row.names=1))
 
 
 ##################
@@ -119,13 +103,14 @@ make.structure.plot(admix.proportions = x[z,],
 #Example outputs from one model#
 plotModel(res)
 
+
 #################
 #Compare to sNMF#
 #################
 res1 <- DNA.SOM()#Make a DNA SOM for direct comparisons of admixture
-q_mat.DNA <- match.k(res1)#get admixture coefficients
+q_mat.DNA <- match.k(res1,labels)#get admixture coefficients
 
-sNMF_q_mat <- read.csv("seal_q.mat.csv",row.names=1)#Admixture estimates from sNMF
+sNMF_q_mat <- read.csv("./data/seal_q.mat.csv",row.names=1)#Admixture estimates from sNMF
 
 #Compare sNMF and DNA SOM admixture estimates
 par(mfrow=c(2,1),mar=c(1,4.5,0.5,2),mgp=c(2,0.5,0))
@@ -153,5 +138,5 @@ text(0.675,0.05,"b) Species Coefficients",font=2,cex=1.25)
 #Save output#
 #############
 
-save.image(file="Trait_SuperSOM.RData")
+save.image(file="./data/seal_Trait_SuperSOM.RData")
 
