@@ -1,7 +1,5 @@
 # delim-SOM
-Using multi-layer Kohonen Self-Organizing Maps ("SuperSOMs") to delimit species and produce integrative taxonomies using Unsupervised Machine Learning (UML). This is accomplished primarily using the R package 'kohonen' (Wehrens and Buydens 2007): https://cran.r-project.org/web/packages/kohonen/index.html.
-
-This repository expands the use of Kohonen maps as described in Pyron et al. (2023) and Pyron (2023). It uses multi-layer Self-Organizing Maps ("SuperSOMs") in the R package 'kohonen' to delimit species based on allelic, spatial, climatic, and phenotypic data.
+This package uses multi-layer Kohonen Self-Organizing Maps ("SuperSOMs") to delimit species and produce integrative taxonomies using Unsupervised Machine Learning (UML). This repository expands the use of single-layer SOMs as described in Pyron et al. (2023) and Pyron (2023). It relies on the R package 'kohonen' (Wehrens and Buydens 2007) to delimit species based on allelic, spatial, climatic, and phenotypic data.
 
 The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore mirror a 'STRUCTURE'-type analysis including admixture estimates, but represent an unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for integative taxonomy. If only allelic data are used with a 'DNA.SOM()' model, then the assignment probabilities approximate individual ancestry coefficients. If multiple layers are used, we treat them as "species coefficients," which might be useful for testing a variety of ecological and evolutionary hypotheses.
 
@@ -10,13 +8,13 @@ The requisite functions are in the 'kohonen_code.R' file, which loads the variou
 ```
 library(adegenet);library(maps);library(scales)
 library(conStruct);library(poppr);library(kohonen)
-library(lsr);library(combinat);library(GroupStruct)
-library(viridis);set.seed(1)
+library(lsr);library(combinat);library(viridis)
+set.seed(1)
 ```
 
 Some of these may have to be installed manually or from various non-CRAN sources.
 
-Overall, the method is extremely flexible and can take almost any data type or format, as long as it is introduced as a matrix in R. The matrices must be added in order, named alleles, space, climate, and traits. Adding each of those matrices in sequence allows one to run SOMs based on DNA, DNA + xyz, DNA + xyz + environment, and DNA + xyz + environment + phenotypes. The primary requirement is to have individuals in rows in the same order in each matrix, and variables in columns, with <90% missing data and the same set of individuals in each matrix. I also min-max normalize the space, climate, and traits matrices to be on the same scale as the allele frequencies. You could modify the code to allow >90% missing data (maxNA.frac) if necessary, but the effects are unknown.
+Overall, the method is extremely flexible and can take almost any data type or format, as long as it is introduced as a matrix in R. The matrices must be added in order, named alleles, space, climate, and traits. Adding each of those matrices in sequence allows one to run SOMs based on DNA, DNA + xyz, DNA + xyz + environment, and DNA + xyz + environment + phenotypes. The primary requirement is to have individuals in rows in the same order in each matrix, and variables in columns, with <90% missing data and the same set of individuals in each matrix. I also min-max normalize the space, climate, and traits matrices to be on the same scale as the allele frequencies. Factors should be one-hot encoded. You could modify the code to allow different missing data percentages (maxNA.frac) if necessary, but the effects are unknown.
 
 # Run this on your data
 
@@ -29,19 +27,7 @@ climate <- matrix()#Relevant environmental data
 traits <- matrix()#Phenotypic data (e.g., morphometrics, behavior)
 ```
 
-You will also want baseline clustering estimates from the molecular data to guide cluster label synchronizing later on using the CLUMPP-like algorithm (Jakobson and Rosenberg 2007). To achieve this using the match.k() function (see below), you will need an object called 'a' with the specimens in rows (with rownames set to specimen IDs) and numerical data (e.g., alleles) in the columns. The 'a' object will be analyzed by the find.clusters() function from 'adegenet' (Jombart et al. 2008), described here: https://www.rdocumentation.org/packages/adegenet/versions/2.1.10/topics/find.clusters
-
-"find.clusters is a generic function with methods for the following types of objects:
-
-data.frame (only numeric data)
-
-matrix (only numeric data)
-
-genind objects (genetic markers)
-
-genlight objects (genome-wide SNPs)"
-
-A simple way to do this is just to create a genind object called 'a' and use that for 'alleles' such as:
+You will also want baseline clustering estimates from the molecular data to guide cluster label synchronizing later on using the CLUMPP-like algorithm (Jakobson and Rosenberg 2007). This is achieved using the match.k() function (see below) on the 'alleles' object you've created. A simple way to do this is just to create a genind object called 'a' and use that for 'alleles' such as:
 
 ```
 a <- df2genind(X)#Where X is a SNP matrix imported into R as a data.frame
