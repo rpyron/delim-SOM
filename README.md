@@ -122,10 +122,10 @@ The phenotype variables are 17 linear morphometric measurements to 0.01mm precis
 
 # Running the Code
 
-With all of the files (kohonen_code.R, monticola_models.R, seal_in.str, seal_clim.csv, and seal_morph.csv) in the same directory, we can simply execute monticola_models.R. The main pieces are as follows.
+With all of the code and data files in the package directories ('R' and 'data'), we can simply execute monticola_example.R from the base directory. The main pieces are as follows.
 
 ```
-a <- read.structure("./seal_in.str",
+a <- read.structure("./data/seal_in_c90.str",
                     n.ind = 71,
                     n.loc = 7809,
                     onerowperind = FALSE,
@@ -146,11 +146,12 @@ alleles <- makefreq(a)
 The alleles matrix can be in nearly any format, with individuals in rows and allele frequencies or counts in columns. Here, I am simply loading in the STRUCTURE-formatted file from ipyrad as a genind object in 'adegenet' (Jombart 2008: https://adegenet.r-forge.r-project.org/), trimming it to 20% missing data, converting the counts to frequencies, and converting it to a matrix.
 
 ```
-dat <- read.csv("./seal_clim.csv",row.names = "Specimen")
-xyz <- dat[,c("LONG","LAT","elevation")]
-space <- data.frame(lon=xyz$LONG,lat=xyz$LAT,elev=xyz$elev)
-space <- apply(space,2,minmax)
-climate <- apply(dat[,c(5:9)],2,minmax)#These variables were identified as most important
+dat <- read.csv("./data/seal_data.csv",header=T,row.names=1)
+xyz <- dat[,2:4]
+
+space <- as.matrix(read.csv("./data/seal_space.csv",header=T,row.names=1))
+climate <- as.matrix(read.csv("./data/seal_climate.csv",header=T,row.names=1))
+traits <- as.matrix(read.csv("./data/seal_traits.csv",header=T,row.names=1))
 ```
 
 Similarly, these are just the long, lat, elevation, and climate data from Pyron et al. (2023).
