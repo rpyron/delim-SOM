@@ -14,11 +14,11 @@ set.seed(1)
 
 Some of these may have to be installed manually or from various non-CRAN sources.
 
-Overall, the method is extremely flexible and can take almost any data type or format, as long as it is introduced as a matrix in R. The matrices must be added in order, named alleles, space, climate, and traits. Adding each of those matrices in sequence allows one to run SOMs based on DNA, DNA + xyz, DNA + xyz + environment, and DNA + xyz + environment + phenotypes. The primary requirement is to have individuals in rows in the same order in each matrix, and variables in columns, with <90% missing data and the same set of individuals in each matrix. I also min-max normalize the space, climate, and traits matrices to be on the same scale as the allele frequencies. Factors should be one-hot encoded. You could modify the code to allow different missing data percentages (maxNA.frac) if necessary, but the effects are unknown.
+Overall, the method is extremely flexible and can take almost any data type or format, as long as it is introduced as a matrix in R. The matrices must be added in order, named alleles, space, climate, and traits. Adding each of those matrices in sequence allows one to run SOMs based on DNA, DNA + xyz, DNA + xyz + environment, and DNA + xyz + environment + phenotypes. The primary requirement is to have individuals in rows in the same order in each matrix, and variables in columns, with <90% missing data and the same set of individuals in each matrix. I also min-max normalize the space, climate, and traits matrices to be on the same scale as the allele frequencies. You could modify the code to allow different missing data percentages (maxNA.frac) if necessary, but the effects are unknown.
 
 # Run this on your data
 
-SuperSOMs require (up to) four data layers as input matrices, called 'alleles,' 'space,' 'climate,' and 'traits.' These should each have the same number of rows (individuals, specimens, or populations), and any number of columns (however many SNPs or other variables you have). I suggest using allele frequencies for 'alleles,' and normalizing the other matrices to [0,1] for the same scale. This would include one-hot encoding factors.
+SuperSOMs require (up to) four data layers as input matrices, called 'alleles,' 'space,' 'climate,' and 'traits.' These should each have the same number of rows (individuals, specimens, or populations), and any number of columns (however many SNPs or other variables you have). I suggest using allele frequencies for 'alleles,' and normalizing the other matrices to [0,1] to the same scale. This would include one-hot encoding factors.
 
 ```
 alleles <- matrix()#Molecular data as allele frequencies per locus
@@ -84,7 +84,7 @@ Review a map, where _'xyz'_ is your long/lat/elevation matrix:
 
 ```
 #Get species coefficients#
-labels <- match.labels(a)
+labels <- match.labels(alleles)
 q_mat <- match.k(res,labels)
 
 #Sample Map#
