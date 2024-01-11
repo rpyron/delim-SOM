@@ -223,7 +223,7 @@ legend(-88,38,legend=c(expression(italic("D. cheaha")),
 map.scale(-81.2,31.1)
 ```
 
-![image](https://github.com/rpyron/delim-SOM/assets/583099/8f020274-4b86-4043-8d6e-e1f07ee966c1)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/fbcbfaad-ee9b-4ba4-b66e-e6037d4ace16)
 
 We can also produce a basic sample map. The match.k() function uses a CLUMPP-like algorithm to synchronize the cluster labels to the DAPC results from earlier.
 
@@ -237,7 +237,7 @@ make.structure.plot(admix.proportions = x[z,],
                     sort.by = 1)
 ```
 
-![image](https://github.com/rpyron/delim-SOM/assets/583099/d9d472b1-2f9d-4cbe-914b-bb897cda5faf)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/9fca61b7-412e-49ac-818b-f778136b9cd1)
 
 A STRUCTURE-type plot, organized hierarchically by dominant cluster membership. Given the extensive differences between these two species in terms of genetics, geography, ecology, and phenotype, the species coefficients are sharply bimodal comapred to the individual ancestry coefficients estimated from the SNP matrix alone (see Pyron et al. 2023).
 
@@ -246,13 +246,13 @@ A STRUCTURE-type plot, organized hierarchically by dominant cluster membership. 
 plotModel(res)
 ```
 
-![image](https://github.com/rpyron/delim-SOM/assets/583099/063cba90-ab22-4b6c-9d61-acf75a40b665)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/98378184-0158-4238-a58d-5676766d1448)
 
 An example SOM plot looking at the results from one model in terms of sample assignment to cells, cell distances, and boundaries between cell clusters.
 
 ![Pyron_UML_Graphical_Abstract](https://github.com/rpyron/delim-SOM/assets/583099/f1a64348-832e-49f9-bf28-b6c81bf7a30f)
 
-A nice summary figure for publication!
+A nice summary figure for publication (from Pyron 2023)!
 
 ```
 save.image(file="Trait_SuperSOM.RData")
