@@ -75,7 +75,7 @@ plotLayers(res)
 plotK(res)
 
 #Sample Map#
-set.seed(1)
+set.seed(2)
 labels <- match.labels(alleles)#get DAPC labels
 q_mat <- match.k(res,labels)#get admixture coefficients
 
