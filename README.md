@@ -429,7 +429,7 @@ make.structure.plot(admix.proportions = x[z,],
 
 Finally, reduce impact of null alleles to ~0 to demonstrate inclusion of signal from the three other empirical layers.
 
-![Figure_5](https://github.com/rpyron/delim-SOM/assets/583099/420212e0-185b-4e0e-a5bf-b1cab55802e0)
+![image](https://github.com/rpyron/delim-SOM/assets/583099/047234fc-250c-4e5e-8b8e-96262703bd1f)
 
 The method strongly supports _K_=1 when little genetic structure is present, even when space, climate, and traits vary (first and second columns). In contrast, when the signal of the alleles layer is reduced to ~0, the impact of the other three layers is reflected in the output, still estimating a roughly binary division corresponding to D. cheaha in the south and D. monticola in the north while sampling multiple possible ancestries (third and fourth columns). These simulations reveal that the SOM/SuperSOM approach can detect _K_=1, does not over-split, reflects contributions from all layers with signal, and does not allow layer size (e.g., large-scale genetic matrices) to overwhelm other datasets. Note that these results are slightly different from Pyron (2023) as the factor levels are now handled more appropriately with one-hot encoding.
 
