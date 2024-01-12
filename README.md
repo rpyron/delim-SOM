@@ -88,7 +88,6 @@ Review a map, where _'xyz'_ is your long/lat/elevation matrix:
 
 ```
 #Get species coefficients#
-labels <- match.labels(alleles)
 q_mat <- match.k(res,labels)
 
 #Sample Map#
