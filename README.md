@@ -255,6 +255,15 @@ plotModel(res)
 
 An example SOM plot looking at the results from one model in terms of sample assignment to cells, cell distances, and boundaries between cell clusters.
 
+```
+#Variable Importance
+```
+
+![image](https://github.com/rpyron/delim-SOM/assets/583099/d2570754-e8c6-4f1b-b73e-596e8f432db0)
+
+**New feature!** Variable importance estimates (codebook vectors/neuron weights on the interval [0,1]) for each layer, allowing you to identify the features with the greatest impact on cell assignment - i.e., delimitation clustering. This takes the median estimate across cells for each input variable from the final model, and returns a named list thereof. The plot shows the features with varImp > 0.001 and is typically dominated by alleles, which are therefore not named individually but only counted instead. Individual patterns in allele importance could be broken down by extracting the names of important loci from the list. Similar functions are available as 'DNA.SOM.varImp(),' 'Space.SOM.varImp(),' and 'Climate.SOM.varImp().'
+
+
 ![Pyron_UML_Graphical_Abstract](https://github.com/rpyron/delim-SOM/assets/583099/f1a64348-832e-49f9-bf28-b6c81bf7a30f)
 
 A nice summary figure for publication (from Pyron 2023)!
