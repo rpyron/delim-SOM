@@ -1,7 +1,7 @@
 # delim-SOM
 This package uses multi-layer Kohonen Self-Organizing Maps ("SuperSOMs") to delimit species and produce integrative taxonomies using Unsupervised Machine Learning (UML) as decribed in Pyron (2023). This repository expands the use of single-layer SOMs as described in Pyron et al. (2023). It relies on the R package 'kohonen' (Wehrens and Buydens 2007) to delimit species based on allelic, spatial, climatic, and phenotypic data.
 
-The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore mirror a 'STRUCTURE'-type analysis including admixture estimates, but represent an unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for integative taxonomy. If only allelic data are used with a 'DNA.SOM()' model, then the assignment probabilities approximate individual ancestry coefficients. If multiple layers are used, we treat them as "species coefficients," which might be useful for testing a variety of ecological and evolutionary hypotheses. The available functions are 'DNA.SOM(),' 'Space.SOM(),' 'Climate.SOM(),' and 'Trait.SOM().'
+The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore mirror a 'STRUCTURE'-type analysis including admixture estimates, but represent an unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for integative taxonomy. If only allelic data are used with a 'DNA.SOM()' model, then the assignment probabilities approximate individual ancestry coefficients. If multiple layers are used, we treat them as "species coefficients," which might be useful for testing a variety of ecological and evolutionary hypotheses.
 
 The requisite functions are in the './R/kohonen_code.R' file, which loads the various dependencies:
 
@@ -21,7 +21,7 @@ Overall, the method is extremely flexible and can take almost any data type or f
 
 # Run this on your data
 
-SuperSOMs require (up to) four data layers as input matrices, called 'alleles,' 'space,' 'climate,' and 'traits.' These should each have the same number of rows (individuals, specimens, or populations), and any number of columns (however many SNPs or other variables you have). I suggest using allele frequencies for 'alleles,' and normalizing the other matrices to [0,1] to the same scale. This would include one-hot encoding factors.
+SuperSOMs require (up to) four data layers as input matrices, called 'alleles,' 'space,' 'climate,' and 'traits.' These should each have the same number of rows (individuals, specimens, or populations), and any number of columns (however many SNPs or other variables you have). I suggest using allele frequencies for 'alleles,' and normalizing the other matrices to [0,1] to the same scale. This would include one-hot encoding factors. The available functions are 'DNA.SOM(),' 'Space.SOM(),' 'Climate.SOM(),' and 'Trait.SOM().'
 
 ```
 alleles <- matrix()#Molecular data as allele frequencies per locus
