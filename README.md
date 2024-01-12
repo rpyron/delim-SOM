@@ -257,6 +257,7 @@ An example SOM plot looking at the results from one model in terms of sample ass
 
 ```
 #Variable Importance
+Trait.SOM.varImp(res)
 ```
 
 ![image](https://github.com/rpyron/delim-SOM/assets/583099/d2570754-e8c6-4f1b-b73e-596e8f432db0)
