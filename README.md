@@ -3,9 +3,12 @@ This package uses multi-layer Kohonen Self-Organizing Maps ("SuperSOMs") to deli
 
 The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore mirror a 'STRUCTURE'-type analysis including admixture estimates, but represent an unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for integative taxonomy. If only allelic data are used with a 'DNA.SOM()' model, then the assignment probabilities approximate individual ancestry coefficients. If multiple layers are used, we treat them as "species coefficients," which might be useful for testing a variety of ecological and evolutionary hypotheses. The available functions are 'DNA.SOM(),' 'Space.SOM(),' 'Climate.SOM(),' and 'Trait.SOM().'
 
-The requisite functions are in the 'kohonen_code.R' file, which loads the various dependencies:
+The requisite functions are in the './R/kohonen_code.R' file, which loads the various dependencies:
 
 ```
+source("./R/kohonen_code.R")
+set.seed(1)
+
 library(adegenet);library(maps);library(scales)
 library(conStruct);library(poppr);library(kohonen)
 library(lsr);library(combinat);library(viridis)
