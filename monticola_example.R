@@ -103,6 +103,9 @@ make.structure.plot(admix.proportions = x[z,],
 #Example outputs from one model#
 plotModel(res)
 
+#Variable Importance
+Trait.SOM.varImp(res)
+
 
 #################
 #Compare to sNMF#
