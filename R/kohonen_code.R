@@ -278,6 +278,7 @@ match.labels <- function(alleles)
   rownames(labels) <- rownames(alleles);colnames(labels) <- paste("K",1:10,sep='')
   labels}
 
+
 #############################
 #Summarize across K for Qmat#
 #Synchronize cluster labels #
@@ -289,8 +290,7 @@ match.labels <- function(alleles)
 #thx to Gideon Bradburd for the tip
 
 match.k <- function(res,labels)
-  {
-
+{
 #get clusters
 c_mat <- res$c_mat
 all_k <- apply(c_mat,2,max) # Get the K for each run
@@ -322,14 +322,133 @@ q_mat
 }
 
 
+##################################
+#Extract Variable Importance from#
+#Codebook Vectors/Neuron Weights #
+##################################
+Trait.SOM.varImp <- function(res)
+{
+    codes <- res$som_model$codes
+    m.codes <- lapply(codes,function(x){apply(x,2,median)})
+    names(m.codes) <- c("alleles.varImp","space.varImp","climate.varImp","traits.varImp")
+    
+    ###Plot
+    par(lty=0,mar=c(0,0,0,0))
+    layout(matrix(c(1,2,4,1,3,5),ncol=2),heights=c(1,10,10,10,10))
+    plot.new()
+    
+    ##Title
+    text(0.5,0.25,"Variable Importance",cex=2,font=2)
+    
+    ##Plots
+    par(mar=c(2.5,4.5,0.5,1))
+    barplot(sort(m.codes[[1]][which(m.codes[[1]]>0.001)]),horiz=T,las=1,col=layer.cols[1],xlim=c(0,1),yaxt='n')
+    title(ylab=paste(length(m.codes[[1]][which(m.codes[[1]]>0.001)]),"Loci",sep=" "),cex.lab=2,line=0.5)
+    text(0.8,0.05*par("usr")[4],"Alleles",font=2,cex=2)
+    
+    barplot(sort(m.codes[[2]][which(m.codes[[2]]>0.001)]),horiz=T,las=1,col=layer.cols[2],xlim=c(0,1))
+    text(0.8,0.05*par("usr")[4],"Space",font=2,cex=2)
+    
+    barplot(sort(m.codes[[3]][which(m.codes[[3]]>0.001)]),horiz=T,las=1,col=layer.cols[3],xlim=c(0,1))
+    text(0.8,0.05*par("usr")[4],"Climate",font=2,cex=2)
+    
+    barplot(sort(m.codes[[4]][which(m.codes[[4]]>0.001)]),horiz=T,las=1,col=layer.cols[4],xlim=c(0,1))
+    text(0.8,0.05*par("usr")[4],"Traits",font=2,cex=2)
+    
+    #Return varImp
+    m.codes
+}
+
+Climate.SOM.varImp <- function(res)
+{
+    codes <- res$som_model$codes
+    m.codes <- lapply(codes,function(x){apply(x,2,median)})
+    names(m.codes) <- c("alleles.varImp","space.varImp","climate.varImp")
+    
+    ###Plot
+    par(lty=0,mar=c(0,0,0,0))
+    layout(matrix(c(1,2,3,4),ncol=1),heights=c(1,10,10,10))
+    plot.new()
+    
+    ##Title
+    text(0.5,0.5,"Variable Importance",cex=2,font=2)
+    
+    ##Plots
+    par(mar=c(2.5,8.5,0.5,4))
+    barplot(sort(m.codes[[1]][which(m.codes[[1]]>0.001)]),horiz=T,las=1,col=layer.cols[1],xlim=c(0,1),yaxt='n')
+    title(ylab=paste(length(m.codes[[1]][which(m.codes[[1]]>0.001)]),"Loci",sep=" "),cex.lab=2,line=0.5)
+    text(0.8,0.05*par("usr")[4],"Alleles",font=2,cex=2)
+    
+    barplot(sort(m.codes[[2]][which(m.codes[[2]]>0.001)]),horiz=T,las=1,col=layer.cols[2],xlim=c(0,1))
+    text(0.8,0.05*par("usr")[4],"Space",font=2,cex=2)
+    
+    barplot(sort(m.codes[[3]][which(m.codes[[3]]>0.001)]),horiz=T,las=1,col=layer.cols[3],xlim=c(0,1))
+    text(0.8,0.05*par("usr")[4],"Climate",font=2,cex=2)
+    
+    #Return varImp
+    m.codes
+}
+
+Space.SOM.varImp <- function(res)
+{
+    codes <- res$som_model$codes
+    m.codes <- lapply(codes,function(x){apply(x,2,median)})
+    names(m.codes) <- c("alleles.varImp","space.varImp")
+    
+    ###Plot
+    par(lty=0,mar=c(0,0,0,0))
+    layout(matrix(c(1,2,1,3),ncol=2),heights=c(2,8))
+    plot.new()
+    
+    ##Title
+    text(0.5,0.5,"Variable Importance",cex=2,font=2)
+    
+    ##Plots
+    par(mar=c(4.5,8.5,0.5,4))
+    barplot(sort(m.codes[[1]][which(m.codes[[1]]>0.001)]),horiz=T,las=1,col=layer.cols[1],xlim=c(0,1),yaxt='n')
+    title(ylab=paste(length(m.codes[[1]][which(m.codes[[1]]>0.001)]),"Loci",sep=" "),cex.lab=2,line=0.5)
+    text(0.8,0.05*par("usr")[4],"Alleles",font=2,cex=2)
+    
+    barplot(sort(m.codes[[2]][which(m.codes[[2]]>0.001)]),horiz=T,las=1,col=layer.cols[2],xlim=c(0,1))
+    text(0.8,0.05*par("usr")[4],"Space",font=2,cex=2)
+    
+    #Return varImp
+    m.codes
+}
+
+DNA.SOM.varImp <- function(res)
+{
+    codes <- list(res$som_model$codes)
+    m.codes <- lapply(codes,function(x){apply(x,2,median)})
+    names(m.codes) <- c("alleles.varImp")
+    
+    ###Plot
+    par(lty=0,mar=c(0,0,0,0))
+    layout(matrix(c(1,2),ncol=1),heights=c(2,8))
+    plot.new()
+    
+    ##Title
+    text(0.5,0.5,"Variable Importance",cex=2,font=2)
+    
+    ##Plots
+    par(mar=c(4.5,8.5,0.5,4))
+    barplot(sort(m.codes[[1]][which(m.codes[[1]]>0.001)]),horiz=T,las=1,col=layer.cols[1],xlim=c(0,1),yaxt='n')
+    title(ylab=paste(length(m.codes[[1]][which(m.codes[[1]]>0.001)]),"Loci",sep=" "),cex.lab=2,line=0.5)
+    text(0.8,0.05*par("usr")[4],"Alleles",font=2,cex=2)
+    
+    #Return varImp
+    m.codes
+}
+
+
 ########################
 ###Plotting Functions###
 ########################
 plotLearning.DNA <- function(res)
 {
-plot(res$som_model, type="changes", axes=T, 
-     ylim=range(unlist(res$l_mat[,1]))*c(0.9,1.1), col="white")
-for(i in 1:n){lines(res$l_mat[,i],col=alpha(layer.cols[1],0.1))}
+  plot(res$som_model, type="changes", axes=T, 
+       ylim=range(unlist(res$l_mat[,1]))*c(0.9,1.1), col="white")
+  for(i in 1:n){lines(res$l_mat[,i],col=alpha(layer.cols[1],0.1))}
 }
 
 plotLearning.Space <- function(res)
@@ -398,7 +517,6 @@ plotLearning.Traits <- function(res)
   #axis(2,at=round(range(unlist(res$l_mat1[,1])),3)*c(0.9,1.75),las=3)
 }
 
-
 plotK <- function(res)
 {
   w_mat <- res$w_mat#Get BIC
@@ -419,14 +537,12 @@ plotK <- function(res)
   barplot(table(factor(all_k,levels=1:10))/n,ylab="Sampling Frequency",ylim=c(0,1),col=k.cols)
 }
 
-
 plotLayers <- function(res)
 {
   print(colMeans(res$d_mat))
   layers <- rev(sort(sqrt(1/colMeans(res$d_mat))))
   barplot(layers,main="Layer Weights",col=layer.cols[names(layers)],ylab="Relative Weights - sqrt(1/w)")
 }
-
 
 plotModel <- function(res)
 {
@@ -451,4 +567,3 @@ plotModel <- function(res)
   plot(res$som_model, shape="straight", type="mapping", bgcol = k.cols[som.cols][res$som_cluster], main = "", pch=19, col="red")
   add.cluster.boundaries(res$som_model, res$som_cluster,col="red");title("SOM clusters",line=0)
 }
-
