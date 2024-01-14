@@ -102,13 +102,19 @@ make.admix.pie.plot(q_mat,xy,layer.colors = k.cols,radii=2.5,add = T)
 map.scale()
 ```
 
-And a STRUCTURE-type barplot:
+A STRUCTURE-type barplot:
 ```
 make.structure.plot(admix.proportions = q_mat, 
                     sample.names = rownames(q_mat), 
                     mar = c(8,4,2,2), 
                     layer.colors = k.cols, 
                     sort.by = 1)
+```
+
+And the variable importance across layers:
+
+```
+Trait.SOM.varImp(res)
 ```
 
 # Example: _Desmognathus monticola_, the Seal Salamander
