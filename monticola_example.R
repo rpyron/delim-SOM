@@ -11,7 +11,7 @@ set.seed(1)
 #################################################
 
 ###MOLECULAR DATA
-#Load the *.str file from PEA23
+#Load the *.str file from Pyron et al. 2023
 a <- read.structure("./data/seal_in_c90.str",
                     n.ind = 71,
                     n.loc = 7809,
