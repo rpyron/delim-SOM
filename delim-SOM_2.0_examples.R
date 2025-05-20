@@ -301,3 +301,192 @@ plot.Map.SOM(SOM_monticola71, data.frame(Individual=monticola71data$Sample,
                                          Latitude=monticola71data$Lat,
                                          Longitude=monticola71data$Long))
 plot.Variable.Importance.SOM(SOM_monticola71)
+
+## pascagoula22 - original GBS data from Pyron et al. 2022 with updated climatic variables
+# Read in sample data
+pascagoula22data <- read.csv("./data/pascagoula22/pascagoula22.csv",
+                            row.names=1,header=T,colClasses = c(huc2 = "character",
+                                                                huc4 = "character",
+                                                                huc6 = "character",
+                                                                huc8 = "character",
+                                                                huc10 = "character",
+                                                                huc12 = "character"))
+pascagoula22data <- pascagoula22data[,-which(colnames(pascagoula22data)=="huc2")]# huc2 is invariant
+
+# Read in VCF
+pascagoula22vcf <- read.vcfR("./data/pascagoula22/pascagoula22.vcf.gz")
+
+# Convert to genind
+genind_obj <- vcfR2genind(pascagoula22vcf);genind_obj
+
+# Filter
+genind_obj <- genind_obj[loc=which(genind_obj$loc.n.all==2),drop=TRUE]           # biallelic
+genind_obj <- genind_obj[loc=-which(minorAllele(genind_obj)<1/nInd(genind_obj))] # singletons
+genind_obj = missingno(genind_obj, type = "loci", cutoff = 0.20)                 # loci
+genind_obj = missingno(genind_obj, type = "geno", cutoff = 0.60)                 # individuals
+genind_obj
+
+# Get allele frequency matrix
+pascagoula22alleles <- makefreq(genind_obj, missing = NA)  # Or missing = 0/1 depending on how you want to treat NAs
+
+# Rename and reorder alleles
+rownames(pascagoula22alleles) <- pascagoula22data$Sample[match(rownames(pascagoula22alleles),rownames(pascagoula22data))]
+pascagoula22alleles <- pascagoula22alleles[pascagoula22data$Sample,]
+
+# Separate layers
+  #Space
+  vars <- c("Lat", "Long", "Elev", "lvl4", "huc4", "huc6", "huc8", "huc10", "huc12")  # Select the columns
+  factor_vars <- c("lvl4", "huc4", "huc6", "huc8", "huc10", "huc12")  # One-hot encode the factor variables (lvl4 and all huc*)
+  pascagoula22data[factor_vars] <- lapply(pascagoula22data[factor_vars], factor)  # Convert to factors (if not already)
+  oh_encoded <- model.matrix(~ . - 1, data = pascagoula22data[factor_vars])  # Use model.matrix to one-hot encode (removes intercept column)
+  numeric_data <- pascagoula22data[, c("Lat", "Long", "Elev")]  # Combine with numeric spatial data
+  pascagoula22space <- cbind(numeric_data, oh_encoded) # Combine variables
+  rownames(pascagoula22space) <- pascagoula22data$Sample  # Set row names
+  pascagoula22space <- as.matrix(pascagoula22space)  # Optional: convert to matrix if needed (e.g., for clustering)
+  
+  #Climate
+  climate_vars <- grep("^(wc|current)", names(pascagoula22data), value = TRUE)  # Select only columns starting with "wc" or "current"
+  pascagoula22climate <- as.matrix(pascagoula22data[, climate_vars])  # Subset and convert to matrix
+  rownames(pascagoula22climate) <- pascagoula22data$Sample  # Set row names
+  
+  #Traits
+  trait_names <- c("SVL", "TL", "AG", "CW", "FL", "HL", "SG", "TW", "TO", "FI", "HW", "ED", "IN", "ES", "ON", "IO", "IC")   # Step 1: Subset the traits from the data
+  trait_data <- pascagoula22data[, trait_names] # Extract the variables
+  log_traits <- log(trait_data)  # Step 2: Log-transform all traits
+  SVL <- log_traits[, "SVL"]  # Step 3: Extract SVL and residualize all others
+  residuals_mat <- sapply(trait_names[-1], function(trait) {resid(lm(log_traits[, trait] ~ SVL))})  # Regress each trait on SVL and store residuals
+  rownames(residuals_mat) <- pascagoula22data$Sample  # Step 4: Set row and column names
+  pascagoula22traits <- cbind(SVL = SVL, residuals_mat)  # Step 5: Combine log(SVL) and residuals
+
+# Remove multicollinearity
+pascagoula22xyz <- pascagoula22space[,rownames(corSelect(pascagoula22space, sp.cols=NULL, var.cols=1:40, select="VIF", cor.th=0.7)$remaining.multicollinearity)]
+pascagoula22clim <- pascagoula22climate[,rownames(corSelect(pascagoula22climate, sp.cols=NULL, var.cols=1:36, select="VIF", cor.th=0.7)$remaining.multicollinearity)]
+pascagoula22pheno <- pascagoula22traits[,rownames(corSelect(pascagoula22traits, sp.cols=NULL, var.cols=1:17, select="VIF", cor.th=0.7)$remaining.multicollinearity)]
+
+#SOM
+SOM_pascagoula22 <- run.SOM(list(pascagoula22alleles,
+                                pascagoula22space,
+                                pascagoula22climate,
+                                pascagoula22traits), #can be one matrix/dataframe or multiple matrices/dataframes provided as list()
+                           N.steps = 100, #number of training iterations for SOM
+                           N.replicates = 100, #number of SOM runs
+                           grid.size = c(4,4), #set grid size
+                           max.k = 5, #maximum of considered clusters K + 1
+                           set.k = NULL, #used to test a single value of K
+                           BIC.thresh = 2, #BIC threshold for selecting K>1 - we suggest using Raftery (1995) ranges: 2, 6, or 10 for weak, medium, or strong support
+                           learning.rate.initial = 0.6, #initial learning rate for SOM training
+                           learning.rate.final = 0.2, #final learning rate for SOM training
+                           max.NA = 0.9, #maximum fraction of missing values allowed per row in input data to prevent row to be removed
+                           random.starts.kmeans = 25, #number of random starts for k-means clustering
+                           training.neighborhoods = "gaussian", #neighborhood function used for SOM training SOM (options; "gaussian" or "bubble")
+                           save.SOM.results = F, #whether to save SOM results to file
+                           save.SOM.results.name = NULL, #file name for saving SOM results (if NULL, default name based on input_data is generated)
+                           overwrite.SOM.results = T, #if FALSE, existing results are loaded instead of re-running SOM
+                           message.N.replicates = 1) #frequency of progress messages during training (message is printed every message.N.replicates iterations)
+
+#Plot results
+plot.Learning.SOM(SOM_pascagoula22)
+plot.Layers.SOM(SOM_pascagoula22)
+plot.K.SOM(SOM_pascagoula22)
+plot.Model.SOM(SOM_pascagoula22)
+plot.Structure.SOM(SOM_pascagoula22)
+plot.Map.SOM(SOM_pascagoula22, data.frame(Individual=pascagoula22data$Sample,
+                                         Latitude=pascagoula22data$Lat,
+                                         Longitude=pascagoula22data$Long))
+plot.Variable.Importance.SOM(SOM_pascagoula22)
+
+## aeneus56 - original GBS data from Pyron et al. 2024 with updated climatic variables
+# Read in sample data
+aeneus56data <- read.csv("./data/aeneus56/aeneus56.csv",
+                             row.names=1,header=T,colClasses = c(huc2 = "character",
+                                                                 huc4 = "character",
+                                                                 huc6 = "character",
+                                                                 huc8 = "character",
+                                                                 huc10 = "character",
+                                                                 huc12 = "character"))
+aeneus56data <- aeneus56data[,-which(colnames(aeneus56data)=="huc2")]# huc2 is invariant
+
+# Read in VCF
+aeneus56vcf <- read.vcfR("./data/aeneus56/aeneus56.vcf.gz")
+
+# Convert to genind
+genind_obj <- vcfR2genind(aeneus56vcf);genind_obj
+
+# Filter
+genind_obj <- genind_obj[loc=which(genind_obj$loc.n.all==2),drop=TRUE]           # biallelic
+genind_obj <- genind_obj[loc=-which(minorAllele(genind_obj)<1/nInd(genind_obj))] # singletons
+genind_obj = missingno(genind_obj, type = "loci", cutoff = 0.20)                 # loci
+genind_obj = missingno(genind_obj, type = "geno", cutoff = 0.62)                 # individuals
+genind_obj
+
+# Get allele frequency matrix
+aeneus56alleles <- makefreq(genind_obj, missing = NA)  # Or missing = 0/1 depending on how you want to treat NAs
+
+# Rename and reorder alleles
+rownames(aeneus56alleles) <- aeneus56data$Sample[match(rownames(aeneus56alleles),rownames(aeneus56data))]
+aeneus56alleles <- aeneus56alleles[aeneus56data$Sample,]
+
+# Harmonize layers
+aeneus56alleles <- aeneus56alleles[-which(is.na(aeneus56data$SVL)),]
+aeneus56data <- aeneus56data[-which(is.na(aeneus56data$SVL)),]
+  
+# Separate layers
+#Space
+vars <- c("Lat", "Long", "Elev", "lvl4", "huc4", "huc6", "huc8", "huc10", "huc12")  # Select the columns
+factor_vars <- c("lvl4", "huc4", "huc6", "huc8", "huc10", "huc12")  # One-hot encode the factor variables (lvl4 and all huc*)
+aeneus56data[factor_vars] <- lapply(aeneus56data[factor_vars], factor)  # Convert to factors (if not already)
+oh_encoded <- model.matrix(~ . - 1, data = aeneus56data[factor_vars])  # Use model.matrix to one-hot encode (removes intercept column)
+numeric_data <- aeneus56data[, c("Lat", "Long", "Elev")]  # Combine with numeric spatial data
+aeneus56space <- cbind(numeric_data, oh_encoded) # Combine variables
+rownames(aeneus56space) <- aeneus56data$Sample  # Set row names
+aeneus56space <- as.matrix(aeneus56space)  # Optional: convert to matrix if needed (e.g., for clustering)
+
+#Climate
+climate_vars <- grep("^(wc|current)", names(aeneus56data), value = TRUE)  # Select only columns starting with "wc" or "current"
+aeneus56climate <- as.matrix(aeneus56data[, climate_vars])  # Subset and convert to matrix
+rownames(aeneus56climate) <- aeneus56data$Sample  # Set row names
+
+#Traits
+trait_names <- c("SVL", "TL", "AG", "CW", "FL", "HL", "SG", "TW", "TO", "FI", "HW", "ED", "IN", "ES", "ON", "IO", "IC")   # Step 1: Subset the traits from the data
+trait_data <- aeneus56data[, trait_names] # Extract the variables
+log_traits <- log(trait_data)  # Step 2: Log-transform all traits
+SVL <- log_traits[, "SVL"]  # Step 3: Extract SVL and residualize all others
+residuals_mat <- sapply(trait_names[-1], function(trait) {resid(lm(log_traits[, trait] ~ SVL))})  # Regress each trait on SVL and store residuals
+rownames(residuals_mat) <- aeneus56data$Sample  # Step 4: Set row and column names
+aeneus56traits <- cbind(SVL = SVL, residuals_mat)  # Step 5: Combine log(SVL) and residuals
+
+# Remove multicollinearity
+aeneus56xyz <- aeneus56space[,rownames(corSelect(aeneus56space, sp.cols=NULL, var.cols=1:40, select="VIF", cor.th=0.7)$remaining.multicollinearity)]
+aeneus56clim <- aeneus56climate[,rownames(corSelect(aeneus56climate, sp.cols=NULL, var.cols=1:36, select="VIF", cor.th=0.7)$remaining.multicollinearity)]
+aeneus56pheno <- aeneus56traits[,rownames(corSelect(aeneus56traits, sp.cols=NULL, var.cols=1:17, select="VIF", cor.th=0.7)$remaining.multicollinearity)]
+
+#SOM
+SOM_aeneus56 <- run.SOM(list(aeneus56alleles,
+                                 aeneus56space,
+                                 aeneus56climate,
+                                 aeneus56traits), #can be one matrix/dataframe or multiple matrices/dataframes provided as list()
+                            N.steps = 100, #number of training iterations for SOM
+                            N.replicates = 100, #number of SOM runs
+                            max.k = 5, #maximum of considered clusters K + 1
+                            set.k = NULL, #used to test a single value of K
+                            BIC.thresh = 10, #BIC threshold for selecting K>1 - we suggest using Raftery (1995) ranges: 2, 6, or 10 for weak, medium, or strong support
+                            learning.rate.initial = 0.6, #initial learning rate for SOM training
+                            learning.rate.final = 0.2, #final learning rate for SOM training
+                            max.NA = 0.9, #maximum fraction of missing values allowed per row in input data to prevent row to be removed
+                            random.starts.kmeans = 25, #number of random starts for k-means clustering
+                            training.neighborhoods = "gaussian", #neighborhood function used for SOM training SOM (options; "gaussian" or "bubble")
+                            save.SOM.results = F, #whether to save SOM results to file
+                            save.SOM.results.name = NULL, #file name for saving SOM results (if NULL, default name based on input_data is generated)
+                            overwrite.SOM.results = T, #if FALSE, existing results are loaded instead of re-running SOM
+                            message.N.replicates = 1) #frequency of progress messages during training (message is printed every message.N.replicates iterations)
+
+#Plot results
+plot.Learning.SOM(SOM_aeneus56)
+plot.Layers.SOM(SOM_aeneus56)
+plot.K.SOM(SOM_aeneus56)
+plot.Model.SOM(SOM_aeneus56)
+plot.Structure.SOM(SOM_aeneus56)
+plot.Map.SOM(SOM_aeneus56, data.frame(Individual=aeneus56data$Sample,
+                                          Latitude=aeneus56data$Lat,
+                                          Longitude=aeneus56data$Long))
+plot.Variable.Importance.SOM(SOM_aeneus56)
