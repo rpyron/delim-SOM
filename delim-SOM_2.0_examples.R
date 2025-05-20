@@ -58,7 +58,7 @@ head(MORPH);pairs(MORPH[,1:4])
 
 
 # Original monticola71 data from Pyron et al. 2023
-seal_in_c90 <- read.structure("./data/seal_in.str",
+seal_in_c90 <- read.structure("./data/seal_in_c90/seal_in_c90.str",
                     n.ind = 71,
                     n.loc = 7809,
                     onerowperind = F,
@@ -67,7 +67,16 @@ seal_in_c90 <- read.structure("./data/seal_in.str",
                     col.others = 0,
                     row.marknames = 0,
                     NA.char = -9)
-alleles <- makefreq(missingno(seal_in_c90, type = "loci", cutoff = 0.80))
+
+# Filter
+seal_in_c90 <- seal_in_c90[loc=which(seal_in_c90$loc.n.all==2),drop=TRUE]           # biallelic
+seal_in_c90 <- seal_in_c90[loc=-which(minorAllele(seal_in_c90)<1/nInd(seal_in_c90))] # singletons
+seal_in_c90 = missingno(seal_in_c90, type = "loci", cutoff = 0.20)                 # loci
+seal_in_c90 = missingno(seal_in_c90, type = "geno", cutoff = 0.60)                 # individuals
+seal_in_c90
+
+# Make alleles object
+alleles <- makefreq(seal_in_c90)
 
 
 ## Set number of clusters and individuals
@@ -204,7 +213,7 @@ plot.Variable.Importance.SOM(SOM_multi2)
 
 ## monticola71 - original GBS data from Pyron et al. 2023 with updated climatic variables
 # Read in sample data
-monticola71data <- read.csv("./data/seal_in.csv",
+monticola71data <- read.csv("./data/monticola71/monticola71.csv",
                             row.names=1,header=T,colClasses = c(huc2 = "character",
                                                                 huc4 = "character",
                                                                 huc6 = "character",
@@ -213,7 +222,7 @@ monticola71data <- read.csv("./data/seal_in.csv",
                                                                 huc12 = "character"))
 
 # Read in VCF
-monticola71vcf <- read.vcfR("./data/seal_in.vcf.gz")
+monticola71vcf <- read.vcfR("./data/monticola71/monticola71.vcf.gz")
 
 # Convert to genind
 genind_obj <- vcfR2genind(monticola71vcf);genind_obj
@@ -221,15 +230,15 @@ genind_obj <- vcfR2genind(monticola71vcf);genind_obj
 # Filter
 genind_obj <- genind_obj[loc=which(genind_obj$loc.n.all==2),drop=TRUE]           # biallelic
 genind_obj <- genind_obj[loc=-which(minorAllele(genind_obj)<1/nInd(genind_obj))] # singletons
-genind_obj = missingno(genind_obj, type = "loci", cutoff = 0.80)                 # loci
-genind_obj = missingno(genind_obj, type = "geno", cutoff = 0.80)                 # individuals
+genind_obj = missingno(genind_obj, type = "loci", cutoff = 0.20)                 # loci
+genind_obj = missingno(genind_obj, type = "geno", cutoff = 0.60)                 # individuals
 genind_obj
 
 # Get allele frequency matrix
 monticola71alleles <- makefreq(genind_obj, missing = NA)  # Or missing = 0/1 depending on how you want to treat NAs
 
 # Rename and reorder alleles
-rownames(monticola71alleles) <- unlist(lapply(strsplit(rownames(monticola71alleles),"_"),'[[',1))
+rownames(monticola71alleles) <- monticola71data$Sample[match(rownames(monticola71alleles),rownames(monticola71data))]
 monticola71alleles <- monticola71alleles[monticola71data$Sample,]
 
 # Separate layers
