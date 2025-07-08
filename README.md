@@ -1,10 +1,10 @@
-# delim-SOM
+# Unsupervised Machine Learning for Integrative Species Delimitation
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/7f1ae006-a0c9-4a19-a8ed-94c1c987a6f1" alt="delim-SOM logo" width="220">
+<img src="https://github.com/user-attachments/assets/7f1ae006-a0c9-4a19-a8ed-94c1c987a6f1" width="180" align="left" style="margin-right: 15px; margin-bottom: 10px;">
+
+<p>
+This package uses multi-layer Kohonen Self-Organizing Maps ("SuperSOMs") to delimit species and produce integrative taxonomies using Unsupervised Machine Learning (UML) as described in Pyron (2023). This repository expands the use of single-layer SOMs as described in Pyron et al. (2023). It relies on the R package <code>kohonen</code> (Wehrens and Buydens 2007) to delimit species based on allelic, spatial, climatic, and phenotypic data.
 </p>
-
-This package uses multi-layer Kohonen Self-Organizing Maps ("SuperSOMs") to delimit species and produce integrative taxonomies using Unsupervised Machine Learning (UML) as decribed in Pyron (2023). This repository expands the use of single-layer SOMs as described in Pyron et al. (2023). It relies on the R package 'kohonen' (Wehrens and Buydens 2007) to delimit species based on allelic, spatial, climatic, and phenotypic data.
 
 The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore mirror a 'STRUCTURE'-type analysis including admixture estimates, but represent an unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for integative taxonomy. If only allelic data are used with a 'DNA.SOM()' model, then the assignment probabilities approximate individual ancestry coefficients. If multiple layers are used, we treat them as "species coefficients," which might be useful for testing a variety of ecological and evolutionary hypotheses.
 
