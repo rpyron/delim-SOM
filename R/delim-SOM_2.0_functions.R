@@ -1237,10 +1237,9 @@ clustering.SOM <- function(SOM.output,
     
     # Create function to calculate BIC with number of parameters (≈ dimensions × clusters) penalty for each cluster using WSS (Pelleg & Moore 2000. X‐means: Extending K‐means with efficient estimation of the number of clusters. In ICML’00 (pp. 727‐734), Citeseer)
     calculate.wssBIC <- function (wss, som_codes) {
-      nrow_som_codes <- nrow(som_codes) #number of codebook vectors
-      #ncol_som_codes <- ncol(som_codes) #number of dimensions - NOT USED
+      N <- nrow(som_codes) #number of output cells
       k_vals <- seq_along(wss)
-      BIC_vec <- nrow_som_codes * log(wss / nrow_som_codes) + log(nrow_som_codes) * k_vals # * ncol_som_codes #BIC for each k
+      BIC_vec <- N * log(wss / N) + log(N) * k_vals #BIC for each k
       BIC_vec
     }
     
