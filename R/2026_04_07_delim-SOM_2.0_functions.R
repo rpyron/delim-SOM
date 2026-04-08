@@ -6183,6 +6183,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   # Remove arguments that must be overridden for leave-one-layer-out reruns
   train.SOM.args$set.seed.N <- NULL
   train.SOM.args$N.replicates <- NULL
+  train.SOM.args$N.replicates.requested <- NULL
+  train.SOM.args$N.replicates.failed <- NULL
   train.SOM.args$parallel <- NULL
   train.SOM.args$save.SOM.results <- NULL
   train.SOM.args$save.SOM.results.name <- NULL
