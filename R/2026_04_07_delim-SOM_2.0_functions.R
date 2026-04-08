@@ -6740,6 +6740,19 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     # Extract baseline retained replicate indices
     if (!is.null(SOM_output$retained_replicates) && length(SOM_output$retained_replicates) == length(SOM_output$som_models)) {
       baseline_retained_replicate_indices <- SOM_output$retained_replicates
+      if (is.factor(baseline_retained_replicate_indices)) {
+        baseline_retained_replicate_indices <- as.character(baseline_retained_replicate_indices)
+      }
+      if (is.list(baseline_retained_replicate_indices)) {
+        baseline_retained_replicate_indices <- unlist(baseline_retained_replicate_indices, recursive = TRUE, use.names = FALSE)
+      }
+      if (is.character(baseline_retained_replicate_indices)) {
+        baseline_retained_replicate_indices <- sub("^R", "", baseline_retained_replicate_indices)
+      }
+      baseline_retained_replicate_indices <- suppressWarnings(as.integer(baseline_retained_replicate_indices))
+      if (any(!is.finite(baseline_retained_replicate_indices)) || any(is.na(baseline_retained_replicate_indices)) || any(baseline_retained_replicate_indices < 1)) {
+        stop("Leave-one-layer-out layer importance aborted: SOM_output$retained_replicates could not be converted to positive integer replicate indices")
+      }
     } else {
       baseline_retained_replicate_indices <- seq_along(SOM_output$som_models)
     }
@@ -6767,8 +6780,15 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       
       # Extract baseline replicate seed indices
       baseline_training_replicate_index <- baseline_retained_replicate_indices[retained_replicate_position]
-      matched_training_seed <- baseline.train.SOM.set.seed.N + baseline_training_replicate_index - 1
-      matched_clustering_seed <- baseline.clustering.SOM.set.seed.N + retained_replicate_position - 1
+      if (is.character(baseline_training_replicate_index)) {
+        baseline_training_replicate_index <- sub("^R", "", baseline_training_replicate_index)
+      }
+      baseline_training_replicate_index <- suppressWarnings(as.integer(baseline_training_replicate_index))
+      if (!is.finite(baseline_training_replicate_index) || is.na(baseline_training_replicate_index) || baseline_training_replicate_index < 1) {
+        stop("Leave-one-layer-out layer importance aborted: baseline retained replicate index could not be converted to a positive integer")
+      }
+      matched_training_seed <- as.integer(baseline.train.SOM.set.seed.N + baseline_training_replicate_index - 1)
+      matched_clustering_seed <- as.integer(baseline.clustering.SOM.set.seed.N + retained_replicate_position - 1)
       
       # Extract baseline replicate results directly from stored output
       baseline_single_replicate_cluster_assignment <- baseline_cluster_assignment_matrix[, retained_replicate_position, drop = FALSE]
