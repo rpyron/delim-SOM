@@ -13,7 +13,7 @@ source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2
 
 Overall, the method is extremely flexible and can take almost any data type or format (e.g., continuous, binary, categorical, count, SNP), as long as it is provided to function as a matrix/matrices or dataframe(s).
 
-# Run this on your data
+## Run this on your data
 
 ```
 alleles <- matrix()#Molecular data as allele frequencies per locus
