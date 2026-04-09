@@ -1,6 +1,6 @@
 # Fully integrative species delimitation with unsupervised machine learning using SOMs 
 
-Our delim-SOM R package uses Self-Organizing Maps (SOMs) to delimit species and produce integrative taxonomies. This repository expands the use of single-layer SOMs as described in Pyron et al. (2023). It relies on the R package <code>kohonen</code> (Wehrens and Buydens 2007, 2018) to delimit species based on allelic, spatial, environmental, and phenotypic data.
+Our delim-SOM R package uses Self-Organizing Maps (SOMs) to delimit species and produce integrative taxonomies. This repository expands the use of single-layer SOMs as described in Pyron et al. (2023). It relies on the <code>kohonen</code> R package (Wehrens and Buydens 2007, 2018) to delimit species based on allelic, spatial, environmental, and phenotypic data.
 
 The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore resemble a 'STRUCTURE'-type analysis including admixture estimates, but represent a unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for fully integative taxonomy. 
 
@@ -17,9 +17,6 @@ Overall, the method is extremely flexible and can take almost any data type or f
 
 ```
 alleles <- matrix()#Molecular data as allele frequencies per locus
-space <- matrix()#Typically long, lat, and elevation
-climate <- matrix()#Relevant environmental data
-traits <- matrix()#Phenotypic data (e.g., morphometrics, behavior)
 ```
 
 You will also want baseline clustering estimates from the molecular data to guide cluster label synchronizing later on using the CLUMPP-like algorithm (Jakobson and Rosenberg 2007). This is achieved using the match.k() function (see below) on the 'alleles' object you've created. A simple way to do this is just to create a genind object called 'a' and use that for 'alleles' such as:
