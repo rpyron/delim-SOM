@@ -414,5 +414,5 @@ Stefanovič P., Kurasova O. 2011. Influence of Learning Rates and Neighboring Fu
 
 Wehrens, R. and Buydens, L.M., 2007. Self-and super-organizing maps in R: the Kohonen package. Journal of Statistical Software: 21(5), 1–19. https://doi.org/10.18637/jss.v021.i05
 
-Wehrens R., Kruisselbrink J. 2018. Flexible Self-Organizing Maps in kohonen 3.0. Journal of Statistical Software: 87(7), 1–18. https://doi.org/10.18637/jss.v087.i07
+Wehrens R. and Kruisselbrink J. (2018) Flexible Self-Organizing Maps in kohonen 3.0. _Journal of Statistical Software_, 87(7): 1–18. https://doi.org/10.18637/jss.v087.i07
 
