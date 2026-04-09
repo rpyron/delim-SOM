@@ -394,25 +394,24 @@ Chan, K.O. & Grismer, L. L. (2021). A standardized and statistically defensible 
 
 Chan, K.O. and Grismer, L.L., 2022. GroupStruct: an R package for allometric size correction. Zootaxa, 5124(4), pp.471-482.
 
-Derkarabetian, S., Castillo, S., Koo, P.K., Ovchinnikov, S. and Hedin, M., 2019. A demonstration of unsupervised machine learning in species delimitation. Molecular phylogenetics and evolution, 139, p.106562.
+Derkarabetian, S., Castillo, S., Koo, P.K., Ovchinnikov, S. and Hedin, M., 2019. A demonstration of unsupervised machine learning in species delimitation. Molecular Phylogenetics and Evolution, 139, p.106562. https://doi.org/10.1016/j.ympev.2019.106562
 
 Evanno, G., Regnaut, S. and Goudet, J., 2005. Detecting the number of clusters of individuals using the software STRUCTURE: a simulation study. Molecular ecology, 14(8), pp.2611-2620.
 
 Jakobsson, M. and Rosenberg, N.A., 2007. CLUMPP: a cluster matching and permutation program for dealing with label switching and multimodality in analysis of population structure. Bioinformatics, 23(14), pp.1801-1806.
 
-Janes, J.K., Miller, J.M., Dupuis, J.R., Malenfant, R.M., Gorrell, J.C., Cullingham, C.I. and Andrew, R.L., 2017. The K=2 conundrum. Molecular Ecology, 26(14), pp.3594-3602.
+Janes, J.K., Miller, J.M., Dupuis, J.R., Malenfant, R.M., Gorrell, J.C., Cullingham, C.I. and Andrew, R.L., 2017. The K=2 conundrum. Molecular Ecology, 26(14), pp.3594-3602. https://doi.org/10.1111/mec.14187
 
-Jombart, T., 2008. adegenet: a R package for the multivariate analysis of genetic markers. Bioinformatics, 24(11), pp.1403-1405.
+Jombart, T., 2008. adegenet: a R package for the multivariate analysis of genetic markers. Bioinformatics, 24(11), pp.1403-1405. https://doi.org/10.1093/bioinformatics/btn129
 
 Natita W., Wiboonsak W., Dusadee S. 2016. Appropriate Learning Rate and Neighborhood Function of Self-organizing Map (SOM) for Specific Humidity Pattern Classification over Southern Thailand. IJMO. 6:61–65.
 
-Pyron, R.A., O’Connell, K.A., Duncan, S.C., Burbrink, F.T. and Beamer, D.A., 2023. Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for Seal Salamanders (Desmognathus monticola). Systematic Biology, 72(1), pp.179-197.
+Pyron, R.A., O’Connell, K.A., Duncan, S.C., Burbrink, F.T. and Beamer, D.A., 2023. Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for Seal Salamanders (Desmognathus monticola). Systematic Biology, 72(1), pp.179-197. https://doi.org/10.1093/sysbio/syac065
 
 Sikorska, K., Lesaffre, E., Groenen, P.F. et al. GWAS on your notebook: fast semi-parallel linear and logistic regression for genome-wide association studies. BMC Bioinformatics 14, 166 (2013). https://doi.org/10.1186/1471-2105-14-166
 
 Stefanovič P., Kurasova O. 2011. Influence of Learning Rates and Neighboring Functions on Self-Organizing Maps. Advances in Self-Organizing Maps.:141–150.
 
-Wehrens, R. and Buydens, L.M., 2007. Self-and super-organizing maps in R: the Kohonen package. Journal of Statistical Software, 21, pp.1-19.
-
+Wehrens, R. and Buydens, L.M., 2007. Self-and super-organizing maps in R: the Kohonen package. Journal of Statistical Software, 21, pp.1-19. https://doi.org/10.18637/jss.v021.i05
 Wehrens R., Kruisselbrink J. 2018. Flexible Self-Organizing Maps in kohonen 3.0. J. Stat. Soft. 87.
 
