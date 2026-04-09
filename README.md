@@ -29,10 +29,6 @@ labels <- match.labels(alleles)#get DAPC labels
 
 
 
-```
-
-
-
 A STRUCTURE-type barplot:
 ```
 make.structure.plot(admix.proportions = q_mat, 
