@@ -7076,14 +7076,31 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   old_plotting_parameters <- par(no.readonly = TRUE)
   on.exit(par(old_plotting_parameters), add = TRUE)
   
+  # Determine whether certainty/separation plots can be shown
+  show.assignment.margin.plot <- any(is.finite(successful_replicate_matched_results_table$delta.mean.assignment.margin) &
+                                       !is.na(successful_replicate_matched_results_table$delta.mean.assignment.margin))
+  show.assignment.entropy.plot <- any(is.finite(successful_replicate_matched_results_table$increase.mean.normalized.assignment.entropy) &
+                                        !is.na(successful_replicate_matched_results_table$increase.mean.normalized.assignment.entropy))
+  
   # Set plotting layout
-  par(mfrow = c(3, 2),
-      mar = c(margin.bottom,
-              margin.left,
-              margin.top,
-              margin.right),
-      oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
-      mgp = c(distance.axis.label, 1, 0))
+  if (show.assignment.margin.plot || show.assignment.entropy.plot) {
+    par(mfrow = c(3, 2),
+        mar = c(margin.bottom,
+                margin.left,
+                margin.top,
+                margin.right),
+        oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
+        mgp = c(distance.axis.label, 1, 0))
+  } else {
+    par(mfrow = c(2, 2),
+        mar = c(margin.bottom,
+                margin.left,
+                margin.top,
+                margin.right),
+        oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
+        mgp = c(distance.axis.label, 1, 0))
+    messager("Assignment margin and entropy plots skipped because all successful replicates had k = 1")
+  }
   
   # Add overall title if requested
   if (!is.null(title)) {
@@ -7155,28 +7172,32 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   add.jittered.points.SOM("pairwise.coassignment.change")
   
   # Plot assignment margin change
-  boxplot(delta.mean.assignment.margin ~ layer,
-          data = successful_replicate_matched_results_table,
-          col = layer_colors[SOM_layer_names],
-          outline = FALSE,
-          las = 2,
-          ylab = "Baseline - leave-one-layer-out margin",
-          xlab = "",
-          main = "Assignment margin change")
-  add.jittered.points.SOM("delta.mean.assignment.margin")
-  abline(h = 0, lty = 2)
+  if (show.assignment.margin.plot) {
+    boxplot(delta.mean.assignment.margin ~ layer,
+            data = successful_replicate_matched_results_table,
+            col = layer_colors[SOM_layer_names],
+            outline = FALSE,
+            las = 2,
+            ylab = "Baseline - leave-one-layer-out margin",
+            xlab = "",
+            main = "Assignment margin change")
+    add.jittered.points.SOM("delta.mean.assignment.margin")
+    abline(h = 0, lty = 2)
+  }
   
   # Plot normalized assignment entropy increase
-  boxplot(increase.mean.normalized.assignment.entropy ~ layer,
-          data = successful_replicate_matched_results_table,
-          col = layer_colors[SOM_layer_names],
-          outline = FALSE,
-          las = 2,
-          ylab = "Leave-one-layer-out - baseline entropy",
-          xlab = "",
-          main = "Entropy increase")
-  add.jittered.points.SOM("increase.mean.normalized.assignment.entropy")
-  abline(h = 0, lty = 2)
+  if (show.assignment.entropy.plot) {
+    boxplot(increase.mean.normalized.assignment.entropy ~ layer,
+            data = successful_replicate_matched_results_table,
+            col = layer_colors[SOM_layer_names],
+            outline = FALSE,
+            las = 2,
+            ylab = "Leave-one-layer-out - baseline entropy",
+            xlab = "",
+            main = "Entropy increase")
+    add.jittered.points.SOM("increase.mean.normalized.assignment.entropy")
+    abline(h = 0, lty = 2)
+  }
   
   # Report saved plot if requested
   if (save) {
