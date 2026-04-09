@@ -4,22 +4,14 @@ This R package uses multi-layer Self-Organizing Maps (SOMs) to delimit species a
 
 The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore resemble a 'STRUCTURE'-type analysis including admixture estimates, but represent a unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for fully integative taxonomy. 
 
-The requisite functions are in the './R/kohonen_code.R' file, which loads the various dependencies:
+Load the package running:
 
 ```
-source("./R/kohonen_code.R")
-set.seed(1)
-
-library(adegenet);library(maps);library(scales)
-library(conStruct);library(poppr);library(kohonen)
-library(lsr);library(combinat);library(viridis)
-set.seed(1)
+source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
 ```
 
-Some of these may have to be installed manually or from various non-CRAN sources.
 
-Overall, the method is extremely flexible and can take almost any data type or format, as long as it is introduced as a matrix in R.
-**I also have it set to delimit a maximum of 10 species;** this can be changed by altering the code in various places (email me if needed: rpyron@gwu.edu), but it's unknown how the method will perform at larger scales. The primary requirement is to have individuals in rows in the same order in each matrix, and variables in columns, with <90% missing data and the same set of individuals in each matrix. I also min-max normalize the space, climate, and traits matrices to be on the same scale as the allele frequencies. You could modify the code to allow different missing data percentages (maxNA.frac) if necessary, but the effects are unknown.
+Overall, the method is extremely flexible and can take almost any data type or format (e.g., continuous, binary, categorical, count, SNP), as long as it is provided to function as a matrix/matrices or dataframe(s).
 
 # Run this on your data
 
