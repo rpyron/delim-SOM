@@ -1,0 +1,307 @@
+﻿Candidate species;Species revised;Individual ID;Bioinformatics ID;Locality;Latitude;Longitude;Altitude (m);Collection date;Collector;Sex;Developmental stage;Phylogenetic inference;Species delimitation;Divergence dating;Note;NCBI BioSample accession;Reference
+Cheirogaleus crossleyi;Cheirogaleus crossleyi;106189;Cheirogaleuscro_106189;Ambatovy;-18,8268;48,3069;1144;03.10.2013;MB Blanco;male;adult;✓;;;Outgroup;SAMN39585059;This study
+Cheirogaleus major;Cheirogaleus major;106245;Cheirogaleusmaj_106245;Marojejy;-14,4437;49,8273;295;11.11.2015;MB Blanco;female;adult;✓;;;Outgroup;SAMN39585060;This study
+Cheirogaleus medius;Cheirogaleus medius;106354;Cheirogaleusmed_106354;Duke Lemur Center;NA;NA;NA;01.03.2015;DLC biobank;female;adult;✓;;;Outgroup/captivity;SAMN39585061;This study
+Mirza zaza;Mirza zaza;DLC2316m;Mirzazaz_DLC2316m;Duke Lemur Center;NA;NA;NA;18.06.2012;DLC biobank;male;adult;✓;;✓;Outgroup/captivity;SAMN39585062;This study
+Mirza zaza;Mirza zaza;DLC319m;Mirzazaz_DLC319m;Duke Lemur Center;NA;NA;NA;22.09.1995;DLC biobank;male;adult;✓;;✓;Outgroup/captivity;SAMN39585063;This study
+Mirza zaza;Mirza zaza;DLC323f;Mirzazaz_DLC323f;Duke Lemur Center;NA;NA;NA;20.02.1998;DLC biobank;female;adult;✓;;;Outgroup/captivity;SAMN39585064;This study
+M. arnholdi;M. arnholdi;AMB5.26;Marn_AMB5.26;Montagne d'Ambre;-12,5183;49,1758;614;22.11.2005;JF Ranaivoarisoa;female;adult;✓;GL & GC;;;SAMN39585065;This study
+M. arnholdi;M. arnholdi;AMB5.41;Marn_AMB5.41;Montagne d'Ambre;-12,4773;49,2224;514;28.11.2005;JF Ranaivoarisoa;female;NA;✓;GL & GC;;;SAMN39585066;This study
+M. arnholdi;M. arnholdi;BC49_2017;Marn_BC49_2017;Montagne d'Ambre;-12,5437;49,1464;NA;07.06.2017;B Le Pors & GM Sgarlata;male;adult;✓;GL & GC;✓;;SAMN39585067;This study
+M. arnholdi;M. arnholdi;BD33_2017;Marn_BD33_2017;Montagne d'Ambre;-12,5085;49,1774;NA;12.06.2017;B Le Pors & GM Sgarlata;female;adult;;GL;;;SAMN39585068;This study
+M. arnholdi;M. arnholdi;BD72_2017;Marn_BD72_2017;Montagne d'Ambre;-12,6444;49,1792;NA;24.06.2017;B Le Pors & GM Sgarlata;female;adult;;GL;;;SAMN39585069;This study
+M. arnholdi;M. arnholdi;BE51_2017;Marn_BE51_2017;Montagne d'Ambre;-12,6723;49,1861;NA;30.06.2017;B Le Pors & GM Sgarlata;male;adult;✓;GL & GC;✓;;SAMN39585070;This study
+M. arnholdi;M. arnholdi;BG27_2017;Marn_BG27_2017;Antsoroby;-12,7088;48,9665;NA;23.09.2017;B Le Pors & GM Sgarlata;female;adult;;GL;;;SAMN39585071;This study
+M. arnholdi;M. arnholdi;BG76_2017;Marn_BG76_2017;Montagne d'Ambre;-12,7044;49,141;NA;28.08.2017;B Le Pors & GM Sgarlata;male;adult;;GL;;;SAMN39585072;This study
+M. arnholdi;M. arnholdi;RMR154;Marn_RMR154;Montagne d'Ambre;-12,475;49,2183;NA;02.06.2005;RM Rasoloarison;male;adult;;GL;;;SAMN39585073;This study
+M. arnholdi;M. arnholdi;RMR156;Marn_RMR156;Montagne d'Ambre;-12,475;49,2183;NA;05.06.2005;RM Rasoloarison;male;adult;✓;GL & GC;;;SAMN39585074;This study
+M. arnholdi;M. arnholdi;RMR160;Marn_RMR160;Montagne d'Ambre;-12,475;49,2183;NA;08.06.2005;RM Rasoloarison;female;adult;;GL;;;SAMN39585075;This study
+M. berthae;M. berthae;JMR045;Mber_JMR045;Lambokely;-19,87;44,645;80;19.03.2006;JM Ralison;male;subadult;✓;GL & GC;;;SAMN39585076;This study
+M. berthae;M. berthae;Joerg73;Mber_Joerg73;Kirindy;-20,05;44,65;NA;NA;JU Ganzhorn;NA;NA;✓;GL & GC;✓;;SAMN39585077;This study
+M. berthae;M. berthae;KIR06.30;Mber_KIR06.30_S12;Kirindy;-20,0651;44,6512;67;01.05.2006;JR Zaonarivelo;female;NA;✓;GL & GC;✓;;SAMN39585077/SAMN39585078;This study
+M. berthae;M. berthae;KIR06.34;Mber_KIR06.34;Kirindy;-20,064;44,564;64;03.05.2006;JR Zaonarivelo;female;NA;✓;GL & GC;;;SAMN39585080;This study
+M. berthae;M. berthae;RMR94;Mber_RMR94;Kirindy;-20,05;44,65;40;NA;RM Rasoloarison;NA;NA;✓;GL & GC;;;SAMN39585081;This study
+M. berthae;M. berthae;t1327;Mber_t1327;Kirindy;-20,05;44,65;30;30.07.2006;PM Kappeler;female;NA;;GL;;;SAMN39585082;This study
+M. berthae;M. berthae;t1329;Mber_t1329_S1234;Kirindy;-20,05;44,65;30;03.08.2006;PM Kappeler;female;NA;;GL;;;SAMN39585083/SAMN39585084/SAMN39585085/SAMN39585086;This study
+M. berthae;M. berthae;t1330;Mber_t1330;Kirindy;-20,05;44,65;30;04.08.2006;PM Kappeler;male;NA;;GL;;;SAMN39585087;This study
+M. berthae;M. berthae;t1331;Mber_t1331_S12;Kirindy;-20,05;44,65;30;09.08.2006;PM Kappeler;female;NA;;GL;;;SAMN39585088/SAMN39585089;This study
+M. berthae;M. berthae;t1332;Mber_t1332;Kirindy;-20,05;44,65;30;09.08.2006;PM Kappeler;female;NA;;GL;;;SAMN39585090;This study
+M. berthae;M. berthae;t1334;Mber_t1334;Kirindy;-20,05;44,65;30;09.08.2006;PM Kappeler;female;NA;;GL;;;SAMN39585091;This study
+M. bongolavensis;M. ravelobensis;f301y03ata;Mbon_301y03_ata_S12;Maroakata;-16,0852;47,3027;NA;26.08.2003;G Olivieri;female;juvenile;✓;GL & GC;;;SAMN39585092/SAMN39585093;This study
+M. bongolavensis;M. ravelobensis;f3y11hara;Mbon_3y11_hara_S12;Ankarahara;-15,55;47,48;NA;07.11.2011;B Randrianambinina & S Rasoloharijaona & R Rakotondravony;female;adult;✓;GL & GC;✓;;SAMN39585094/SAMN39585095;This study
+M. bongolavensis;M. ravelobensis;f55y04bibo;Mbon_55y04_bibo_S12;Ambodimahabibo;-15,4957;47,4799;NA;09.08.2004;G Olivieri;female;adult;✓;GL & GC;;;SAMN39585096/SAMN39585097;This study
+M. bongolavensis;M. ravelobensis;f07y13zana;Mbon_f07y13_zana_S12;Mahatazana;-16,1333;47,2667;NA;31.08.2013;E Zimmermann;female;adult;;GL;;;SAMN39585098/SAMN39585099;This study
+M. bongolavensis;M. ravelobensis;f08y13zana;Mbon_f08y13_zana;Mahatazana;-16,1333;47,25;NA;31.08.2013;E Zimmermann;female;adult;✓;GL & GC;;;SAMN39585100;This study
+M. bongolavensis;M. ravelobensis;f09y13zana;Mbon_f09y13_zana;Mahatazana;-16,1333;47,25;NA;31.08.2013;E Zimmermann;female;adult;✓;GL & GC;;;SAMN39585101;This study
+M. bongolavensis;M. ravelobensis;f13y15sely;Mbon_f13y15_sely;Marosely;-15,65;47,5833;NA;13.07.2015;M Rina Evasoa & AF Hasiniaina;female;adult;✓;GL & GC;;;SAMN39585102;This study
+M. bongolavensis;M. ravelobensis;f17y13zana;Mbon_f17y13_zana;Mahatazana;-16,1333;47,25;NA;01.09.2013;E Zimmermann;female;adult;✓;GL & GC;✓;;SAMN39585103;This study
+M. bongolavensis;M. ravelobensis;m07y15sely;Mbon_m07y15_sely;Marosely;-15,65;47,5833;NA;09.07.2015;M Rina Evasoa & AF Hasiniaina;male;adult;;GL;;;SAMN39585104;This study
+M. bongolavensis;M. ravelobensis;m22y13zana;Mbon_m22y13_zana_S12;Mahatazana;-16,1333;47,2667;NA;02.09.2013;E Zimmermann;male;adult;;GL;;;SAMN39585105/SAMN39585106;This study
+M. boraha;M. simmonsi;RMR115;Mbor_RMR115;Sainte Marie;-16,9228;49,8747;68;10.10.2003;RM Rasoloarison;female;adult;✓;GL & GC;✓;;SAMN39585107;This study
+M. boraha;M. simmonsi;RMR116;Mbor_RMR116;Sainte Marie;-16,9228;49,8747;68;10.10.2003;RM Rasoloarison;male;adult;✓;GL & GC;;;SAMN39585108;This study
+M. boraha;M. simmonsi;RMR124;Mbor_RMR124;Sainte Marie;-16,9228;49,8747;68;10.10.2003;RM Rasoloarison;female;adult;✓;GL & GC;;;SAMN39585109;This study
+M. boraha;M. simmonsi;RMR129;Mbor_RMR129;Sainte Marie;-16,9228;49,8747;68;10.10.2003;RM Rasoloarison;female;adult;✓;GL & GC;✓;;SAMN39585110;This study
+M. danfossi;M. danfossi;m02y08befa;Mdan_02y08_befa_S12;Befandriana;-15,0681;48,5698;NA;08.11.2008;B Randrianambinina & S Rasoloharijaona & R Rakotondravony;male;adult;✓;GL & GC;✓;;SAMN39585111/SAMN39585112;This study
+M. danfossi;M. danfossi;m42y04koa;Mdan_42y04_koa_S12;Marasakoa;-15,2632;48,2948;NA;18.07.2004;G Olivieri;male;adult;✓;GL & GC;;;SAMN39585113/SAMN39585114;This study
+M. danfossi;M. danfossi;f44y04koa;Mdan_44y04_koa_S12;Marasakoa;-15,2632;48,2948;NA;19.07.2004;G Olivieri;female;adult;✓;GL & GC;✓;;SAMN39585115/SAMN39585116;This study
+M. danfossi;M. danfossi;m83y04injo;Mdan_83y04_injo_S12;Mahatsinjo;-14,7877;47,7856;NA;03.09.2004;G Olivieri;male;adult;✓;GL & GC;;;SAMN39585117/SAMN39585118;This study
+M. danfossi;M. danfossi;f90y04anji;Mdan_90y04_anji_S12;Anjiamangirana;-15,1527;47,7349;NA;21.09.2004;G Olivieri;female;adult;✓;GL & GC;;;SAMN39585119/SAMN39585120;This study
+M. ganzhorni;M. murinus;00016A8577;Mgan_00016A8577;Mandena;-25,1;46,57;10;04.08.1998;JU Ganzhorn;male;adult;✓;GL & GC;✓;;SAMN39585121;This study
+M. ganzhorni;M. murinus;00016A875E;Mgan_00016A875E;Mandena;-25,1;46,57;10;05.08.1998;JU Ganzhorn;female;adult;✓;GL & GC;✓;;SAMN39585122;This study
+M. ganzhorni;M. murinus;00016A8A1D;Mgan_00016A8A1D_S12;Mandena;-25,1;46,57;10;05.08.1998;JU Ganzhorn;male;adult;;GL;;;SAMN39585123/SAMN39585124;This study
+M. ganzhorni;M. murinus;00016A8EBC;Mgan_00016A8EBC;Mandena;-25,1;46,57;10;07.08.1998;JU Ganzhorn;female;adult;;GL;;;SAMN39585125;This study
+M. ganzhorni;M. murinus;00072854DC;Mgan_00072854DC;Mandena;-25,1;46,57;10;21.01.2016;JU Ganzhorn & SJ Rakotondranary;NA;NA;✓;GL & GC;;;SAMN39585126;This study
+M. ganzhorni;M. murinus;0007289B19;Mgan_0007289B19;Mandena;-25,1;46,57;10;21.01.2016;JU Ganzhorn & SJ Rakotondranary;female;NA;✓;GL & GC;;;SAMN39585127;This study
+M. ganzhorni;M. murinus;00074C3B6F;Mgan_00074C3B6F;Mandena;-25,1;46,57;10;14.08.2015;JU Ganzhorn & SJ Rakotondranary;male;adult;;GL;;;SAMN39585128;This study
+M. ganzhorni;M. murinus;00074C3F7D;Mgan_00074C3F7D;Mandena;-25,1;46,57;10;13.08.2015;JU Ganzhorn & SJ Rakotondranary;male;adult;;GL;;;SAMN39585129;This study
+M. ganzhorni;M. murinus;00074C439B;Mgan_00074C439B;Mandena;-25,1;46,57;10;14.08.2015;JU Ganzhorn & SJ Rakotondranary;female;adult;✓;GL & GC;;;SAMN39585130;This study
+M. ganzhorni;M. murinus;00074C54EC;Mgan_00074C54EC;Mandena;-25,1;46,57;10;12.08.2015;JU Ganzhorn & SJ Rakotondranary;male;adult;;GL;;;SAMN39585131;This study
+M. gerpi;M. gerpi;f12y18fina;Mger_f12y18_fina;Sahafina;-18,8025;48,9419;61;15.09.2018;VST Rovanirina & A Rakotomanantena;female;adult;✓;GL & GC;✓;;SAMN31848081;van Elst et al. (2023)
+M. gerpi;M. gerpi;f51y18sako;Mger_f51y18_sako;Ambodisakoana;-19,4966;48,903;NA;15.12.2018;R Rakotondravony & VST Rovanirina & ML Ramilison & H Rakotondramanana;female;juvenile;✓;GL & GC;;;SAMN31848120;van Elst et al. (2023)
+M. gerpi;M. gerpi;f55y18bao;Mger_f55y18_bao;Antanambao;-19,6608;48,8492;11;20.12.2018;R Rakotondravony & VST Rovanirina & ML Ramilison & H Rakotondramanana;female;juvenile;✓;GL & GC;;;SAMN31848124;van Elst et al. (2023)
+M. gerpi;M. gerpi;m10y18dobo;Mger_m10y18_dobo;Andobo;-18,8969;49,1236;13;20.12.2018;R Rakotondravony & VST Rovanirina & A Rakotomanatena;male;adult;✓;GL & GC;;;SAMN31848079;van Elst et al. (2023)
+M. gerpi;M. gerpi;m17y18fina;Mger_m17y18_fina;Sahafina;-18,7967;48,9821;107;15.09.2018;VST Rovanirina & A Rakotomanantena;male;adult;✓;GL & GC;;;SAMN31848089;van Elst et al. (2023)
+M. gerpi;M. gerpi;m44y18anja;Mger_m44y18_anja;Anjahamana;-18,3521;48,9681;329;30.10.2018;VST Rovanirina & A Rakotomanantena & H Rakotondramanana;male;adult;✓;GL & GC;✓;;SAMN31848116;van Elst et al. (2023)
+M. griseorufus;M. griseorufus;00063935DE;Mgri_00063935DE;Tsimanampetsotsa;-24,0924;43,7785;30;18.04.2008;JU Ganzhorn & P Giertz;NA;NA;;GL;;;SAMN39585132;This study
+M. griseorufus;M. griseorufus;0659-98ED;Mgri_065998ED_S1234;Beza Mahafaly;-23,6849;44,633;NA;02.10.2004;E Rasoazanabary;male;NA;✓;GL;;;SAMN39585133/SAMN39585134/SAMN39585135/SAMN39585136;This study
+M. griseorufus;M. griseorufus;BEZ7.22;Mgri_BEZ7.22;Beza Mahafaly;-23,6941;44,6044;165;16.02.2007;JF Ranaivoarisoa;female;NA;✓;GL;✓;;SAMN39585137;This study
+M. griseorufus;M. griseorufus;BOA8.5;Mgri_BOA8.5;Ankaboa;-25,1597;44,5746;45;14.11.2008;JF Ranaivoarisoa;female;NA;✓;GL;;;SAMN39585138;This study
+M. griseorufus;M. griseorufus;BOA8.8;Mgri_BOA8.8;Ankaboa;-25,1611;44,5749;41;14.11.2008;JF Ranaivoarisoa;male;adult;✓;GL;;;SAMN39585139;This study
+M. griseorufus;M. griseorufus;GNISA8.5;Mgri_GNISA8.5;Ankilelignisa;-25,0069;44,4064;178;16.11.2008;JF Ranaivoarisoa;male;NA;✓;GL;;;SAMN39585140;This study
+M. griseorufus;M. griseorufus;GNISA8.7;Mgri_GNISA8.7;Ankilelignisa;-25,0047;44,4048;161;16.11.2008;JF Ranaivoarisoa;female;NA;✓;GL;;;SAMN39585141;This study
+M. griseorufus;M. griseorufus;JMR007;Mgri_JMR007;Tongaenoro;-24,7367;44,03;110;21.02.2005;JM Ralison;female;adult;;GL;;;SAMN39585142;This study
+M. griseorufus;M. griseorufus;JMR009;Mgri_JMR009;Antabore;-24,3983;43,8467;15;02.03.2005;JM Ralison;female;adult;✓;GL;;;SAMN39585143;This study
+M. griseorufus;M. griseorufus;JMR015;Mgri_JMR015;Vohondava;-24,6867;46,4533;240;19.03.2005;JM Ralison;male;subadult;;GL;;;SAMN39585144;This study
+M. griseorufus;M. griseorufus;JMR016;Mgri_JMR016;Andrendahy;-24,8683;46,3983;100;28.03.2005;JM Ralison;male;subadult;;GL;;;SAMN39585145;This study
+M. griseorufus;M. griseorufus;LAH8.15;Mgri_LAH8.15;Manakaralahy;-24,4985;44,5644;192;21.03.2008;JF Ranaivoarisoa;male;adult;✓;GL;;;SAMN39585146;This study
+M. griseorufus;M. griseorufus;LAH8.18;Mgri_LAH8.18;Manakaralahy;-24,4773;44,5773;210;22.03.2008;JF Ranaivoarisoa;female;juvenile;✓;GL;;;SAMN39585147;This study
+M. griseorufus;M. griseorufus;NDOLO8.1;Mgri_NDOLO8.1;Tokondolo;-23,6701;44,0468;156;20.11.2008;JF Ranaivoarisoa;female;NA;✓;GL;;;SAMN39585148;This study
+M. griseorufus;M. griseorufus;NDOLO8.3;Mgri_NDOLO8.3;Tokondolo;-23,669;44,0451;150;20.11.2008;JF Ranaivoarisoa;male;adult;✓;GL;;;SAMN39585149;This study
+M. griseorufus;M. griseorufus;SANDRY8.12;Mgri_SANDRY8.12;Matsandry Atsimo;-25,2385;44,4919;20;12.11.2008;JF Ranaivoarisoa;male;adult;✓;GL;;;SAMN39585150;This study
+M. griseorufus;M. griseorufus;SANDRY8.15;Mgri_SANDRY8.15_S12;Matsandry Atsimo;-25,2377;44,4909;10;12.11.2008;JF Ranaivoarisoa;male;adult;✓;GL;✓;;SAMN39585151/SAMN39585152;This study
+M. griseorufus;M. griseorufus;TAK7.1;Mgri_TAK7.1;Ifotaka Mahavelo;-24,7623;46,1549;113;02.12.2007;R Andriantompohavana;female;NA;;GL;;;SAMN39585153;This study
+M. griseorufus;M. griseorufus;TAK7.9;Mgri_TAK7.9;Ifotaka Mahavelo;-24,7605;46,1563;145;03.12.2007;R Andriantompohavana;male;adult;✓;GL;;;SAMN39585154;This study
+M. griseorufus;M. griseorufus;VOLO8.01;Mgri_VOLO8.01_S12;Lavavolo;-24,6491;43,9491;19;12.03.2008;JF Ranaivoarisoa;female;NA;✓;GL;;;SAMN39585155/SAMN39585156;This study
+M. jollyae;M. jollyae;LAKI5.20;Mjol_LAKI5.20_S12;Lakia;-21,5156;47,9115;NA;07.03.2005;R Randriamampionona;NA;juvenile;✓;GL & GC;✓;;SAMN31848132/SAMN39585157;van Elst et al. (2023)/this study
+M. jollyae;M. jollyae;LAKI5.24;Mjol_LAKI5.24;Lakia;-21,4819;47,8948;NA;08.03.2005;R Randriamampionona;female;adult;✓;GL & GC;✓;;SAMN31848133;van Elst et al. (2023)
+M. jonahi;M. jonahi;A12;Mjon_A12;Antanambe;-16,4523;49,7965;226;13.08.2017;D Schüßler;male;adult;✓;GL & GC;✓;;SAMN12641325;Poelstra et al. (2021)
+M. jonahi;M. jonahi;A13;Mjon_A13;Antanambe;-16,4552;49,804;230;24.08.2017;D Schüßler;male;adult;;GL;;;SAMN12641326;Poelstra et al. (2021)
+M. jonahi;M. jonahi;A23;Mjon_A23;Antanambe;-16,4602;49,8028;272;15.08.2017;D Schüßler;male;adult;✓;GL & GC;;;SAMN12641327;Poelstra et al. (2021)
+M. jonahi;M. jonahi;A24;Mjon_A24;Antanambe;-16,4588;49,8029;263;22.08.2017;D Schüßler;male;adult;✓;GL & GC;;;SAMN12641328;Poelstra et al. (2021)
+M. jonahi;M. jonahi;B13;Mjon_B13;Ambavala;-16,2023;49,5886;320;11.09.2017;D Schüßler;male;adult;✓;GL & GC;✓;;SAMN12641331;Poelstra et al. (2021)
+M. jonahi;M. jonahi;B24;Mjon_B24;Ambavala;-16,1949;49,5978;282;13.09.2017;D Schüßler;male;adult;✓;GL & GC;;;SAMN12641332;Poelstra et al. (2021)
+M. jonahi;M. jonahi;B34;Mjon_B34;Ambavala;-16,2051;49,5895;42;17.08.2017;D Schüßler;male;adult;✓;GL & GC;;;SAMN12641333;Poelstra et al. (2021)
+M. jonahi;M. jonahi;BD1;Mjon_BD1;Antsiradrano;-16,184;49,5784;256;04.09.2017;D Schüßler;female;adult;✓;GL & GC;;;SAMN12641335;Poelstra et al. (2021)
+M. jonahi;M. jonahi;MBB019;Mjon_MBB019;Mananara Nord;-16,3048;49,7947;327;13.08.2015;MB Blanco;male;adult;✓;GL & GC;;;SAMN12641336;Poelstra et al. (2021)
+M. jonahi;M. jonahi;MBB020;Mjon_MBB020;Mananara Nord;-16,3048;49,7947;300;15.08.2015;MB Blanco;male;adult;✓;GL & GC;;;SAMN12641337;Poelstra et al. (2021)
+M. jonahi;M. jonahi;MBB021;Mjon_MBB021;Mananara Nord;-16,3048;49,7947;312;15.08.2015;MB Blanco;male;adult;;GL;;;SAMN12641338;Poelstra et al. (2021)
+M. jonahi;M. jonahi;MBB022;Mjon_MBB022;Mananara Nord;-16,3048;49,7947;328;16.08.2015;MB Blanco;female;juvenile;;GL;;;SAMN12641339;Poelstra et al. (2021)
+M. jonahi;M. jonahi;MBB024;Mjon_MBB024;Mananara Nord;-16,3048;49,7947;308;18.08.2015;MB Blanco;female;juvenile;;GL;;;SAMN12641340;Poelstra et al. (2021)
+M. jonahi;M. jonahi;MBB025;Mjon_MBB025;Mananara Nord;-16,3048;49,7947;377;21.08.2015;MB Blanco;male;adult;;GL;;;SAMN12641341;Poelstra et al. (2021)
+M. jonahi;M. jonahi;MBB027;Mjon_MBB027;Mananara Nord;-16,3048;49,7947;277;23.08.2015;MB Blanco;female;juvenile;✓;GL & GC;;;SAMN12641342;Poelstra et al. (2021)
+M. jonahi;M. jonahi;MBB029;Mjon_MBB029;Mananara Nord;-16,3048;49,7947;302;23.08.2015;MB Blanco;male;juvenile;;GL;;;SAMN12641344;Poelstra et al. (2021)
+M. lehilahytsara;M. lehilahytsara;Oskar;Mleh_Oskar_S12;Zürich Zoo;NA;NA;NA;NA;U Radespiel;male;adult;✓;GL & GC;;Captivity;SAMN39585158/SAMN39585159;This study
+M. lehilahytsara;M. lehilahytsara;Viola;Mleh_Viola_S12;University of Veterinary Medicine Hannover, Foundation;NA;NA;NA;NA;U Radespiel;female;adult;✓;GL & GC;;Captivity;SAMN39585160/SAMN39585161;This study
+M. lehilahytsara;M. lehilahytsara;f01y00man;Mleh_01y00_man_S12;Mantadia;-18,7833;48,4167;NA;2000;B Randrianambinina;female;adult;✓;GL & GC;;;SAMN25888973/SAMN25888974;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;f02y00man;Mleh_02y00_man_S12;Mantadia;-18,7833;48,4167;NA;2000;B Randrianambinina;female;adult;✓;GL & GC;;;SAMN25888975/SAMN25888976;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;ANJZ11;Mleh_ANJZ11;Amboasary An'ala Anjozorobe;-18,4678;47,9413;NA;26.01.2003;EE Louis, Jr.;male;adult;✓;GL & GC;✓;;SAMN25888948;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;B12;Mleh_B12;Ambavala;-16,2043;49,5965;461;09.09.2017;D Schüßler;female;juvenile;✓;GL & GC;✓;;SAMN12641345;Poelstra et al. (2021)
+M. lehilahytsara;M. lehilahytsara;B14;Mleh_B14;Ambavala;-16,1977;49,5996;241;12.09.2017;D Schüßler;male;juvenile;✓;GL & GC;;;SAMN12641346;Poelstra et al. (2021)
+M. lehilahytsara;M. lehilahytsara;BC3;Mleh_BC3;Madera;-16,2112;49,578;438;19.09.2017;D Schüßler;female;adult;✓;GL & GC;;;SAMN12641349;Poelstra et al. (2021)
+M. lehilahytsara;M. lehilahytsara;C12;Mleh_C12;Ambavala;-16,1978;49,5998;237;15.09.2017;D Schüßler;female;adult;;GL;;;SAMN12641350;Poelstra et al. (2021)
+M. lehilahytsara;M. lehilahytsara;C24;Mleh_C24;Madera;-16,2059;49,5787;452;19.09.2017;D Schüßler;male;juvenile;✓;GL & GC;✓;;SAMN12641352;Poelstra et al. (2021)
+M. lehilahytsara;M. lehilahytsara;DWW3235;Mleh_DWW3235;Tsinjoarivo;-19,721;47,857;1350;11.01.2006;MB Blanco;NA;adult;;GL;;;SAMN25888985;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;DWW3243;Mleh_DWW3243;Tsinjoarivo;-19,721;47,857;1350;11.01.2006;MB Blanco;NA;adult;;GL;;;SAMN25888987;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;DWW3244;Mleh_DWW3244;Tsinjoarivo;-19,721;47,857;1350;11.01.2006;MB Blanco;NA;adult;;GL;;;SAMN25888988;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;JMR001;Mleh_JMR001_S12;Riamalandy;-16,285;48,815;870;11.01.2006;JM Ralison;female;adult;✓;GL & GC;;;SAMN25888978/SAMN25888979;Poelstra et al. (2021)
+M. lehilahytsara;M. lehilahytsara;JMR002;Mleh_JMR002_S12;Riamalandy;-16,285;48,815;870;11.01.2006;JM Ralison;male;adult;✓;GL & GC;;;SAMN25888980/SAMN25888981;Poelstra et al. (2021)
+M. lehilahytsara;M. lehilahytsara;JMR092;Mleh_JMR092;Ambatovy;-18,8;48,35;NA;01.01.2009;JM Ralison;female;adult;;GL;;;SAMN25888990;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;MBB001;Mleh_MBB001_S123;Ambatovy;-18,825;48,318;1107;02.01.2015;MB Blanco;female;juvenile;;GL;;;SAMN25888942/SAMN25888943/SAMN25888944;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;MBB037;Mleh_MBB037;Ankafobe;-18,104;47,187;1474;10.01.2015;MB Blanco;male;adult;;GL;;;SAMN25888992;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;MBB038;Mleh_MBB038;Ankafobe;-18,104;47,187;1465;10.01.2015;MB Blanco;female;adult;✓;GL & GC;;;SAMN25888993;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;MBB045;Mleh_MBB045;Ankafobe;-18,104;47,187;1426;02.01.2016;MB Blanco;female;juvenile;✓;GL & GC;;;SAMN25889000;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;ODY6.9;Mleh_ODY6.9;Sahanody;-18,8572;48,4214;NA;02.02.2006;EE Louis, Jr.;male;NA;✓;GL & GC;;;SAMN25888982;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;RMR95;Mleh_RMR95;Ambohitantely;-18,1683;47,2767;NA;01.01.2016;RM Rasoloarison;NA;adult;;GL;;;SAMN25889001;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;RMR97;Mleh_RMR97;Ambohitantely;-18,1683;47,2767;NA;01.01.2016;RM Rasoloarison;male;adult;;GL;;;SAMN25889003;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;RMR99;Mleh_RMR99;Ambohitantely;-18,1683;47,2767;NA;01.01.2016;RM Rasoloarison;male;adult;;GL;;;SAMN25889004;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;SIB7.1;Mleh_SIB7.1;Anosibe An'ala Sandrangato Ankeniheny;-19,2356;48,278;NA;26.02.2007;EE Louis, Jr.;male;adult;✓;GL & GC;;;SAMN25888960;Tiley et al. (2022)
+M. lehilahytsara;M. lehilahytsara;TAD4.32;Mleh_TAD4.32;Mantadia;-18,8387;48,4311;NA;25.01.2004;EE Louis, Jr.;female;adult;✓;GL & GC;✓;;SAMN25888977;Tiley et al. (2022)
+M. macarthurii;M. macarthurii;m01y06hely;Mmac_01y06_hely_S12;Anjiahely;-15,4;49,4833;379;08.11.2006;Groupe d'étude et de recherche sur les primates (GERP);male;adult;✓;GL & GC;✓;;SAMN39585162/SAMN39585163;Poelstra et al. (2021)
+M. macarthurii;M. macarthurii;f01y07hely;Mmac_01y07_hely_S12;Anjiahely;-15,4;49,4833;NA;04.09.2007;Groupe d'étude et de recherche sur les primates (GERP);female;adult;;GL;;;SAMN39585164/SAMN39585165;Poelstra et al. (2021)
+M. macarthurii;M. macarthurii;m01y13hely;Mmac_01y13_hely_S12;Anjiahely;-15,4;49,4833;NA;25.10.2013;Groupe d'étude et de recherche sur les primates (GERP);male;adult;;GL;;;SAMN39585166/SAMN39585167;Poelstra et al. (2021)
+M. macarthurii;M. macarthurii;f03y13hely;Mmac_03y13_hely_S12;Anjiahely;-15,4;49,4833;NA;25.10.2013;Groupe d'étude et de recherche sur les primates (GERP);female;adult;;GL;;;SAMN39585168/SAMN39585169;Poelstra et al. (2021)
+M. macarthurii;M. macarthurii;f04y06hely;Mmac_04y06_hely_S12;Anjiahely;-15,4;49,4833;354;09.11.2006;Groupe d'étude et de recherche sur les primates (GERP);female;adult;✓;GL & GC;;;SAMN39585170/SAMN39585171;Poelstra et al. (2021)
+M. macarthurii;M. macarthurii;f04y13hely;Mmac_04y13_hely_S12;Anjiahely;-15,4;49,4833;NA;26.10.2013;Groupe d'étude et de recherche sur les primates (GERP);female;adult;✓;GL & GC;;;SAMN39585172/SAMN39585173;Poelstra et al. (2021)
+M. macarthurii;M. macarthurii;m05y08hely;Mmac_05y08_hely_S12;Anjiahely;-15,4;49,4833;NA;12.12.2008;Groupe d'étude et de recherche sur les primates (GERP);male;adult;;GL;;;SAMN39585174/SAMN39585175;Poelstra et al. (2021)
+M. macarthurii;M. macarthurii;m06y08hely;Mmac_06y08_hely_S12;Anjiahely;-15,4;49,4833;NA;13.12.2008;Groupe d'étude et de recherche sur les primates (GERP);male;adult;✓;GL & GC;✓;;SAMN39585176/SAMN39585177;Poelstra et al. (2021)
+M. macarthurii;M. macarthurii;m07y08hely;Mmac_07y08_hely_S12;Anjiahely;-15,4;49,4833;NA;13.12.2008;Groupe d'étude et de recherche sur les primates (GERP);male;adult;✓;GL & GC;;;SAMN39585178/SAMN39585179;Poelstra et al. (2021)
+M. macarthurii;M. macarthurii;m08y08hely;Mmac_08y08_hely_S12;Anjiahely;-15,4;49,4833;NA;13.12.2008;Groupe d'étude et de recherche sur les primates (GERP);male;adult;✓;GL & GC;;;SAMN39585180/SAMN39585181;Poelstra et al. (2021)
+M. mamiratra;M. mamiratra;f02y02oka;Mmam_02y02_oka_S12;Manehoko;-13,4303;48,7975;NA;15.11.2002;B Randrianambinina & S Rasoloharijaona;female;juvenile;✓;GL & GC;;;SAMN39585182/SAMN39585183;This study
+M. mamiratra;M. mamiratra;f05y02oka;Mmam_05y02_oka_S12;Manehoko;-13,4303;48,7975;NA;19.11.2002;B Randrianambinina & S Rasoloharijaona;female;adult;✓;GL & GC;;;SAMN39585184/SAMN39585185;This study
+M. mamiratra;M. mamiratra;f11y02oka;Mmam_11y02_oka_S12;Manehoko;-13,4303;48,7975;NA;21.11.2002;B Randrianambinina & S Rasoloharijaona;female;adult;✓;GL & GC;;;SAMN39585186/SAMN39585187;This study
+M. mamiratra;M. mamiratra;m12y02oka;Mmam_12y02_oka_S12;Manehoko;-13,4303;48,7975;NA;28.11.2002;B Randrianambinina & S Rasoloharijaona;male;adult;✓;GL & GC;;;SAMN39585188/SAMN39585189;This study
+M. mamiratra;M. mamiratra;I01_2015;Mmam_I01_2015;Maromokotra;-13,6164;49,0257;NA;16.11.2015;B Le Pors;female;adult;✓;GL & GC;✓;;SAMN39585190;This study
+M. mamiratra;M. mamiratra;m16y16lok;Mmam_m16y16_lok;Lokobe;-13,3833;48,33;39;12.07.2016;M Rina Evasoa & AF Hasiniaina;male;adult;✓;GL & GC;✓;;SAMN39585191;This study
+M. mamiratra;M. mamiratra;m22y16lok;Mmam_m22y16_lok;Lokobe;-13,3833;48,33;11;16.07.2016;M Rina Evasoa & AF Hasiniaina;male;adult;✓;GL & GC;;;SAMN39585192;This study
+M. manitatra;M. murinus;RMR215;Mman_RMR215;Bemanasy;-25,0853;46,7753;NA;23.04.2007;RM Rasoloarison;male;subadult;✓;GL & GC;;;SAMN39585193;This study
+M. manitatra;M. murinus;RMR216;Mman_RMR216;Bemanasy;-25,1414;46,6504;NA;23.04.2007;RM Rasoloarison;female;subadult;✓;GL & GC;;;SAMN39585194;This study
+M. manitatra;M. murinus;RMR217;Mman_RMR217;Bemanasy;-25,1414;46,6504;NA;25.04.2007;RM Rasoloarison;male;adult;✓;GL & GC;✓;;SAMN39585195;This study
+M. manitatra;M. murinus;RMR219;Mman_RMR219;Bemanasy;-25,1414;46,6504;NA;25.04.2007;RM Rasoloarison;female;subadult;✓;GL & GC;✓;;SAMN39585196;This study
+M. manitatra;M. murinus;RMR220;Mman_RMR220;Bemanasy;-25,1414;46,6504;NA;25.04.2007;RM Rasoloarison;male;subadult;✓;GL & GC;;;SAMN39585197;This study
+M. margotmarshae;M. margotmarshae;m12y16mibe;Mmarg_m12y16_mibe;Ankaramibe;-13,95;48,2;254;24.08.2016;M Rina Evasoa & AF Hasiniaina;male;adult;✓;GL & GC;;;SAMN39585198;This study
+M. margotmarshae;M. margotmarshae;TAF06.1;Mmarg_TAF06.1;Antafondro Maromiandra;-14,0457;48,2232;134;21.05.2006;R Andriantompohavana;female;NA;✓;GL & GC;✓;;SAMN39585199;This study
+M. margotmarshae;M. margotmarshae;TAF06.5;Mmarg_TAF06.5;Antafondro Maromiandra;-14,0457;48,2232;144;22.05.2006;R Andriantompohavana;female;NA;✓;GL & GC;✓;;SAMN39585200;This study
+M. marohita;M. jollyae;RMR131;Mmaro_RMR131;Marolambo;-20,0602;48,1833;695;27.11.2003;RM Rasoloarison;male;adult;✓;GL & GC;✓;;SAMN31848134;van Elst et al. (2023)
+M. marohita;M. jollyae;RMR136;Mmaro_RMR136;Marolambo;-20,0602;48,1833;695;02.12.2003;RM Rasoloarison;female;adult;;GL;;;SAMN31848135;van Elst et al. (2023)
+M. mittermeieri;M. lehilahytsara;m05y06hely;Mmit_m05y06_hely;Anjiahely;-15,4109;49,4948;346;09.11.2006;Groupe d'étude et de recherche sur les primates (GERP);male;adult;✓;GL & GC;✓;;SAMN39585201;This study
+M. mittermeieri;M. lehilahytsara;f07y06habe;Mmit_07y06_habe_S12;Antsahabe;-15,35;49,4;958;12.11.2006;Groupe d'étude et de recherche sur les primates (GERP);male;adult;✓;GL & GC;;;SAMN25888961/SAMN25888962;Poelstra et al. (2021)
+M. mittermeieri;M. lehilahytsara;f10y07hely;Mmit_10y07_hely_S12;Anjiahely;-15,4;49,4833;NA;06.09.2007;Groupe d'étude et de recherche sur les primates (GERP);female;adult;✓;GL & GC;;;SAMN25888956/SAMN25888957;Poelstra et al. (2021)
+M. mittermeieri;M. lehilahytsara;MBB005;Mmit_MBB005;Marojejy;-14,4418;49,8284;181;29.03.2015;MB Blanco;female;adult;✓;GL & GC;;;SAMN12641370;Poelstra et al. (2021)
+M. mittermeieri;M. lehilahytsara;MBB012;Mmit_MBB012;Anjanaharibe Sud;-14,7348;49,4963;979;03.05.2015;MB Blanco;female;adult;✓;GL & GC;;;SAMN12641371;Poelstra et al. (2021)
+M. mittermeieri;M. lehilahytsara;MBB013;Mmit_MBB013;Anjanaharibe Sud;-14,7348;49,4963;972;04.05.2015;MB Blanco;female;adult;;GL;;;SAMN12641372;Poelstra et al. (2021)
+M. mittermeieri;M. lehilahytsara;PBZT115;Mmit_PBZT115;Anjanaharibe Sud;-14,7069;49,5414;NA;2004;EE Louis, Jr.;NA;adult;✓;GL & GC;;;SAMN12641375;Poelstra et al. (2021)
+M. mittermeieri;M. lehilahytsara;RMR186;Mmit_RMR186;Marojejy;-14,4672;49,8392;NA;2006;RM Rasoloarison;NA;adult;✓;GL & GC;✓;;SAMN12641376;Poelstra et al. (2021)
+M. mittermeieri;M. lehilahytsara;RMR187;Mmit_RMR187;Marojejy;-14,4672;49,8392;NA;2006;RM Rasoloarison;NA;adult;✓;GL & GC;;;SAMN12641377;Poelstra et al. (2021)
+M. murinus (central);M. murinus;ADY1995;Mmur_ADY1995_S12;Belo sur Mer;NA;NA;NA;1995;AD Yoder;NA;NA;;GL;;Exact locality unknown;SAMN39585202/SAMN39585203;This study
+M. murinus (central);M. murinus;Joerg214;Mmur_Joerg214_S12;Kirindy;-20,05;44,65;NA;NA;JU Ganzhorn;NA;NA;;GL;;;SAMN39585204/SAMN39585205;This study
+M. murinus (central);M. murinus;Joerg33;Mmur_Joerg33_S12;Kirindy;-20,05;44,65;NA;NA;JU Ganzhorn;NA;NA;;GL;;;SAMN39585206/SAMN39585207;This study
+M. murinus (central);M. murinus;KIR06.31;Mmur_KIR06.31;Kirindy;-20,0649;44,6503;66;02.05.2006;JR Zaonarivelo;female;NA;✓;GL & GC;✓;;SAMN39585208;This study
+M. murinus (central);M. murinus;KIR06.32;Mmur_KIR06.32;Kirindy;-20,0648;44,5665;65;02.05.2006;JR Zaonarivelo;male;NA;✓;GL & GC;;;SAMN39585209;This study
+M. murinus (central);M. murinus;MOR106;Mmur_MOR106;Beroboka;-19,9833;44,6776;NA;07.09.2000;EE Louis, Jr.;male;NA;✓;GL & GC;✓;;SAMN39585210;This study
+M. murinus (central);M. murinus;RMR19;Mmur_RMR19;Vohimena;-22,6667;44,8167;NA;22.01.1996;RM Rasoloarison;female;juvenile;✓;GL & GC;;;SAMN39585211;This study
+M. murinus (central);M. murinus;RMR25;Mmur_RMR25_S12;Manamby;-20,4333;44,8333;180;01.04.1996;RM Rasoloarison;male;adult;;GL;;;SAMN39585212/SAMN39585213;This study
+M. murinus (central);M. murinus;RMR27;Mmur_RMR27;Manamby;-20,4333;44,8333;180;03.04.1996;RM Rasoloarison;female;adult;✓;GL & GC;;;SAMN39585214;This study
+M. murinus (central);M. murinus;RMR28;Mmur_RMR28;Manamby;-20,4333;44,8333;180;04.04.1996;RM Rasoloarison;male;juvenile;;GL;;;SAMN39585215;This study
+M. murinus (central);M. murinus;RMR29;Mmur_RMR29;Manamby;-20,4333;44,8333;180;04.04.1996;RM Rasoloarison;female;juvenile;;GL;;;SAMN39585216;This study
+M. murinus (central);M. murinus;RMR47;Mmur_RMR47;Andranomena;-20,15;44,55;NA;26.10.1996;RM Rasoloarison;female;adult;;GL;;;SAMN39585217;This study
+M. murinus (central);M. murinus;RMR48;Mmur_RMR48_S12;Andranomena;-20,15;44,55;NA;26.10.1996;RM Rasoloarison;male;adult;;GL;;;SAMN39585218/SAMN39585219;This study
+M. murinus (central);M. murinus;RMR44;Mmur_RMR44_S12;Andranomena;-20,15;44,55;NA;Dec 1996;RM Rasoloarison;male;adult;;GL;;;SAMN39585220/SAMN39585221;Poelstra et al. (2021)
+M. murinus (central);M. murinus;RMR45;Mmur_RMR45;Andranomena;-20,15;44,55;NA;Dec 1996;RM Rasoloarison;female;adult;;GL;;;SAMN12641379;Poelstra et al. (2021)
+M. murinus (central);M. murinus;RMR49;Mmur_RMR49;Andranomena;-20,15;44,55;NA;Dec 1996;RM Rasoloarison;male;adult;;GL;;;SAMN12641380;Poelstra et al. (2021)
+M. murinus (north);M. murinus;m71y04tsin;Mmur_71y04_tsin_S12;Tsinjomitondraka;-15,6463;47,1287;NA;19.08.2004;G Olivieri;male;adult;✓;GL & GC;;;SAMN39585222/SAMN39585223;This study
+M. murinus (north);M. murinus;f102y18mari;Mmur_f102y18_mari;Mariarano;-15,5286;46,7071;17,84;03.06.2018;M Ramsay;female;adult;✓;GL & GC;✓;;SAMN39585224;This study
+M. murinus (north);M. murinus;f110y18mari;Mmur_f110y18_mari;Mariarano;-15,5219;46,7069;35,51;03.06.2018;M Ramsay;female;adult;;GL;;;SAMN39585225;This study
+M. murinus (north);M. murinus;f142y17jabe;Mmur_f142y17_jabe;Ambanjabe;-16,3036;46,7146;126,31;13.09.2017;M Ramsay;male;adult;✓;GL & GC;✓;;SAMN39585226;This study
+M. murinus (north);M. murinus;f21y15bomb;Mmur_f21y15_bomb;Bombetoka;-15,867;46,25;NA;21.09.2015;M Rina Evasoa & AF Hasiniaina;female;adult;✓;GL & GC;;;SAMN39585227;This study
+M. murinus (north);M. murinus;f38y15bomb;Mmur_f38y15_bomb;Bombetoka;-15,8667;46,2167;NA;01.10.2015;M Rina Evasoa & AF Hasiniaina;female;adult;;GL;;;SAMN39585228;This study
+M. murinus (north);M. murinus;f48y13mari;Mmur_f48y13_mari_S12;Mariarano;-15,467;46,8;NA;03.07.2013;U Radespiel;female;adult;;GL;;;SAMN39585229/SAMN39585230;This study
+M. murinus (north);M. murinus;f56y13ampi;Mmur_f56y13_ampi_S12;Ampijoroa;-16,317;46,8;NA;20.08.2013;U Radespiel & E Zimmermann;female;adult;✓;GL & GC;;;SAMN39585231/SAMN39585232;This study
+M. murinus (north);M. murinus;f56y13mari;Mmur_f56y13_mari_S12;Mariarano;-15,467;46,8;NA;03.07.2013;U Radespiel;female;adult;;GL;;;SAMN39585233/SAMN39585234;This study
+M. murinus (north);M. murinus;m136y17jabe;Mmur_m136y17_jabe;Ambanjabe;-16,3049;46,7098;129,66;09.08.2017;M Ramsay;male;adult;;GL;;;SAMN39585235;This study
+M. murinus (north);M. murinus;m209y18mari;Mmur_m209y18_mari;Mariarano;-15,5065;46,6951;12,33;29.06.2018;M Ramsay;male;adult;✓;GL & GC;;;SAMN39585236;This study
+M. murinus (north);M. murinus;m372y18jabe;Mmur_m372y18_jabe;Ambanjabe;-16,2864;46,7118;93,23;09.10.2018;M Ramsay;male;adult;;GL;;;SAMN39585237;This study
+M. murinus (north);M. murinus;m44y13ampi;Mmur_m44y13_ampi_S12;Ankarafantsika Jardin Botanique A;-16,317;46,8;NA;20.08.2013;U Radespiel & E Zimmermann;male;adult;;GL;;;SAMN39585238/SAMN39585239;This study
+M. murinus (north);M. murinus;m53y11ampi;Mmur_m53y11_ampi_S12;Ankarafantsika Jardin Botanique A;-16,317;46,8;NA;30.06.2011;S Kessler;male;adult;✓;GL & GC;;;SAMN39585240/SAMN39585241;This study
+M. murinus (south);M. murinus;AB01;Mmur_AB01;Ambatoabo;-24,8192;46,6697;NA;2007;SJ Rakotondranary;male;NA;✓;GL & GC;;;SAMN39585242;This study
+M. murinus (south);M. murinus;AB03;Mmur_AB03;Ambatoabo;-24,8192;46,6697;NA;2007;SJ Rakotondranary;female;NA;;GL;;;SAMN39585243;This study
+M. murinus (south);M. murinus;AB04;Mmur_AB04;Ambatoabo;-24,8183;46,6713;NA;2007;SJ Rakotondranary;female;NA;;GL;;;SAMN39585244;This study
+M. murinus (south);M. murinus;AB06;Mmur_AB06;Ambatoabo;-24,8189;46,6644;NA;2007;SJ Rakotondranary;male;NA;;GL;;;SAMN39585245;This study
+M. murinus (south);M. murinus;Gina;Mmur_Gina_S12;University of Veterinary Medicine Hannover, Foundation;NA;NA;NA;NA;U Radespiel;female;adult;✓;GL;;Captivity;SAMN39585246/SAMN39585247;This study
+M. murinus (south);M. murinus;Micro24;Mmur_Micro24;Tsimelahy;-24,9542;46,6192;NA;2006;SJ Rakotondranary;male;NA;✓;GL & GC;;;SAMN39585248;This study
+M. murinus (south);M. murinus;Rhodos;Mmur_Rhodos_S12;Zoo Paris;NA;NA;NA;NA;U Radespiel;male;adult;✓;GL;;Captivity;SAMN39585249/SAMN39585250;This study
+M. myoxinus;M. myoxinus;f01y13bom;Mmyo_01y13_bom_S12;Bombetoka;-15,8667;46,25;NA;13.09.2013;E Zimmermann;female;adult;✓;GL & GC;✓;;SAMN39585251/SAMN39585252;This study
+M. myoxinus;M. myoxinus;f03y06hatsi;Mmyo_03y06_hatsi_S12;Mitsinjo;-16,0167;45,85;NA;2006;B Randrianambinina & S Rasoloharijaona;female;NA;✓;GL & GC;;;SAMN39585253/SAMN39585254;This study
+M. myoxinus;M. myoxinus;m04y06hatsi;Mmyo_04y06_hatsi_S12;Mitsinjo;-16,0167;45,85;NA;2006;B Randrianambinina & S Rasoloharijaona;male;NA;;GL;;;SAMN39585255/SAMN39585256;This study
+M. myoxinus;M. myoxinus;m06y13bom;Mmyo_06y13_bom_S12;Bombetoka;-15,8667;46,25;NA;14.09.2013;E Zimmermann;male;adult;;GL;;;SAMN39585257/SAMN39585258;This study
+M. myoxinus;M. myoxinus;f17y03madi;Mmyo_17y03_madi_S12;Madirovalo;-16,3835;46,4772;NA;16.06.2003;G Olivieri;female;juvenile;✓;GL & GC;;;SAMN39585259/SAMN39585260;This study
+M. myoxinus;M. myoxinus;BEMA7.17;Mmyo_BEMA7.17_S12;Tsingy de Bemaraha;-19,0466;44,7805;69;03.12.2007;EE Louis, Jr.;male;adult;✓;GL & GC;;;SAMN39585261/SAMN39585262;This study
+M. myoxinus;M. myoxinus;BEMA7.8;Mmyo_BEMA7.8;Tsingy de Bemaraha;-19,0469;44,7803;70;01.12.2007;EE Louis, Jr.;female;adult;;GL;;;SAMN39585263;This study
+M. myoxinus;M. myoxinus;JMR027;Mmyo_JMR027;Andranomanitsy;-16,52;44,4867;30;18.10.2005;JM Ralison;female;adult;✓;GL & GC;;;SAMN39585264;This study
+M. myoxinus;M. myoxinus;JMR028;Mmyo_JMR028;Andranomanitsy;-16,52;44,4867;30;20.10.2005;JM Ralison;female;adult;;GL;;;SAMN39585265;This study
+M. myoxinus;M. myoxinus;JMR072;Mmyo_JMR072;Ambalimby;-19,6117;44,7433;120;27.10.2006;JM Ralison;male;adult;✓;GL & GC;;;SAMN39585266;This study
+M. myoxinus;M. myoxinus;JMR073;Mmyo_JMR073_S12;Ambalimby;-19,6117;44,7433;120;27.10.2006;JM Ralison;male;adult;;GL;;;SAMN39585267/SAMN39585268;This study
+M. myoxinus;M. myoxinus;JMR075;Mmyo_JMR075_S12;Ambalimby;-19,6117;44,7433;120;29.10.2006;JM Ralison;male;adult;;GL;;;SAMN39585269/SAMN39585270;This study
+M. myoxinus;M. myoxinus;RMR30;Mmyo_RMR30;Bemaraha;-19,1;44,8;140;30.10.1996;RM Rasoloarison;male;adult;;GL;;;SAMN39585271;This study
+M. myoxinus;M. myoxinus;RMR31;Mmyo_RMR31;Bemaraha;-19,1;44,8;140;30.10.1996;RM Rasoloarison;male;adult;✓;GL & GC;✓;;SAMN39585272;This study
+M. myoxinus;M. myoxinus;RMR70;Mmyo_RMR70;Bemaraha;-19,1;44,8;140;15.04.1997;RM Rasoloarison;female;adult;✓;GL & GC;;;SAMN39585273;This study
+M. myoxinus;M. myoxinus;RMR79;Mmyo_RMR79;Aboalimena;-19,25;44,45;50;18.09.1997;RM Rasoloarison;male;adult;;GL;;;SAMN39585274;This study
+M. myoxinus;M. myoxinus;RMR80;Mmyo_RMR80;Aboalimena;-19,25;44,45;50;18.09.1997;RM Rasoloarison;female;subadult;;GL;;;SAMN39585275;This study
+M. myoxinus;M. myoxinus;RMR81;Mmyo_RMR81;Aboalimena;-19,25;44,45;50;18.09.1997;RM Rasoloarison;female;subadult;;GL;;;SAMN39585276;This study
+M. myoxinus;M. myoxinus;RMR82;Mmyo_RMR82_S123;Aboalimena;-19,25;44,45;50;18.09.1997;RM Rasoloarison;male;adult;;GL;;;SAMN39585277/SAMN39585278/SAMN39585279;This study
+M. ravelobensis;M. ravelobensis;m10y03anko;Mrav_10y03_anko_S12;Ankoririka;-16,2667;47,05;NA;18.05.2003;R Rakotondravony;male;adult;✓;GL & GC;;;SAMN39585280/SAMN39585281;This study
+M. ravelobensis;M. ravelobensis;m10y13jbb;Mrav_10y13_jbb_S12;Ankarafantsika Jardin Botanique B;-16,3;46,8;NA;17.08.2013;U Radespiel & E Zimmermann;male;adult;✓;GL & GC;;;SAMN39585282/SAMN39585283;This study
+M. ravelobensis;M. ravelobensis;m13y03anko;Mrav_13y03_anko_S12;Ankoririka;-16,2667;47,05;NA;20.05.2003;R Rakotondravony;male;adult;✓;GL & GC;;;SAMN39585284/SAMN39585285;This study
+M. ravelobensis;M. ravelobensis;f166y03bero;Mrav_166y03_bero;Beronono;-15,996;47,1491;NA;18.09.2003;R Rakotondravony;female;adult;✓;GL & GC;;;SAMN39585286;This study
+M. ravelobensis;M. ravelobensis;f143y14mari;Mrav_f143y14_mari_S12;Mariarano;-15,4667;46,8;NA;08.07.2014;U Radespiel;female;juvenile;;GL;;;SAMN39585287/SAMN39585288;This study
+M. ravelobensis;M. ravelobensis;f257y18mari;Mrav_f257y18_mari;Mariarano;-15,4715;46,696;15,62;19.07.2018;M Ramsay;female;adult;;GL;;;SAMN39585289;This study
+M. ravelobensis;M. ravelobensis;f325y18mari;Mrav_f325y18_mari;Mariarano;-15,3874;46,7867;114,65;24.08.2018;M Ramsay;female;juvenile;✓;GL & GC;✓;;SAMN39585290;This study
+M. ravelobensis;M. ravelobensis;f63y14mari;Mrav_f63y14_mari_S12;Mariarano;-15,4667;46,8;NA;02.07.2014;U Radespiel;female;adult;;GL;;;SAMN39585291/SAMN39585292;This study
+M. ravelobensis;M. ravelobensis;m117y17jabe;Mrav_m117y17_jabe;Ambanjabe;-16,3066;46,6972;148,27;29.08.2017;M Ramsay;male;adult;✓;GL & GC;✓;;SAMN39585293;This study
+M. ravelobensis;M. ravelobensis;m125y14mari;Mrav_m125y14_mari_S12;Mariarano;-15,4833;46,8;NA;07.07.2014;U Radespiel;male;adult;✓;GL & GC;;;SAMN39585294/SAMN39585295;This study
+M. ravelobensis;M. ravelobensis;m139y17jabe;Mrav_m139y17_jabe;Ambanjabe;-16,3011;46,7154;125,36;13.09.2017;M Ramsay;male;adult;✓;GL & GC;;;SAMN39585296;This study
+M. ravelobensis;M. ravelobensis;m178y14mari;Mrav_m178y14_mari_S12;Mariarano;-15,4667;46,8;NA;14.07.2014;U Radespiel;male;adult;✓;GL & GC;;;SAMN39585297/SAMN39585298;This study
+M. ravelobensis;M. ravelobensis;m180y18mari;Mrav_m180y18_mari;Mariarano;-15,5045;46,6965;12,41;21.06.2018;M Ramsay;male;adult;;GL;;;SAMN39585299;This study
+M. ravelobensis;M. ravelobensis;m266y18mari;Mrav_m266y18_mari;Mariarano;-15,4693;46,6989;19,4;19.07.2018;M Ramsay;male;adult;✓;GL & GC;;;SAMN39585300;This study
+M. ravelobensis;M. ravelobensis;m90y17rav;Mrav_m90y17_rav_S2;Lake Ravelobe;-16,3111;46,823;NA;05.07.2017;H. Teixeira;male;adult;;GL;;;SAMN16955588;Teixeira et al. (2021)
+M. rufus;M. rufus;CAISOM101;Mruf_CAISOM101;Ranomafana;-21,25;47,45;NA;NA;S Atsalis;NA;NA;✓;GL & GC;;;SAMN39585301;This study
+M. rufus;M. rufus;D100M94;Mruf_D100M94;Ranomafana;-21,25;47,45;NA;NA;S Atsalis;NA;NA;;GL;;;SAMN39585302;This study
+M. rufus;M. rufus;E0F72_S12;Mruf_E0F72_S12;Ranomafana;-21,25;47,45;NA;NA;S Atsalis;NA;NA;;GL;;;SAMN39585303/SAMN39585304;This study
+M. rufus;M. rufus;E250M100;Mruf_E250M100;Ranomafana;-21,25;47,45;NA;NA;S Atsalis;NA;NA;✓;GL & GC;;;SAMN39585305;This study
+M. rufus;M. rufus;E250M91;Mruf_E250M91;Ranomafana;-21,25;47,45;NA;NA;S Atsalis;NA;NA;;GL;;;SAMN39585306;This study
+M. rufus;M. rufus;PBZT116;Mruf_PBZT116;Ranomafana;-21,2583;47,4241;NA;20.03.2003;EE Louis, Jr.;male;NA;✓;GL & GC;✓;;SAMN39585307;This study
+M. rufus;M. rufus;PBZT122;Mruf_PBZT122;Ranomafana;-21,2583;47,4241;NA;20.03.2003;EE Louis, Jr.;female;NA;✓;GL & GC;;;SAMN39585308;This study
+M. rufus;M. rufus;RMR142;Mruf_RMR142;Andrambovato;-21,4959;47,4018;NA;09.03.2004;RM Rasoloarison;female;subadult;✓;GL & GC;;;SAMN39585309;This study
+M. rufus;M. rufus;RMR144;Mruf_RMR144;Andrambovato;-21,4959;47,4018;NA;15.03.2004;RM Rasoloarison;male;adult;;GL;;;SAMN39585310;This study
+M. rufus;M. rufus;RMR147;Mruf_RMR147;Andrambovato;-21,4959;47,4018;NA;18.03.2004;RM Rasoloarison;female;adult;;GL;;;SAMN39585311;This study
+M. rufus;M. rufus;TRA8.83;Mruf_TRA8.83;Andringitra;-22,2061;46,9387;1736;22.11.2008;JF Ranaivoarisoa ;male;NA;✓;GL & GC;✓;;SAMN39585312;This study
+M. rufus;M. rufus;TRA8.85;Mruf_TRA8.85;Andringitra;-22,2068;46,972;1661;22.11.2008;JF Ranaivoarisoa ;female;NA;✓;GL & GC;;;SAMN39585313;This study
+M. sambiranensis;M. sambiranensis;f02y05mamy;Msam_02y05_mamy_S12;Ambongomamy;-14,4953;48,2097;NA;29.09.2005;G Olivieri;female;juvenile;✓;GL & GC;;;SAMN39585314/SAMN39585315;This study
+M. sambiranensis;M. sambiranensis;f06y02mahi;Msam_06y02_mahi_S12;Mahilaka Ambodiaviavy;-14,2867;48,2272;NA;20.06.2002;B Randrianambinina & S Rasoloharijaona;female;adult;✓;GL & GC;;;SAMN39585316/SAMN39585317;This study
+M. sambiranensis;M. sambiranensis;f06y05mamy;Msam_06y05_mamy_S12;Ambongomamy;-14,4953;48,2097;NA;01.10.2005;G Olivieri;female;adult;✓;GL & GC;✓;;SAMN39585318/SAMN39585319;This study
+M. sambiranensis;M. sambiranensis;f07y02mahi;Msam_07y02_mahi_S12;Mahilaka Ambodiaviavy;-14,2867;48,2272;NA;20.06.2002;B Randrianambinina & S Rasoloharijaona;female;adult;✓;GL & GC;;;SAMN39585320/SAMN39585321;This study
+M. sambiranensis;M. sambiranensis;f15y02mahi;Msam_15y02_mahi_S12;Mahilaka Ambodiaviavy;-14,2867;48,2272;NA;26.06.2002;B Randrianambinina & S Rasoloharijaona;female;adult;✓;GL & GC;✓;;SAMN39585322/SAMN39585323;This study
+M. simmonsi;M. simmonsi;A01_2014;Msim_A01_2014;Ambodiriana;-16,6749;49,7023;NA;18.06.2014;A Miller;female;NA;;GL;;;SAMN39585324;This study
+M. simmonsi;M. simmonsi;A02_2014;Msim_A02_2014;Ambodiriana;-16,6731;49,6989;NA;18.06.2014;A Miller;female;NA;;GL;;;SAMN39585325;This study
+M. simmonsi;M. simmonsi;A03_2014;Msim_A03_2014;Ambodiriana;-16,6742;49,7013;NA;21.06.2014;A Miller;female;adult;✓;GL & GC;;;SAMN12641381;Poelstra et al. (2021)
+M. simmonsi;M. simmonsi;A08_2014;Msim_A08_2014;Ambodiriana;-16,6735;49,7002;NA;17.07.2014;A Miller;male;adult;✓;GL & GC;;;SAMN12641382;Poelstra et al. (2021)
+M. simmonsi;M. simmonsi;BET87;Msim_BET87;Betampona;-17,9409;49,2056;NA;2004;EE Louis, Jr.;NA;adult;✓;GL & GC;✓;;SAMN12641383;Poelstra et al. (2021)
+M. simmonsi;M. simmonsi;PBZT117;Msim_PBZT117;Betampona;-17,9408;49,2056;NA;2004;EE Louis, Jr.;NA;adult;✓;GL & GC;;;SAMN12641384;Poelstra et al. (2021)
+M. simmonsi;M. simmonsi;POLO5.22;Msim_POLO522;Tampolo;-17,2884;49,4082;NA;2006;EE Louis, Jr.;NA;adult;✓;GL & GC;✓;;SAMN12641385;Poelstra et al. (2021)
+M. simmonsi;M. simmonsi;ZAH2;Msim_ZAH2;Zahamena;-17,4892;48,7472;NA;2002;EE Louis, Jr.;NA;adult;✓;GL & GC;;;SAMN12641386;Poelstra et al. (2021)
+M. simmonsi;M. simmonsi;ZAH5;Msim_ZAH5;Zahamena;-17,4892;48,7472;NA;2002;EE Louis, Jr.;NA;adult;✓;GL & GC;;;SAMN12641387;Poelstra et al. (2021)
+M. sp. 1;M. arnholdi;A100_2014;Msp1_A100_2014;Belongoza;-13,7687;49,4146;NA;14.09.2014;B Le Pors;male;adult;✓;GL & GC;;;SAMN39585326;This study
+M. sp. 1;M. arnholdi;A17_2014;Msp1_A17_2014;Tsihomanaomby;-14,0928;50,0122;NA;07.08.2014;B Le Pors;female;adult;✓;GL & GC;✓;;SAMN39585327;This study
+M. sp. 1;M. arnholdi;A45_2014;Msp1_A45_2014;Andravory;-13,7887;49,514;NA;26.08.2014;B Le Pors;female;adult;✓;GL & GC;✓;;SAMN39585328;This study
+M. sp. 1;M. arnholdi;A61_2014;Msp1_A61_2014;Belongoza;-13,7639;49,4095;NA;07.09.2014;B Le Pors;male;adult;✓;GL & GC;;;SAMN39585329;This study
+M. sp. 1;M. arnholdi;AMBH_D7_2013;Msp1_AMBH_D7_2013;Ambohitandrina;-13,6497;50,0685;NA;22.10.2013;J Salmona;female;adult;✓;GL & GC;;;SAMN39585330;This study
+M. sp. 1;M. arnholdi;ANALV_A19_2013;Msp1_ANALV_A19_2013;Analalava;-13,6079;49,9974;NA;10.08.2013;J Salmona;female;adult;✓;GL & GC;;;SAMN39585331;This study
+M. sp. 1;M. arnholdi;B14_2014;Msp1_B14_2014;Antsahabe Ambalasoa;-13,8901;49,4378;NA;12.10.2014;B Le Pors;female;adult;✓;GL & GC;;;SAMN39585332;This study
+M. sp. 1;M. arnholdi;B77_2014;Msp1_B77_2014;Antsahabe Ambalasoa;-13,9016;49,4223;NA;22.10.2014;B Le Pors;male;adult;✓;GL & GC;;;SAMN39585333;This study
+M. sp. 1;M. arnholdi;BEZAV_C30_2013;Msp1_BEZAV_C30_2013;Bezavona;-13,5524;49,8959;NA;23.09.2013;J Salmona;male;adult;✓;GL & GC;;;SAMN39585334;This study
+M. sp. 1;M. arnholdi;BEZAV_C53_2013;Msp1_BEZAV_C53_2013;Bezavona;-13,5475;49,8936;NA;25.09.2013;J Salmona;female;adult;✓;GL & GC;;;SAMN39585335;This study
+M. sp. 1;M. arnholdi;BF38_2017;Msp1_BF38_2017;Binara;-13,2812;49,6098;NA;02.08.2017;B Le Pors & GM Sgarlata;female;NA;✓;GL & GC;;;SAMN39585336;This study
+M. sp. 1;M. arnholdi;BIN.S_K53_2011;Msp1_BIN.S_K53_2011;Binara;-13,2881;49,6034;NA;24.10.2011;J Salmona;male;NA;✓;GL & GC;;;SAMN39585337;This study
+M. sp. 1;M. arnholdi;E23_2014;Msp1_E23_2014;Andravory;-13,7682;49,6128;NA;16.11.2014;B Le Pors;female;adult;✓;GL & GC;;;SAMN39585338;This study
+M. sp. 1;M. arnholdi;F28_2015;Msp1_F28_2015;Antsahabe Ambaliha;-13,6521;49,5468;NA;01.09.2015;B Le Pors;female;adult;✓;GL & GC;;;SAMN39585339;This study
+M. sp. 1;M. arnholdi;F60_2015;Msp1_F60_2015;Antongonaomby;-13,5564;49,5393;NA;10.09.2015;B Le Pors;male;adult;✓;GL & GC;;;SAMN39585340;This study
+M. sp. 1;M. arnholdi;G40_2015;Msp1_G40_2015;Ankijanala;-13,3499;49,452;NA;14.10.2015;B Le Pors;male;adult;✓;GL & GC;;;SAMN39585341;This study
+M. sp. 1;M. arnholdi;G78_2015;Msp1_G78_2015;Analavelona;-13,36;49,4425;NA;18.10.2015;B Le Pors;female;adult;;GL;;;SAMN39585342;This study
+M. sp. 1;M. arnholdi;MBB052;Msp1_MBB052;Tsihomanaomby;-14,1009;50,0137;285;20.07.2016;MB Blanco;female;juvenile;✓;GL & GC;;;SAMN39585343;This study
+M. sp. 1;M. arnholdi;SALAF_B66_2013;Msp1_SALAF_B66_2013;Salafaina;-13,4356;49,7194;NA;06.09.2013;J Salmona;male;adult;✓;GL & GC;;;SAMN39585344;This study
+M. sp. 1;M. arnholdi;SALAF_B77_2013;Msp1_SALAF_B77_2013;Salafaina;-13,4498;49,7041;NA;06.09.2013;J Salmona;male;adult;✓;GL & GC;;;SAMN39585345;This study
+M. tanosi;M. tanosi;AND6.1;Mtan_AND6.1;Andohahela Manangotry;-24,77;46,8634;145;13.06.2006;EE Louis, Jr.;female;NA;✓;GC;✓;;SAMN39585346;This study
+M. tanosi;M. tanosi;AND6.4;Mtan_AND6.4;Andohahela Manangotry;-24,7649;46,8623;252;15.06.2006;EE Louis, Jr.;female;NA;✓;GC;;;SAMN39585347;This study
+M. tanosi;M. tanosi;RMR206;Mtan_RMR206;Ivorona;-24,8236;46,9486;NA; Apr 2004;RM Rasoloarison;male;subadult;✓;GC;;;SAMN25888965;Tiley et al. (2022)
+M. tanosi;M. tanosi;RMR207;Mtan_RMR207;Ivorona;-24,8236;46,9486;NA; Apr 2004;RM Rasoloarison;female;subadult;✓;GC;;;SAMN25888966;Tiley et al. (2022)
+M. tanosi;M. tanosi;RMR208;Mtan_RMR208;Manantantely;-24,9881;46,9222;NA; Apr 2004;RM Rasoloarison;male;subadult;✓;GC;;;SAMN25888967;Tiley et al. (2022)
+M. tanosi;M. tanosi;RMR209;Mtan_RMR209;Manantantely;-24,9881;46,9222;NA; Apr 2004;RM Rasoloarison;female;adult;✓;GC;✓;;SAMN25888968;Tiley et al. (2022)
+M. tanosi;M. tanosi;RMR211;Mtan_RMR211_S12;Manantantely;-24,9881;46,9222;NA; Apr 2004;RM Rasoloarison;male;adult;✓;GC;;;SAMN25888969/SAMN25888970;Tiley et al. (2022)
+M. tanosi;M. tanosi;RMR213;Mtan_RMR213_S12;Manantantely;-24,9881;46,9222;NA; Apr 2004;RM Rasoloarison;female;adult;✓;GC;;;SAMN25888971/SAMN25888972;Tiley et al. (2022)
+M. tavaratra;M. tavaratra;AMBO_F37_2011;Mtav_AMBO_F37_2011;Ambohitsitondroina;-13,1247;49,4408;NA;02.08.2011;J Salmona;female;NA;✓;GC;;;SAMN39585348;This study
+M. tavaratra;M. tavaratra;AMPO_P39_2011;Mtav_AMPO_P39_2011;Ampondrabe;-12,9719;49,7019;NA;10.11.2011;J Salmona;male;adult;✓;GC;;;SAMN39585349;This study
+M. tavaratra;M. tavaratra;ANALF_B22_2013;Mtav_ANALF_B22_2013;Analafiana;-13,459;49,8259;NA;30.08.2013;J Salmona;female;adult;✓;GC;;;SAMN39585350;This study
+M. tavaratra;M. tavaratra;ANALF_B28_2013;Mtav_ANALF_B28_2013;Analafiana;-13,4499;49,8301;NA;01.09.2013;J Salmona;male;adult;✓;GC;✓;;SAMN39585351;This study
+M. tavaratra;M. tavaratra;ANALM_C56_2012;Mtav_ANALM_C56_2012;Analamerana;-12,8331;49,3709;NA;30.07.2012;J Salmona;female;adult;✓;GC;;;SAMN39585352;This study
+M. tavaratra;M. tavaratra;ANDF_A28_2012;Mtav_ANDF_A28_2012;Andrafiamena;-12,9891;49,192;NA;23.06.2012;J Salmona;female;juvenile;✓;GC;;;SAMN39585353;This study
+M. tavaratra;M. tavaratra;ANKA_F137_2012;Mtav_ANKA_F137_2012;Ankarana;-12,9868;49,0313;NA;26.08.2012;J Salmona;male;adult;✓;GC;;;SAMN39585354;This study
+M. tavaratra;M. tavaratra;ANTSB_H53_2011;Mtav_ANTSB_H53_2011;Antsahabe;-13,2107;49,5651;NA;13.09.2011;J Salmona;male;adult;✓;GC;;;SAMN39585355;This study
+M. tavaratra;M. tavaratra;ANTSR_L16_2011;Mtav_ANTSR_L16_2011;Antsharaingy;-12,9092;49,6582;NA;09.11.2011;J Salmona;male;adult;✓;GC;;;SAMN39585356;This study
+M. tavaratra;M. tavaratra;BA15_2017;Mtav_BA15_2017;Ampiho;-12,3565;49,4278;NA;19.04.2017;B Le Pors & GM Sgarlata;male;adult;✓;GC;✓;;SAMN39585357;This study
+M. tavaratra;M. tavaratra;BA79_2017;Mtav_BA79_2017;Montagne des Français;-12,3627;49,3931;NA;24.04.2017;B Le Pors & GM Sgarlata;female;adult;✓;GC;;;SAMN39585358;This study
+M. tavaratra;M. tavaratra;BEK_D40_2011;Mtav_BEK_D40_2011;Bekaraoka;-13,1764;49,7081;NA;25.09.2011;J Salmona;female;NA;✓;GC;;;SAMN39585359;This study
+M. tavaratra;M. tavaratra;BEN_G62_2011;Mtav_BEN_G62_2011;Benanofy;-13,018;49,5673;NA;18.08.2011;J Salmona;male;adult;✓;GC;;;SAMN39585360;This study
+M. tavaratra;M. tavaratra;BIN_C32_2010;Mtav_BIN_C32_2010;Binara;-13,2492;49,6167;NA;29.08.2010;J Salmona;female;adult;✓;GC;;;SAMN39585361;This study
+M. tavaratra;M. tavaratra;BJ18_2017;Mtav_BJ18_2017;Analabe;-12,71;48,97;NA;13.10.2017;B Le Pors & GM Sgarlata;male;adult;✓;GC;;;SAMN39585362;This study
+M. tavaratra;M. tavaratra;C23_2013;Mtav_C23_2013;Ankarongana;-12,6298;49,4172;NA;26.10.2013;J Salmona;female;adult;✓;GC;;;SAMN39585363;This study
+M. tavaratra;M. tavaratra;D72_2015;Mtav_D72_2015;Orangea;-12,2622;49,3856;NA;19.07.2015;B Le Pors;male;adult;✓;GC;;;SAMN39585364;This study
+M. tavaratra;M. tavaratra;SOL_K18_2011;Mtav_SOL_K18_2011;Solaniampilana;-13,0791;49,5825;NA;27.08.2011;J Salmona;female;adult;✓;GC;;;SAMN39585365;This study
