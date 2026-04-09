@@ -48,7 +48,7 @@ And the variable importance across layers:
 Trait.SOM.varImp(res)
 ```
 
-# Example: _Desmognathus monticola_, the Seal Salamander
+## Empirical example: seal salamander (_Desmognathus monticola_: Plethodontidae) 
 
 ![Pyron_et_al_Figure_3](https://github.com/rpyron/delim-SOM/assets/583099/9f28c7f0-0790-4a47-a7a4-25c98024a087)
 
