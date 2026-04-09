@@ -1,8 +1,8 @@
-# Unsupervised machine learning for fully integrative species delimitation
+# Unsupervised machine learning (SOMs) for fully integrative species delimitation
 
-This R package uses multi-layer Kohonen Self-Organizing Maps ("SuperSOMs") to delimit species and produce integrative taxonomies using Unsupervised Machine Learning (UML) as described in Pyron (2023). This repository expands the use of single-layer SOMs as described in Pyron et al. (2023). It relies on the R package <code>kohonen</code> (Wehrens and Buydens 2007) to delimit species based on allelic, spatial, climatic, and phenotypic data.
+This R package uses multi-layer Self-Organizing Maps (SOMs) to delimit species and produce integrative taxonomies as described in Pyron (2023). This repository expands the use of single-layer SOMs as described in Pyron et al. (2023). It relies on the R package <code>kohonen</code> (Wehrens and Buydens 2007, 2018) to delimit species based on allelic, spatial, environmental, and phenotypic data.
 
-The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore mirror a 'STRUCTURE'-type analysis including admixture estimates, but represent an unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for integative taxonomy. If only allelic data are used with a 'DNA.SOM()' model, then the assignment probabilities approximate individual ancestry coefficients. If multiple layers are used, we treat them as "species coefficients," which might be useful for testing a variety of ecological and evolutionary hypotheses.
+The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore resemble a 'STRUCTURE'-type analysis including admixture estimates, but represent a unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for fully integative taxonomy. 
 
 The requisite functions are in the './R/kohonen_code.R' file, which loads the various dependencies:
 
@@ -39,66 +39,10 @@ labels <- match.labels(alleles)#get DAPC labels
 ```
 
 
-Then, construct a SOM grid:
 
 ```
-###Parameters for runs
-#Size of Grid
-g <- round(sqrt(5*sqrt(length(rownames(alleles)))))#common rule of thumb
 
-#Create an output grid of size sqrt(n)
-som_grid <- somgrid(xdim = g,
-                    ydim = g,
-                    topo="hexagonal",
-                    neighbourhood.fct = "gaussian")
 
-#Number of Replicates - can increase if you like
-n <- 100
-
-#Number of steps - doesn't usually matter beyond ~100
-m <- 100
-```
-
-Run a SuperSOM:
-
-```
-##############
-###Run SOMs###
-##############
-res <- Trait.SOM()
-```
-
-Visualize the output:
-
- ```
- #Plot Learning#
-plotLearning.Traits(res)
-
-#Layer Weights#
-plotLayers(res)
-
-#Optimize K#
-plotK(res)
-
-#Look at a representative SOM grid#
-plotModels(res)
-```
-
-Review a map, where _'xyz'_ is your long/lat/elevation matrix:
-
-```
-#Get species coefficients#
-q_mat <- match.k(res,labels)
-
-#Sample Map#
-par(mar=c(0,0,0,0))
-xy <- xyz[,1:2]
-maps::map(database = 'world', xlim = range(xy[,1]) + c(-1,1), ylim = range(xy[,2]) + c(-1,1), col="white")
-map.axes()
-maps::map(database = 'world', xlim = range(xy[,1]) + c(-1,1), ylim = range(xy[,2]) + c(-1,1), add = T)
-make.admix.pie.plot(q_mat,xy,layer.colors = k.cols,radii=2.5,add = T)
-map.scale()
-```
 
 A STRUCTURE-type barplot:
 ```
