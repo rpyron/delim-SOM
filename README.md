@@ -1,6 +1,6 @@
 # Fully integrative species delimitation with unsupervised machine learning using SOMs 
 
-Our delim-SOM R package uses Self-Organizing Maps (SOMs) to delimit species and produce integrative taxonomies. This repository expands the use of single-layer SOMs as described in Pyron et al. (2023). It relies on the <code>kohonen</code> R package (Wehrens and Buydens 2007, 2018) to delimit species based on allelic, spatial, environmental, and phenotypic data.
+Our <code>delim-SOM</code> R package uses Self-Organizing Maps (SOMs) to delimit species and produce integrative taxonomies. This repository expands the use of single-layer SOMs as described in Pyron et al. (2023). It relies on the <code>kohonen</code> R package (Wehrens and Buydens 2007, 2018) to delimit species based on allelic, spatial, environmental, and phenotypic data.
 
 The contribution of each layer to the final model output is recorded, along with the clustering assignment of each individual over multiple learning replicates. The results therefore resemble a 'STRUCTURE'-type analysis including admixture estimates, but represent a unified delimitation model that incorporates various dimensions of ecological and evolutionary divergence for fully integative taxonomy. 
 
