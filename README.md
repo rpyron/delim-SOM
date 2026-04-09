@@ -45,6 +45,8 @@ plot.layer.importance.varimp.SOM()
 ```
 
 ## Empirical example: seal salamander (_Desmognathus monticola_: Plethodontidae) 
+To give you a better understanding on the approach and how to input data, we provide several empirical examples:
+Here, a sample dataset and analysis for Seal Salamanders (Desmognathus monticola), which now represents two species in the Appalachian Mountains and Piedmont of the eastern United States, based on four datasets comprising a SNP matrix from Genotype-By-Sequencing (GBS) analysis, long/lat/elevation (xyz), environment (climate, hydrology, and ecoregion), and phenotype (17 linear morphometric measurements and larval spot count).
 
 ![Pyron_et_al_Figure_3](https://github.com/rpyron/delim-SOM/assets/583099/9f28c7f0-0790-4a47-a7a4-25c98024a087)
 
