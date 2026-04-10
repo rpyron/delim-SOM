@@ -7140,7 +7140,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Plot k distribution TVD
   barplot(height = layer_summary_table$k.distribution.TVD,
-          names.arg = SOM_layer_names,
+          axisnames = FALSE,
           col = layer_colors[SOM_layer_names],
           las = 2,
           ylab = "K distribution TVD",
@@ -7152,7 +7152,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           data = successful_replicate_matched_results_table,
           col = layer_colors[SOM_layer_names],
           outline = FALSE,
-          xaxt = "n",
           las = 2,
           ylab = "1 - assignment accuracy to original",
           xlab = "",
@@ -7164,7 +7163,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           data = successful_replicate_matched_results_table,
           col = layer_colors[SOM_layer_names],
           outline = FALSE,
-          xaxt = "n",
           las = 2,
           ylab = "Pairwise co-assignment change",
           xlab = "",
