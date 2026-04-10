@@ -36,7 +36,7 @@ for (pkg in CRAN_packages) {
 
 ## Function to train single-layer SOM (one matrix) or multi-layer Super-SOM (multiple matrices)
 train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dataframes provided as list()
-                      N.steps = 100, #number of training iterations S for SOM
+                      N.steps = 200, #number of training iterations S for SOM
                       N.replicates = 110, #number of SOM runs R
                       parallel = TRUE, #whether to run SOM training in parallel 
                       N.cores = 3, #number of cores for training SOM in parallel (if parallel = TRUE)
@@ -52,7 +52,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
                       training.neighborhoods = "gaussian", #neighborhood function used for SOM training (options: "gaussian" or "bubble")
                       save.SOM.results = FALSE, #whether to save SOM results to file
                       save.SOM.results.name = NULL, #file name for saving SOM results (if NULL, default name based on input_data is generated; if save.SOM.results = TRUE)
-                      overwrite.SOM.results = TRUE, #if FALSE, existing results are loaded instead of re-running SOM
+                      overwrite.SOM.results = FALSE, #if FALSE, existing results are loaded instead of re-running SOM
                       verbose = TRUE, #whether to show messages
                       message.N.replicates = 20, #frequency of progress messages during training (message is printed every message.N.replicates iterations)
                       set.seed.N = 1 #set seed for reproducibility
