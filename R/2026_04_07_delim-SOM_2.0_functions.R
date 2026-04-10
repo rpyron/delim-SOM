@@ -2065,7 +2065,7 @@ clustering.SOM <- function(SOM.output,
           som_cluster <- rep(1L, nrow(som_codes)) #assign all units to single cluster
           BIC_vec <- rep(NA_real_, max.k) #initialize BIC vector as NA
         } else {
-          n_perm <- 1000 #set number of permutations
+          n_perm <- 500 #set number of permutations
           davies_bouldin_null <- numeric(n_perm) #initialize null DB vector
           for (i in seq_len(n_perm)) { #iterate over permutations
             permuted_som_codes <- apply(som_codes, 2, sample) #permute values within each column
