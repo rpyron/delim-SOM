@@ -6720,7 +6720,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       BIC.thresh.current <- if (!is.null(clustering.SOM.args$BIC.thresh)) clustering.SOM.args$BIC.thresh else 6
       
       # Extract codebook matrix and count distinct codebook rows
-      trained_codes <- kohonen::getCodes(trained_single_replicate_SOM_output$som_model)
+      trained_codes <- kohonen::getCodes(trained_single_replicate_SOM_output$som_models[[1]])
       if (!is.list(trained_codes)) trained_codes <- list(trained_codes)
       trained_code_matrix <- do.call(cbind, lapply(trained_codes, as.matrix))
       distinct_codebook_rows <- nrow(unique(trained_code_matrix))
