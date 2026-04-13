@@ -6728,9 +6728,9 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       # If only one distinct codebook row remains, return a valid k = 1 clustering result directly
       if (distinct_codebook_rows < 2) {
         single_cluster_assignment <- matrix(1,
-                                            nrow = nrow(trained_single_replicate_SOM_output$sample_node_assignments),
+                                            nrow = nrow(input_data_for_SOM[[1]]),
                                             ncol = 1,
-                                            dimnames = list(rownames(trained_single_replicate_SOM_output$sample_node_assignments),
+                                            dimnames = list(rownames(input_data_for_SOM[[1]]),
                                                             "R1"))
         clustered_single_replicate_SOM_output <- trained_single_replicate_SOM_output
         clustered_single_replicate_SOM_output$cluster_assignment <- single_cluster_assignment
