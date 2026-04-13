@@ -6719,25 +6719,52 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       clustering.method.current <- if (!is.null(clustering.SOM.args$clustering.method)) clustering.SOM.args$clustering.method else stop("Leave-one-layer-out layer importance aborted: clustering.method is missing in clustering.SOM.args")
       BIC.thresh.current <- if (!is.null(clustering.SOM.args$BIC.thresh)) clustering.SOM.args$BIC.thresh else 6
       
-      # Fit clustering
-      clustered_single_replicate_SOM_output <- withCallingHandlers(
-        clustering.SOM(SOM.output = trained_single_replicate_SOM_output,
-                       max.k = max.k.current,
-                       set.k = set.k.current,
-                       clustering.method = clustering.method.current,
-                       BIC.thresh = BIC.thresh.current,
-                       quantization.error.quantile = NULL,
-                       topographic.error.quantile = NULL,
-                       set.seed.N = matched_clustering_seed),
-        warning = function(w) {
-          if (grepl("^Eta squared effect size \\(variable importance\\) could not be computed because all replicates produced k = 1$",
-                    conditionMessage(w))) {
-            invokeRestart("muffleWarning")
-          }
+      # Extract codebook matrix and count distinct codebook rows
+      trained_codes <- kohonen::getCodes(trained_single_replicate_SOM_output$som_model)
+      if (!is.list(trained_codes)) trained_codes <- list(trained_codes)
+      trained_code_matrix <- do.call(cbind, lapply(trained_codes, as.matrix))
+      distinct_codebook_rows <- nrow(unique(trained_code_matrix))
+      
+      # If only one distinct codebook row remains, return a valid k = 1 clustering result directly
+      if (distinct_codebook_rows < 2) {
+        single_cluster_assignment <- matrix(1,
+                                            nrow = nrow(trained_single_replicate_SOM_output$sample_node_assignments),
+                                            ncol = 1,
+                                            dimnames = list(rownames(trained_single_replicate_SOM_output$sample_node_assignments),
+                                                            "R1"))
+        clustered_single_replicate_SOM_output <- trained_single_replicate_SOM_output
+        clustered_single_replicate_SOM_output$cluster_assignment <- single_cluster_assignment
+        clustered_single_replicate_SOM_output$optim_k_vals <- 1
+        clustered_single_replicate_SOM_output$optim_k_summary <- data.frame(Count = 1,
+                                                                            Proportion = 1,
+                                                                            row.names = "k1")
+      } else {
+        
+        # Reduce max.k / set.k if leave-one-layer-out SOM has too few distinct codebook rows
+        max.k.allowed <- distinct_codebook_rows - 1
+        max.k.current <- min(max.k.current, max.k.allowed)
+        if (!is.null(set.k.current)) {
+          set.k.current <- min(set.k.current, max.k.allowed)
         }
-      )
-      return(clustered_single_replicate_SOM_output)
-    }
+        
+        # Fit clustering
+        clustered_single_replicate_SOM_output <- withCallingHandlers(
+          clustering.SOM(SOM.output = trained_single_replicate_SOM_output,
+                         max.k = max.k.current,
+                         set.k = set.k.current,
+                         clustering.method = clustering.method.current,
+                         BIC.thresh = BIC.thresh.current,
+                         quantization.error.quantile = NULL,
+                         topographic.error.quantile = NULL,
+                         set.seed.N = matched_clustering_seed),
+          warning = function(w) {
+            if (grepl("^Eta squared effect size \\(variable importance\\) could not be computed because all replicates produced k = 1$",
+                      conditionMessage(w))) {
+              invokeRestart("muffleWarning")
+            }
+          }
+        )
+      }
     
     # Extract baseline retained replicate indices
     if (!is.null(SOM_output$retained_replicates) && length(SOM_output$retained_replicates) == length(SOM_output$som_models)) {
