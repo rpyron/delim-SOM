@@ -6771,7 +6771,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
               single_cluster_assignment <- matrix(1,
                                                  nrow = nrow(input_data_for_SOM[[1]]),
                                                   ncol = 1,
-                                                  dimnames = list(rownames(input_data_for_SOM[[1]])
+                                                  dimnames = list(rownames(input_data_for_SOM[[1]]),
                                                                   "R1"))
               clustered_single_replicate_SOM_output <- trained_single_replicate_SOM_output
               clustered_single_replicate_SOM_output$cluster_assignment <- single_cluster_assignment
