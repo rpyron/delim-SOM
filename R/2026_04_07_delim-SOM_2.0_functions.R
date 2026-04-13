@@ -6108,10 +6108,10 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   add.points = TRUE, #whether to add replicate-level jittered points
                                                   point.cex = 0.7, #point size
                                                   point.alpha = 0.5, #point transparency
-                                                  margin.bottom = 8, #bottom margin
-                                                  margin.left = 5.5, #left margin
-                                                  margin.top = 3, #top margin
-                                                  margin.right = 2, #right margin
+                                                  bottom.margin = 8, #bottom margin
+                                                  left.margin = 5.5, #left margin
+                                                  top.margin = 3, #top margin
+                                                  right.margin = 2, #right margin
                                                   distance.axis.label = 4, #distance of axis title from axis labels in par(mgp = c(...))
                                                   save.leave.one.layer.out.results = FALSE, #whether to save leave-one-layer-out results to file
                                                   save.leave.one.layer.out.results.name = NULL, #file name for saving leave-one-layer-out results; if NULL, default name is generated
@@ -7134,18 +7134,18 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   # Set plotting layout
   if (show.assignment.margin.plot || show.assignment.entropy.plot) {
     par(mfrow = c(3, 2),
-        mar = c(margin.bottom,
-                margin.left,
-                margin.top,
-                margin.right),
+        mar = c(bottom.margin,
+                left.margin,
+                top.margin,
+                right.margin),
         oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
         mgp = c(distance.axis.label, 1, 0))
   } else {
     par(mfrow = c(2, 2),
-        mar = c(margin.bottom,
-                margin.left,
-                margin.top,
-                margin.right),
+        mar = c(bottom.margin,
+                left.margin,
+                top.margin,
+                right.margin),
         oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
         mgp = c(distance.axis.label, 1, 0))
     messager("Assignment margin and entropy plots skipped because all successful replicates had k = 1")
