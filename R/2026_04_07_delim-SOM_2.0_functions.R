@@ -6765,6 +6765,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           }
         )
       }
+ return(clustered_single_replicate_SOM_output)
+    }
     
     # Extract baseline retained replicate indices
     if (!is.null(SOM_output$retained_replicates) && length(SOM_output$retained_replicates) == length(SOM_output$som_models)) {
