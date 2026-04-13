@@ -6748,20 +6748,40 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         }
         
         # Fit clustering
-        clustered_single_replicate_SOM_output <- withCallingHandlers(
-          clustering.SOM(SOM.output = trained_single_replicate_SOM_output,
-                         max.k = max.k.current,
-                         set.k = set.k.current,
-                         clustering.method = clustering.method.current,
-                         BIC.thresh = BIC.thresh.current,
-                         quantization.error.quantile = NULL,
-                         topographic.error.quantile = NULL,
-                         set.seed.N = matched_clustering_seed),
-          warning = function(w) {
-            if (grepl("^Eta squared effect size \\(variable importance\\) could not be computed because all replicates produced k = 1$",
-                      conditionMessage(w))) {
-              invokeRestart("muffleWarning")
+        clustered_single_replicate_SOM_output <- tryCatch(
+          withCallingHandlers(
+            clustering.SOM(SOM.output = trained_single_replicate_SOM_output,
+                           max.k = max.k.current,
+                           set.k = set.k.current,
+                           clustering.method = clustering.method.current,
+                           BIC.thresh = BIC.thresh.current,
+                           quantization.error.quantile = NULL,
+                           topographic.error.quantile = NULL,
+                           set.seed.N = matched_clustering_seed),
+            warning = function(w) {
+              if (grepl("^Eta squared effect size \\(variable importance\\) could not be computed because all replicates produced k = 1$",
+                        conditionMessage(w))) {
+                invokeRestart("muffleWarning")
+              }
             }
+          ),
+          error = function(error_message) {
+            if (grepl("mehr Clusterzentren als verschiedene Datenpunkte|more cluster centers than distinct data points",
+                      conditionMessage(error_message))) {
+              single_cluster_assignment <- matrix(1,
+                                                  nrow = nrow(trained_single_replicate_SOM_output$sample_node_assignments),
+                                                  ncol = 1,
+                                                  dimnames = list(rownames(trained_single_replicate_SOM_output$sample_node_assignments),
+                                                                  "R1"))
+              clustered_single_replicate_SOM_output <- trained_single_replicate_SOM_output
+              clustered_single_replicate_SOM_output$cluster_assignment <- single_cluster_assignment
+              clustered_single_replicate_SOM_output$optim_k_vals <- 1
+              clustered_single_replicate_SOM_output$optim_k_summary <- data.frame(Count = 1,
+                                                                                  Proportion = 1,
+                                                                                  row.names = "k1")
+              return(clustered_single_replicate_SOM_output)
+            }
+            stop(error_message)
           }
         )
       }
