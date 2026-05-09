@@ -5053,101 +5053,269 @@ plot.variable.importance.SOM <- function(SOM.output,
 }
 
 
+#' Process SNP data for SOM-based species delimitation
+#'
+#' Filters and converts SNP data into a numeric SNP dosage matrix suitable for
+#' SOM or Super-SOM analyses. The function accepts one of four input types:
+#' a VCF file, an existing `genind` object, a NEXUS alignment, or a FASTA
+#' alignment. For standard diploid biallelic VCF files, the function uses a
+#' fast direct VCF-processing path that avoids conversion to `genind`. If the
+#' VCF genotype coding is not supported by the fast path, the function falls
+#' back to `genind` processing.
+#'
+#' @description
+#' The output is a data frame with samples as rows and SNP variables as columns.
+#' For diploid biallelic VCF data, SNPs are coded as genotype dosages:
+#' `0 = homozygous reference`, `1 = heterozygous`, and
+#' `2 = homozygous alternate`. Missing genotypes are coded as `NA`.
+#'
+#' For biallelic sequence alignments, SNPs are coded as haploid binary
+#' presence/absence values: `0 = reference allele`, `1 = alternate allele`,
+#' and `NA = missing/ambiguous state`.
+#'
+#' If `make.biallelic = FALSE`, multiallelic loci are retained by encoding each
+#' polymorphic locus as `k - 1` allele-dosage columns, where `k` is the number
+#' of observed alleles at that locus.
+#'
+#' @details
+#' Filtering is applied in the following general order:
+#'
+#' \enumerate{
+#'   \item Remove non-biallelic loci if `make.biallelic = TRUE`.
+#'   \item Remove loci exceeding `missing.loci.cutoff.lenient`.
+#'   \item Remove individuals exceeding `missing.individuals.cutoff`.
+#'   \item Remove true singleton loci if `singleton.loci.filter = TRUE`.
+#'   \item Remove invariant loci if `invariant.loci.filter = TRUE`.
+#'   \item Remove loci exceeding `missing.loci.cutoff.final`.
+#'   \item Run a final invariant-locus filter.
+#' }
+#'
+#' Removal messages are printed only when at least one locus or individual is
+#' actually removed. A blank separator line is printed before the final summary
+#' only if at least one filtering message has been printed.
+#'
+#' The fast VCF path supports standard diploid biallelic genotype strings:
+#' `0/0`, `0/1`, `1/0`, `1/1`, and phased equivalents using `|`. Missing
+#' genotypes can be represented as `./.`, `.`, or `NA`. Other genotype codings
+#' trigger fallback to the `genind` workflow.
+#'
+#' @param vcf.path Character or `NULL`. Path to a VCF file. Exactly one of
+#'   `vcf.path`, `genind.input`, `nexus.path`, or `fasta.path` must be supplied.
+#' @param genind.input A `genind` object or `NULL`. Existing genetic data object
+#'   to process.
+#' @param nexus.path Character or `NULL`. Path to a NEXUS sequence alignment.
+#' @param fasta.path Character or `NULL`. Path to a FASTA sequence alignment.
+#' @param make.biallelic Logical. If `TRUE`, retain only biallelic loci. If
+#'   `FALSE`, retain multiallelic loci as `k - 1` allele-dosage columns.
+#' @param missing.loci.cutoff.lenient Numeric between 0 and 1 or `NULL`.
+#'   First-pass missing-data cutoff for loci. Loci with a missing proportion
+#'   greater than this value are removed.
+#' @param missing.loci.cutoff.final Numeric between 0 and 1 or `NULL`.
+#'   Final stricter missing-data cutoff for loci.
+#' @param missing.individuals.cutoff Numeric between 0 and 1 or `NULL`.
+#'   Missing-data cutoff for individuals. Individuals with a missing proportion
+#'   greater than this value are removed.
+#' @param singleton.loci.filter Logical. If `TRUE`, remove true singleton loci.
+#'   Invariant loci are not counted as singletons; they are handled by the
+#'   invariant-locus filter.
+#' @param invariant.loci.filter Logical. If `TRUE`, remove invariant loci.
+#' @param verbose Logical. If `TRUE`, print filtering messages and final matrix
+#'   dimensions.
+#'
+#' @return
+#' A data frame containing the processed SNP matrix. Rows are samples and
+#' columns are SNP variables. Values are numeric/integer genotype or allele
+#' dosages with missing values coded as `NA`.
+#'#'
+#' @export
 process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                  genind.input = NULL, #optional genind object
                                  nexus.path = NULL, #optional path to NEXUS alignment file
                                  fasta.path = NULL, #optional path to FASTA alignment file
                                  make.biallelic = TRUE, #whether to restrict to biallelic loci or retain multiallelic loci as k-1 dosage columns
-                                 missing.loci.cutoff.lenient = 0.5, #remove loci with > this proportion missing (1st lenient filter)
-                                 missing.loci.cutoff.final = 0.2, #remove loci with > this proportion missing (2nd final stringent filter)
-                                 missing.individuals.cutoff = 0.4, #remove individuals with > this proportion missing
+                                 missing.loci.cutoff.lenient = 0.7, #remove loci with > this proportion missing (1st lenient filter)
+                                 missing.loci.cutoff.final = 0.5, #remove loci with > this proportion missing (2nd final stringent filter)
+                                 missing.individuals.cutoff = 0.5, #remove individuals with > this proportion missing
                                  singleton.loci.filter = TRUE, #whether to remove singleton loci
                                  invariant.loci.filter = TRUE, #whether to remove invariant loci
                                  verbose = TRUE #whether to show filtering messages and final summary
 ) {
+
+  # Track whether any filtering message was printed
+  filter.messages.printed <- FALSE
   
-  # Create function to evaluate expressions silently
-  evaluate.quietly <- function(expression.to.evaluate) {
-    temporary.output.file <- tempfile() #create temp file
-    output.connection <- file(temporary.output.file, open = "wt") #open connection
-    sink(output.connection) #redirect stdout
-    sink(output.connection, type = "message") #redirect messages
-    on.exit({
-      sink(type = "message") #restore message stream
-      sink() #restore output stream
-      close(output.connection) #close connection
-      unlink(temporary.output.file) #remove temp file
-    }, add = TRUE)
-    expression.result <- eval(expression.to.evaluate) #evaluate expression
-    return(expression.result) #return result
+  # Create function to print filter messages
+  print.filter.message <- function(...) {
+    if (isTRUE(verbose)) {
+      message(...)
+      filter.messages.printed <<- TRUE
+    }
+  }
+  
+  # Create function to filter SNP dosage matrix
+  filter.SNP.matrix.fast <- function(snp.matrix,
+                                     missing.loci.cutoff.lenient = 0.5,
+                                     missing.loci.cutoff.final = 0.2,
+                                     missing.individuals.cutoff = 0.4,
+                                     singleton.loci.filter = TRUE,
+                                     invariant.loci.filter = TRUE,
+                                     verbose = TRUE
+  ) {
+    
+    snp.matrix <- as.matrix(snp.matrix) #force matrix
+    storage.mode(snp.matrix) <- "integer" #store as integer dosage
+    invariant.loci.removed.total <- 0L #track total invariant loci removed
+    invariant.loci.reference.count <- NA_integer_ #track denominator for invariant message
+    
+    # Loci missing (lenient)
+    if (!is.null(missing.loci.cutoff.lenient)) {
+      locus.count.before.lenient.missing.filter <- ncol(snp.matrix) #loci before filter
+      keep.loci <- colMeans(is.na(snp.matrix)) <= missing.loci.cutoff.lenient #loci passing filter
+      snp.matrix <- snp.matrix[, keep.loci, drop = FALSE] #filter loci
+      loci.removed <- locus.count.before.lenient.missing.filter - ncol(snp.matrix) #number removed
+      if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.lenient.missing.filter, " loci removed due to >", missing.loci.cutoff.lenient * 100, "% missing data (lenient filter)") #report
+      if (ncol(snp.matrix) == 0) stop("All loci removed after lenient missing data filter") #stop if all gone
+    }
+    
+    # Individuals missing
+    if (!is.null(missing.individuals.cutoff)) {
+      individual.count.before.missing.filter <- nrow(snp.matrix) #individuals before filter
+      keep.individuals <- rowMeans(is.na(snp.matrix)) <= missing.individuals.cutoff #individuals passing filter
+      snp.matrix <- snp.matrix[keep.individuals, , drop = FALSE] #filter individuals
+      individuals.removed <- individual.count.before.missing.filter - nrow(snp.matrix) #number removed
+      if (individuals.removed > 0) print.filter.message(individuals.removed, " of ", individual.count.before.missing.filter, " individuals removed due to >", missing.individuals.cutoff * 100, "% missing data") #report
+      if (nrow(snp.matrix) == 0) stop("All individuals removed after missing data filter") #stop if all gone
+    }
+    
+    # Singleton loci filter
+    if (isTRUE(singleton.loci.filter)) {
+      locus.count.before.singleton.filter <- ncol(snp.matrix) #loci before filter
+      alternate.allele.counts <- colSums(snp.matrix, na.rm = TRUE) #alternate allele counts
+      called.chromosome.counts <- 2 * colSums(!is.na(snp.matrix)) #called chromosomes
+      minor.allele.counts <- pmin(alternate.allele.counts, called.chromosome.counts - alternate.allele.counts) #minor allele counts
+      keep.loci <- minor.allele.counts != 1L #remove only true singleton loci; keep invariant loci for invariant filter
+      snp.matrix <- snp.matrix[, keep.loci, drop = FALSE] #filter loci
+      loci.removed <- locus.count.before.singleton.filter - ncol(snp.matrix) #number removed
+      if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.singleton.filter, " singleton loci removed") #report
+      if (ncol(snp.matrix) == 0) stop("All loci removed after singleton filter") #stop if all gone
+    }
+    
+    # Invariant loci filter
+    if (isTRUE(invariant.loci.filter)) {
+      locus.count.before.invariant.filter <- ncol(snp.matrix) #loci before filter
+      invariant.loci.reference.count <- locus.count.before.invariant.filter #store denominator
+      called.counts <- colSums(!is.na(snp.matrix)) #non-missing calls per locus
+      alternate.allele.sums <- colSums(snp.matrix, na.rm = TRUE) #alternate allele dosage sums per locus
+      keep.loci <- called.counts >= 2L & alternate.allele.sums > 0L & alternate.allele.sums < 2L * called.counts #variant loci (diploid 0/1/2)
+      snp.matrix <- snp.matrix[, keep.loci, drop = FALSE] #filter loci
+      invariant.loci.removed.total <- invariant.loci.removed.total + locus.count.before.invariant.filter - ncol(snp.matrix) #update total removed
+      if (ncol(snp.matrix) == 0) stop("All loci removed after invariant filter") #stop if all gone
+    }
+    
+    # Loci missing (strict)
+    if (!is.null(missing.loci.cutoff.final)) {
+      locus.count.before.strict.missing.filter <- ncol(snp.matrix) #loci before filter
+      keep.loci <- colMeans(is.na(snp.matrix)) <= missing.loci.cutoff.final #loci passing filter
+      snp.matrix <- snp.matrix[, keep.loci, drop = FALSE] #filter loci
+      loci.removed <- locus.count.before.strict.missing.filter - ncol(snp.matrix) #number removed
+      if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.strict.missing.filter, " loci removed due to >", missing.loci.cutoff.final * 100, "% missing data (stricter filter)") #report
+      if (ncol(snp.matrix) == 0) stop("All loci removed after final missing data filter") #stop if all gone
+    }
+    
+    # Invariant loci filter
+    if (isTRUE(invariant.loci.filter)) {
+      locus.count.before.final.invariant.filter <- ncol(snp.matrix) #loci before filter
+      called.counts <- colSums(!is.na(snp.matrix)) #non-missing calls per locus
+      alternate.allele.sums <- colSums(snp.matrix, na.rm = TRUE) #alternate allele dosage sums per locus
+      keep.loci <- called.counts >= 2L & alternate.allele.sums > 0L & alternate.allele.sums < 2L * called.counts #variant loci (diploid 0/1/2)
+      snp.matrix <- snp.matrix[, keep.loci, drop = FALSE] #filter loci
+      invariant.loci.removed.total <- invariant.loci.removed.total + locus.count.before.final.invariant.filter - ncol(snp.matrix) #update total removed
+      if (invariant.loci.removed.total > 0) print.filter.message(invariant.loci.removed.total, " of ", invariant.loci.reference.count, " invariant loci removed") #report
+      if (ncol(snp.matrix) == 0) stop("All loci removed after invariant filter") #stop if all gone
+    }
+    
+    return(as.data.frame(snp.matrix, stringsAsFactors = FALSE)) #return data frame
   }
   
   # Create function to encode multiallelic alignment as k-1 dosage columns
   encode.multiallelic.alignment.as.k.minus.one <- function(alignment.matrix, missing.symbols = c("?", "N", "-")) {
-    allele.dosage.column.list <- list() #initialize list
-    allele.dosage.column.names <- character(0) #initialize names
+    observed.alleles.per.locus <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols))) #observed alleles
+    retained.alleles.per.locus <- lapply(observed.alleles.per.locus, function(observed.alleles) if (length(observed.alleles) < 2) character(0) else observed.alleles[-length(observed.alleles)]) #retained k-1 alleles
+    retained.column.counts <- lengths(retained.alleles.per.locus) #number of retained columns per locus
+    total.retained.columns <- sum(retained.column.counts) #total retained columns
+    
+    if (total.retained.columns == 0) return(data.frame(row.names = rownames(alignment.matrix))) #return empty if none
+    
+    multiallelic.snp.matrix <- matrix(NA_integer_,
+                                      nrow = nrow(alignment.matrix),
+                                      ncol = total.retained.columns,
+                                      dimnames = list(rownames(alignment.matrix), NULL)) #initialize matrix
+    multiallelic.snp.names <- character(total.retained.columns) #initialize names
+    output.column.index <- 1L #initialize output column index
     
     for(locus.index in seq_len(ncol(alignment.matrix))) { #loop over loci
-      observed.alleles.at.locus <- sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols)) #observed alleles
-      if (length(observed.alleles.at.locus) < 2) next #skip invariant loci
-      retained.alleles <- observed.alleles.at.locus[-length(observed.alleles.at.locus)] #keep k-1 alleles
+      retained.alleles <- retained.alleles.per.locus[[locus.index]] #retained alleles
+      if (length(retained.alleles) == 0) next #skip invariant loci
+      missing.values.at.locus <- alignment.matrix[, locus.index] %in% missing.symbols #missing values at locus
       
-      for(retained.allele in retained.alleles) { #create one dosage column per retained allele
-        allele.dosage.column.list[[length(allele.dosage.column.list) + 1]] <- ifelse(alignment.matrix[, locus.index] %in% missing.symbols, NA_integer_, ifelse(alignment.matrix[, locus.index] == retained.allele, 1L, 0L)) #haploid allele dosage
-        allele.dosage.column.names <- c(allele.dosage.column.names, paste0("SNP", locus.index, ".", retained.allele)) #set column name
+      for(retained.allele in retained.alleles) { #create dosage column
+        multiallelic.snp.matrix[, output.column.index] <- ifelse(missing.values.at.locus, NA_integer_, ifelse(alignment.matrix[, locus.index] == retained.allele, 1L, 0L)) #haploid allele dosage
+        multiallelic.snp.names[output.column.index] <- paste0("SNP", locus.index, ".", retained.allele) #set column name
+        output.column.index <- output.column.index + 1L #advance column
       }
     }
     
-    if (length(allele.dosage.column.list) == 0) return(data.frame(row.names = rownames(alignment.matrix))) #return empty if none
-    multiallelic.snp.matrix <- as.data.frame(do.call(cbind, allele.dosage.column.list), stringsAsFactors = FALSE) #combine columns
-    rownames(multiallelic.snp.matrix) <- rownames(alignment.matrix) #set rownames
-    colnames(multiallelic.snp.matrix) <- allele.dosage.column.names #set colnames
-    multiallelic.snp.matrix[] <- lapply(multiallelic.snp.matrix, as.integer) #coerce to integer
-    return(multiallelic.snp.matrix) #return matrix
+    colnames(multiallelic.snp.matrix) <- multiallelic.snp.names #set colnames
+    return(as.data.frame(multiallelic.snp.matrix, stringsAsFactors = FALSE)) #return matrix
   }
   
   # Create function to count observed alleles per locus in genind object
   count.observed.alleles.per.locus <- function(genind.object) {
-    allele.count.matrix <- evaluate.quietly(quote(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
+    allele.count.matrix <- suppressMessages(suppressWarnings(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
     locus.names <- adegenet::locNames(genind.object) #locus names
-    locus.membership.vector <- as.character(genind.object@loc.fac) #locus factor
-    
-    observed.allele.counts <- sapply(locus.names, function(current.locus.name) {
-      locus.column.indices <- which(locus.membership.vector == current.locus.name) #columns for this locus
-      if (length(locus.column.indices) == 0) return(0L) #skip empty
-      sum(colSums(allele.count.matrix[, locus.column.indices, drop = FALSE], na.rm = TRUE) > 0) #count observed alleles
-    })
-    
+    locus.membership.vector <- factor(as.character(genind.object@loc.fac), levels = locus.names) #locus factor
+    locus.column.list <- split(seq_along(locus.membership.vector), locus.membership.vector, drop = TRUE) #columns per locus
+    allele.present <- colSums(allele.count.matrix, na.rm = TRUE) > 0 #observed allele columns
+    observed.allele.counts <- vapply(locus.column.list, function(locus.column.indices) sum(allele.present[locus.column.indices]), integer(1)) #observed alleles per locus
     return(observed.allele.counts) #return counts
+  }
+  
+  # Create function to count minor alleles per locus in genind object
+  count.minor.alleles.per.locus <- function(genind.object) {
+    allele.count.matrix <- suppressMessages(suppressWarnings(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
+    locus.names <- adegenet::locNames(genind.object) #locus names
+    locus.membership.vector <- factor(as.character(genind.object@loc.fac), levels = locus.names) #locus factor
+    locus.column.list <- split(seq_along(locus.membership.vector), locus.membership.vector, drop = TRUE) #columns per locus
+    
+    minor.allele.counts <- vapply(locus.column.list, function(locus.column.indices) {
+      allele.counts <- colSums(allele.count.matrix[, locus.column.indices, drop = FALSE], na.rm = TRUE) #allele counts
+      observed.allele.counts <- allele.counts[allele.counts > 0] #observed allele counts
+      if (length(observed.allele.counts) < 2) return(0L) #invariant locus
+      sorted.allele.counts <- sort(observed.allele.counts, decreasing = TRUE) #sort allele counts
+      return(as.integer(sorted.allele.counts[2])) #minor allele count as second-most common allele count
+    }, integer(1)) #minor allele counts
+    
+    return(minor.allele.counts) #return counts
   }
   
   # Create function to convert genind object to k-1 allele dosage matrix
   convert.genind.to.k.minus.one.dosage <- function(genind.object) {
-    allele.count.matrix <- evaluate.quietly(quote(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
+    allele.count.matrix <- suppressMessages(suppressWarnings(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
     locus.names <- adegenet::locNames(genind.object) #locus names
-    locus.membership.vector <- as.character(genind.object@loc.fac) #locus factor
-    retained.allele.dosage.list <- list() #initialize list
-    retained.allele.dosage.names <- character(0) #initialize names
+    locus.membership.vector <- factor(as.character(genind.object@loc.fac), levels = locus.names) #locus factor
+    locus.column.list <- split(seq_along(locus.membership.vector), locus.membership.vector, drop = TRUE) #columns per locus
+    allele.present <- colSums(allele.count.matrix, na.rm = TRUE) > 0 #observed allele columns
     
-    for(current.locus.name in locus.names) { #loop over loci
-      locus.column.indices <- which(locus.membership.vector == current.locus.name) #columns for this locus
-      if (length(locus.column.indices) == 0) next #skip empty
-      locus.allele.count.matrix <- allele.count.matrix[, locus.column.indices, drop = FALSE] #subset locus
-      observed.allele.column.indices <- which(colSums(locus.allele.count.matrix, na.rm = TRUE) > 0) #observed alleles
-      if (length(observed.allele.column.indices) < 2) next #skip invariant loci
-      locus.allele.count.matrix <- locus.allele.count.matrix[, observed.allele.column.indices, drop = FALSE] #keep observed alleles
-      retained.allele.column.indices <- seq_len(ncol(locus.allele.count.matrix) - 1) #retain k-1 allele columns
-      
-      for(retained.column.index in retained.allele.column.indices) { #store retained dosage columns
-        retained.allele.dosage.list[[length(retained.allele.dosage.list) + 1]] <- locus.allele.count.matrix[, retained.column.index] #store allele dosage
-        retained.allele.dosage.names <- c(retained.allele.dosage.names, colnames(locus.allele.count.matrix)[retained.column.index]) #store column name
-      }
-    }
+    retained.column.indices <- unlist(lapply(locus.column.list, function(locus.column.indices) {
+      observed.column.indices <- locus.column.indices[allele.present[locus.column.indices]] #observed columns
+      if (length(observed.column.indices) < 2) return(integer(0)) #skip invariant loci
+      observed.column.indices[-length(observed.column.indices)] #retain k-1 columns
+    }), use.names = FALSE) #retained columns
     
-    if (length(retained.allele.dosage.list) == 0) return(data.frame(row.names = adegenet::indNames(genind.object))) #return empty if none
-    multiallelic.snp.matrix <- as.data.frame(do.call(cbind, retained.allele.dosage.list), stringsAsFactors = FALSE) #combine columns
+    if (length(retained.column.indices) == 0) return(data.frame(row.names = adegenet::indNames(genind.object))) #return empty if none
+    multiallelic.snp.matrix <- as.data.frame(allele.count.matrix[, retained.column.indices, drop = FALSE], stringsAsFactors = FALSE) #subset once
     rownames(multiallelic.snp.matrix) <- adegenet::indNames(genind.object) #set rownames
-    colnames(multiallelic.snp.matrix) <- retained.allele.dosage.names #set colnames
+    colnames(multiallelic.snp.matrix) <- colnames(allele.count.matrix)[retained.column.indices] #set colnames
     return(multiallelic.snp.matrix) #return matrix
   }
   
@@ -5170,103 +5338,145 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       biallelic.site.indices <- which(sapply(observed.alleles.per.site, length) == 2) #index of biallelic sites
       
       # Biallelic site filter
-      if (verbose) message(total.locus.count.before.filtering - length(biallelic.site.indices), " of ", total.locus.count.before.filtering, " loci removed because they were not biallelic") #report non-biallelic filter
+      loci.removed <- total.locus.count.before.filtering - length(biallelic.site.indices) #number removed
+      if (loci.removed > 0) print.filter.message(loci.removed, " of ", total.locus.count.before.filtering, " loci removed because they were not biallelic") #report non-biallelic filter
       if (length(biallelic.site.indices) == 0) stop("No biallelic SNPs found in alignment") #stop if none
       biallelic.alignment.matrix <- alignment.matrix[, biallelic.site.indices, drop = FALSE] #keep only biallelic sites
-      biallelic.snp.matrix <- as.data.frame(biallelic.alignment.matrix, stringsAsFactors = FALSE) #to data frame
+      biallelic.snp.matrix <- matrix(NA_integer_,
+                                     nrow = nrow(biallelic.alignment.matrix),
+                                     ncol = ncol(biallelic.alignment.matrix),
+                                     dimnames = list(rownames(biallelic.alignment.matrix), paste0("SNP", seq_len(ncol(biallelic.alignment.matrix))))) #initialize matrix
       
       # Recoding to 0/1
-      for(locus.index in seq_len(ncol(biallelic.snp.matrix))) { #recode to 0/1
-        observed.alleles.at.site <- sort(observed.alleles.per.site[[biallelic.site.indices[locus.index]]]) #sort alleles
-        reference.allele <- observed.alleles.at.site[1] #reference allele
-        alternate.allele <- observed.alleles.at.site[2] #alternate allele
-        biallelic.snp.matrix[[locus.index]] <- ifelse(biallelic.snp.matrix[[locus.index]] == reference.allele, 0L, ifelse(biallelic.snp.matrix[[locus.index]] == alternate.allele, 1L, NA_integer_)) #assign 0/1/NA
-      }
-      rownames(biallelic.snp.matrix) <- names(sequence.list) #set rownames
-      colnames(biallelic.snp.matrix) <- paste0("SNP", seq_len(ncol(biallelic.snp.matrix))) #set colnames
+      alleles.at.biallelic.sites <- observed.alleles.per.site[biallelic.site.indices] #alleles at biallelic sites
+      ref.alleles <- vapply(alleles.at.biallelic.sites, `[`, character(1L), 1L) #reference allele per site
+      alt.alleles <- vapply(alleles.at.biallelic.sites, `[`, character(1L), 2L) #alternate allele per site
+      ref.broadcast.matrix <- matrix(ref.alleles, nrow = nrow(biallelic.alignment.matrix), ncol = length(ref.alleles), byrow = TRUE) #broadcast ref alleles
+      alt.broadcast.matrix <- matrix(alt.alleles, nrow = nrow(biallelic.alignment.matrix), ncol = length(alt.alleles), byrow = TRUE) #broadcast alt alleles
+      biallelic.snp.matrix[biallelic.alignment.matrix == ref.broadcast.matrix] <- 0L #assign reference
+      biallelic.snp.matrix[biallelic.alignment.matrix == alt.broadcast.matrix] <- 1L #assign alternate
       
-      # Invariant loci filter (initial)
-      biallelic.locus.count.before.invariant.filter <- ncol(biallelic.snp.matrix) #biallelic loci before removing invariant
-      biallelic.snp.matrix <- biallelic.snp.matrix[, sapply(biallelic.snp.matrix, function(single.locus) stats::var(single.locus, na.rm = TRUE) > 0), drop = FALSE] #remove invariant loci
-      if (verbose) message(biallelic.locus.count.before.invariant.filter - ncol(biallelic.snp.matrix), " of ", biallelic.locus.count.before.invariant.filter, " loci removed because they were invariant") #report invariant filter
+      invariant.loci.removed.total <- 0L #track total invariant loci removed
+      invariant.loci.reference.count <- NA_integer_ #track denominator for invariant message
+      
+      # Invariant loci filter
+      if (isTRUE(invariant.loci.filter)) {
+        biallelic.locus.count.before.invariant.filter <- ncol(biallelic.snp.matrix) #biallelic loci before removing invariant
+        invariant.loci.reference.count <- biallelic.locus.count.before.invariant.filter #store denominator
+        called.counts <- colSums(!is.na(biallelic.snp.matrix)) #non-missing calls per locus
+        alternate.allele.sums <- colSums(biallelic.snp.matrix, na.rm = TRUE) #alternate allele sums per locus
+        keep.loci <- called.counts >= 2L & alternate.allele.sums > 0L & alternate.allele.sums < called.counts #variant loci (haploid 0/1)
+        biallelic.snp.matrix <- biallelic.snp.matrix[, keep.loci, drop = FALSE] #remove invariant loci
+        invariant.loci.removed.total <- invariant.loci.removed.total + biallelic.locus.count.before.invariant.filter - ncol(biallelic.snp.matrix) #update total removed
+        if (ncol(biallelic.snp.matrix) == 0) stop("All loci removed after invariant filter") #stop if all gone
+      }
       
       # Loci missing (lenient)
       if (!is.null(missing.loci.cutoff.lenient)) {
         locus.count.before.lenient.missing.filter <- ncol(biallelic.snp.matrix) #loci before filter
         biallelic.snp.matrix <- biallelic.snp.matrix[, (colMeans(is.na(biallelic.snp.matrix)) <= missing.loci.cutoff.lenient), drop = FALSE] #filter loci
-        if (verbose) message(locus.count.before.lenient.missing.filter - ncol(biallelic.snp.matrix), " of ", locus.count.before.lenient.missing.filter, " loci removed due to >", missing.loci.cutoff.lenient * 100, "% missing data") #report
+        loci.removed <- locus.count.before.lenient.missing.filter - ncol(biallelic.snp.matrix) #number removed
+        if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.lenient.missing.filter, " loci removed due to >", missing.loci.cutoff.lenient * 100, "% missing data (lenient filter)") #report
+        if (ncol(biallelic.snp.matrix) == 0) stop("All loci removed after lenient missing data filter") #stop if all gone
       }
       
       # Individuals missing
       if (!is.null(missing.individuals.cutoff)) {
         individual.count.before.missing.filter <- nrow(biallelic.snp.matrix) #individuals before filter
         biallelic.snp.matrix <- biallelic.snp.matrix[(rowMeans(is.na(biallelic.snp.matrix)) <= missing.individuals.cutoff), , drop = FALSE] #filter individuals
-        if (verbose) message(individual.count.before.missing.filter - nrow(biallelic.snp.matrix), " of ", individual.count.before.missing.filter, " individuals removed due to >", missing.individuals.cutoff * 100, "% missing data") #report
+        individuals.removed <- individual.count.before.missing.filter - nrow(biallelic.snp.matrix) #number removed
+        if (individuals.removed > 0) print.filter.message(individuals.removed, " of ", individual.count.before.missing.filter, " individuals removed due to >", missing.individuals.cutoff * 100, "% missing data") #report
+        if (nrow(biallelic.snp.matrix) == 0) stop("All individuals removed after missing data filter") #stop if all gone
       }
       
       # Loci missing (strict)
       if (!is.null(missing.loci.cutoff.final)) {
         locus.count.before.strict.missing.filter <- ncol(biallelic.snp.matrix) #loci before filter
         biallelic.snp.matrix <- biallelic.snp.matrix[, (colMeans(is.na(biallelic.snp.matrix)) <= missing.loci.cutoff.final), drop = FALSE] #filter loci
-        if (verbose) message(locus.count.before.strict.missing.filter - ncol(biallelic.snp.matrix), " of ", locus.count.before.strict.missing.filter, " loci removed due to >", missing.loci.cutoff.final * 100, "% missing data (stricter filter)") #report
+        loci.removed <- locus.count.before.strict.missing.filter - ncol(biallelic.snp.matrix) #number removed
+        if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.strict.missing.filter, " loci removed due to >", missing.loci.cutoff.final * 100, "% missing data (stricter filter)") #report
+        if (ncol(biallelic.snp.matrix) == 0) stop("All loci removed after final missing data filter") #stop if all gone
       }
       
-      # Invariant loci filter (final pass)
-      locus.count.before.final.invariant.filter <- ncol(biallelic.snp.matrix) #loci before final invariant filter
-      biallelic.snp.matrix <- biallelic.snp.matrix[, sapply(biallelic.snp.matrix, function(single.locus) stats::var(single.locus, na.rm = TRUE) > 0), drop = FALSE] #remove invariant loci
-      if (verbose) message(locus.count.before.final.invariant.filter - ncol(biallelic.snp.matrix), " of ", locus.count.before.final.invariant.filter, " invariant loci removed (final pass)") #report
+      # Invariant loci filter
+      if (isTRUE(invariant.loci.filter)) {
+        locus.count.before.final.invariant.filter <- ncol(biallelic.snp.matrix) #loci before final invariant filter
+        called.counts <- colSums(!is.na(biallelic.snp.matrix)) #non-missing calls per locus
+        alternate.allele.sums <- colSums(biallelic.snp.matrix, na.rm = TRUE) #alternate allele sums per locus
+        keep.loci <- called.counts >= 2L & alternate.allele.sums > 0L & alternate.allele.sums < called.counts #variant loci (haploid 0/1)
+        biallelic.snp.matrix <- biallelic.snp.matrix[, keep.loci, drop = FALSE] #remove invariant loci
+        invariant.loci.removed.total <- invariant.loci.removed.total + locus.count.before.final.invariant.filter - ncol(biallelic.snp.matrix) #update total removed
+        if (invariant.loci.removed.total > 0) print.filter.message(invariant.loci.removed.total, " of ", invariant.loci.reference.count, " invariant loci removed") #report
+        if (ncol(biallelic.snp.matrix) == 0) stop("All loci removed after invariant filter") #stop if all gone
+      }
       
       # Final summary
-      if (verbose) message("")
+      biallelic.snp.matrix <- as.data.frame(biallelic.snp.matrix, stringsAsFactors = FALSE) #convert to data frame
+      if (verbose && filter.messages.printed) message("")
       if (verbose) message("Final SNP matrix: ", nrow(biallelic.snp.matrix), " samples × ", ncol(biallelic.snp.matrix), " loci") #print summary
       return(biallelic.snp.matrix) #return binary SNP matrix
     }
     
     # Multiallelic alignment processing
-    if (verbose) message("Set make.biallelic = FALSE: retaining multiallelic loci as k-1 allele dosage columns")
     polymorphic.site.indices <- which(sapply(observed.alleles.per.site, length) > 1) #keep polymorphic sites
-    if (verbose) message(total.locus.count.before.filtering - length(polymorphic.site.indices), " of ", total.locus.count.before.filtering, " loci removed because they were invariant") #report invariant filter
+    loci.removed <- total.locus.count.before.filtering - length(polymorphic.site.indices) #number removed
+    if (loci.removed > 0) print.filter.message(loci.removed, " of ", total.locus.count.before.filtering, " loci removed because they were invariant") #report invariant filter
     if (length(polymorphic.site.indices) == 0) stop("No polymorphic SNPs found in alignment") #stop if none
     alignment.matrix <- alignment.matrix[, polymorphic.site.indices, drop = FALSE] #keep polymorphic sites
     
     # Loci missing (lenient)
     if (!is.null(missing.loci.cutoff.lenient)) {
       locus.count.before.lenient.missing.filter <- ncol(alignment.matrix) #loci before filter
-      locus.missing.proportions <- apply(alignment.matrix, 2, function(single.locus) mean(single.locus %in% missing.symbols)) #missing proportion per locus
+      missing.value.matrix <- alignment.matrix %in% missing.symbols #missing values
+      dim(missing.value.matrix) <- dim(alignment.matrix) #restore matrix dimensions
+      locus.missing.proportions <- colMeans(missing.value.matrix) #missing proportion per locus
       alignment.matrix <- alignment.matrix[, locus.missing.proportions <= missing.loci.cutoff.lenient, drop = FALSE] #filter loci
-      if (verbose) message(locus.count.before.lenient.missing.filter - ncol(alignment.matrix), " of ", locus.count.before.lenient.missing.filter, " loci removed due to >", missing.loci.cutoff.lenient * 100, "% missing data") #report
+      loci.removed <- locus.count.before.lenient.missing.filter - ncol(alignment.matrix) #number removed
+      if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.lenient.missing.filter, " loci removed due to >", missing.loci.cutoff.lenient * 100, "% missing data (lenient filter)") #report
+      if (ncol(alignment.matrix) == 0) stop("All loci removed after lenient missing data filter") #stop if all gone
     }
     
     # Individuals missing
     if (!is.null(missing.individuals.cutoff)) {
       individual.count.before.missing.filter <- nrow(alignment.matrix) #individuals before filter
-      individual.missing.proportions <- apply(alignment.matrix, 1, function(single.individual) mean(single.individual %in% missing.symbols)) #missing proportion per individual
+      missing.value.matrix <- alignment.matrix %in% missing.symbols #missing values
+      dim(missing.value.matrix) <- dim(alignment.matrix) #restore matrix dimensions
+      individual.missing.proportions <- rowMeans(missing.value.matrix) #missing proportion per individual
       alignment.matrix <- alignment.matrix[individual.missing.proportions <= missing.individuals.cutoff, , drop = FALSE] #filter individuals
-      if (verbose) message(individual.count.before.missing.filter - nrow(alignment.matrix), " of ", individual.count.before.missing.filter, " individuals removed due to >", missing.individuals.cutoff * 100, "% missing data") #report
+      individuals.removed <- individual.count.before.missing.filter - nrow(alignment.matrix) #number removed
+      if (individuals.removed > 0) print.filter.message(individuals.removed, " of ", individual.count.before.missing.filter, " individuals removed due to >", missing.individuals.cutoff * 100, "% missing data") #report
+      if (nrow(alignment.matrix) == 0) stop("All individuals removed after missing data filter") #stop if all gone
     }
     
     # Loci missing (strict)
     if (!is.null(missing.loci.cutoff.final)) {
       locus.count.before.strict.missing.filter <- ncol(alignment.matrix) #loci before filter
-      locus.missing.proportions <- apply(alignment.matrix, 2, function(single.locus) mean(single.locus %in% missing.symbols)) #missing proportion per locus
+      missing.value.matrix <- alignment.matrix %in% missing.symbols #missing values
+      dim(missing.value.matrix) <- dim(alignment.matrix) #restore matrix dimensions
+      locus.missing.proportions <- colMeans(missing.value.matrix) #missing proportion per locus
       alignment.matrix <- alignment.matrix[, locus.missing.proportions <= missing.loci.cutoff.final, drop = FALSE] #filter loci
-      if (verbose) message(locus.count.before.strict.missing.filter - ncol(alignment.matrix), " of ", locus.count.before.strict.missing.filter, " loci removed due to >", missing.loci.cutoff.final * 100, "% missing data (stricter filter)") #report
+      loci.removed <- locus.count.before.strict.missing.filter - ncol(alignment.matrix) #number removed
+      if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.strict.missing.filter, " loci removed due to >", missing.loci.cutoff.final * 100, "% missing data (stricter filter)") #report
+      if (ncol(alignment.matrix) == 0) stop("All loci removed after final missing data filter") #stop if all gone
     }
     
-    # Invariant loci filter (final pass)
-    locus.count.before.final.invariant.filter <- ncol(alignment.matrix) #loci before final invariant filter
-    final.observed.alleles.per.site <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols))) #recalculate observed alleles
-    polymorphic.site.indices <- which(sapply(final.observed.alleles.per.site, length) > 1) #keep polymorphic sites
-    alignment.matrix <- alignment.matrix[, polymorphic.site.indices, drop = FALSE] #remove invariant loci
-    if (verbose) message(locus.count.before.final.invariant.filter - ncol(alignment.matrix), " of ", locus.count.before.final.invariant.filter, " invariant loci removed (final pass)") #report
-    if (ncol(alignment.matrix) == 0) stop("No polymorphic loci remain after filtering") #stop if all gone
+    # Invariant loci filter
+    if (isTRUE(invariant.loci.filter)) {
+      locus.count.before.final.invariant.filter <- ncol(alignment.matrix) #loci before final invariant filter
+      final.observed.alleles.per.site <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols))) #recalculate observed alleles
+      polymorphic.site.indices <- which(sapply(final.observed.alleles.per.site, length) > 1) #keep polymorphic sites
+      alignment.matrix <- alignment.matrix[, polymorphic.site.indices, drop = FALSE] #remove invariant loci
+      loci.removed <- locus.count.before.final.invariant.filter - ncol(alignment.matrix) #number removed
+      if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.final.invariant.filter, " invariant loci removed") #report
+      if (ncol(alignment.matrix) == 0) stop("No polymorphic loci remain after filtering") #stop if all gone
+    }
     
     # Convert to k-1 dosage matrix
     multiallelic.snp.matrix <- encode.multiallelic.alignment.as.k.minus.one(alignment.matrix = alignment.matrix, missing.symbols = missing.symbols) #encode multiallelic loci
     if (ncol(multiallelic.snp.matrix) == 0) stop("No multiallelic SNP columns remain after filtering") #stop if empty
     
     # Final summary
-    if (verbose) message("")
+    if (verbose && filter.messages.printed) message("")
     if (verbose) message("Final SNP matrix: ", nrow(multiallelic.snp.matrix), " samples × ", ncol(multiallelic.snp.matrix), " loci") #print summary
     return(multiallelic.snp.matrix) #return multiallelic SNP matrix
   }
@@ -5278,14 +5488,73 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   if (!is.null(nexus.path) && !file.exists(nexus.path)) stop("NEXUS file does not exist: ", nexus.path) #check nexus path
   if (!is.null(fasta.path) && !file.exists(fasta.path)) stop("FASTA file does not exist: ", fasta.path) #check fasta path
   
+  # Process biallelic diploid VCF directly
+  if (!is.null(vcf.path) && isTRUE(make.biallelic)) {
+    fast.vcf.result <- tryCatch({
+      vcf.object <- suppressWarnings(vcfR::read.vcfR(vcf.path, verbose = FALSE)) #read VCF
+      fixed.matrix <- vcf.object@fix #extract fixed fields
+      biallelic.variant.indices <- which(!grepl(",", fixed.matrix[, "ALT"]) & !is.na(fixed.matrix[, "ALT"]) & fixed.matrix[, "ALT"] != ".") #biallelic variants
+      if (length(biallelic.variant.indices) == 0) stop("No biallelic loci found") #stop if none
+      
+      loci.removed <- nrow(fixed.matrix) - length(biallelic.variant.indices) #number removed
+      if (loci.removed > 0) print.filter.message(loci.removed, " of ", nrow(fixed.matrix), " loci removed because they were not biallelic") #report
+      vcf.object <- vcf.object[biallelic.variant.indices, ] #keep biallelic variants
+      genotype.matrix <- vcfR::extract.gt(vcf.object, element = "GT", as.numeric = FALSE) #variants x samples
+      if (is.null(dim(genotype.matrix))) stop("VCF genotype matrix could not be extracted as a matrix") #check matrix
+      genotype.matrix <- t(genotype.matrix) #samples x variants
+      genotype.dimnames <- dimnames(genotype.matrix) #store dimnames
+      genotype.matrix <- matrix(gsub("\\|", "/", genotype.matrix),
+                                nrow = nrow(genotype.matrix),
+                                ncol = ncol(genotype.matrix),
+                                dimnames = genotype.dimnames) #standardize phased genotypes
+      
+      recognized.genotype.matrix <- genotype.matrix %in% c("0/0", "0/1", "1/0", "1/1", "./.", ".") | is.na(genotype.matrix) #recognized genotypes
+      if (any(!recognized.genotype.matrix)) stop("UNSUPPORTED_FAST_VCF_GENOTYPES") #fallback trigger
+      
+      snp.matrix <- matrix(NA_integer_,
+                           nrow = nrow(genotype.matrix),
+                           ncol = ncol(genotype.matrix),
+                           dimnames = dimnames(genotype.matrix)) #initialize SNP matrix
+      
+      snp.matrix[genotype.matrix == "0/0"] <- 0L #homozygous reference
+      snp.matrix[genotype.matrix %in% c("0/1", "1/0")] <- 1L #heterozygous
+      snp.matrix[genotype.matrix == "1/1"] <- 2L #homozygous alternate
+      
+      variant.names <- fixed.matrix[biallelic.variant.indices, "ID"] #variant IDs
+      missing.variant.names <- is.na(variant.names) | variant.names == "." | variant.names == "" #missing IDs
+      variant.names[missing.variant.names] <- paste0("SNP", seq_along(variant.names)[missing.variant.names]) #fallback names
+      colnames(snp.matrix) <- make.unique(variant.names) #set unique names
+      
+      snp.matrix <- filter.SNP.matrix.fast(snp.matrix = snp.matrix,
+                                           missing.loci.cutoff.lenient = missing.loci.cutoff.lenient,
+                                           missing.loci.cutoff.final = missing.loci.cutoff.final,
+                                           missing.individuals.cutoff = missing.individuals.cutoff,
+                                           singleton.loci.filter = singleton.loci.filter,
+                                           invariant.loci.filter = invariant.loci.filter,
+                                           verbose = verbose)
+      
+      if (verbose && filter.messages.printed) message("")
+      if (verbose) message("Final SNP matrix: ", nrow(snp.matrix), " samples × ", ncol(snp.matrix), " loci") #summary
+      snp.matrix #return result
+    }, error = function(fast.vcf.error) {
+      if (identical(conditionMessage(fast.vcf.error), "UNSUPPORTED_FAST_VCF_GENOTYPES")) {
+        if (verbose) message("VCF fast path skipped: unsupported genotype coding - falling back to genind processing") #report fallback
+        return(NULL) #fallback
+      }
+      stop(fast.vcf.error) #do not hide real filtering/input errors
+    })
+    
+    if (!is.null(fast.vcf.result)) return(fast.vcf.result) #return fast VCF result
+  }
+  
   # Process NEXUS file
-  if (!is.null(nexus.path)) { #if nexus input
+  if (!is.null(nexus.path)) {
     nexus.sequence.list <- ape::read.nexus.data(nexus.path) #read aligned sequences
     return(process.alignment.input(sequence.list = nexus.sequence.list, file.type = "NEXUS")) #process alignment
   }
   
   # Process FASTA file
-  if (!is.null(fasta.path)) { #if fasta input
+  if (!is.null(fasta.path)) {
     fasta.sequence.list <- as.character(ape::read.FASTA(fasta.path)) #convert whole DNAbin object
     return(process.alignment.input(sequence.list = fasta.sequence.list, file.type = "FASTA")) #process alignment
   }
@@ -5296,12 +5565,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     genind.object <- genind.input #use genind object if provided
   } else {
     vcf.object <- tryCatch({
-      suppressWarnings({
-        temporary.output.connection <- file(tempfile(), open = "wt") #open temp file
-        sink(temporary.output.connection, type = "output") #suppress output
-        on.exit({sink(type = "output"); close(temporary.output.connection)}, add = TRUE) #restore output on exit
-        vcfR::read.vcfR(vcf.path) #read VCF
-      })
+      suppressWarnings(suppressMessages(vcfR::read.vcfR(vcf.path, verbose = FALSE))) #read VCF
     }, error = function(read.error) stop("VCF could not be read: ", conditionMessage(read.error))) #catch error
     genind.object <- vcfR::vcfR2genind(vcf.object) #convert to genind
   }
@@ -5312,193 +5576,126 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     biallelic.locus.indices <- which(genind.object$loc.n.all == 2) #biallelic indices
     genind.object <- genind.object[loc = biallelic.locus.indices, drop = TRUE] #keep biallelic
     total.locus.count.after.biallelic.filter <- adegenet::nLoc(genind.object) #loci after
-    if (verbose) message(total.locus.count.before.biallelic.filter - total.locus.count.after.biallelic.filter, " of ", total.locus.count.before.biallelic.filter, " loci removed because they were not biallelic") #report
+    loci.removed <- total.locus.count.before.biallelic.filter - total.locus.count.after.biallelic.filter #number removed
+    if (loci.removed > 0) print.filter.message(loci.removed, " of ", total.locus.count.before.biallelic.filter, " loci removed because they were not biallelic") #report
     if (total.locus.count.after.biallelic.filter == 0) stop("No biallelic loci found") #stop if none
   }
   
   # Loci missing (lenient)
   if (!is.null(missing.loci.cutoff.lenient)) {
     locus.count.before.lenient.missing.filter <- adegenet::nLoc(genind.object) #loci before filter
-    genind.object <- suppressMessages(poppr::missingno(genind.object, type = "loci", cutoff = missing.loci.cutoff.lenient, quiet = TRUE)) #filter
-    locus.count.after.lenient.missing.filter <- adegenet::nLoc(genind.object) #after filter
-    if (verbose) message(locus.count.before.lenient.missing.filter - locus.count.after.lenient.missing.filter, " of ", locus.count.before.lenient.missing.filter, " loci removed due to >", missing.loci.cutoff.lenient * 100, "% missing data") #report
-    if (locus.count.after.lenient.missing.filter == 0) stop("All loci removed after lenient missing data filter") #stop if all gone
+    allele.count.matrix.lenient <- suppressMessages(suppressWarnings(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
+    locus.factor.lenient <- factor(as.character(genind.object@loc.fac), levels = adegenet::locNames(genind.object)) #locus factor
+    first.allele.column.lenient <- vapply(split(seq_along(locus.factor.lenient), locus.factor.lenient, drop = TRUE), `[`, integer(1L), 1L) #first allele column per locus
+    locus.missing.proportions.lenient <- colMeans(is.na(allele.count.matrix.lenient[, first.allele.column.lenient, drop = FALSE])) #missing proportion per locus
+    names(locus.missing.proportions.lenient) <- names(first.allele.column.lenient) #restore locus names
+    genind.object <- genind.object[loc = names(locus.missing.proportions.lenient)[locus.missing.proportions.lenient <= missing.loci.cutoff.lenient], drop = TRUE] #filter loci
+    loci.removed <- locus.count.before.lenient.missing.filter - adegenet::nLoc(genind.object) #number removed
+    if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.lenient.missing.filter, " loci removed due to >", missing.loci.cutoff.lenient * 100, "% missing data (lenient filter)") #report
+    if (adegenet::nLoc(genind.object) == 0) stop("All loci removed after lenient missing data filter") #stop if all gone
   }
   
   # Individuals missing
   if (!is.null(missing.individuals.cutoff)) {
     individual.count.before.missing.filter <- adegenet::nInd(genind.object) #individuals before
-    genind.object <- suppressMessages(poppr::missingno(genind.object, type = "geno", cutoff = missing.individuals.cutoff)) #filter
-    individual.count.after.missing.filter <- adegenet::nInd(genind.object) #after filter
-    if (verbose) message(individual.count.before.missing.filter - individual.count.after.missing.filter, " of ", individual.count.before.missing.filter, " individuals removed due to >", missing.individuals.cutoff * 100, "% missing data") #report
-    if (individual.count.after.missing.filter == 0) stop("All individuals removed after missing data filter") #stop if all gone
+    allele.count.matrix.individuals <- suppressMessages(suppressWarnings(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
+    locus.factor.individuals <- factor(as.character(genind.object@loc.fac), levels = adegenet::locNames(genind.object)) #locus factor
+    first.allele.column.individuals <- vapply(split(seq_along(locus.factor.individuals), locus.factor.individuals, drop = TRUE), `[`, integer(1L), 1L) #first allele column per locus
+    individual.missing.proportions <- rowMeans(is.na(allele.count.matrix.individuals[, first.allele.column.individuals, drop = FALSE])) #missing proportion per individual
+    genind.object <- genind.object[adegenet::indNames(genind.object)[individual.missing.proportions <= missing.individuals.cutoff], drop = TRUE] #filter individuals
+    individuals.removed <- individual.count.before.missing.filter - adegenet::nInd(genind.object) #number removed
+    if (individuals.removed > 0) print.filter.message(individuals.removed, " of ", individual.count.before.missing.filter, " individuals removed due to >", missing.individuals.cutoff * 100, "% missing data") #report
+    if (adegenet::nInd(genind.object) == 0) stop("All individuals removed after missing data filter") #stop if all gone
   }
   
   # Singleton loci filter
   if (isTRUE(singleton.loci.filter)) {
-    singleton.locus.indices <- which(adegenet::minorAllele(genind.object) < 1 / adegenet::nInd(genind.object)) #singleton loci
+    locus.count.before.singleton.filter <- adegenet::nLoc(genind.object) #loci before singleton filter
+    minor.allele.counts <- count.minor.alleles.per.locus(genind.object) #minor allele counts per locus
+    singleton.locus.indices <- which(minor.allele.counts == 1L) #true singleton loci only
     if (length(singleton.locus.indices) > 0) {
-      if (verbose) message(length(singleton.locus.indices), " of ", adegenet::nLoc(genind.object), " singleton loci removed") #report
       genind.object <- genind.object[loc = -singleton.locus.indices, drop = TRUE] #remove them
+      print.filter.message(length(singleton.locus.indices), " of ", locus.count.before.singleton.filter, " singleton loci removed") #report
       if (adegenet::nLoc(genind.object) == 0) stop("All loci removed after singleton filter") #stop if all gone
     }
   }
   
-  # Invariant loci filter (first pass)
+  invariant.loci.removed.total <- 0L #track total invariant loci removed
+  invariant.loci.reference.count <- adegenet::nLoc(genind.object) #track denominator for invariant message
+  
+  # Invariant loci filter
   if (isTRUE(invariant.loci.filter)) {
-    if (isTRUE(make.biallelic)) {
-      allele.frequency.matrix <- evaluate.quietly(quote(adegenet::makefreq(genind.object, missing = NA))) #allele frequencies
-      invariant.locus.indices <- which(apply(allele.frequency.matrix, 2, var, na.rm = TRUE) == 0) #invariant loci
-      if (length(invariant.locus.indices) > 0) {
-        if (verbose) message(length(invariant.locus.indices), " of ", ncol(allele.frequency.matrix), " invariant loci removed (1st pass)") #report
-        genind.object <- genind.object[loc = -invariant.locus.indices, drop = TRUE] #remove them
-        if (adegenet::nLoc(genind.object) == 0) stop("All loci removed after invariant filter (1st pass)") #stop if all gone
-      }
-    } else {
-      observed.allele.counts <- count.observed.alleles.per.locus(genind.object) #count observed alleles per locus
-      invariant.locus.indices <- which(observed.allele.counts <= 1) #identify invariant loci
-      if (length(invariant.locus.indices) > 0) {
-        if (verbose) message(length(invariant.locus.indices), " of ", adegenet::nLoc(genind.object), " invariant loci removed (1st pass)") #report
-        genind.object <- genind.object[loc = -invariant.locus.indices, drop = TRUE] #remove them
-        if (adegenet::nLoc(genind.object) == 0) stop("All loci removed after invariant filter (1st pass)") #stop if all gone
-      }
+    locus.count.before.invariant.filter <- adegenet::nLoc(genind.object) #loci before invariant filter
+    invariant.loci.reference.count <- locus.count.before.invariant.filter #store denominator
+    observed.allele.counts <- count.observed.alleles.per.locus(genind.object) #count observed alleles per locus
+    invariant.locus.indices <- which(observed.allele.counts <= 1) #identify invariant loci
+    if (length(invariant.locus.indices) > 0) {
+      genind.object <- genind.object[loc = -invariant.locus.indices, drop = TRUE] #remove them
+      invariant.loci.removed.total <- invariant.loci.removed.total + length(invariant.locus.indices) #update total removed
+      if (adegenet::nLoc(genind.object) == 0) stop("All loci removed after invariant filter") #stop if all gone
     }
   }
   
   # Loci missing (strict)
   if (!is.null(missing.loci.cutoff.final)) {
     locus.count.before.strict.missing.filter <- adegenet::nLoc(genind.object) #loci before
-    genind.object <- suppressMessages(poppr::missingno(genind.object, type = "loci", cutoff = missing.loci.cutoff.final, quiet = TRUE)) #filter
-    locus.count.after.strict.missing.filter <- adegenet::nLoc(genind.object) #after
-    if (verbose) message(locus.count.before.strict.missing.filter - locus.count.after.strict.missing.filter, " of ", locus.count.before.strict.missing.filter, " loci removed due to >", missing.loci.cutoff.final * 100, "% missing data (stricter filter)") #report
-    if (locus.count.after.strict.missing.filter == 0) stop("All loci removed after final missing data filter") #stop if all gone
+    allele.count.matrix.strict <- suppressMessages(suppressWarnings(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
+    locus.factor.strict <- factor(as.character(genind.object@loc.fac), levels = adegenet::locNames(genind.object)) #locus factor
+    first.allele.column.strict <- vapply(split(seq_along(locus.factor.strict), locus.factor.strict, drop = TRUE), `[`, integer(1L), 1L) #first allele column per locus
+    locus.missing.proportions.strict <- colMeans(is.na(allele.count.matrix.strict[, first.allele.column.strict, drop = FALSE])) #missing proportion per locus
+    names(locus.missing.proportions.strict) <- names(first.allele.column.strict) #restore locus names
+    genind.object <- genind.object[loc = names(locus.missing.proportions.strict)[locus.missing.proportions.strict <= missing.loci.cutoff.final], drop = TRUE] #filter loci
+    loci.removed <- locus.count.before.strict.missing.filter - adegenet::nLoc(genind.object) #number removed
+    if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.strict.missing.filter, " loci removed due to >", missing.loci.cutoff.final * 100, "% missing data (stricter filter)") #report
+    if (adegenet::nLoc(genind.object) == 0) stop("All loci removed after final missing data filter") #stop if all gone
   }
   
-  # Invariant loci filter (final pass)
+  # Invariant loci filter
   if (isTRUE(invariant.loci.filter)) {
-    if (isTRUE(make.biallelic)) {
-      allele.frequency.matrix <- evaluate.quietly(quote(adegenet::makefreq(genind.object, missing = NA))) #allele frequencies again
-      final.invariant.locus.indices <- which(apply(allele.frequency.matrix, 2, var, na.rm = TRUE) == 0) #final invariant check
-      if (length(final.invariant.locus.indices) > 0) {
-        if (verbose) message(length(final.invariant.locus.indices), " of ", ncol(allele.frequency.matrix), " invariant loci removed (final pass)") #report
-        genind.object <- genind.object[loc = -final.invariant.locus.indices, drop = TRUE] #remove them
-        if (adegenet::nLoc(genind.object) == 0) stop("All loci removed after final invariant filter") #stop if all gone
-      }
-    } else {
-      observed.allele.counts <- count.observed.alleles.per.locus(genind.object) #count observed alleles per locus
-      final.invariant.locus.indices <- which(observed.allele.counts <= 1) #final invariant check
-      if (length(final.invariant.locus.indices) > 0) {
-        if (verbose) message(length(final.invariant.locus.indices), " of ", adegenet::nLoc(genind.object), " invariant loci removed (final pass)") #report
-        genind.object <- genind.object[loc = -final.invariant.locus.indices, drop = TRUE] #remove them
-        if (adegenet::nLoc(genind.object) == 0) stop("All loci removed after final invariant filter") #stop if all gone
-      }
+    observed.allele.counts <- count.observed.alleles.per.locus(genind.object) #count observed alleles per locus
+    final.invariant.locus.indices <- which(observed.allele.counts <= 1) #final invariant check
+    if (length(final.invariant.locus.indices) > 0) {
+      genind.object <- genind.object[loc = -final.invariant.locus.indices, drop = TRUE] #remove them
+      invariant.loci.removed.total <- invariant.loci.removed.total + length(final.invariant.locus.indices) #update total removed
+      if (adegenet::nLoc(genind.object) == 0) stop("All loci removed after invariant filter") #stop if all gone
     }
+    if (invariant.loci.removed.total > 0) print.filter.message(invariant.loci.removed.total, " of ", invariant.loci.reference.count, " invariant loci removed") #report
   }
   
   # Convert to final SNP matrix
   if (isTRUE(make.biallelic)) {
-    allele.count.matrix <- evaluate.quietly(quote(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
+    allele.count.matrix <- suppressMessages(suppressWarnings(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
     locus.names <- adegenet::locNames(genind.object) #locus names
-    locus.membership.vector <- as.character(genind.object@loc.fac) #locus membership for each allele column
-    retained.allele.dosage.list <- list() #initialize dosage list
-    retained.allele.dosage.names <- character(0) #initialize dosage names
+    locus.membership.vector <- factor(as.character(genind.object@loc.fac), levels = locus.names) #locus membership
+    locus.column.list <- split(seq_along(locus.membership.vector), locus.membership.vector, drop = TRUE) #columns per locus
+    allele.present <- colSums(allele.count.matrix, na.rm = TRUE) > 0 #observed allele columns
     
-    for(current.locus.name in locus.names) { #loop over loci
-      locus.column.indices <- which(locus.membership.vector == current.locus.name) #columns for this locus
-      if (length(locus.column.indices) == 0) next #skip empty loci
-      locus.allele.count.matrix <- allele.count.matrix[, locus.column.indices, drop = FALSE] #subset allele counts for locus
-      observed.allele.column.indices <- which(colSums(locus.allele.count.matrix, na.rm = TRUE) > 0) #keep observed alleles only
-      if (length(observed.allele.column.indices) < 2) next #skip invariant loci
-      locus.allele.count.matrix <- locus.allele.count.matrix[, observed.allele.column.indices, drop = FALSE] #retain observed alleles
-      retained.allele.index <- ncol(locus.allele.count.matrix) #keep one allele dosage column per biallelic locus
-      retained.allele.dosage.list[[length(retained.allele.dosage.list) + 1]] <- locus.allele.count.matrix[, retained.allele.index] #store retained allele dosage
-      retained.allele.dosage.names <- c(retained.allele.dosage.names, current.locus.name) #store locus name
-    }
+    retained.info <- lapply(names(locus.column.list), function(current.locus.name) {
+      locus.column.indices <- locus.column.list[[current.locus.name]] #columns for locus
+      observed.column.indices <- locus.column.indices[allele.present[locus.column.indices]] #observed allele columns
+      if (length(observed.column.indices) < 2) return(NULL) #skip invariant loci
+      return(list(index = observed.column.indices[length(observed.column.indices)], name = current.locus.name)) #retain one allele dosage column
+    }) #retained column information
+    retained.info <- Filter(Negate(is.null), retained.info) #remove skipped loci
     
-    if (length(retained.allele.dosage.list) == 0) stop("No biallelic SNP columns remain after filtering") #stop if empty
-    biallelic.snp.matrix <- as.data.frame(do.call(cbind, retained.allele.dosage.list), stringsAsFactors = FALSE) #combine dosage columns
+    if (length(retained.info) == 0) stop("No biallelic SNP columns remain after filtering") #stop if empty
+    retained.column.indices <- vapply(retained.info, function(single.info) single.info$index, integer(1)) #retained column indices
+    retained.allele.dosage.names <- vapply(retained.info, function(single.info) single.info$name, character(1)) #retained locus names
+    
+    biallelic.snp.matrix <- as.data.frame(allele.count.matrix[, retained.column.indices, drop = FALSE], stringsAsFactors = FALSE) #subset once
     rownames(biallelic.snp.matrix) <- adegenet::indNames(genind.object) #set rownames
     colnames(biallelic.snp.matrix) <- retained.allele.dosage.names #set colnames
-    if (verbose) message("")
+    
+    if (verbose && filter.messages.printed) message("")
     if (verbose) message("Final SNP matrix: ", nrow(biallelic.snp.matrix), " samples × ", ncol(biallelic.snp.matrix), " loci") #summary
     return(biallelic.snp.matrix) #return SNP matrix
   }
   
-  if (verbose) message("Set make.biallelic = FALSE: retaining multiallelic loci as k-1 allele dosage columns")
-  
   multiallelic.snp.matrix <- convert.genind.to.k.minus.one.dosage(genind.object) #convert to k-1 dosage matrix
   if (ncol(multiallelic.snp.matrix) == 0) stop("No multiallelic SNP columns remain after filtering") #stop if empty
-  if (verbose) message("")
+  if (verbose && filter.messages.printed) message("")
   if (verbose) message("Final SNP matrix: ", nrow(multiallelic.snp.matrix), " samples × ", ncol(multiallelic.snp.matrix), " loci") #summary
   return(multiallelic.snp.matrix) #return multiallelic SNP matrix
-}
-
-
-## Function to convert specified categorical columns into binary (0/1) indicators
-make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
-                                 make.binary.cols, #make.binary.cols - character vector of categorical column names to convert
-                                 remove.original.cols = TRUE, #remove.original.cols - if TRUE, remove original categorical columns after processing
-                                 append.to.original = FALSE #append.to.original - if TRUE, append to input; if FALSE, return only binary indicators
-) {
-  if (!is.data.frame(dataframe)) stop("dataframe must be a data frame") #ensure input is a data frame
-  if (!is.character(make.binary.cols)) stop("make.binary.cols must be character vector of column names") #check type
-  if (length(make.binary.cols) == 0) stop("make.binary.cols must contain at least one column name") #non-empty
-  if (!all(make.binary.cols %in% colnames(dataframe))) { #check all exist in df
-    missing_cols <- make.binary.cols[!make.binary.cols %in% colnames(dataframe)] #identify missing
-    stop("The following columns are not in data frame: ", paste(missing_cols, collapse = ", ")) #error if any missing
-  }
-  if (!is.logical(remove.original.cols) || length(remove.original.cols) != 1) stop("remove.original.cols must be TRUE or FALSE") #check logical
-  if (!is.logical(append.to.original) || length(append.to.original) != 1) stop("append.to.original must be TRUE or FALSE") #check logical
-  
-  dataframe_subset <- dataframe[, make.binary.cols, drop = FALSE] #extract selected columns
-  noncat_cols <- sapply(dataframe_subset, function(x) !is.factor(x) && !is.character(x)) #identify non-categorical
-  if (any(noncat_cols)) {
-    bad_cols <- names(noncat_cols[noncat_cols]) #get bad column names
-    stop("The following columns are not categorical (factor or character): ", paste(bad_cols, collapse = ", ")) #stop if any bad
-  }
-  
-  dataframe_subset <- as.data.frame(lapply(dataframe_subset, function(x) {if (!is.factor(x)) x <- as.factor(x); return(x)})) #convert to factor
-  
-  high_card <- sapply(dataframe_subset, nlevels) > 30 #check number of levels
-  if (any(high_card)) warning("The following columns have >30 levels: ", paste(names(dataframe_subset)[high_card], collapse = ", ")) #warn if too many levels
-  
-  binary_list <- list() #initialize list of binary matrices
-  for (colname in colnames(dataframe_subset)) {
-    col_factor <- dataframe_subset[[colname]] #get factor column
-    col_factor <- base::factor(col_factor) #do not include NA as a level
-    levs <- levels(col_factor) #get levels
-    if (length(levs) < 2) { #skip if too few levels
-      message("Skipping column '", colname, "' because it has fewer than 2 levels")
-      next
-    }
-    
-    n <- length(col_factor) #number of rows
-    k <- length(levs) #number of levels
-    model_mat <- matrix(NA_real_, nrow = n, ncol = k) #init NA matrix so NA rows remain NA
-    colnames(model_mat) <- make.names(paste0(colname, "_", levs), unique = TRUE) #clean names
-    
-    non_na <- !is.na(col_factor) #identify non-NA rows
-    model_mat[non_na, ] <- 0 #set non-NA rows to 0
-    idx <- match(as.character(col_factor[non_na]), levs) #map each row to its level index
-    model_mat[cbind(which(non_na), idx)] <- 1 #set the observed level to 1
-    
-    binary_list[[colname]] <- model_mat #store in list
-  }
-  
-  if (length(binary_list) == 0) stop("No binary columns could be created — all input columns had fewer than 2 levels") #stop if nothing created
-  binary_dataframe <- as.data.frame(do.call(cbind, binary_list)) #combine to single data frame
-  rownames(binary_dataframe) <- rownames(dataframe) #preserve rownames
-  
-  if (append.to.original) {
-    overlap <- intersect(colnames(dataframe), colnames(binary_dataframe)) #check for collisions
-    if (length(overlap) > 0) stop("Cannot append binary variables: the following column names already exist in your data frame: ", paste(overlap, collapse = ", ")) #stop if collision
-    dataframe_out <- cbind(dataframe, binary_dataframe) #append to original
-    if (remove.original.cols) dataframe_out <- dataframe_out[, !(colnames(dataframe_out) %in% make.binary.cols), drop = FALSE] #remove originals
-  } else {
-    dataframe_out <- binary_dataframe #return only binary columns
-  }
-  
-  return(dataframe_out) #return result
 }
 
 
