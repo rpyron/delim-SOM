@@ -38,12 +38,12 @@ Monticola71_data <- read.csv(file = "../Empirical_examples/Pyron_2023/monticola7
 
 ## Import and process genetic SNP data
 Monticola71_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_2023/Monticola71.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
-                                        missing.loci.cutoff.lenient = 0.6,
-                                        missing.loci.cutoff.final = 0.4,
+                                        missing.loci.cutoff.lenient = 0.7,
+                                        missing.loci.cutoff.final = 0.5,
                                         missing.individuals.cutoff = 0.6)
 Monticola71_snp_to_sample <- Monticola71_data$Sample[match(rownames(Monticola71_SNP), rownames(Monticola71_data))] #returns RAP**** names
 rownames(Monticola71_SNP) <- Monticola71_snp_to_sample #rename SNP matrix to RAP codes
-ncol(Monticola71_SNP) #number of loci: 9957
+ncol(Monticola71_SNP) #number of loci: 13031
 nrow(Monticola71_SNP) #number of samples: 71
 
 
@@ -156,14 +156,14 @@ Monticola71_cluster1_data <- lapply(Monticola71_SOM$input_data, function(x) x[Mo
 Monticola71_cluster2_data <- lapply(Monticola71_SOM$input_data, function(x) x[Monticola71_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 
 Monticola71_SOM_tr_cluster1 <- train.SOM(Monticola71_cluster1_data,  grid.multiplier = 3,
-                                         max.NA.row = 0.2,
+                                         max.NA.row = 0.5,
                                          max.NA.col = 0.2)
 Monticola71_SOM_cluster1 <- clustering.SOM(Monticola71_SOM_tr_cluster1,
                                            clustering.method = "kmeans+BICthreshold",
                                            max.k = 5)
 Monticola71_SOM_cluster1$optim_k_summary #k1 100% support
 Monticola71_SOM_tr_cluster2 <- train.SOM(Monticola71_cluster2_data,
-                                         max.NA.row = 0.2,
+                                         max.NA.row = 0.5,
                                          max.NA.col = 0.2)
 Monticola71_SOM_cluster2 <- clustering.SOM(Monticola71_SOM_tr_cluster2,
                                            clustering.method = "kmeans+BICthreshold",
@@ -195,11 +195,11 @@ Pascagoula_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2022/pasca
 
 ## Import and process genetic SNP data
 Pascagoula_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_et_al_2022/pascagoula22.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
-                                       missing.loci.cutoff.lenient = 0.4,
-                                       missing.loci.cutoff.final = 0.25,
-                                       missing.individuals.cutoff = 0.35)
+                                       missing.loci.cutoff.lenient = 0.7,
+                                       missing.loci.cutoff.final = 0.5,
+                                       missing.individuals.cutoff = 0.5)
 rownames(Pascagoula_SNP) <- Pascagoula_data$Sample[match(rownames(Pascagoula_SNP), rownames(Pascagoula_data))] #rename alleles
-ncol(Pascagoula_SNP) #number of loci: 1210
+ncol(Pascagoula_SNP) #number of loci: 3728
 nrow(Pascagoula_SNP) #number of samples: 22
 
 
@@ -254,7 +254,7 @@ Pascagoula_SOM_data <- list(Alleles = Pascagoula_SNP,
                             Watershed = Pascagoula_watershed,
                             Morphology = Pascagoula_morphology)
 Pascagoula_SOM_tr <- train.SOM(input_data = Pascagoula_SOM_data, #22 samples
-                               max.NA.row = 0.25,
+                               max.NA.row = 0.55,
                                max.NA.col = 0.25,
                                save.SOM.results = T,
                                overwrite.SOM.results = T,
@@ -354,7 +354,7 @@ Aeneus_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_et_al
                                    missing.loci.cutoff.final = 0.2,
                                    missing.individuals.cutoff = 0.3)
 rownames(Aeneus_SNP) <- Aeneus_data$Sample[match(rownames(Aeneus_SNP), rownames(Aeneus_data))] #rename alleles
-ncol(Aeneus_SNP) #number of loci: 1627
+ncol(Aeneus_SNP) #number of loci: 7667 
 nrow(Aeneus_SNP) #number of samples: 47
 
 
@@ -415,7 +415,7 @@ Aeneus_SOM_data <- list(Alleles = Aeneus_SNP,
 Aeneus_SOM_tr <- train.SOM(input_data = Aeneus_SOM_data, #36 samples
                            save.SOM.results = T,
                            save.SOM.results.name = "Aeneus_SOM_tr.Rdata",
-                           max.NA.row = 0.2,
+                           max.NA.row = 0.5,
                            max.NA.col = 0.2)
 
 Aeneus_SOM_kmeansBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #takes ca 3min!
@@ -498,10 +498,10 @@ SeqArray::seqClose(Pocillopora_gds) #close GDS connection
 Pocillopora_genotypes <- as.data.frame(matrix(ifelse(is.na(unlist(Pocillopora_SNP_raw)), NA, ifelse(unlist(Pocillopora_SNP_raw) == 0, "A/A", ifelse(unlist(Pocillopora_SNP_raw) == 1, "A/B", ifelse(unlist(Pocillopora_SNP_raw) == 2, "B/B", NA)))), nrow = nrow(Pocillopora_SNP_raw), dimnames = dimnames(Pocillopora_SNP_raw))) #convert dosages to genotype strings
 Pocillopora_genind <- adegenet::df2genind(Pocillopora_genotypes, sep = "/", ncode = 1, ploidy = 2) #convert to genind
 Pocillopora_SNP <- process.SNP.data.SOM(genind.input = Pocillopora_genind, #filter loci and individuals and create SNP matrix dataframe
-                                        missing.loci.cutoff.lenient = 0.4,
-                                        missing.loci.cutoff.final = 0.2,
-                                        missing.individuals.cutoff = 0.25)
-nrow(Pocillopora_SNP) #number of samples: 339
+                                        missing.loci.cutoff.lenient = 0.7,
+                                        missing.loci.cutoff.final = 0.5,
+                                        missing.individuals.cutoff = 0.5)
+nrow(Pocillopora_SNP) #number of samples: 350
 ncol(Pocillopora_SNP) #number of loci: 1559
 
 
@@ -850,20 +850,20 @@ plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3_updated, bottom.margin = 8.
 
 ## Import and process genetic SNP data
 Polygonia_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Dupuis et al 2018/Polygonia_961SNPs.vcf", #filter loci and individuals and create SNP matrix dataframe
-                                      missing.loci.cutoff.lenient = 0.4,
-                                      missing.loci.cutoff.final = 0.2,
-                                      missing.individuals.cutoff = 0.2)
+                                      missing.loci.cutoff.lenient = 0.7,
+                                      missing.loci.cutoff.final = 0.5,
+                                      missing.individuals.cutoff = 0.5)
 rownames(Polygonia_SNP) <- sub(".*?(\\d+)$", "\\1", rownames(Polygonia_SNP)) #only keep numeric identifier as rownames
-ncol(Polygonia_SNP) #number of loci: 956
-nrow(Polygonia_SNP) #number of samples: 222
+ncol(Polygonia_SNP) #number of loci: 961
+nrow(Polygonia_SNP) #number of samples: 237
 
 
 ## Import and filter COI data
 Polygonia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Dupuis et al 2018/Polygonia_COI.nex",
                                       make.biallelic = F,
-                                      missing.loci.cutoff.lenient = 0.4, 
-                                      missing.loci.cutoff.final = 0.2,
-                                      missing.individuals.cutoff = 0.25)
+                                      missing.loci.cutoff.lenient = 0.7, 
+                                      missing.loci.cutoff.final = 0.5,
+                                      missing.individuals.cutoff = 0.5)
 Polygonia_COI_numeric_rownames <- sub(".*?(\\d+)$", "\\1", rownames(Polygonia_COI)) #extract numeric code from each rowname (e.g., "pf_8301" -> "8301")
 Polygonia_COI <- Polygonia_COI[!duplicated(Polygonia_COI_numeric_rownames), , drop = FALSE] #keep only first occurrence for each numeric code (remove duplicates)
 rownames(Polygonia_COI) <- Polygonia_COI_numeric_rownames[!duplicated(Polygonia_COI_numeric_rownames)] #set rownames to unique numeric codes
@@ -1017,8 +1017,8 @@ Polygonia_all_data <- list(Morphology = Polygonia_morphology,
 Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data, #186 samples
                               save.SOM.results = T,
                               save.SOM.results.name = "Polygonia_SOM_tr.Rdata",
-                              max.NA.row = 0.2,
-                              max.NA.col = 0.3)
+                              max.NA.row = 0.5,
+                              max.NA.col = 0.5)
 
 Polygonia_SOM_kmeansBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #takes ca 8min!
                                                    clustering.method = "kmeans+BICthreshold")
@@ -1117,22 +1117,22 @@ Polygonia_cluster2_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygo
 Polygonia_cluster3_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 
 Polygonia_SOM_tr_cluster1 <- train.SOM(Polygonia_cluster1_data, #75 samples
-                                       max.NA.row = 0.2,
-                                       max.NA.col = 0.3)
+                                       max.NA.row = 0.5,
+                                       max.NA.col = 0.5)
 Polygonia_SOM_cluster1 <- clustering.SOM(Polygonia_SOM_tr_cluster1,
                                          clustering.method = "kmeans+BICelbow")
 Polygonia_SOM_cluster1$optim_k_summary #k1 100%
 
 Polygonia_SOM_tr_cluster2 <- train.SOM(Polygonia_cluster2_data,
-                                       max.NA.row = 0.2,
-                                       max.NA.col = 0.3)
+                                       max.NA.row = 0.5,
+                                       max.NA.col = 0.5)
 Polygonia_SOM_cluster2 <- clustering.SOM(Polygonia_SOM_tr_cluster2, #39 samples
                                          clustering.method = "kmeans+BICelbow")
 Polygonia_SOM_cluster2$optim_k_summary #k1 100%
 
 Polygonia_SOM_tr_cluster3 <- train.SOM(Polygonia_cluster3_data, #72 samples
-                                       max.NA.row = 0.2,
-                                       max.NA.col = 0.3)
+                                       max.NA.row = 0.5,
+                                       max.NA.col = 0.5)
 Polygonia_SOM_cluster3 <- clustering.SOM(Polygonia_SOM_tr_cluster3,
                                          clustering.method = "kmeans+BICelbow")
 Polygonia_SOM_cluster3$optim_k_summary #k2 100%
@@ -1189,10 +1189,10 @@ table(Polygonia_ancestry_SOM_cluster3$Species_revised)
 
 ## Import and process genetic SNP data
 Viburnum_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Spriggs et al 2018/nudum-c88-d6-min50.vcf.gz",
-                                     missing.loci.cutoff.lenient = 0.4,
-                                     missing.loci.cutoff.final = 0.2,
+                                     missing.loci.cutoff.lenient = 0.7,
+                                     missing.loci.cutoff.final = 0.5,
                                      missing.individuals.cutoff = 0.5)
-ncol(Viburnum_SNP) #number of SNPs: 2512
+ncol(Viburnum_SNP) #number of SNPs: 42159
 nrow(Viburnum_SNP) #number of samples: 65
 
 
@@ -1285,7 +1285,7 @@ Viburnum_SOM_data <- list(Morphology = Viburnum_morphology,
                           SNP = Viburnum_SNP)
 Viburnum_SOM_tr <- train.SOM(Viburnum_SOM_data, #46 samples
                              max.NA.row = 0.4,
-                             max.NA.col = 0.33,
+                             max.NA.col = 0.53,
                              save.SOM.results.name = "Viburnum_SOM_tr.Rdata",
                              save.SOM.results = T)
 
@@ -1395,7 +1395,7 @@ Viburnum_cluster2_data <- lapply(Viburnum_SOM$input_data, function(x) x[Viburnum
 Viburnum_SOM_tr_cluster1 <- train.SOM(Viburnum_cluster1_data, #25 samples
                                       grid.multiplier = 4,
                                       max.NA.row = 0.4,
-                                      max.NA.col = 0.33)
+                                      max.NA.col = 0.53)
 Viburnum_SOM_cluster1 <- clustering.SOM(Viburnum_SOM_tr_cluster1,
                                         clustering.method = "kmeans+BICelbow")
 Viburnum_SOM_cluster1$optim_k_summary #k1 100%
@@ -1403,7 +1403,7 @@ Viburnum_SOM_cluster1$optim_k_summary #k1 100%
 Viburnum_SOM_tr_cluster2 <- train.SOM(Viburnum_cluster2_data, #21 samples
                                       grid.multiplier = 4,
                                       max.NA.row = 0.4,
-                                      max.NA.col = 0.33)
+                                      max.NA.col = 0.53)
 Viburnum_SOM_cluster2 <- clustering.SOM(Viburnum_SOM_tr_cluster2,
                                         clustering.method = "kmeans+BICelbow")
 Viburnum_SOM_cluster2$optim_k_summary #k1 100%
@@ -1418,12 +1418,12 @@ library(dplyr)
 ## Import and process genetic SNP data
 Microcebus_SNP <- process.SNP.data.SOM(
   vcf.path = "../Empirical_examples/van Elst et al 2024/allScaffolds.annot.SNP.minInd.DP.mac.GATKfilt-hard.maxmiss0.05.thinned.vcf.gz", #VCF file path
-  missing.loci.cutoff.lenient = 0.4, #remove loci with >40% missing data (lenient)
-  missing.loci.cutoff.final = 0.05, #remove loci with >5% missing data (stricter)
-  missing.individuals.cutoff = 0.5) #remove individuals with >50% missing data
+  missing.loci.cutoff.lenient = 0.7,
+  missing.loci.cutoff.final = 0.5,
+  missing.individuals.cutoff = 0.5)
 Microcebus_species_split <- stringr::str_split_fixed(rownames(Microcebus_SNP), "_", n = 2) #split rownames by underscore
 rownames(Microcebus_SNP) <- Microcebus_species_split[, 2] #set rownames to just the ID part
-ncol(Microcebus_SNP) #number of SNPs: 9386
+ncol(Microcebus_SNP) #number of SNPs: 9429
 nrow(Microcebus_SNP) #number of samples: 213
 
 
@@ -1777,9 +1777,9 @@ Microcebus_SOM_full_data <- list(SNP = Microcebus_SNP,
                                  Morphology = Microcebus_morphology,
                                  Environmental = Microcebus_environmental,
                                  Spatial = Microcebus_spatial)
-Microcebus_SOM_tr <- train.SOM(Microcebus_SOM_full_data, #47 samples
-                               max.NA.row = 0.4,
-                               max.NA.col = 0.2,
+Microcebus_SOM_tr <- train.SOM(Microcebus_SOM_full_data, #?? samples
+                               max.NA.row = 0.5,
+                               max.NA.col = 0.5,
                                save.SOM.results.name = "Microcebus_SOM_tr.Rdata",
                                save.SOM.results = T)
 Microcebus_SOM_kmeansBICelbow <- clustering.SOM(Microcebus_SOM_tr, max.k = 20,
@@ -1878,28 +1878,28 @@ Microcebus_cluster1_data <- lapply(Microcebus_SOM$input_data, function(x) x[Micr
 Microcebus_cluster2_data <- lapply(Microcebus_SOM$input_data, function(x) x[Microcebus_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 Microcebus_cluster3_data <- lapply(Microcebus_SOM$input_data, function(x) x[Microcebus_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 
-Microcebus_SOM_tr_cluster1 <- train.SOM(Microcebus_cluster1_data, #8 samples
+Microcebus_SOM_tr_cluster1 <- train.SOM(Microcebus_cluster1_data, #?? samples
                                         grid.multiplier = 3,
-                                        max.NA.row = 0.4,
-                                        max.NA.col = 0.2)
+                                        max.NA.row = 0.5,
+                                        max.NA.col = 0.5)
 Microcebus_SOM_cluster1 <- clustering.SOM(Microcebus_SOM_tr_cluster1
                                           ,max.k = 5,
                                           clustering.method = "kmeans+BICelbow")
 Microcebus_SOM_cluster1$optim_k_summary #k1 99%
 
-Microcebus_SOM_tr_cluster2 <- train.SOM(Microcebus_cluster2_data, #26 samples
+Microcebus_SOM_tr_cluster2 <- train.SOM(Microcebus_cluster2_data, #? samples
                                         grid.multiplier = 5,
-                                        max.NA.row = 0.4,
-                                        max.NA.col = 0.2)
+                                        max.NA.row = 0.5,
+                                        max.NA.col = 0.5)
 Microcebus_SOM_cluster2 <- clustering.SOM(Microcebus_SOM_tr_cluster2,
                                           clustering.method = "kmeans+BICelbow",
                                           max.k = 10)
 Microcebus_SOM_cluster2$optim_k_summary #k1 98%
 
-Microcebus_SOM_tr_cluster3 <- train.SOM(Microcebus_cluster3_data, #13 samples
+Microcebus_SOM_tr_cluster3 <- train.SOM(Microcebus_cluster3_data, #?? samples
                                         grid.multiplier = 3,
-                                        max.NA.row = 0.4,
-                                        max.NA.col = 0.2)
+                                        max.NA.row = 0.5,
+                                        max.NA.col = 0.5)
 Microcebus_SOM_cluster3 <- clustering.SOM(Microcebus_SOM_tr_cluster3,
                                           clustering.method = "kmeans+BICelbow",
                                           max.k = 10)
@@ -1949,11 +1949,10 @@ table(Microcebus_ancestry_SOM_cluster3$Species_revised)
 
 ## Import and filter mitochondrial DNA data
 Elysia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Krug et al 2026/Elysia_mtDNA_expanded.nex",
-                                   missing.loci.cutoff.lenient = 0.5,
-                                   missing.loci.cutoff.final = 0.3,
-                                   missing.individuals.cutoff = 0.2,
-                                   make.biallelic = FALSE)
-ncol(Elysia_COI) #number of loci: 341
+                                   missing.loci.cutoff.lenient = 0.7,
+                                   missing.loci.cutoff.final = 0.5,
+                                   missing.individuals.cutoff = 0.5)
+ncol(Elysia_COI) #number of loci: 160
 nrow(Elysia_COI) #number of samples: 282
 
 
@@ -2055,9 +2054,9 @@ Elysia_all_data <- list(mtDNA = Elysia_COI,
                         Host_development = Elysia_host_development,
                         Environmental = Elysia_environmental,
                         Spatial = Elysia_spatial)
-Elysia_SOM_tr <- train.SOM(input_data = Elysia_all_data, #261 samples
-                           max.NA.row = 0.2,
-                           max.NA.col = 0.3,
+Elysia_SOM_tr <- train.SOM(input_data = Elysia_all_data, #?? samples
+                           max.NA.row = 0.5,
+                           max.NA.col = 0.5,
                            save.SOM.results = TRUE,
                            save.SOM.results.name = "Elysia_SOM_tr.Rdata")
 
@@ -2141,10 +2140,10 @@ Elysia_cluster2_data <- lapply(Elysia_SOM$input_data, function(x) x[Elysia_clust
 Elysia_cluster3_data <- lapply(Elysia_SOM$input_data, function(x) x[Elysia_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 Elysia_cluster4_data <- lapply(Elysia_SOM$input_data, function(x) x[Elysia_cluster_samples$cluster4, , drop = FALSE]) #cluster 4 subset
 
-Elysia_SOM_tr_cluster1 <- train.SOM(Elysia_cluster1_data, #17 samples
+Elysia_SOM_tr_cluster1 <- train.SOM(Elysia_cluster1_data, #? samples
                                     grid.multiplier = 4,
-                                    max.NA.row = 0.2,
-                                    max.NA.col = 0.3)
+                                    max.NA.row = 0.5,
+                                    max.NA.col = 0.5)
 Elysia_SOM_cluster1 <- clustering.SOM(Elysia_SOM_tr_cluster1,
                                       clustering.method = "kmeans+BICelbow",
                                       max.k = 5)
@@ -2152,8 +2151,8 @@ Elysia_SOM_cluster1$optim_k_summary #k3 84%, k4 11%
 
 Elysia_SOM_tr_cluster2 <- train.SOM(Elysia_cluster2_data, #63 samples
                                     grid.multiplier = 5,
-                                    max.NA.row = 0.2,
-                                    max.NA.col = 0.3)
+                                    max.NA.row = 0.5,
+                                    max.NA.col = 0.5)
 Elysia_SOM_cluster2 <- clustering.SOM(Elysia_SOM_tr_cluster2,
                                       clustering.method = "kmeans+BICelbow",
                                       max.k = 10)
@@ -2161,8 +2160,8 @@ Elysia_SOM_cluster2$optim_k_summary #k4 68%, k5 27%
 
 Elysia_SOM_tr_cluster3 <- train.SOM(Elysia_cluster3_data[names(Elysia_cluster3_data) != "Host_development"],
                                     grid.multiplier = 5, #50 samples
-                                    max.NA.row = 0.2,
-                                    max.NA.col = 0.3)
+                                    max.NA.row = 0.5,
+                                    max.NA.col = 0.5)
 Elysia_SOM_cluster3 <- clustering.SOM(Elysia_SOM_tr_cluster3,
                                       clustering.method = "kmeans+BICelbow",
                                       max.k = 10)
@@ -2170,8 +2169,8 @@ Elysia_SOM_cluster3$optim_k_summary #k1 85%, k3 6%
 
 Elysia_SOM_tr_cluster4 <- train.SOM(Elysia_cluster4_data[names(Elysia_cluster4_data) != "Host_development"],
                                     grid.multiplier = 5, #131 samples
-                                    max.NA.row = 0.2,
-                                    max.NA.col = 0.3)
+                                    max.NA.row = 0.5,
+                                    max.NA.col = 0.5)
 Elysia_SOM_cluster4 <- clustering.SOM(Elysia_SOM_tr_cluster4,
                                       clustering.method = "kmeans+BICelbow",
                                       max.k = 25)
