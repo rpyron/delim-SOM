@@ -5048,7 +5048,6 @@ plot.variable.importance.SOM <- function(SOM.output,
   }
 }
 
-
 #' Process SNP data for SOM-based species delimitation
 #'
 #' Filters and converts SNP data into a numeric SNP dosage matrix suitable for
@@ -5919,7 +5918,6 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   print.final.summary(multiallelic.snp.matrix) #summary
   return(multiallelic.snp.matrix) #return multiallelic SNP matrix
 }
-
 
 # Function to summarize and plot eta squared and/or map variance across SOM layers
 plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output from clustering.SOM
