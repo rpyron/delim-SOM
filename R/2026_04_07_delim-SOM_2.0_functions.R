@@ -5238,7 +5238,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   }
   
   # Create function to encode multiallelic alignment as k-1 dosage columns
-  encode.multiallelic.alignment.as.k.minus.one <- function(alignment.matrix, missing.symbols = c("?", "N", "-")) {
+  encode.multiallelic.alignment.as.k.minus.one <- function(alignment.matrix, missing.symbols = c("?", "-", "N", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "X")) {
     observed.alleles.per.locus <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols))) #observed alleles
     retained.alleles.per.locus <- lapply(observed.alleles.per.locus, function(observed.alleles) if (length(observed.alleles) < 2) character(0) else observed.alleles[-length(observed.alleles)]) #retained k-1 alleles
     retained.column.counts <- lengths(retained.alleles.per.locus) #number of retained columns per locus
@@ -5329,7 +5329,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (any(dim(alignment.matrix) == 0)) stop(file.type, " alignment matrix is empty or malformed") #check for empty matrix
     alignment.matrix <- toupper(alignment.matrix) #standardize case
     rownames(alignment.matrix) <- names(sequence.list) #set rownames
-    missing.symbols <- c("?", "N", "-") #define missing symbols
+    missing.symbols <- c("?", "-", "N", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "X") #define missing and ambiguous symbols
     observed.alleles.per.site <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols))) #observed alleles per site
     total.locus.count.before.filtering <- ncol(alignment.matrix) #total loci before filtering
     
