@@ -7908,3 +7908,244 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 }
 
 
+# Create function to remove low CV and multicollinearity for SOM
+remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with numeric columns (e.g., climatic, environmental or morphological variables)
+                                               CV.threshold = 0.05, #numeric, remove variables with CV ≤ this value (only for non-binary vars)
+                                               cor.threshold = 0.8, #numeric, remove variables correlated above this threshold (absolute)
+                                               prevalence.threshold = 0.05, #numeric, remove rare binary/count variables below this prevalence
+                                               exclude.cols = NULL, #character vector of columns to exclude from filtering (e.g. Latitude, Longitude)
+                                               verbose = TRUE #logical, print messages about filtering steps
+) {
+  # Validate input
+  if (!is.numeric(CV.threshold) || length(CV.threshold) != 1 || is.na(CV.threshold) || CV.threshold < 0) stop("CV.threshold must be a single non-negative numeric")
+  if (!is.numeric(cor.threshold) || length(cor.threshold) != 1 || is.na(cor.threshold) || cor.threshold < 0 || cor.threshold > 1) stop("cor.threshold must be a single numeric between 0 and 1")
+  if (!is.numeric(prevalence.threshold) || length(prevalence.threshold) != 1 || is.na(prevalence.threshold) || prevalence.threshold < 0 || prevalence.threshold > 0.5) stop("prevalence.threshold must be a single numeric between 0 and 0.5")
+  if (!is.data.frame(input.dataframe)) input.dataframe <- as.data.frame(input.dataframe)
+  if (!is.null(exclude.cols)) {if (!all(exclude.cols %in% colnames(input.dataframe))) stop("All exclude.cols must be column names in input.dataframe")}
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("verbose must be TRUE or FALSE")
+  
+  # Preserve row and column names
+  original.row.names <- rownames(input.dataframe)
+  original.column.names <- colnames(input.dataframe)
+  
+  # Remove columns to exclude from filtering
+  if (!is.null(exclude.cols)) {
+    variables.to.filter <- input.dataframe[, !(colnames(input.dataframe) %in% exclude.cols), drop = FALSE]
+  } else {
+    variables.to.filter <- input.dataframe
+  }
+  
+  # Ensure numeric
+  if (!all(sapply(variables.to.filter, is.numeric))) stop("All filtered columns must be numeric")
+  variables.to.filter <- as.data.frame(lapply(variables.to.filter, as.numeric))
+  
+  # Detect binary variables
+  binary.variable.logical <- sapply(variables.to.filter, function(variable.values) {
+    variable.values <- variable.values[is.finite(variable.values)]
+    unique.non.na.values <- sort(unique(variable.values))
+    length(unique.non.na.values) == 2 && all(unique.non.na.values == c(0, 1))
+  })
+  
+  # Detect count variables
+  count.variable.logical <- sapply(names(variables.to.filter), function(variable.name) {
+    variable.values <- variables.to.filter[[variable.name]]
+    variable.values <- variable.values[is.finite(variable.values)]
+    if (length(variable.values) == 0) return(FALSE)
+    if (binary.variable.logical[variable.name]) return(FALSE)
+    all(variable.values >= 0) && all(abs(variable.values - round(variable.values)) < 1e-8)
+  })
+  
+  # Detect rare binary variables
+  binary.variable.names <- names(binary.variable.logical)[binary.variable.logical]
+  
+  if (length(binary.variable.names) > 0) {
+    binary.minor.count.values <- sapply(binary.variable.names, function(variable.name) {
+      variable.values <- variables.to.filter[[variable.name]]
+      variable.values <- variable.values[is.finite(variable.values)]
+      min(sum(variable.values == 0), sum(variable.values == 1))
+    })
+    
+    binary.required.count.values <- sapply(binary.variable.names, function(variable.name) {
+      variable.values <- variables.to.filter[[variable.name]]
+      variable.values <- variable.values[is.finite(variable.values)]
+      ceiling(length(variable.values) * prevalence.threshold)
+    })
+    
+    variables.removed.rare.binary <- names(binary.minor.count.values)[binary.minor.count.values < binary.required.count.values]
+  } else {
+    variables.removed.rare.binary <- c()
+  }
+  
+  # Detect rare count and zero-inflated variables
+  count.variable.names <- names(count.variable.logical)[count.variable.logical]
+  
+  if (length(count.variable.names) > 0) {
+    count.nonzero.count.values <- sapply(count.variable.names, function(variable.name) {
+      variable.values <- variables.to.filter[[variable.name]]
+      variable.values <- variable.values[is.finite(variable.values)]
+      sum(variable.values != 0)
+    })
+    
+    count.required.count.values <- sapply(count.variable.names, function(variable.name) {
+      variable.values <- variables.to.filter[[variable.name]]
+      variable.values <- variable.values[is.finite(variable.values)]
+      ceiling(length(variable.values) * prevalence.threshold)
+    })
+    
+    variables.removed.rare.count <- names(count.nonzero.count.values)[count.nonzero.count.values < count.required.count.values]
+  } else {
+    variables.removed.rare.count <- c()
+  }
+  
+  # Compute CV
+  compute_CV <- function(variable_values, variable_name) {
+    variable_values <- variable_values[is.finite(variable_values)]
+    if (length(variable_values) <= 5) return(0)
+    variable_mean <- mean(variable_values)
+    variable_sd <- stats::sd(variable_values)
+    if (!is.finite(variable_sd) || variable_sd == 0) return(0) #no variation
+    if (!is.finite(variable_mean) || abs(variable_mean) < 1e-7) { #mean near zero: CV invalid
+      if (verbose) message("Variable '", variable_name, "' has mean near zero (", format(variable_mean, digits = 4), ") - falling back to SD-based variability")
+      mad_val <- stats::mad(variable_values, constant = 1, na.rm = TRUE)
+      if (!is.finite(mad_val) || mad_val == 0) return(0) #MAD=0 so truly constant
+      return(variable_sd / (mad_val + 1e-12)) #SD/MAD scale-free variability
+    }
+    abs(variable_sd / variable_mean)
+  }
+  
+  # Calculate CV for non-binary variables only
+  coefficient.of.variation.values <- sapply(names(variables.to.filter)[!binary.variable.logical], function(variable.name) {
+    compute_CV(variables.to.filter[[variable.name]], variable.name)
+  })
+  
+  # Variables to keep after prevalence and CV filtering
+  variables.removed.by.prevalence <- unique(c(variables.removed.rare.binary, variables.removed.rare.count))
+  variables.retained.binary <- setdiff(names(binary.variable.logical)[binary.variable.logical], variables.removed.rare.binary)
+  variables.retained.by.CV <- names(coefficient.of.variation.values)[coefficient.of.variation.values > CV.threshold]
+  variables.retained.after.CV <- setdiff(c(variables.retained.binary, variables.retained.by.CV), variables.removed.by.prevalence)
+  variables.retained.after.CV <- colnames(variables.to.filter)[colnames(variables.to.filter) %in% variables.retained.after.CV]
+  
+  # Variables removed by CV filtering only
+  variables.removed.by.CV <- setdiff(names(coefficient.of.variation.values)[coefficient.of.variation.values <= CV.threshold], variables.removed.by.prevalence)
+  
+  # Subset to variables kept by CV and prevalence filtering
+  variables.retained.for.correlation <- variables.to.filter[, variables.retained.after.CV, drop = FALSE]
+  
+  # Log-transform retained count variables only for correlation filtering
+  variables.for.correlation <- variables.retained.for.correlation
+  retained.count.variable.names <- intersect(names(count.variable.logical)[count.variable.logical], colnames(variables.for.correlation))
+  
+  if (length(retained.count.variable.names) > 0) {
+    for (variable.name in retained.count.variable.names) {
+      variables.for.correlation[[variable.name]] <- log1p(variables.for.correlation[[variable.name]])
+    }
+  }
+  
+  # Calculate absolute correlation matrix, ignoring NAs pairwise
+  if (ncol(variables.for.correlation) > 1) {
+    absolute.correlation.matrix <- abs(stats::cor(variables.for.correlation, use = "pairwise.complete.obs", method = "spearman"))
+    absolute.correlation.matrix[!is.finite(absolute.correlation.matrix)] <- 0
+    diag(absolute.correlation.matrix) <- 0
+  } else if (ncol(variables.for.correlation) == 1) {
+    absolute.correlation.matrix <- matrix(0, nrow = 1, ncol = 1)
+    colnames(absolute.correlation.matrix) <- colnames(variables.for.correlation)
+    rownames(absolute.correlation.matrix) <- colnames(variables.for.correlation)
+  } else {
+    absolute.correlation.matrix <- matrix(numeric(0), nrow = 0, ncol = 0)
+  }
+  
+  # Iteratively remove variables until no correlation > threshold remains
+  variables.removed.by.correlation <- c()
+  while (length(absolute.correlation.matrix) > 0 && any(absolute.correlation.matrix > cor.threshold, na.rm = TRUE)) {
+    maximum.correlation.index <- which(absolute.correlation.matrix == max(absolute.correlation.matrix, na.rm = TRUE), arr.ind = TRUE)[1, ]
+    
+    variable.name.1 <- colnames(absolute.correlation.matrix)[maximum.correlation.index[1]]
+    variable.name.2 <- colnames(absolute.correlation.matrix)[maximum.correlation.index[2]]
+    
+    variable.values.1 <- variables.retained.for.correlation[[variable.name.1]]
+    variable.values.2 <- variables.retained.for.correlation[[variable.name.2]]
+    
+    variable.NA.count.1 <- sum(is.na(variable.values.1))
+    variable.NA.count.2 <- sum(is.na(variable.values.2))
+    
+    if (variable.NA.count.1 > variable.NA.count.2) {
+      variable.name.to.remove <- variable.name.1
+    } else if (variable.NA.count.2 > variable.NA.count.1) {
+      variable.name.to.remove <- variable.name.2
+    } else {
+      variable.variance.1 <- stats::var(variable.values.1, na.rm = TRUE)
+      variable.variance.2 <- stats::var(variable.values.2, na.rm = TRUE)
+      
+      if (!is.finite(variable.variance.1)) variable.variance.1 <- 0
+      if (!is.finite(variable.variance.2)) variable.variance.2 <- 0
+      
+      if (variable.variance.1 < variable.variance.2) {
+        variable.name.to.remove <- variable.name.1
+      } else if (variable.variance.2 < variable.variance.1) {
+        variable.name.to.remove <- variable.name.2
+      } else {
+        variable.name.to.remove <- variable.name.2
+      }
+    }
+    
+    variables.removed.by.correlation <- c(variables.removed.by.correlation, variable.name.to.remove)
+    absolute.correlation.matrix[, variable.name.to.remove] <- 0
+    absolute.correlation.matrix[variable.name.to.remove, ] <- 0
+  }
+  
+  # Remove correlated columns
+  variables.retained.after.correlation <- variables.retained.for.correlation[, !(colnames(variables.retained.for.correlation) %in% variables.removed.by.correlation), drop = FALSE]
+  variables.retained.after.correlation <- variables.retained.after.correlation[, colnames(variables.to.filter)[colnames(variables.to.filter) %in% colnames(variables.retained.after.correlation)], drop = FALSE]
+  
+  # Bind excluded columns back in original order
+  if (!is.null(exclude.cols)) {
+    retained.variable.names <- c(exclude.cols, colnames(variables.retained.after.correlation))
+    retained.variable.names <- original.column.names[original.column.names %in% retained.variable.names]
+    output.dataframe <- input.dataframe[, retained.variable.names, drop = FALSE]
+    filtered.variable.names <- intersect(colnames(variables.retained.after.correlation), colnames(output.dataframe))
+    output.dataframe[, filtered.variable.names] <- variables.retained.after.correlation[, filtered.variable.names, drop = FALSE]
+  } else {
+    output.dataframe <- as.data.frame(variables.retained.after.correlation)
+  }
+  
+  # Restore row names
+  rownames(output.dataframe) <- original.row.names
+  
+  # Store removed variables
+  attr(output.dataframe, "variables.removed.rare.binary") <- variables.removed.rare.binary
+  attr(output.dataframe, "variables.removed.rare.count") <- variables.removed.rare.count
+  attr(output.dataframe, "variables.removed.by.CV") <- variables.removed.by.CV
+  attr(output.dataframe, "variables.removed.by.correlation") <- variables.removed.by.correlation
+  
+  # Report filtering results if verbose
+  if (verbose) {
+    number.removed.rare.binary <- length(variables.removed.rare.binary)
+    number.removed.rare.count <- length(variables.removed.rare.count)
+    number.removed.by.CV <- length(variables.removed.by.CV)
+    number.filtered.input.variables <- if (is.null(exclude.cols)) ncol(input.dataframe) else ncol(input.dataframe) - length(exclude.cols)
+    number.retained.after.CV <- ncol(variables.retained.for.correlation)
+    
+    message(number.removed.rare.binary + number.removed.rare.count, ifelse(number.removed.rare.binary + number.removed.rare.count == 1, " variable", " variables"), " removed because prevalence was lower than ", prevalence.threshold)
+    message(number.removed.by.CV, ifelse(number.removed.by.CV == 1, " variable", " variables"), " removed due to low CV ≤ ", CV.threshold)
+    message(number.retained.after.CV, ifelse(number.retained.after.CV == 1, " variable", " variables"), " retained after CV/prevalence filtering")
+    
+    number.removed.by.correlation <- length(variables.removed.by.correlation)
+    number.retained.after.correlation <- ncol(variables.retained.after.correlation)
+    
+    message(number.removed.by.correlation, ifelse(number.removed.by.correlation == 1, " variable", " variables"), " removed due to high correlation > ", cor.threshold)
+    message(number.retained.after.correlation, ifelse(number.retained.after.correlation == 1, " variable", " variables"), " retained after correlation filtering")
+    
+    total.variables.retained <- ncol(output.dataframe)
+    
+    if (!is.null(exclude.cols)) {
+      message("")
+      message("Number of variables remaining after processing (including excluded columns): ", total.variables.retained)
+    } else {
+      message("")
+      message("Number of variables remaining after processing: ", total.variables.retained)
+    }
+  }
+  
+  return(output.dataframe)
+}
+                  
