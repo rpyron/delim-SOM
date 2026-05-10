@@ -1741,11 +1741,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Extract number of replicates
   N.replicates <- length(SOM.output$som_models)
-
-  # Report clustering setup
-  messager("")
-  messager("CLUSTERING SOM CODEBOOK VECTORS ...")
-  messager(sprintf("Using %d SOM replicate(s) for clustering", N.replicates))
   
   # Filter poorly fitting SOM mappings based on quantization error and/or topographic error
   replicate_ids <- names(SOM.output$som_models)
@@ -1818,6 +1813,11 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Update number of replicates after optional filtering
   N.replicates <- length(SOM.output$som_models)
+
+  # Report clustering setup
+  messager("")
+  messager("CLUSTERING SOM CODEBOOK VECTORS ...")
+  messager(sprintf("Using %d SOM replicate(s) for clustering", N.replicates))
   
   # Create function to cluster SOM models
   replicate_clust <- function(j) {
@@ -2562,7 +2562,9 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                   "BIC.thresh",
                   "set.seed.N",
                   "N.replicates",
-                 "calculate.soft.ancestry"),
+                 "calculate.soft.ancestry",
+                  "messager",
+                  "message.N.replicates"),
       envir = environment())
     doParallel::registerDoParallel(parallel_cluster) #register cluster for foreach
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
