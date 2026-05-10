@@ -2576,6 +2576,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       replicate_clust(j)
     )
   } else {
+    messager("Running SOM clustering sequentially")
     results <- lapply(seq_len(N.replicates), replicate_clust) #run clustering sequentially
   }
   if (is.null(results)) return(invisible(NULL))
@@ -2862,6 +2863,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   }                             
                                
   # Return results
+  message("")
+  messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
 }
 
