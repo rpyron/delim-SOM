@@ -7908,7 +7908,6 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 }
 
 
-## Function to remove highly correlated and low-variance variables
 remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with numeric columns (e.g., climatic, environmental or morphological variables)
                                                CV.threshold = 0.05, #numeric, remove variables with CV ≤ this value (only for non-binary vars)
                                                cor.threshold = 0.9, #numeric, remove variables correlated above this threshold (absolute)
