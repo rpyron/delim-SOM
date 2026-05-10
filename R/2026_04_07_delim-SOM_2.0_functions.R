@@ -1840,14 +1840,15 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     }
     
     # Create function to calculate BIC
-    calculate.wssBIC <- function (wss, som_codes) {
-      if (any(is.na(wss))) stop("wss contains NA - cannot calculate BIC")
-      if (any(wss < 0)) stop("wss contains negative values - cannot calculate BIC")
+    calculate.wssBIC <- function(wss, som_codes) {
+      if (any(wss < 0, na.rm = TRUE)) stop("wss contains negative values - cannot calculate BIC")
       N <- nrow(som_codes) #number of output cells
       k_vals <- seq_along(wss)
       eps <- .Machine$double.eps #avoid log(0)
-      BIC_vec <- N * log((wss + eps) / N) + log(N) * k_vals #BIC for each k
-      if (any(is.na(BIC_vec) | is.infinite(BIC_vec))) stop("BIC calculation produced NA or Inf")
+      BIC_vec <- rep(NA_real_, length(wss)) #initialize BIC vector
+      valid_wss <- is.finite(wss) & !is.na(wss) #identify valid wss values
+      if (!any(valid_wss)) stop("No valid wss values - cannot calculate BIC")
+      BIC_vec[valid_wss] <- N * log((wss[valid_wss] + eps) / N) + log(N) * k_vals[valid_wss] #BIC for valid k values
       BIC_vec
     }
     
@@ -2424,22 +2425,25 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                                  dimnames = list(som_training_samples, NULL)
     )
     
-# Create replicate-specific soft ancestry matrix
-    if (som_N_clusters == 1L) {
-      replicate_ancestry_matrix <- matrix(1, #all samples assigned fully to single cluster
-                                          nrow = length(som_training_samples),
-                                          ncol = 1,
-                                          dimnames = list(som_training_samples, "1"))
-    } else {
-      sample_to_unit_distance_matrix <- compute.sample.to.unit.distance.matrix.SOM( #calculate sample-to-unit distances across layers
-        som_model = som_model,
-        layer.distance.functions = SOM.output$layer.distance.functions,
-        layer.weights = som_model$distance.weights
-      )
-      replicate_ancestry_matrix <- compute.replicate.ancestry.matrix.SOM( #calculate soft cluster assignment probabilities
-        sample_to_unit_distance_matrix = sample_to_unit_distance_matrix,
-        unit_cluster_labels = som_cluster
-      )
+    # Create replicate-specific soft ancestry matrix
+    replicate_ancestry_matrix <- NULL
+    if (isTRUE(calculate.soft.ancestry)) {
+      if (som_N_clusters == 1L) {
+        replicate_ancestry_matrix <- matrix(1, #all samples assigned fully to single cluster
+                                            nrow = length(som_training_samples),
+                                            ncol = 1,
+                                            dimnames = list(som_training_samples, "1"))
+      } else {
+        sample_to_unit_distance_matrix <- compute.sample.to.unit.distance.matrix.SOM( #calculate sample-to-unit distances across layers
+          som_model = som_model,
+          layer.distance.functions = SOM.output$layer.distance.functions,
+          layer.weights = som_model$distance.weights
+        )
+        replicate_ancestry_matrix <- compute.replicate.ancestry.matrix.SOM( #calculate soft cluster assignment probabilities
+          sample_to_unit_distance_matrix = sample_to_unit_distance_matrix,
+          unit_cluster_labels = som_cluster
+        )
+      }
     }
     
     # Store generic support values for plotting
@@ -2740,9 +2744,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     max.k = max.k,
     set.k = set.k,
     clustering.method = clustering.method,
+    parallel = parallel,
+    N.cores = N.cores,
     BIC.thresh = BIC.thresh,
     quantization.error.quantile = quantization.error.quantile,
     topographic.error.quantile = topographic.error.quantile,
+    calculate.soft.ancestry = calculate.soft.ancestry,
+    calculate.variable.importance = calculate.variable.importance,
     set.seed.N = set.seed.N
   )
   SOM_results$optim_k_vals <- optim_k_vals
