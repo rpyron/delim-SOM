@@ -1319,66 +1319,60 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 ## Function to cluster SOM codebook vectors
 clustering.SOM <- function(SOM.output,
                            max.k = 10, #maximum of considered clusters K + 1
-                           set.k = NULL, #set to test single value of K
+                           set.k = NULL, #set to test one fixed value of K; NULL = evaluate K from 2 to max.k
                            clustering.method, #set clustering method
+                           parallel = TRUE, #whether to run clustering of SOM replicates in parallel
+                           N.cores = 3, #number of cores for clustering SOM replicates in parallel (if parallel = TRUE)
                            BIC.thresh = 6, #BIC threshold for selecting K > 1 - we suggest using Raftery (1995) ranges: 2, 6, or 10 for weak, medium or strong support
                            quantization.error.quantile = 0.95, #remove mappings with QE above this quantile; NULL = no filtering
                            topographic.error.quantile = 0.95, #remove mappings with TE above this quantile; NULL = no filtering
-                           set.seed.N = 1
+                           calculate.soft.ancestry = TRUE, #whether to calculate replicate-specific soft ancestry matrices
+                           calculate.variable.importance = TRUE, #whether to calculate map variance and eta-squared variable-importance summaries
+                           set.seed.N = 1 #set seed for reproducibility
 ) {
   
-  
-  # Validate specified SOM.output
-  if (!is.list(SOM.output) || is.null(SOM.output$som_models) || length(SOM.output$som_models) < 1) {
-    stop("Aborted SOM clustering: SOM.output must be list from train.SOM() with non-empty $som_models")
-  }
-  
-  # Validate specified max.k
-  if (!is.numeric(max.k) || length(max.k) != 1 || is.na(max.k) || max.k < 2 || (max.k %% 1 != 0)) {
-    stop("Aborted SOM clustering: max.k must be a single integer >= 2")
-  }
-  
-  # Validate specified set.k
-  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || (set.k %% 1 != 0))) {
-    stop("Aborted SOM clustering: set.k must be NULL or single positive integer >= 1")
-  }
-  if (!is.null(set.k) && set.k > max.k) {
-    stop("Aborted SOM clustering: set.k must be <= max.k")
-  }
-  
-  # Validate specified clustering method
-  valid.methods <- c(
-    "kmeans+BICelbow",
+  # Validate input arguments
+  if (!is.list(SOM.output) || is.null(SOM.output$som_models) || !is.list(SOM.output$som_models) || length(SOM.output$som_models) < 1) stop("Aborted SOM clustering: SOM.output must be list from train.SOM() with non-empty $som_models")
+  required_SOM_fields <- c("som_models", "codebook_vectors", "retained_replicate_ids", "quantization_error", "topographic_error", "layer.distance.functions")
+  missing_SOM_fields <- required_SOM_fields[!(required_SOM_fields %in% names(SOM.output))]
+  if (length(missing_SOM_fields) > 0) stop("Aborted SOM clustering: SOM.output is missing required field(s): ", paste(missing_SOM_fields, collapse = ", "))
+  if (!is.numeric(max.k) || length(max.k) != 1 || is.na(max.k) || max.k < 2 || (max.k %% 1 != 0)) stop("Aborted SOM clustering: max.k must be a single integer >= 2")
+  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 2 || (set.k %% 1 != 0))) stop("Aborted SOM clustering: set.k must be NULL or single integer >= 2")
+  if (!is.null(set.k) && set.k > max.k) stop("Aborted SOM clustering: set.k must be <= max.k")
+  valid.methods <- c("kmeans+BICelbow",
     "kmeans+BICthreshold",
     "GMM+BICthreshold",
     "hierarchical+DB",
     "HDBSCAN",
-    "OPTICS+Silhouette"
-  )
-  if (!clustering.method %in% valid.methods) {
-    stop("Aborted SOM clustering: Invalid clustering.method - must be one of ", paste(valid.methods, collapse = ", "))
+    "OPTICS+Silhouette")
+  if (!is.character(clustering.method) || length(clustering.method) != 1 || is.na(clustering.method) || !(clustering.method %in% valid.methods)) stop("Aborted SOM clustering: clustering.method must be one of ", paste(valid.methods, collapse = ", "))
+  if (!is.logical(parallel) || length(parallel) != 1 || is.na(parallel)) stop("Aborted SOM clustering: parallel must be TRUE or FALSE")
+  if (parallel) {
+    if (!is.numeric(N.cores) || length(N.cores) != 1 || is.na(N.cores) || N.cores < 1 || (N.cores %% 1 != 0)) stop("Aborted SOM clustering: N.cores must be a single positive integer (>= 1)")
+    max_cores <- parallel::detectCores(logical = FALSE)
+    if (is.na(max_cores) || max_cores < 1) max_cores <- parallel::detectCores(logical = TRUE)
+    if (is.na(max_cores) || max_cores < 1) max_cores <- 1
+    if (N.cores > max_cores) {
+      message(sprintf("Requested N.cores (%d) exceeds available cores (%d) - using %d cores", N.cores, max_cores, max_cores))
+      N.cores <- max_cores
+    }
   }
-  
-  # Validate specified BIC.thresh
-  if (!is.numeric(BIC.thresh) || length(BIC.thresh) != 1 || is.na(BIC.thresh) || BIC.thresh <= 0) {
-    stop("Aborted SOM clustering: BIC.thresh must be a single positive numeric value (e.g., 2, 6, or 10 for low, moderate or strong support, respectively)")
-  }
-  
-  # Validate specified quantization.error.quantile
+  if (!is.numeric(BIC.thresh) || length(BIC.thresh) != 1 || is.na(BIC.thresh) || BIC.thresh <= 0) stop("Aborted SOM clustering: BIC.thresh must be a single positive numeric value (e.g., 2, 6, or 10 for low, moderate or strong support, respectively)")
   if (!is.null(quantization.error.quantile)) {
     if (!is.numeric(quantization.error.quantile) || length(quantization.error.quantile) != 1 || is.na(quantization.error.quantile) ||
         quantization.error.quantile <= 0 || quantization.error.quantile >= 1) {
       stop("Aborted SOM clustering: quantization.error.quantile must be NULL or a single numeric value in (0, 1)")
     }
   }
-  
-  # Validate specified topographic.error.quantile
   if (!is.null(topographic.error.quantile)) {
     if (!is.numeric(topographic.error.quantile) || length(topographic.error.quantile) != 1 || is.na(topographic.error.quantile) ||
         topographic.error.quantile <= 0 || topographic.error.quantile >= 1) {
       stop("Aborted SOM clustering: topographic.error.quantile must be NULL or a single numeric value in (0, 1)")
     }
   }
+  if (!is.logical(calculate.soft.ancestry) || length(calculate.soft.ancestry) != 1 || is.na(calculate.soft.ancestry)) stop("Aborted SOM clustering: calculate.soft.ancestry must be TRUE or FALSE")
+  if (!is.logical(calculate.variable.importance) || length(calculate.variable.importance) != 1 || is.na(calculate.variable.importance)) stop("Aborted SOM clustering: calculate.variable.importance must be TRUE or FALSE")
+  if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Aborted SOM clustering: set.seed.N must be a single positive integer (>= 1)")
   
   # Create function to find nearest neighbors (following FNN get.knnx function)
   get.knnx.custom <- function(reference_data, query_data, k = 1) {
@@ -1409,66 +1403,94 @@ clustering.SOM <- function(SOM.output,
       nn.dist = matrix(nearest_neighbor_distances, ncol = 1) #match FNN output structure
     ))
   }
+
+## Function to calculate layer-wise sample-to-unit distances
+compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
+                                                      codebook_matrix,
+                                                      distance_function = "sumofsquares"
+) {
   
-  # Create function to calculate layer-wise sample-to-unit distances
-  compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
-                                                        codebook_matrix,
-                                                        distance_function = "sumofsquares"
-  ) {
-    
-    # Validate specified matrices
-    sample_matrix <- as.matrix(sample_matrix)
-    codebook_matrix <- as.matrix(codebook_matrix)
-    storage.mode(sample_matrix) <- "numeric"
-    storage.mode(codebook_matrix) <- "numeric"
-    
-    if (nrow(sample_matrix) == 0 || ncol(sample_matrix) == 0) {
-      stop("Soft assignment calculation aborted: sample_matrix is empty")
+  # Validate and coerce input matrices
+  sample_matrix <- as.matrix(sample_matrix)
+  codebook_matrix <- as.matrix(codebook_matrix)
+  storage.mode(sample_matrix) <- "numeric"
+  storage.mode(codebook_matrix) <- "numeric"
+  if (nrow(sample_matrix) == 0 || ncol(sample_matrix) == 0) stop("Soft assignment calculation aborted: sample_matrix is empty")
+  if (nrow(codebook_matrix) == 0 || ncol(codebook_matrix) == 0) stop("Soft assignment calculation aborted: codebook_matrix is empty")
+  if (ncol(sample_matrix) != ncol(codebook_matrix)) stop("Soft assignment calculation aborted: sample_matrix and codebook_matrix must have identical numbers of columns")
+  
+  # Extract dimensions
+  n_samples <- nrow(sample_matrix) #number of samples
+  n_units <- nrow(codebook_matrix) #number of SOM units
+  n_vars <- ncol(sample_matrix) #number of variables
+  
+  # Initialize distance matrix
+  distance_matrix <- matrix(NA_real_,
+                            nrow = n_samples,
+                            ncol = n_units,
+                            dimnames = list(rownames(sample_matrix),
+                                            rownames(codebook_matrix)))
+  
+  # Pre-compute finite mask for samples once (reused across all units)
+  sample_finite <- is.finite(sample_matrix) #logical matrix: n_samples x n_vars
+  
+  # Calculate distances using sum of squares (Euclidean)
+  if (distance_function == "sumofsquares") {
+    if (!anyNA(sample_matrix) && !anyNA(codebook_matrix)) { #fast BLAS path when no missing values present
+      a_sq <- rowSums(sample_matrix ^ 2) #squared row norms for samples
+      b_sq <- rowSums(codebook_matrix ^ 2) #squared row norms for codebook vectors
+      cross <- tcrossprod(sample_matrix, codebook_matrix) #cross-product matrix: n_samples x n_units
+      d_sq <- outer(a_sq, b_sq, "+") - 2 * cross #squared Euclidean distances via expansion
+      distance_matrix <- sqrt(pmax(d_sq, 0)) #take square root and guard against floating point negatives
+      rownames(distance_matrix) <- rownames(sample_matrix) #restore rownames after matrix operations
+    } else { #fallback path for data with missing values
+      for (unit_index in seq_len(n_units)) {
+        current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
+        valid_values <- sample_finite & matrix(is.finite(current_codebook_vector), n_samples, n_vars, byrow = TRUE) #valid (non-missing) positions
+        diffs <- sample_matrix - matrix(current_codebook_vector, n_samples, n_vars, byrow = TRUE) #element-wise differences
+        diffs[!valid_values] <- 0 #zero out missing positions before summing
+        has_valid <- rowSums(valid_values) > 0L #samples with at least one valid value
+        current_distance_vector <- sqrt(rowSums(diffs ^ 2)) #Euclidean distance over valid positions
+        current_distance_vector[!has_valid] <- NA_real_ #set fully missing samples to NA
+        distance_matrix[, unit_index] <- current_distance_vector #store distances
+      }
     }
-    if (nrow(codebook_matrix) == 0 || ncol(codebook_matrix) == 0) {
-      stop("Soft assignment calculation aborted: codebook_matrix is empty")
-    }
-    if (ncol(sample_matrix) != ncol(codebook_matrix)) {
-      stop("Soft assignment calculation aborted: sample_matrix and codebook_matrix must have identical numbers of columns")
-    }
-    
-    # Calculate distances
-    distance_matrix <- matrix(NA_real_,
-                              nrow = nrow(sample_matrix),
-                              ncol = nrow(codebook_matrix),
-                              dimnames = list(rownames(sample_matrix),
-                                              rownames(codebook_matrix)))
-    
-    for (unit_index in seq_len(nrow(codebook_matrix))) {
-      current_codebook_vector <- codebook_matrix[unit_index, ]
-      current_distance_vector <- apply(sample_matrix, 1, function(sample_vector) {
-        valid_values <- is.finite(sample_vector) & !is.na(sample_vector) & is.finite(current_codebook_vector) & !is.na(current_codebook_vector)
-        if (!any(valid_values)) return(NA_real_)
-        sample_vector <- sample_vector[valid_values]
-        current_codebook_vector_valid <- current_codebook_vector[valid_values]
-        
-        if (distance_function == "sumofsquares") {
-          return(sqrt(sum((sample_vector - current_codebook_vector_valid) ^ 2)))
-        }
-        if (distance_function == "manhattan") {
-          return(sum(abs(sample_vector - current_codebook_vector_valid)))
-        }
-        if (distance_function == "tanimoto") {
-          sample_binary <- as.numeric(sample_vector > 0.5)
-          codebook_binary <- as.numeric(current_codebook_vector_valid > 0.5)
-          shared_one <- sum(sample_binary == 1 & codebook_binary == 1)
-          any_one <- sum(sample_binary == 1 | codebook_binary == 1)
-          if (any_one == 0) return(0)
-          return(1 - (shared_one / any_one))
-        }
-        
-        stop("Soft assignment calculation aborted: unsupported distance function in compute.layer.sample.to.unit.distance.SOM")
-      })
-      distance_matrix[, unit_index] <- current_distance_vector
-    }
-    
-    return(distance_matrix)
   }
+  
+  # Calculate distances using Manhattan distance
+  if (distance_function == "manhattan") {
+    for (unit_index in seq_len(n_units)) {
+      current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
+      valid_values <- sample_finite & matrix(is.finite(current_codebook_vector), n_samples, n_vars, byrow = TRUE) #valid (non-missing) positions
+      abs_diffs <- abs(sample_matrix - matrix(current_codebook_vector, n_samples, n_vars, byrow = TRUE)) #absolute element-wise differences
+      abs_diffs[!valid_values] <- 0 #zero out missing positions before summing
+      current_distance_vector <- rowSums(abs_diffs) #Manhattan distance over valid positions
+      current_distance_vector[rowSums(valid_values) == 0L] <- NA_real_ #set fully missing samples to NA
+      distance_matrix[, unit_index] <- current_distance_vector #store distances
+    }
+  }
+  
+  # Calculate distances using Tanimoto distance
+  if (distance_function == "tanimoto") {
+    sample_bin <- sample_finite & (sample_matrix > 0.5) #binarize samples: TRUE where allele is present
+    for (unit_index in seq_len(n_units)) {
+      current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
+      codebook_finite <- is.finite(current_codebook_vector) #finite positions in codebook vector
+      code_bin <- matrix(codebook_finite & (current_codebook_vector > 0.5), n_samples, n_vars, byrow = TRUE) #binarize codebook vector
+      valid_values <- sample_finite & matrix(codebook_finite, n_samples, n_vars, byrow = TRUE) #valid (non-missing) positions
+      shared_one <- rowSums(sample_bin & code_bin & valid_values) #positions where both sample and code have allele present
+      any_one <- rowSums((sample_bin | code_bin) & valid_values) #positions where either sample or code has allele present
+      distance_matrix[, unit_index] <- ifelse(any_one == 0, 0, 1 - (shared_one / any_one)) #Tanimoto distance (0 if no shared or present alleles)
+    }
+  }
+  
+  # Stop if unsupported distance function is specified
+  if (!distance_function %in% c("sumofsquares", "manhattan", "tanimoto")) {
+    stop("Soft assignment calculation aborted: unsupported distance function in compute.layer.sample.to.unit.distance.SOM")
+  }
+  
+  return(distance_matrix) #return distance matrix
+}
   
   
   # Create function to calculate integrated sample-to-unit distances across SOM layers
@@ -1795,17 +1817,25 @@ clustering.SOM <- function(SOM.output,
       ))
     }
     
-    # Create function to perform kmeans clustering and calculate within‐cluster sum of squares (wss) for each cluster (sum of squared Euclidean distances of SOM units to cluster center)
-    calculate.wss <- function(som_codes, max.k) {
-      wss <- numeric(max.k) #wss vector for k = 1 ... max.k
-      fits <- vector("list", max.k) #store kmeans fits
-      wss[1] <- (nrow(som_codes) - 1) * sum(apply(som_codes, 2, stats::var)) #calculate wss for k = 1 (= total sum of squared distances to overall mean)
+    # Create function to perform kmeans clustering and calculate within‐cluster sum of squares (wss) for each cluster (sum of squared Euclidean distances of SOM units to cluster center)s
+    calculate.wss <- function(som_codes, max.k, set.k = NULL) {
+      wss <- rep(NA_real_, max.k)
+      fits <- vector("list", max.k)
+      wss[1] <- (nrow(som_codes) - 1) * sum(apply(som_codes, 2, stats::var))
+      if (!is.null(set.k)) {
+        if (set.k >= 2) {
+          km <- stats::kmeans(som_codes, centers = set.k, nstart = kmeans.nstart, iter.max = kmeans.iter.max)
+          fits[[set.k]] <- km
+          wss[set.k] <- sum(km$withinss)
+        }
+        return(list(wss = wss, fits = fits))
+      }
       if(max.k >= 2){
-        wss[2:max.k] <- sapply(2:max.k, function(i) { #calculate wss for k = 2 ... max.k via kmeans
-          km <- stats::kmeans(som_codes, centers = i, nstart = 30, iter.max = 1e5)
+        wss[2:max.k] <- sapply(2:max.k, function(i) {
+          km <- stats::kmeans(som_codes, centers = i, nstart = kmeans.nstart, iter.max = kmeans.iter.max)
           fits[[i]] <<- km
           sum(km$withinss)
-        }) 
+        })
       }
       list(wss = wss, fits = fits)
     }
@@ -1904,7 +1934,7 @@ clustering.SOM <- function(SOM.output,
     
     # Clustering method: kmeans + BICelbow
     if (clustering.method == "kmeans+BICelbow") {
-      kmeans_results <- calculate.wss(som_codes, max.k) #perform kmeans and calculate within‐cluster sum of squares (wss)
+      kmeans_results <- calculate.wss(som_codes, max.k, set.k) #perform kmeans and calculate within‐cluster sum of squares (wss)
       BIC_vec <- calculate.wssBIC(kmeans_results$wss, som_codes) #calculate BIC based on wss
       som_N_clusters <- select.k.BICelbow(BIC_vec, BIC.thresh, set.k) #determine optimal number of clusters using BIC elbow rule
       if (som_N_clusters == 1) { #if optimal k = 1
@@ -1916,7 +1946,7 @@ clustering.SOM <- function(SOM.output,
     
     # Clustering method: kmeans + BICthresh
     if (clustering.method == "kmeans+BICthreshold") {
-      kmeans_results <- calculate.wss(som_codes, max.k) #perform kmeans and calculate within‐cluster sum of squares (wss)
+      kmeans_results <- calculate.wss(som_codes, max.k, set.k) #perform kmeans and calculate within‐cluster sum of squares (wss)
       BIC_vec <- calculate.wssBIC(kmeans_results$wss, som_codes) #calculate BIC based on wss
       som_N_clusters <- select.k.BICthresh(BIC_vec, BIC.thresh, set.k) #determine optimal number of clusters using BIC threshold rule (selecting smallest k where BIC improvement falls below BIC threshold, otherwise, choose k with minimum BIC)
       if (som_N_clusters == 1) { #if optimal k = 1
@@ -2105,7 +2135,9 @@ clustering.SOM <- function(SOM.output,
       max_minPts <- max(2L, floor(nrow(som_codes) / 1.5)) #set max minPts
       minPts_min <- max(3L, floor(0.05 * nrow(som_codes))) #at least 3, or 5% of units
       minPts_min <- min(minPts_min, max_minPts) #ensure valid range
-      minPts_vals <- seq(minPts_min, max_minPts) #grid of minPts values
+            minPts_vals <- unique(round(seq(minPts_min,
+                                      max_minPts,
+                                      length.out = min(15, max_minPts - minPts_min + 1L)))) #grid of minPts values
       hdbscan_model_results <- data.frame(minPts = integer(), n_clusters = integer(), mean_mem = numeric()) #initialize result table
       for (m in minPts_vals) { #for each minPts value ...
         hdbscan_model <- dbscan::hdbscan(som_codes, minPts = m) #run HDBSCAN
@@ -2238,7 +2270,9 @@ clustering.SOM <- function(SOM.output,
           minPts_start <- max(3L, floor(0.10 * n_codes)) #minimum minPts
           max_minPts <- min(15L, n_codes - 1L, floor(n_codes / 2)) #maximum minPts
           if (minPts_start > max_minPts) minPts_start <- max_minPts
-          minPts_vals <- seq(minPts_start, max_minPts) #grid of minPts values
+                    minPts_vals <- unique(round(seq(minPts_start,
+                                          max_minPts,
+                                          length.out = min(8, max_minPts - minPts_start + 1L)))) #grid of minPts values
           xi_vals <- c(0.05, 0.10, 0.20, 0.30, 0.40) #Xi grid (include slightly larger values to make extraction less strict)
           optics_model_results <- data.frame(minPts = integer(),
                                              xi = numeric(),
@@ -2308,7 +2342,9 @@ clustering.SOM <- function(SOM.output,
         n_codes <- nrow(som_codes) #number of SOM codebook vectors
         minPts_start <- max(5L, floor(0.10 * n_codes)) #minimum minPts
         max_minPts <- max(2L, min(15L, n_codes - 1L, floor(n_codes / 2))) #maximum minPts
-        minPts_vals <- seq(minPts_start, max_minPts) #grid of minPts values
+                 minPts_vals <- unique(round(seq(minPts_start,
+                                          max_minPts,
+                                          length.out = min(8, max_minPts - minPts_start + 1L)))) #grid of minPts values
         xi_vals <- c(0.05, 0.10, 0.20, 0.30, 0.40) #Xi grid
         optics_model_results <- data.frame(minPts = integer(),
                                            xi = numeric(),
@@ -2390,15 +2426,18 @@ clustering.SOM <- function(SOM.output,
     )
     
     # Create replicate-specific soft ancestry matrix
-    sample_to_unit_distance_matrix <- compute.sample.to.unit.distance.matrix.SOM(
-      som_model = som_model,
-      layer.distance.functions = SOM.output$layer.distance.functions,
-      layer.weights = som_model$distance.weights
-    )
-    replicate_ancestry_matrix <- compute.replicate.ancestry.matrix.SOM(
-      sample_to_unit_distance_matrix = sample_to_unit_distance_matrix,
-      unit_cluster_labels = som_cluster
-    )
+    replicate_ancestry_matrix <- NULL
+    if (isTRUE(calculate.soft.ancestry)) {
+      sample_to_unit_distance_matrix <- compute.sample.to.unit.distance.matrix.SOM(
+        som_model = som_model,
+        layer.distance.functions = SOM.output$layer.distance.functions,
+        layer.weights = som_model$distance.weights
+      )
+      replicate_ancestry_matrix <- compute.replicate.ancestry.matrix.SOM(
+        sample_to_unit_distance_matrix = sample_to_unit_distance_matrix,
+        unit_cluster_labels = som_cluster
+      )
+    }
     
     # Store generic support values for plotting
     if (exists("BIC_vec", inherits = FALSE) && any(is.finite(BIC_vec))) {
@@ -2432,7 +2471,32 @@ clustering.SOM <- function(SOM.output,
   }
   
   # Collect results for all replicates
-  results <- lapply(seq_len(N.replicates), replicate_clust)
+  if (isTRUE(parallel)) {
+    required_packages_parallel <- c(
+      "kohonen",
+      "cluster",
+      "clusterCrit",
+      "dbscan",
+      "mclust",
+      "clue",
+      "foreach",
+      "doParallel",
+      "doRNG"
+    )
+    parallel_cluster <- parallel::makeCluster(N.cores)
+    on.exit(parallel::stopCluster(parallel_cluster), add = TRUE)
+    doParallel::registerDoParallel(parallel_cluster)
+    doRNG::registerDoRNG(seed = set.seed.N)
+    results <- foreach::`%dopar%`(
+      foreach::foreach(
+        j = seq_len(N.replicates),
+        .packages = required_packages_parallel
+      ),
+      replicate_clust(j)
+    )
+  } else {
+    results <- lapply(seq_len(N.replicates), replicate_clust)
+  }
   if (is.null(results)) return(invisible(NULL))
   
   # Combine results from all replicates
@@ -2535,6 +2599,7 @@ clustering.SOM <- function(SOM.output,
   rownames(ancestry_matrix) <- rownames(assignment_matrix)
   
   # Calculate median map variance (neuron-weighted) and median eta squared (cluster separation effect size) for each variable in each layer
+  if (isTRUE(calculate.variable.importance)) {
   codebook_list_1 <- kohonen::getCodes(som_models[[1]]) #extract codebook list to get number of layers
   if (!is.list(codebook_list_1)) codebook_list_1 <- list(codebook_list_1) #ensure list
   n_layers <- length(codebook_list_1) #number of SOM layers
@@ -2633,6 +2698,10 @@ clustering.SOM <- function(SOM.output,
   }
   if (all(vapply(median_map_variance_variable_importance, is.null, logical(1)))) median_map_variance_variable_importance <- NULL #collapse to NULL if empty
   if (!is.null(median_etasquared_variable_importance) && all(vapply(median_etasquared_variable_importance, is.null, logical(1)))) median_etasquared_variable_importance <- NULL #collapse to NULL if empty  
+    } else {
+    median_map_variance_variable_importance <- list()
+    median_etasquared_variable_importance <- list()
+  }
   
   # Save results
   SOM_results <- SOM.output
