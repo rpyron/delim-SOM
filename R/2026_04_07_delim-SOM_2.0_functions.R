@@ -1150,6 +1150,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
                   "layer.distance.functions",
                   "manual.layer.weights",
                   "radius.schedule",
+                  "N.replicates",
+                  "messager",
                   "message.N.replicates"),
       envir = environment())
     doParallel::registerDoParallel(parallel_cluster) #register cluster for foreach
@@ -1327,8 +1329,16 @@ clustering.SOM <- function(SOM.output,
                            topographic.error.quantile = 0.95, #remove mappings with TE above this quantile; NULL = no filtering
                            calculate.soft.ancestry = TRUE, #whether to calculate replicate-specific soft ancestry matrices
                            calculate.variable.importance = TRUE, #whether to calculate map variance and eta-squared variable-importance summaries
+                           verbose = TRUE, #whether to show messages
+                           message.N.replicates = 20, #frequency of progress messages during clustering (message is printed every message.N.replicates iterations)
+                           save.SOM.results = FALSE, #whether to save clustered SOM results to file
+                           save.SOM.results.name = NULL, #file name for saving clustered SOM results (if NULL, default name is generated; if save.SOM.results = TRUE)
+                           overwrite.SOM.results = FALSE, #if FALSE, existing clustering results are loaded instead of re-running clustering
                            set.seed.N = 1 #set seed for reproducibility
 ) {
+
+  # Set messages
+  messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Validate input arguments
   if (!is.list(SOM.output) || is.null(SOM.output$som_models) || !is.list(SOM.output$som_models) || length(SOM.output$som_models) < 1) stop("Aborted SOM clustering: SOM.output must be list from train.SOM() with non-empty $som_models")
@@ -1352,7 +1362,7 @@ clustering.SOM <- function(SOM.output,
     if (is.na(max_cores) || max_cores < 1) max_cores <- parallel::detectCores(logical = TRUE)
     if (is.na(max_cores) || max_cores < 1) max_cores <- 1
     if (N.cores > max_cores) {
-      message(sprintf("Requested N.cores (%d) exceeds available cores (%d) - using %d cores", N.cores, max_cores, max_cores))
+      messager(sprintf("Requested N.cores (%d) exceeds available cores (%d) - using %d cores", N.cores, max_cores, max_cores))
       N.cores <- max_cores
     }
   }
@@ -1371,7 +1381,42 @@ clustering.SOM <- function(SOM.output,
   }
   if (!is.logical(calculate.soft.ancestry) || length(calculate.soft.ancestry) != 1 || is.na(calculate.soft.ancestry)) stop("Aborted SOM clustering: calculate.soft.ancestry must be TRUE or FALSE")
   if (!is.logical(calculate.variable.importance) || length(calculate.variable.importance) != 1 || is.na(calculate.variable.importance)) stop("Aborted SOM clustering: calculate.variable.importance must be TRUE or FALSE")
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Aborted SOM clustering: verbose must be TRUE or FALSE")
+  if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Aborted SOM clustering: message.N.replicates must be a single positive integer (>= 1)")
+  if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Aborted SOM clustering: save.SOM.results must be TRUE or FALSE")
+  if (save.SOM.results && !is.null(save.SOM.results.name)) {
+    if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") {
+      stop("Aborted SOM clustering: save.SOM.results.name must be non-empty character string (file path) if provided")
+    }
+    valid_ext <- tolower(tools::file_ext(save.SOM.results.name)) #extract extension
+    if (valid_ext != "rdata") {
+      stop("Aborted SOM clustering: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
+    }
+  }
+  if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) stop("Aborted SOM clustering: overwrite.SOM.results must be TRUE or FALSE")
   if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Aborted SOM clustering: set.seed.N must be a single positive integer (>= 1)")
+
+    # Set default save file name
+  if (is.null(save.SOM.results.name)) {
+    if (!is.null(SOM.output$input_data_names)) {
+      input_data_names <- paste(as.character(SOM.output$input_data_names), collapse = "_")
+    } else {
+      input_data_names <- "SOM"
+    }
+    clustering_method_name <- gsub("[^A-Za-z0-9_]+", "_", clustering.method)
+    save.SOM.results.name <- paste0("SOM_clustering_results_", input_data_names, "_", clustering_method_name, ".Rdata")
+  }
+  
+  # If overwrite.SOM.results is FALSE and file already exists, return saved results
+  if (!overwrite.SOM.results && file.exists(save.SOM.results.name)) {
+    messager("SOM clustering results already exist - loading results from file and skipping SOM clustering")
+    load(save.SOM.results.name)
+    required_fields <- c("cluster_assignment", "optim_k_vals", "som_clusters")
+    if (!exists("SOM_results") || !all(required_fields %in% names(SOM_results))) {
+      stop("Aborted SOM clustering: could not load SOM clustering results (results do not contain expected clustering objects) - check saved file or rerun clustering")
+    }
+    return(SOM_results)
+  }
   
   # Create function to find nearest neighbors (following FNN get.knnx function)
   get.knnx.custom <- function(reference_data, query_data, k = 1) {
@@ -1696,6 +1741,11 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Extract number of replicates
   N.replicates <- length(SOM.output$som_models)
+
+  # Report clustering setup
+  messager("")
+  messager("CLUSTERING SOM CODEBOOK VECTORS ...")
+  messager(sprintf("Using %d SOM replicate(s) for clustering", N.replicates))
   
   # Filter poorly fitting SOM mappings based on quantization error and/or topographic error
   replicate_ids <- names(SOM.output$som_models)
@@ -1774,6 +1824,11 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     
     # Set seed
     base::set.seed(j + set.seed.N)
+
+    # Print message every N replicates (N specified by message.N.replicates)
+    if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) {
+      messager(paste("Running clustering replicate:", j, "of", N.replicates))
+    }
     
     # Extract SOM models
     som_model <- SOM.output$som_models[[j]] 
@@ -1901,7 +1956,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             som_N_clusters <- k_best_group[which.min(replace(BIC_vec[k_best_group], is.na(BIC_vec[k_best_group]), Inf))] #pick k corresponding to lowest BIC in best group
           } else {
             som_N_clusters <- which.min(replace(BIC_vec, is.na(BIC_vec), Inf)) #pick k corresponding to global minimum BIC if best group is empty
-            message("Warning: No large-drop group (i.e., the elbow) was detected - picking k corresponding to global minimum BIC")
+            messager("Warning: No large-drop group (i.e., the elbow) was detected - picking k corresponding to global minimum BIC")
           }
         }
       }
@@ -1925,7 +1980,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
         som_N_clusters <- (k_best_group[which.min(replace(DB_vec_k2plus[k_best_group], is.na(DB_vec_k2plus[k_best_group]), Inf))] + 1) #convert back to original k by adding 1
       } else {
         som_N_clusters <- which.min(replace(DB_vec_k2plus, is.na(DB_vec_k2plus), Inf)) + 1 #select k with global minimum DB among k >= 2
-        message("Warning: No large-drop group (i.e., the elbow) was detected - picking k corresponding to global minimum DB")
+        messager("Warning: No large-drop group (i.e., the elbow) was detected - picking k corresponding to global minimum DB")
       }
       som_N_clusters
     }
@@ -2490,6 +2545,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       "doParallel",
       "doRNG"
     )
+    messager(sprintf("Running SOM clustering in parallel with %d cores", N.cores))
     parallel_cluster <- parallel::makeCluster(N.cores) #start PSOCK cluster
     on.exit(parallel::stopCluster(parallel_cluster), add = TRUE)
     parallel::clusterExport( #export helper functions and all needed variables to each worker
@@ -2751,6 +2807,11 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     topographic.error.quantile = topographic.error.quantile,
     calculate.soft.ancestry = calculate.soft.ancestry,
     calculate.variable.importance = calculate.variable.importance,
+    verbose = verbose,
+    message.N.replicates = message.N.replicates,
+    save.SOM.results = save.SOM.results,
+    save.SOM.results.name = save.SOM.results.name,
+    overwrite.SOM.results = overwrite.SOM.results,
     set.seed.N = set.seed.N
   )
   SOM_results$optim_k_vals <- optim_k_vals
@@ -2777,7 +2838,27 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   SOM_results$N_replicates_retained <- length(retained_replicates)
   if (!is.null(SOM.output$quantization_error)) SOM_results$quantization_error_retained <- SOM.output$quantization_error
   if (!is.null(SOM.output$topographic_error)) SOM_results$topographic_error_retained <- SOM.output$topographic_error
-  
+
+  # Save results
+  if (save.SOM.results) {
+    
+    # Check if directory exists
+    dir_path <- dirname(save.SOM.results.name) #extract directory path
+    if (!dir.exists(dir_path)) {
+      dir.create(dir_path, recursive = T) #create directory if it does not exist
+      messager(paste("Specified directory", dir_path, "did not exist and was created"))
+    }
+    
+    # Save results
+    save(SOM_results, file = save.SOM.results.name)
+    if (save.SOM.results && !overwrite.SOM.results) {
+      messager("SOM clustering results saved as ", save.SOM.results.name)
+    }
+    if (save.SOM.results && overwrite.SOM.results) {
+      messager("SOM clustering results overwritten as ", save.SOM.results.name)
+    }
+  }                             
+                               
   # Return results
   return(SOM_results)
 }
@@ -4547,7 +4628,7 @@ plot.map.SOM <- function(SOM.output,
   n_not_in_ancestry <- length(not_in_ancestry)
   n_keep <- length(keep_names)
   if (n_not_in_coords > 0 | n_not_in_ancestry > 0) {
-    message(sprintf(
+    messager(sprintf(
       "Matching samples between ancestry matrix and coordinates:\n  - %s unique %s only in ancestry_matrix\n  - %s unique %s only in Coordinates\n  - %s matching %s will be plotted",
       fmt_count(n_not_in_coords), fmt_label(n_not_in_coords, "sample", "samples"),
       fmt_count(n_not_in_ancestry), fmt_label(n_not_in_ancestry, "sample", "samples"),
