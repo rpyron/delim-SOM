@@ -7610,3 +7610,72 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   # Return results
   return(leave.one.layer.out.results)
 }
+
+
+## Function to convert specified categorical columns into binary (0/1) indicators
+make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
+                                 make.binary.cols, #make.binary.cols - character vector of categorical column names to convert
+                                 remove.original.cols = TRUE, #remove.original.cols - if TRUE, remove original categorical columns after processing
+                                 append.to.original = FALSE #append.to.original - if TRUE, append to input; if FALSE, return only binary indicators
+) {
+  if (!is.data.frame(dataframe)) stop("dataframe must be a data frame") #ensure input is a data frame
+  if (!is.character(make.binary.cols)) stop("make.binary.cols must be character vector of column names") #check type
+  if (length(make.binary.cols) == 0) stop("make.binary.cols must contain at least one column name") #non-empty
+  if (!all(make.binary.cols %in% colnames(dataframe))) { #check all exist in df
+    missing_cols <- make.binary.cols[!make.binary.cols %in% colnames(dataframe)] #identify missing
+    stop("The following columns are not in data frame: ", paste(missing_cols, collapse = ", ")) #error if any missing
+  }
+  if (!is.logical(remove.original.cols) || length(remove.original.cols) != 1) stop("remove.original.cols must be TRUE or FALSE") #check logical
+  if (!is.logical(append.to.original) || length(append.to.original) != 1) stop("append.to.original must be TRUE or FALSE") #check logical
+  
+  dataframe_subset <- dataframe[, make.binary.cols, drop = FALSE] #extract selected columns
+  noncat_cols <- sapply(dataframe_subset, function(x) !is.factor(x) && !is.character(x)) #identify non-categorical
+  if (any(noncat_cols)) {
+    bad_cols <- names(noncat_cols[noncat_cols]) #get bad column names
+    stop("The following columns are not categorical (factor or character): ", paste(bad_cols, collapse = ", ")) #stop if any bad
+  }
+  
+  dataframe_subset <- as.data.frame(lapply(dataframe_subset, function(x) {if (!is.factor(x)) x <- as.factor(x); return(x)})) #convert to factor
+  
+  high_card <- sapply(dataframe_subset, nlevels) > 30 #check number of levels
+  if (any(high_card)) warning("The following columns have >30 levels: ", paste(names(dataframe_subset)[high_card], collapse = ", ")) #warn if too many levels
+  
+  binary_list <- list() #initialize list of binary matrices
+  for (colname in colnames(dataframe_subset)) {
+    col_factor <- dataframe_subset[[colname]] #get factor column
+    col_factor <- base::factor(col_factor) #do not include NA as a level
+    levs <- levels(col_factor) #get levels
+    if (length(levs) < 2) { #skip if too few levels
+      message("Skipping column '", colname, "' because it has fewer than 2 levels")
+      next
+    }
+    
+    n <- length(col_factor) #number of rows
+    k <- length(levs) #number of levels
+    model_mat <- matrix(NA_real_, nrow = n, ncol = k) #init NA matrix so NA rows remain NA
+    colnames(model_mat) <- make.names(paste0(colname, "_", levs), unique = TRUE) #clean names
+    
+    non_na <- !is.na(col_factor) #identify non-NA rows
+    model_mat[non_na, ] <- 0 #set non-NA rows to 0
+    idx <- match(as.character(col_factor[non_na]), levs) #map each row to its level index
+    model_mat[cbind(which(non_na), idx)] <- 1 #set the observed level to 1
+    
+    binary_list[[colname]] <- model_mat #store in list
+  }
+  
+  if (length(binary_list) == 0) stop("No binary columns could be created — all input columns had fewer than 2 levels") #stop if nothing created
+  binary_dataframe <- as.data.frame(do.call(cbind, binary_list)) #combine to single data frame
+  rownames(binary_dataframe) <- rownames(dataframe) #preserve rownames
+  
+  if (append.to.original) {
+    overlap <- intersect(colnames(dataframe), colnames(binary_dataframe)) #check for collisions
+    if (length(overlap) > 0) stop("Cannot append binary variables: the following column names already exist in your data frame: ", paste(overlap, collapse = ", ")) #stop if collision
+    dataframe_out <- cbind(dataframe, binary_dataframe) #append to original
+    if (remove.original.cols) dataframe_out <- dataframe_out[, !(colnames(dataframe_out) %in% make.binary.cols), drop = FALSE] #remove originals
+  } else {
+    dataframe_out <- binary_dataframe #return only binary columns
+  }
+  
+  return(dataframe_out) #return result
+}
+
