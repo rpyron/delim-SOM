@@ -1,5 +1,4 @@
-#### Install required R packages
-
+## List required R packages
 CRAN_packages <- c(
   "adegenet",    #genetic data manipulation
   "ape",         #phylogenetics
