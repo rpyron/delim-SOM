@@ -1817,27 +1817,27 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       ))
     }
     
-    # Create function to perform kmeans clustering and calculate within‐cluster sum of squares (wss) for each cluster (sum of squared Euclidean distances of SOM units to cluster center)s
+# Create function to perform kmeans clustering and calculate within-cluster sum of squares (wss) for each cluster (sum of squared Euclidean distances of SOM units to cluster center)
     calculate.wss <- function(som_codes, max.k, set.k = NULL) {
-      wss <- rep(NA_real_, max.k)
-      fits <- vector("list", max.k)
-      wss[1] <- (nrow(som_codes) - 1) * sum(apply(som_codes, 2, stats::var))
-      if (!is.null(set.k)) {
+      wss <- rep(NA_real_, max.k) #wss vector for k = 1 ... max.k
+      fits <- vector("list", max.k) #store kmeans fits
+      wss[1] <- (nrow(som_codes) - 1) * sum(apply(som_codes, 2, stats::var)) #calculate wss for k = 1 (= total sum of squared distances to overall mean)
+      if (!is.null(set.k)) { #if user specified k, only fit that k
         if (set.k >= 2) {
-          km <- stats::kmeans(som_codes, centers = set.k, nstart = kmeans.nstart, iter.max = kmeans.iter.max)
-          fits[[set.k]] <- km
-          wss[set.k] <- sum(km$withinss)
+          km <- stats::kmeans(som_codes, centers = set.k, nstart = 30, iter.max = 1e5) #fit kmeans at user-specified k
+          fits[[set.k]] <- km #store fit
+          wss[set.k] <- sum(km$withinss) #store wss
         }
-        return(list(wss = wss, fits = fits))
+        return(list(wss = wss, fits = fits)) #return early
       }
-      if(max.k >= 2){
+      if (max.k >= 2) { #calculate wss for k = 2 ... max.k via kmeans
         wss[2:max.k] <- sapply(2:max.k, function(i) {
-          km <- stats::kmeans(som_codes, centers = i, nstart = kmeans.nstart, iter.max = kmeans.iter.max)
-          fits[[i]] <<- km
-          sum(km$withinss)
+          km <- stats::kmeans(som_codes, centers = i, nstart = 30, iter.max = 1e5) #fit kmeans
+          fits[[i]] <<- km #store fit
+          sum(km$withinss) #return wss
         })
       }
-      list(wss = wss, fits = fits)
+      list(wss = wss, fits = fits) #return wss and fits
     }
     
     # Create function to calculate BIC
