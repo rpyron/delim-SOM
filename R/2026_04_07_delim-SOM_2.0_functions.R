@@ -2474,7 +2474,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     ))
   }
   
-  # Collect results for all replicates
+# Collect results for all replicates
   if (isTRUE(parallel)) {
     required_packages_parallel <- c(
       "kohonen",
@@ -2487,10 +2487,26 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       "doParallel",
       "doRNG"
     )
-    parallel_cluster <- parallel::makeCluster(N.cores)
+    parallel_cluster <- parallel::makeCluster(N.cores) #start PSOCK cluster
     on.exit(parallel::stopCluster(parallel_cluster), add = TRUE)
-    doParallel::registerDoParallel(parallel_cluster)
-    doRNG::registerDoRNG(seed = set.seed.N)
+    parallel::clusterExport( #export helper functions and all needed variables to each worker
+      parallel_cluster,
+      varlist = c("replicate_clust",
+                  "get.knnx.custom",
+                  "compute.layer.sample.to.unit.distance.SOM",
+                  "compute.sample.to.unit.distance.matrix.SOM",
+                  "compute.replicate.ancestry.matrix.SOM",
+                  "SOM.output",
+                  "max.k",
+                  "set.k",
+                  "clustering.method",
+                  "BIC.thresh",
+                  "set.seed.N",
+                  "N.replicates",
+                 "calculate.soft.ancestry"),
+      envir = environment())
+    doParallel::registerDoParallel(parallel_cluster) #register cluster for foreach
+    doRNG::registerDoRNG(seed = set.seed.N) #set seed
     results <- foreach::`%dopar%`(
       foreach::foreach(
         j = seq_len(N.replicates),
@@ -2499,7 +2515,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       replicate_clust(j)
     )
   } else {
-    results <- lapply(seq_len(N.replicates), replicate_clust)
+    results <- lapply(seq_len(N.replicates), replicate_clust) #run clustering sequentially
   }
   if (is.null(results)) return(invisible(NULL))
   
