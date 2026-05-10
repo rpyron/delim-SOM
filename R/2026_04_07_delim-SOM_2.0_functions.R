@@ -2425,15 +2425,19 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                                  dimnames = list(som_training_samples, NULL)
     )
     
-    # Create replicate-specific soft ancestry matrix
-    replicate_ancestry_matrix <- NULL
-    if (isTRUE(calculate.soft.ancestry)) {
-      sample_to_unit_distance_matrix <- compute.sample.to.unit.distance.matrix.SOM(
+# Create replicate-specific soft ancestry matrix
+    if (som_N_clusters == 1L) {
+      replicate_ancestry_matrix <- matrix(1, #all samples assigned fully to single cluster
+                                          nrow = length(som_training_samples),
+                                          ncol = 1,
+                                          dimnames = list(som_training_samples, "1"))
+    } else {
+      sample_to_unit_distance_matrix <- compute.sample.to.unit.distance.matrix.SOM( #calculate sample-to-unit distances across layers
         som_model = som_model,
         layer.distance.functions = SOM.output$layer.distance.functions,
         layer.weights = som_model$distance.weights
       )
-      replicate_ancestry_matrix <- compute.replicate.ancestry.matrix.SOM(
+      replicate_ancestry_matrix <- compute.replicate.ancestry.matrix.SOM( #calculate soft cluster assignment probabilities
         sample_to_unit_distance_matrix = sample_to_unit_distance_matrix,
         unit_cluster_labels = som_cluster
       )
