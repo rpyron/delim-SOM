@@ -8035,7 +8035,7 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
     
     variables.removed.rare.binary <- names(binary.minor.count.values)[binary.minor.count.values < binary.required.count.values]
   } else {
-    variables.removed.rare.binary <- c()
+    variables.removed.rare.binary <- character(0)
   }
   
   # Detect rare count and zero-inflated variables
@@ -8056,7 +8056,7 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
     
     variables.removed.rare.count <- names(count.nonzero.count.values)[count.nonzero.count.values < count.required.count.values]
   } else {
-    variables.removed.rare.count <- c()
+    variables.removed.rare.count <- character(0)
   }
   
   # Compute CV
@@ -8117,7 +8117,7 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
   }
   
   # Iteratively remove variables until no correlation > threshold remains
-  variables.removed.by.correlation <- c()
+  variables.removed.by.correlation <- character(0)
   while (length(absolute.correlation.matrix) > 0 && any(absolute.correlation.matrix > cor.threshold, na.rm = TRUE)) {
     maximum.correlation.index <- which(absolute.correlation.matrix == max(absolute.correlation.matrix, na.rm = TRUE), arr.ind = TRUE)[1, ]
     
@@ -8179,7 +8179,7 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
       }
     }
     
-    variables.removed.by.correlation <- c(variables.removed.by.correlation, variable.name.to.remove)
+    variables.removed.by.correlation <- c(variables.removed.by.correlation, as.character(variable.name.to.remove))
     absolute.correlation.matrix[, variable.name.to.remove] <- 0
     absolute.correlation.matrix[variable.name.to.remove, ] <- 0
   }
