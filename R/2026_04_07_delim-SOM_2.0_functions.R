@@ -7940,12 +7940,15 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 #' @param input.dataframe Data frame, or object coercible to a data frame. Rows are
 #'   samples and columns are variables. All filtered columns must be numeric.
 #' @param CV.threshold Numeric scalar. Non-binary variables with CV less than or equal
-#'   to this value are removed. Must be non-negative. Default is `0.05`.
+#'   to this value are removed. Default is `0.05`, corresponding to 5% relative
+#'   variation around the mean.
 #' @param cor.threshold Numeric scalar between `0` and `1`. Absolute Spearman
-#'   correlations greater than this value are filtered iteratively. Default is `0.8`.
+#'   correlations greater than this value are filtered iteratively. Default is `0.9`,
+#'   corresponding to |rho| > 0.90.
 #' @param prevalence.threshold Numeric scalar between `0` and `0.5`. Minimum
 #'   prevalence required for the minor state of binary variables and nonzero
-#'   observations in count variables. Default is `0.05`.
+#'   observations in count variables. Default is `0.05`, corresponding to at least
+#'   5% of finite observations.
 #' @param exclude.cols Optional character vector of column names to exclude from all
 #'   filtering steps and retain in the output.
 #' @param verbose Logical scalar. If `TRUE`, prints filtering summaries. Default is
@@ -7970,7 +7973,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 #' @export
 remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with numeric columns (e.g., climatic, environmental or morphological variables)
                                                CV.threshold = 0.05, #numeric, remove variables with CV ≤ this value (only for non-binary vars)
-                                               cor.threshold = 0.8, #numeric, remove variables correlated above this threshold (absolute)
+                                               cor.threshold = 0.9, #numeric, remove variables correlated above this threshold (absolute)
                                                prevalence.threshold = 0.05, #numeric, remove rare binary/count variables below this prevalence
                                                exclude.cols = NULL, #character vector of columns to exclude from filtering (e.g. Latitude, Longitude)
                                                verbose = TRUE #logical, print messages about filtering steps
