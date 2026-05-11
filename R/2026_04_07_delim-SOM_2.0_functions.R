@@ -7908,7 +7908,66 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 }
 
 
-# Create function to remove low CV and multicollinearity for SOM
+#' Remove low-variation and highly collinear variables before SOM analysis
+#'
+#' Filters numeric variables before SOM analysis by removing rare binary variables,
+#' rare count variables, low-CV non-binary variables, and highly correlated retained
+#' variables. Columns listed in `exclude.cols` are excluded from all filtering steps
+#' and are bound back to the output in their original order. Row names are preserved.
+#'
+#' Binary variables are detected as numeric variables with exactly two finite values,
+#' `0` and `1`. Rare binary variables are removed when the less common state occurs
+#' in fewer samples than `ceiling(n_finite * prevalence.threshold)`. Count variables
+#' are detected as non-binary, non-negative, integer-like variables. Rare count
+#' variables are removed when the number of nonzero observations is below the same
+#' prevalence threshold.
+#'
+#' For non-binary variables, CV is calculated from finite values as `abs(sd / mean)`.
+#' Variables with CV less than or equal to `CV.threshold` are removed. If the mean is
+#' close to zero, CV is unstable and the function falls back to an SD/MAD-based
+#' variability ratio during the initial CV-filtering step.
+#'
+#' After prevalence and CV filtering, highly correlated variables are removed
+#' iteratively using absolute Spearman correlations with pairwise-complete
+#' observations. Retained count variables are transformed with `log1p()` only for
+#' correlation estimation; returned values remain untransformed. For each pair above
+#' `cor.threshold`, the function removes the variable with more missing values. If
+#' missingness is tied, it removes the variable with lower CV. If either mean is close
+#' to zero, CV is avoided and the variable with higher mean absolute correlation to
+#' other retained variables is removed instead. Remaining ties are resolved
+#' deterministically by removing the second variable in the pair.
+#'
+#' @param input.dataframe Data frame, or object coercible to a data frame. Rows are
+#'   samples and columns are variables. All filtered columns must be numeric.
+#' @param CV.threshold Numeric scalar. Non-binary variables with CV less than or equal
+#'   to this value are removed. Must be non-negative. Default is `0.05`.
+#' @param cor.threshold Numeric scalar between `0` and `1`. Absolute Spearman
+#'   correlations greater than this value are filtered iteratively. Default is `0.8`.
+#' @param prevalence.threshold Numeric scalar between `0` and `0.5`. Minimum
+#'   prevalence required for the minor state of binary variables and nonzero
+#'   observations in count variables. Default is `0.05`.
+#' @param exclude.cols Optional character vector of column names to exclude from all
+#'   filtering steps and retain in the output.
+#' @param verbose Logical scalar. If `TRUE`, prints filtering summaries. Default is
+#'   `TRUE`.
+#'
+#' @return A data frame containing retained variables and any excluded columns.
+#'   The output has attributes `variables.removed.rare.binary`,
+#'   `variables.removed.rare.count`, `variables.removed.by.CV`, and
+#'   `variables.removed.by.correlation`.
+#'
+#' @details
+#' Missing, infinite, and non-finite values are ignored when detecting variable types,
+#' estimating prevalence, calculating CV, and estimating correlations. Non-finite
+#' correlations are set to zero before iterative correlation filtering.
+#'
+#' Integer-like non-negative variables are treated as count variables unless they are
+#' binary. Integer-coded categorical variables should therefore be excluded or recoded
+#' before using this function.
+#'
+#' @seealso [stats::cor()], [stats::sd()], [stats::mad()]
+#'
+#' @export
 remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with numeric columns (e.g., climatic, environmental or morphological variables)
                                                CV.threshold = 0.05, #numeric, remove variables with CV ≤ this value (only for non-binary vars)
                                                cor.threshold = 0.8, #numeric, remove variables correlated above this threshold (absolute)
@@ -8073,18 +8132,47 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
     } else if (variable.NA.count.2 > variable.NA.count.1) {
       variable.name.to.remove <- variable.name.2
     } else {
-      variable.variance.1 <- stats::var(variable.values.1, na.rm = TRUE)
-      variable.variance.2 <- stats::var(variable.values.2, na.rm = TRUE)
+      variable.values.finite.1 <- variable.values.1[is.finite(variable.values.1)]
+      variable.values.finite.2 <- variable.values.2[is.finite(variable.values.2)]
       
-      if (!is.finite(variable.variance.1)) variable.variance.1 <- 0
-      if (!is.finite(variable.variance.2)) variable.variance.2 <- 0
+      variable.mean.1 <- if (length(variable.values.finite.1) > 0) mean(variable.values.finite.1) else NA_real_
+      variable.mean.2 <- if (length(variable.values.finite.2) > 0) mean(variable.values.finite.2) else NA_real_
       
-      if (variable.variance.1 < variable.variance.2) {
-        variable.name.to.remove <- variable.name.1
-      } else if (variable.variance.2 < variable.variance.1) {
-        variable.name.to.remove <- variable.name.2
+      variable.mean.close.to.zero.1 <- !is.finite(variable.mean.1) || abs(variable.mean.1) < 1e-7
+      variable.mean.close.to.zero.2 <- !is.finite(variable.mean.2) || abs(variable.mean.2) < 1e-7
+      
+      if (variable.mean.close.to.zero.1 || variable.mean.close.to.zero.2) {
+        variable.mean.correlation.1 <- mean(absolute.correlation.matrix[variable.name.1, ], na.rm = TRUE)
+        variable.mean.correlation.2 <- mean(absolute.correlation.matrix[variable.name.2, ], na.rm = TRUE)
+        
+        if (!is.finite(variable.mean.correlation.1)) variable.mean.correlation.1 <- 0
+        if (!is.finite(variable.mean.correlation.2)) variable.mean.correlation.2 <- 0
+        
+        if (variable.mean.correlation.1 > variable.mean.correlation.2) {
+          variable.name.to.remove <- variable.name.1
+        } else if (variable.mean.correlation.2 > variable.mean.correlation.1) {
+          variable.name.to.remove <- variable.name.2
+        } else if (variable.mean.close.to.zero.1 && !variable.mean.close.to.zero.2) {
+          variable.name.to.remove <- variable.name.1
+        } else if (variable.mean.close.to.zero.2 && !variable.mean.close.to.zero.1) {
+          variable.name.to.remove <- variable.name.2
+        } else {
+          variable.name.to.remove <- variable.name.2
+        }
       } else {
-        variable.name.to.remove <- variable.name.2
+        variable.CV.1 <- compute_CV(variable.values.1, variable.name.1)
+        variable.CV.2 <- compute_CV(variable.values.2, variable.name.2)
+        
+        if (!is.finite(variable.CV.1)) variable.CV.1 <- 0
+        if (!is.finite(variable.CV.2)) variable.CV.2 <- 0
+        
+        if (variable.CV.1 < variable.CV.2) {
+          variable.name.to.remove <- variable.name.1
+        } else if (variable.CV.2 < variable.CV.1) {
+          variable.name.to.remove <- variable.name.2
+        } else {
+          variable.name.to.remove <- variable.name.2
+        }
       }
     }
     
