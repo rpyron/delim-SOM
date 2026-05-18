@@ -1859,17 +1859,20 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     # Ensure max.k is equal to or smaller than number of available codebook vectors (rows of som_codes)
     n_codes <- nrow(som_codes)
     if (!is.null(set.k) && set.k >= n_codes) {
-      stop(sprintf(
-        "Aborted SOM clustering: set.k = %d exceeds available codebook rows of %d - reduce set.k to ≤ %d",
-        set.k, n_codes, n_codes - 1
-      ))
-    }
-    if (max.k >= n_codes) {
-      stop(sprintf(
-        "Aborted SOM clustering: max.k = %d exceeds available codebook rows of %d - reduce max.k to ≤ %d",
-        max.k, n_codes, n_codes - 1
-      ))
-    }
+        stop(sprintf(
+      "Aborted SOM clustering: set.k = %d exceeds available codebook rows of %d - reduce set.k to ≤ %d",
+      set.k, n_codes, n_codes - 1
+    ))
+  }
+  if (is.null(set.k) && max.k >= n_codes) {
+    stop(sprintf(
+      "Aborted SOM clustering: max.k = %d exceeds available codebook rows of %d - reduce max.k to ≤ %d",
+      max.k, n_codes, n_codes - 1
+    ))
+  }
+  if (!is.null(set.k) && max.k < set.k) {
+    max.k <- set.k
+  }
     
 # Create function to perform kmeans clustering and calculate within-cluster sum of squares (wss) for each cluster (sum of squared Euclidean distances of SOM units to cluster center)
     calculate.wss <- function(som_codes, max.k, set.k = NULL) {
@@ -2029,7 +2032,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       rownames(mclust_BIC_matrix) <- as.character(seq_len(max.k)) #set k rownames
       colnames(mclust_BIC_matrix) <- modelNames_all #set covariance model names
       BIC_vec <- rep(NA_real_, max.k) #initialize vector to store best BIC value per k
-      available_k_values <- seq_len(max.k) #available k values (G values)
+      available_k_values <- if (!is.null(set.k)) as.integer(set.k) else seq_len(max.k) #available k values
       for (k_value in available_k_values) { #extract best BIC values per k
         found_finite_BIC_for_k <- FALSE #track whether any finite BIC was obtained for this k
         best_BIC_value_for_k <- NA_real_ #store best BIC for this k (maximized)
@@ -2114,8 +2117,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       if (all(is.na(BIC_vec))) stop("All GMM BIC values are NA - cannot determine optimal number of clusters")
       BIC_vec <- -BIC_vec #invert sign so threshold selector (which assumes lower = better) works with mclust BIC (higher = better)
       som_N_clusters <- select.k.BICthresh(BIC_vec, BIC.thresh, set.k) #select k using BIC threshold rule (first k where improvement falls below threshold, otherwise global optimum)
-      row_match <- which(available_k_values == som_N_clusters) #match selected k to BIC matrix row
-      if (length(row_match) != 1) stop("Selected GMM k not found in mclust BIC matrix - check mclust output")
+      row_match <- as.character(som_N_clusters) #match selected k to BIC matrix row
+      if (!row_match %in% rownames(mclust_BIC_matrix)) stop("Selected GMM k not found in mclust BIC matrix - check mclust output")
       best_model_name <- colnames(mclust_BIC_matrix)[which.max(replace(mclust_BIC_matrix[row_match, ], !is.finite(mclust_BIC_matrix[row_match, ]) | is.na(mclust_BIC_matrix[row_match, ]), -Inf))] #identify covariance model with highest BIC at selected k
       if (som_N_clusters == 1) { #if optimal k = 1
         som_cluster <- rep(1L, nrow(som_codes)) #assign all units to a single cluster
@@ -2321,13 +2324,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
           som_cluster <- rep(1L, nrow(som_codes)) #assign all units to single cluster
           BIC_vec <- rep(NA_real_, max.k) #initialize BIC vector as NA
         } else {
-          n_codes <- nrow(som_codes) #number of SOM codebook vectors
-          minPts_start <- max(3L, floor(0.10 * n_codes)) #minimum minPts
-          max_minPts <- min(15L, n_codes - 1L, floor(n_codes / 2)) #maximum minPts
-          if (minPts_start > max_minPts) minPts_start <- max_minPts
-                    minPts_vals <- unique(round(seq(minPts_start,
-                                          max_minPts,
-                                          length.out = min(8, max_minPts - minPts_start + 1L)))) #grid of minPts values
+        n_codes <- nrow(som_codes) #number of SOM codebook vectors
+        max_minPts <- max(2L, min(15L, n_codes - 1L, floor(n_codes / 2))) #maximum minPts
+        minPts_start <- min(max(3L, floor(0.10 * n_codes)), max_minPts) #minimum minPts
+        minPts_length <- max(1L, min(8L, max_minPts - minPts_start + 1L)) #number of minPts values
+        minPts_vals <- unique(round(seq(minPts_start,
+                                max_minPts,
+                                length.out = minPts_length))) #grid of minPts values
           xi_vals <- c(0.05, 0.10, 0.20, 0.30, 0.40) #Xi grid (include slightly larger values to make extraction less strict)
           optics_model_results <- data.frame(minPts = integer(),
                                              xi = numeric(),
@@ -2394,12 +2397,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
           BIC_vec <- rep(NA_real_, max.k) #initialize BIC vector as NA
         }
       } else {
-        n_codes <- nrow(som_codes) #number of SOM codebook vectors
-        minPts_start <- max(5L, floor(0.10 * n_codes)) #minimum minPts
-        max_minPts <- max(2L, min(15L, n_codes - 1L, floor(n_codes / 2))) #maximum minPts
-                 minPts_vals <- unique(round(seq(minPts_start,
-                                          max_minPts,
-                                          length.out = min(8, max_minPts - minPts_start + 1L)))) #grid of minPts values
+       n_codes <- nrow(som_codes) #number of SOM codebook vectors
+       max_minPts <- max(2L, min(15L, n_codes - 1L, floor(n_codes / 2))) #maximum minPts
+       minPts_start <- min(max(5L, floor(0.10 * n_codes)), max_minPts) #minimum minPts
+       minPts_length <- max(1L, min(8L, max_minPts - minPts_start + 1L)) #number of minPts values
+       minPts_vals <- unique(round(seq(minPts_start,
+                                max_minPts,
+                                length.out = minPts_length))) #grid of minPts values
         xi_vals <- c(0.05, 0.10, 0.20, 0.30, 0.40) #Xi grid
         optics_model_results <- data.frame(minPts = integer(),
                                            xi = numeric(),
@@ -2642,14 +2646,16 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Preprocess input data and generate cluster labels
   base::set.seed(set.seed.N) #set seed for reproducibility
-  cluster_labels <- do.call(cbind, lapply(1:max.k, function(number_of_clusters) stats::kmeans(processed_input_data, centers = number_of_clusters, nstart = 30, iter.max = 1e5)$cluster)) #generate reference cluster labels (k = 1..max.k) for Hungarian relabeling
+  max_reference_k <- min(max.k, max(as.numeric(optim_k_vals), na.rm = TRUE), nrow(processed_input_data)) #maximum valid reference k
+  if (!is.finite(max_reference_k) || max_reference_k < 1L) stop("Aborted SOM clustering: no valid reference k available for Hungarian relabeling")
+  cluster_labels <- do.call(cbind, lapply(seq_len(max_reference_k), function(number_of_clusters) stats::kmeans(processed_input_data, centers = number_of_clusters, nstart = 30, iter.max = 1e5)$cluster)) #generate reference cluster labels for Hungarian relabeling
   rownames(cluster_labels) <- rownames(processed_input_data) #set row names for cluster labels
-  colnames(cluster_labels) <- paste("k", 1:max.k, sep = '') #set column names
+  colnames(cluster_labels) <- paste("k", seq_len(max_reference_k), sep = '') #set column names
   
   # Extract SOM cluster assignments and filter replicates based on maximum K
   all_k <- apply(cluster_assignment, 2, max, na.rm = TRUE) #calculate maximum K for each replicate (column)
-  if (length(which(optim_k_vals <= max.k)) == 0) stop("Aborted SOM clustering: no replicates have k ≤ max.k - increase max.k or check input data")
-  assignment_matrix <- cluster_assignment[, which(optim_k_vals <= max.k), drop = FALSE] #filter to keep replicates with K <= max_k
+  if (length(which(optim_k_vals <= max_reference_k)) == 0) stop("Aborted SOM clustering: no replicates have k ≤ max_reference_k - increase max.k or check input data")
+  assignment_matrix <- cluster_assignment[, which(optim_k_vals <= max_reference_k), drop = FALSE] #filter to keep replicates with K <= max_reference_k
   
   # Relabel across replicates with Hungarian algorithm
   for (replicate_index in seq_len(ncol(assignment_matrix))) {
