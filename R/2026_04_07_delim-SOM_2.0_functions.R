@@ -1347,7 +1347,7 @@ clustering.SOM <- function(SOM.output,
   if (length(missing_SOM_fields) > 0) stop("Aborted SOM clustering: SOM.output is missing required field(s): ", paste(missing_SOM_fields, collapse = ", "))
   if (!is.numeric(max.k) || length(max.k) != 1 || is.na(max.k) || max.k < 2 || (max.k %% 1 != 0)) stop("Aborted SOM clustering: max.k must be a single integer >= 2")
   if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 2 || (set.k %% 1 != 0))) stop("Aborted SOM clustering: set.k must be NULL or single integer >= 2")
-  if (!is.null(set.k) && set.k > max.k) stop("Aborted SOM clustering: set.k must be <= max.k")
+  if (!is.null(set.k) && set.k > max.k) max.k <- set.k
   valid.methods <- c("kmeans+BICelbow",
     "kmeans+BICthreshold",
     "GMM+BICthreshold",
