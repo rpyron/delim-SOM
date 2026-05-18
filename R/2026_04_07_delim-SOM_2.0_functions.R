@@ -4407,6 +4407,9 @@ plot.map.SOM <- function(SOM.output,
                          legend.box = T, #create white box around legend
                          legend.symbol.size = 1.5 #size of legend symbols
 ) {
+
+  # Set messages
+  messager <- function(...) message(...)
   
   # Reset plotting parameters
   old_dev <- grDevices::dev.cur()
