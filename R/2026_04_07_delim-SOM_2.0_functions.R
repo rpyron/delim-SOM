@@ -7996,6 +7996,10 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
                                                exclude.cols = NULL, #character vector of columns to exclude from filtering (e.g. Latitude, Longitude)
                                                verbose = TRUE #logical, print messages about filtering steps
 ) {
+
+  # Set messages
+  messager <- function(...) if (isTRUE(verbose)) message(...)
+  
   # Validate input
   if (!is.numeric(CV.threshold) || length(CV.threshold) != 1 || is.na(CV.threshold) || CV.threshold < 0) stop("CV.threshold must be a single non-negative numeric")
   if (!is.numeric(cor.threshold) || length(cor.threshold) != 1 || is.na(cor.threshold) || cor.threshold < 0 || cor.threshold > 1) stop("cor.threshold must be a single numeric between 0 and 1")
