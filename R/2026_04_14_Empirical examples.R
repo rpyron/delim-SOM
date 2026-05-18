@@ -11,7 +11,7 @@ for(p in CRAN_packages) if(!requireNamespace(p, quietly = TRUE)) install.package
 if(!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager") #install BiocManager
 if(!requireNamespace(Bioconductor_packages, quietly = TRUE)) BiocManager::install(Bioconductor_packages, ask = FALSE, update = FALSE) #install missing Bioconductor package
 if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
-remotes::install_github("Daniel-1232/NicheDiv") #import transform.skewed.variables function from my other package (under development)
+remotes::install_github("Daniel-1232/NicheDiv") #import (NicheDiv::transform.skewed.variables function from my other package (under development)
 source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
 
 # setwd("C:/Users/danie/Desktop/PhD research/SOM package")
@@ -64,7 +64,7 @@ rownames(Monticola71_data) <- Monticola71_data$Sample #assign rownames
 Monticola71_watershed <- make.cols.binary.SOM(dataframe = Monticola71_data,
                                               make.binary.cols = c("lvl4", "huc2", "huc4", "huc6", "huc8", "huc10", "huc12"))
 Monticola71_watershed <- Monticola71_watershed[rownames(Monticola71_data), , drop = FALSE]
-Monticola71_environmental <- (transform.skewed.variables(Monticola71_environmental))$transformed #transform skewed variables
+Monticola71_environmental <- (NicheDiv::transform.skewed.variables(Monticola71_environmental))$transformed #transform skewed variables
 Monticola71_environmental <- remove.lowCV.multicollinearity.SOM(Monticola71_environmental, #remove highly correlated and low-variance variables
                                                                 CV.threshold = 0.05,
                                                                 cor.threshold = 0.9)
@@ -220,7 +220,7 @@ rownames(Pascagoula_data) <- Pascagoula_data$Sample #assign rownames
 Pascagoula_watershed <- make.cols.binary.SOM(dataframe = Pascagoula_data,
                                              make.binary.cols = c("lvl4", "huc2", "huc4", "huc6", "huc8", "huc10", "huc12"))
 Pascagoula_watershed <- Pascagoula_watershed[rownames(Pascagoula_data), , drop = FALSE]
-Pascagoula_environmental <- (transform.skewed.variables(Pascagoula_environmental))$transformed #transform skewed variables
+Pascagoula_environmental <- (NicheDiv::transform.skewed.variables(Pascagoula_environmental))$transformed #transform skewed variables
 Pascagoula_environmental <- remove.lowCV.multicollinearity.SOM(Pascagoula_environmental, #remove highly correlated and low-variance variables
                                                                CV.threshold = 0.05,
                                                                cor.threshold = 0.9)
@@ -375,7 +375,7 @@ rownames(Aeneus_data) <- Aeneus_data$Sample #assign rownames
 Aeneus_watershed <- make.cols.binary.SOM(dataframe = Aeneus_data,
                                          make.binary.cols = c("lvl4", "huc2", "huc4", "huc6", "huc8", "huc10", "huc12"))
 Aeneus_watershed <- Aeneus_watershed[rownames(Aeneus_data), , drop = FALSE]
-Aeneus_environmental <- (transform.skewed.variables(Aeneus_environmental))$transformed #transform skewed variables
+Aeneus_environmental <- (NicheDiv::transform.skewed.variables(Aeneus_environmental))$transformed #transform skewed variables
 Aeneus_environmental <- remove.lowCV.multicollinearity.SOM(Aeneus_environmental, #remove highly correlated and low-variance variables
                                                            CV.threshold = 0.05,
                                                            cor.threshold = 0.9)
@@ -955,7 +955,7 @@ Polygonia_environmental <- dplyr::select(Polygonia_environmental, -Latitude, -Lo
 Polygonia_environmental_rownames <- rownames(Polygonia_environmental) #save rownames
 Polygonia_environmental <- as.data.frame(lapply(Polygonia_environmental, as.numeric)) #ensure all columns are numeric
 rownames(Polygonia_environmental) <- Polygonia_environmental_rownames #reassign saved row names
-Polygonia_environmental <- (transform.skewed.variables(Polygonia_environmental))$transformed #transform skewed variables
+Polygonia_environmental <- (NicheDiv::transform.skewed.variables(Polygonia_environmental))$transformed #transform skewed variables
 Polygonia_environmental <- remove.lowCV.multicollinearity.SOM(Polygonia_environmental, #remove highly correlated and low-variance variables
                                                               CV.threshold = 0.05,
                                                               cor.threshold = 0.9)
@@ -1746,7 +1746,7 @@ Microcebus_environmental <- Microcebus_environmental %>%
   dplyr::select(-Latitude, -Longitude, -Elevation)
 Microcebus_environmental <- as.data.frame(lapply(Microcebus_environmental, as.numeric)) #ensure all columns are numeric
 rownames(Microcebus_environmental) <- Microcebus_environmental_rownames #keep rownames
-Microcebus_environmental <- (transform.skewed.variables(Microcebus_environmental))$transformed #transform skewed variables
+Microcebus_environmental <- (NicheDiv::transform.skewed.variables(Microcebus_environmental))$transformed #transform skewed variables
 Microcebus_environmental <- remove.lowCV.multicollinearity.SOM(Microcebus_environmental, #remove highly correlated and low-variance variables
                                                                CV.threshold = 0.05,
                                                                cor.threshold = 0.9)
@@ -1977,7 +1977,7 @@ Elysia_environmental <- read.csv("../Empirical_examples/Krug et al 2026/Elysia_e
                                  header = TRUE,
                                  stringsAsFactors = FALSE,
                                  row.names = 1)
-Elysia_environmental <- (transform.skewed.variables(Elysia_environmental))$transformed #transform skewed variables
+Elysia_environmental <- (NicheDiv::transform.skewed.variables(Elysia_environmental))$transformed #transform skewed variables
 Elysia_environmental <- remove.lowCV.multicollinearity.SOM(Elysia_environmental, #remove highly correlated and low-variance variables
                                                            CV.threshold = 0.05,
                                                            cor.threshold = 0.9)
