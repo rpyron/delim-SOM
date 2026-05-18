@@ -3769,19 +3769,17 @@ plot.K.SOM <- function(SOM.output,
   
   # Report unavailable panels via output messages
   if (!support_available) {
-    message(paste0("plot.K.SOM: no finite support values available for clustering.method = '",
+    message(paste0("No finite support values available for clustering.method = '",
                    clustering.method,
                    "' - support panel will be omitted"))
   }
   
   if (support_available && !support_is_BIC) {
-    message(paste0("plot.K.SOM: clustering.method = '",
-                   clustering.method,
-                   "' is not BIC-based - delta-BIC panel will be omitted"))
+    message(paste0("delta-BIC panel will be omitted (clustering.method = '", clustering.method, "' is not BIC-based)"))
   }
   
   if (support_is_BIC && SOM.output$max_k <= 2) {
-    message("plot.K.SOM: delta-BIC panel requires max.k >= 3 - delta-BIC panel will be omitted")
+    message("delta-BIC panel will be omitted (requires max.k >= 3)")
   }
   
   # Decide layout and plot
@@ -3792,7 +3790,7 @@ plot.K.SOM <- function(SOM.output,
     plot.support.panel(plot_support_values, ylab_text = "BIC", axis_digits = round.axis.labels.BIC.plot)
     deltaBIC_plotted <- plot.deltaBIC.panel()
     if (!deltaBIC_plotted) {
-      message("plot.K.SOM: insufficient finite BIC values for delta-BIC panel - plotting support panel and K-frequency only")
+      message("Plotting support panel and K-frequency only (insufficient finite BIC values for delta-BIC panel)")
       par(mfrow = c(2, 1),
           bty = "n",
           mar = c(bottom.margin, left.margin, top.margin, right.margin))
