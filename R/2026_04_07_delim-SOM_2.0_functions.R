@@ -2869,7 +2869,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   }                             
                                
   # Return results
-  message("")
+  messager("")
   messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
 }
@@ -4477,19 +4477,19 @@ plot.map.SOM <- function(SOM.output,
       stop("Plotting aborted: width must be a single positive number (cm)")
     }
     if (width < 4) {
-      message("Warning: width is very small (", width, " cm) – plot may be hard to read")
+      messager("Warning: width is very small (", width, " cm) – plot may be hard to read")
     }
     if (width > 50) {
-      message("Warning: width is very large (", width, " cm) – plot may be unwieldy")
+      messager("Warning: width is very large (", width, " cm) – plot may be unwieldy")
     }
     if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) {
       stop("Plotting aborted: height must be a single positive number (cm)")
     }
     if (height < 4) {
-      message("Warning: height is very small (", height, " cm) – plot may be hard to read")
+      messager("Warning: height is very small (", height, " cm) – plot may be hard to read")
     }
     if (height > 50) {
-      message("Warning: height is very large (", height, " cm) – plot may be unwieldy")
+      messager("Warning: height is very large (", height, " cm) – plot may be unwieldy")
     }
   }
   
@@ -4499,7 +4499,7 @@ plot.map.SOM <- function(SOM.output,
       stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
     }
     if (resolution > 1200) {
-      message("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
+      messager("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
     }
   }
   
@@ -4656,7 +4656,7 @@ plot.map.SOM <- function(SOM.output,
   # Remove rows with NA in Coordinates
   na_rows <- which(is.na(Coordinates$Latitude) | is.na(Coordinates$Longitude))
   if (length(na_rows) > 0) {
-    message(sprintf("Dropped %d of %d rows due to NA in Coordinates", length(na_rows), nrow(Coordinates)))
+    messager(sprintf("Dropped %d of %d rows due to NA in Coordinates", length(na_rows), nrow(Coordinates)))
     Coordinates <- Coordinates[-na_rows, , drop = FALSE]
     ancestry <- ancestry[-na_rows, , drop = FALSE]
   }
@@ -4845,7 +4845,7 @@ plot.map.SOM <- function(SOM.output,
   # Close graphics device
   if (save) {
     grDevices::dev.off()
-    message(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
+    messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
 }
 
@@ -5055,7 +5055,7 @@ plot.variable.importance.SOM <- function(SOM.output,
   if (mode == "Cluster.separation") {
     rep.k <- vapply(SOM.output$som_clusters, function(x) length(unique(x[is.finite(x) & !is.na(x)])), integer(1)) #number of clusters per replicate
     if (all(rep.k < 2L)) {
-      message("Eta squared effect size (variable importance) could not be computed because all replicates produced k = 1") #no cluster separation possible
+      messager("Eta squared effect size (variable importance) could not be computed because all replicates produced k = 1") #no cluster separation possible
       return(invisible(NULL))
     }
     if (is.null(set.k)) {
@@ -5063,7 +5063,7 @@ plot.variable.importance.SOM <- function(SOM.output,
     } else {
       keep.reps <- which(rep.k == set.k) #keep only replicates matching set.k
       if (set.k < 2L) {
-        message("Eta squared effect size (variable importance) could not be computed because set.k = 1") #no cluster separation possible
+        messager("Eta squared effect size (variable importance) could not be computed because set.k = 1") #no cluster separation possible
         return(invisible(NULL))
       }
     }
@@ -5166,7 +5166,7 @@ plot.variable.importance.SOM <- function(SOM.output,
     # Extract replicate x variable matrix for this layer
     var_mat <- all_layer_metric[[i]]
     if (is.null(var_mat) || nrow(var_mat) == 0 || ncol(var_mat) == 0) {
-      message(paste("No values available for", matrix_names[i], "- skipping"))
+      messager(paste("No values available for", matrix_names[i], "- skipping"))
       next
     }
     
@@ -5177,7 +5177,7 @@ plot.variable.importance.SOM <- function(SOM.output,
     # Filter variables by threshold
     keep_vars <- which(is.finite(median_metric_per_variable) & !is.na(median_metric_per_variable) & median_metric_per_variable > importance.threshold)
     if (length(keep_vars) == 0) {
-      message(paste("No variables exceed importance.threshold of", importance.threshold, "for", matrix_names[i], " - specify lower value for importance.threshold"))
+      messager(paste("No variables exceed importance.threshold of", importance.threshold, "for", matrix_names[i], " - specify lower value for importance.threshold"))
       next
     }
     var_mat <- var_mat[, keep_vars, drop = FALSE]
@@ -5233,7 +5233,7 @@ plot.variable.importance.SOM <- function(SOM.output,
   # Close graphics device
   if (save) {
     grDevices::dev.off()
-    message(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
+    messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
 }
 
@@ -5372,8 +5372,8 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   
   # Create function to print final summary
   print.final.summary <- function(snp.matrix) {
-    if (verbose && filter.messages.printed) message("")
-    if (verbose) message("Final SNP matrix: ", nrow(snp.matrix), " samples × ", ncol(snp.matrix), " loci") #summary
+    if (verbose && filter.messages.printed) messager("")
+    if (verbose) messager("Final SNP matrix: ", nrow(snp.matrix), " samples × ", ncol(snp.matrix), " loci") #summary
   }
   
   # Create function to validate arguments
@@ -5955,7 +5955,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     }, error = function(fast.vcf.error) {
       if (identical(conditionMessage(fast.vcf.error), "UNSUPPORTED_FAST_VCF_GENOTYPES")) {
         if (!requireNamespace("adegenet", quietly = TRUE)) stop("VCF fast path was skipped because genotype coding is unsupported, and package 'adegenet' is required for fallback genind processing") #check fallback package
-        if (verbose) message("VCF fast path skipped: unsupported genotype coding - falling back to genind processing") #report fallback
+        if (verbose) messager("VCF fast path skipped: unsupported genotype coding - falling back to genind processing") #report fallback
         return(NULL) #fallback
       }
       stop(fast.vcf.error) #do not hide real filtering/input errors
@@ -7754,7 +7754,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
     col_factor <- base::factor(col_factor) #do not include NA as a level
     levs <- levels(col_factor) #get levels
     if (length(levs) < 2) { #skip if too few levels
-      message("Skipping column '", colname, "' because it has fewer than 2 levels")
+      messager("Skipping column '", colname, "' because it has fewer than 2 levels")
       next
     }
     
@@ -7822,7 +7822,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
     col_factor <- base::factor(col_factor) #do not include NA as a level
     levs <- levels(col_factor) #get levels
     if (length(levs) < 2) { #skip if too few levels
-      message("Skipping column '", colname, "' because it has fewer than 2 levels")
+      messager("Skipping column '", colname, "' because it has fewer than 2 levels")
       next
     }
     
@@ -7889,7 +7889,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
     col_factor <- base::factor(col_factor) #do not include NA as a level
     levs <- levels(col_factor) #get levels
     if (length(levs) < 2) { #skip if too few levels
-      message("Skipping column '", colname, "' because it has fewer than 2 levels")
+      messager("Skipping column '", colname, "' because it has fewer than 2 levels")
       next
     }
     
@@ -8082,7 +8082,7 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
     variable_sd <- stats::sd(variable_values)
     if (!is.finite(variable_sd) || variable_sd == 0) return(0) #no variation
     if (!is.finite(variable_mean) || abs(variable_mean) < 1e-7) { #mean near zero: CV invalid
-      if (verbose) message("Variable '", variable_name, "' has mean near zero (", format(variable_mean, digits = 4), ") - falling back to SD-based variability")
+      if (verbose) messager("Variable '", variable_name, "' has mean near zero (", format(variable_mean, digits = 4), ") - falling back to SD-based variability")
       mad_val <- stats::mad(variable_values, constant = 1, na.rm = TRUE)
       if (!is.finite(mad_val) || mad_val == 0) return(0) #MAD=0 so truly constant
       return(variable_sd / (mad_val + 1e-12)) #SD/MAD scale-free variability
@@ -8231,24 +8231,24 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
     number.filtered.input.variables <- if (is.null(exclude.cols)) ncol(input.dataframe) else ncol(input.dataframe) - length(exclude.cols)
     number.retained.after.CV <- ncol(variables.retained.for.correlation)
     
-    message(number.removed.rare.binary + number.removed.rare.count, ifelse(number.removed.rare.binary + number.removed.rare.count == 1, " variable", " variables"), " removed because prevalence was lower than ", prevalence.threshold)
-    message(number.removed.by.CV, ifelse(number.removed.by.CV == 1, " variable", " variables"), " removed due to low CV ≤ ", CV.threshold)
-    message(number.retained.after.CV, ifelse(number.retained.after.CV == 1, " variable", " variables"), " retained after CV/prevalence filtering")
+    messager(number.removed.rare.binary + number.removed.rare.count, ifelse(number.removed.rare.binary + number.removed.rare.count == 1, " variable", " variables"), " removed because prevalence was lower than ", prevalence.threshold)
+    messager(number.removed.by.CV, ifelse(number.removed.by.CV == 1, " variable", " variables"), " removed due to low CV ≤ ", CV.threshold)
+    messager(number.retained.after.CV, ifelse(number.retained.after.CV == 1, " variable", " variables"), " retained after CV/prevalence filtering")
     
     number.removed.by.correlation <- length(variables.removed.by.correlation)
     number.retained.after.correlation <- ncol(variables.retained.after.correlation)
     
-    message(number.removed.by.correlation, ifelse(number.removed.by.correlation == 1, " variable", " variables"), " removed due to high correlation > ", cor.threshold)
-    message(number.retained.after.correlation, ifelse(number.retained.after.correlation == 1, " variable", " variables"), " retained after correlation filtering")
+    messager(number.removed.by.correlation, ifelse(number.removed.by.correlation == 1, " variable", " variables"), " removed due to high correlation > ", cor.threshold)
+    messager(number.retained.after.correlation, ifelse(number.retained.after.correlation == 1, " variable", " variables"), " retained after correlation filtering")
     
     total.variables.retained <- ncol(output.dataframe)
     
     if (!is.null(exclude.cols)) {
-      message("")
-      message("Number of variables remaining after processing (including excluded columns): ", total.variables.retained)
+      messager("")
+      messager("Number of variables remaining after processing (including excluded columns): ", total.variables.retained)
     } else {
-      message("")
-      message("Number of variables remaining after processing: ", total.variables.retained)
+      messager("")
+      messager("Number of variables remaining after processing: ", total.variables.retained)
     }
   }
   
