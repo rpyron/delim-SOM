@@ -111,22 +111,22 @@ rownames(US_Coordinates) <- rownames(MORPH)
 
 ## Test train SOM function
 SOM_single_Alleles <- train.SOM(Alleles, max.NA.row = 0.3, N.steps = 20, N.replicates = 3)
-SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.05, max.NA.row = 0.4) #will fail with error
-SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.15, max.NA.row = 0.4) #will fail with error
-SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.3, max.NA.row = 0.2) #will fail with error
+try(SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.05, max.NA.row = 0.4)) #will fail with error
+try(SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.15, max.NA.row = 0.4)) #will fail with error
+try(SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.3, max.NA.row = 0.2)) #will fail with error
 SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.3, max.NA.row = 0.2, grid.multiplier = 3)
 SOM_single_k3 <- train.SOM(k3_test, parallel = F, N.cores = 4, N.steps = 200, N.replicates = 50)
-SOM_single_k3_2 <- train.SOM(k3_test, max.NA.col = 0.1, max.NA.row = 0.1) #will fail with message
+try(SOM_single_k3_2 <- train.SOM(k3_test, max.NA.col = 0.1, max.NA.row = 0.1)) #will fail with message
 SOM_single_k3_2 <- train.SOM(k3_test, max.NA.col = 0.1, max.NA.row = 0.2)
-SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3) #will fail with message
-SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3, grid.size = 4) #will fail with message
-SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3, grid.size = c(5, 5)) #will fail with message
+try(SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3)) #will fail with message
+try(SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3, grid.size = 4) #will fail with message
+SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3, grid.size = c(5, 5))) #will fail with message
 SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3, grid.size = c(3, 2))
 SOM_single_TestD <- train.SOM(TestD, max.NA.row = 0.3)
-SOM_multi_MORPH_ENV <- train.SOM(list(MORPH, ENV), max.NA.row = 0.2) #will fail with message
+try(SOM_multi_MORPH_ENV <- train.SOM(list(MORPH, ENV), max.NA.row = 0.2)) #will fail with message
 SOM_multi_MORPH_ENV <- train.SOM(list(MORPH, ENV), max.NA.row = 0.4, learning.rate.tuning = T)
-SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), max.NA.row = 0.2) #will fail
-SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), max.NA.row = 0.5, max.NA.col = 0.1) #will fail
+try(SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), max.NA.row = 0.2)) #will fail
+try(SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), max.NA.row = 0.5, max.NA.col = 0.1)) #will fail
 SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), N.replicates = 10,
                                       message.N.replicates = 5, grid.size = c(2, 2))
 SOM_multi_ENV_k3_Alleles_2 <- train.SOM(list(ENV, MORPH, Alleles), save.SOM.results = T, message.N.replicates = 5, grid.multiplier = 2)
@@ -153,12 +153,12 @@ head(SOM_multi_MORPH_ENV$train.SOM.args)
 
 ## Test cluster SOM function
 SOM_single_Alleles <- clustering.SOM(SOM_single_Alleles, max.k = 5, clustering.method = "kmeans+BICelbow")
-SOM_single_ENV <- clustering.SOM(SOM_single_ENV, max.k = 20, clustering.method = "kmeans+BICelbow") #will fail with error
+try(SOM_single_ENV <- clustering.SOM(SOM_single_ENV, max.k = 20, clustering.method = "kmeans+BICelbow")) #will fail with error
 SOM_single_ENV <- clustering.SOM(SOM_single_ENV, max.k = 2, clustering.method = "kmeans+BICelbow")
 SOM_single_k3 <- clustering.SOM(SOM_single_k3, clustering.method = "kmeans+BICelbow", set.k = 3)
 SOM_single_k3_2 <- clustering.SOM(SOM_single_k3_2, clustering.method = "HDBSCAN", max.k = 20)
 SOM_single_TestD <- clustering.SOM(SOM_single_TestD, clustering.method = "kmeans+BICelbow", set.k = 2)
-SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles, clustering.method = "kmeans+BICelbow") #will fail with error
+try(SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles, clustering.method = "kmeans+BICelbow")) #will fail with error
 SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles, clustering.method = "hierarchical+DB", max.k = 3)
 SOM_multi_MORPH_ENV <- clustering.SOM(SOM_multi_MORPH_ENV, clustering.method = "GMM+BICthreshold", set.k = 3)
 SOM_multi_ENV_k3_Alleles_2 <- clustering.SOM(SOM_multi_ENV_k3_Alleles_2, clustering.method = "OPTICS+Silhouette", max.k = 3)
@@ -190,7 +190,7 @@ plot.learning.SOM(SOM_multi_MORPH_ENV)
 
 
 ## Test layer distance scale plot
-plot.layer.distance.scale.SOM(SOM_single_Alleles) #will fail with message (single layer)
+try(plot.layer.distance.scale.SOM(SOM_single_Alleles)) #will fail with message (single layer)
 plot.layer.distance.scale.SOM(SOM_multi_ENV_k3_Alleles)
 plot.layer.distance.scale.SOM(SOM_multi_MORPH_ENV)
 
@@ -223,7 +223,7 @@ plot.model.SOM(SOM_multi_MORPH_ENV, replicate.mode = "first")
 
 
 ## Test species coefficient plot
-plot.structure.SOM(SOM_single_Alleles, bottom.margin = 4) #will fail with message
+try(plot.structure.SOM(SOM_single_Alleles, bottom.margin = 4)) #will fail with message
 plot.structure.SOM(SOM_single_TestD, Individual.labels.font.size = 0.5, bar.border.col = "white")
 plot.structure.SOM(SOM_single_k3_2)
 plot.structure.SOM(SOM_single_k3_2, sort.by.col = 2)
@@ -233,7 +233,7 @@ plot.structure.SOM(SOM_single_k3_2, sort.by.col = 2)
 ## Plot maps
 plot.map.SOM(SOM_single_ENV, GER_Coordinates, lat.buffer.range = 2)
 plot.map.SOM(SOM_single_Alleles, US_Coordinates)
-plot.map.SOM(SOM_single_Alleles, US_Coordinates, legend.cluster.names = c("Species 1", "Species 2")) #will fail with message
+try(plot.map.SOM(SOM_single_Alleles, US_Coordinates, legend.cluster.names = c("Species 1", "Species 2"))) #will fail with message
 plot.map.SOM(SOM_single_Alleles, US_Coordinates, legend.cluster.names = c("Species 1: Species name"))
 
 
@@ -253,11 +253,11 @@ plot.map.SOM(SOM.output = list(ancestry_matrix = ancestry_mat, input_data_names 
 
 
 ## Test variable importance plot
-plot.variable.importance.SOM(SOM_single_Alleles) #will fail with error message
+try(plot.variable.importance.SOM(SOM_single_Alleles)) #will fail with error message
 plot.variable.importance.SOM(SOM_single_Alleles, mode = "Map.variance") 
 plot.variable.importance.SOM(SOM_single_TestD, mode = "Cluster.separation")
 plot.variable.importance.SOM(SOM_single_TestD, mode = "Map.variance")
-plot.variable.importance.SOM(SOM_single_ENV) #will fail
+try(plot.variable.importance.SOM(SOM_single_ENV)) #will fail
 plot.variable.importance.SOM(SOM_single_k3)
 plot.variable.importance.SOM(SOM_single_k3_2)
 plot.variable.importance.SOM(SOM_multi_ENV_k3_Alleles, top.margin = 2, bar.label.font.size = 0.4, 
@@ -279,7 +279,7 @@ plot.layer.importance.varimp.SOM(SOM_multi_MORPH_ENV)
 
 
 ## Test layer importance layer plot
-plot.layer.importance.leaveoneout.SOM(SOM_single_Alleles) #will fail because of single layer
+try(plot.layer.importance.leaveoneout.SOM(SOM_single_Alleles)) #will fail because of single layer
 plot.layer.importance.leaveoneout.SOM(SOM_single_TestD)
 plot.layer.importance.leaveoneout.SOM(SOM_multi_ENV_k3_Alleles, 
                                       add.points = F, col.pal = viridis::rocket, save = T)
