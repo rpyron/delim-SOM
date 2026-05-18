@@ -68,7 +68,7 @@ Monticola71_environmental <- (transform.skewed.variables(Monticola71_environment
 Monticola71_environmental <- remove.lowCV.multicollinearity.SOM(Monticola71_environmental, #remove highly correlated and low-variance variables
                                                                 CV.threshold = 0.05,
                                                                 cor.threshold = 0.9)
-ncol(Monticola71_environmental) #number of variables: 51
+ncol(Monticola71_environmental) #number of variables: 50
 nrow(Monticola71_environmental) #number of samples: 71
 ncol(Monticola71_watershed) #number of variables: 197
 nrow(Monticola71_watershed) #number of samples: 71
@@ -87,7 +87,7 @@ Monticola71_residuals_mat <- sapply(colnames(Monticola71_filtered_log_traits)[co
 rownames(Monticola71_filtered_log_traits) <- Monticola71_data$Sample #set rownames for log-transformed traits
 rownames(Monticola71_residuals_mat) <- Monticola71_data$Sample #set rownames for residualized traits
 Monticola71_morphology <- as.data.frame(cbind(SVL = Monticola71_SVL, Monticola71_residuals_mat)) #combine log(SVL) and residuals
-ncol(Monticola71_morphology) #number of traits: 9
+ncol(Monticola71_morphology) #number of traits: 8
 nrow(Monticola71_morphology) #number of samples: 71
 
 
@@ -103,11 +103,11 @@ Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples
                                 max.NA.row = 0.6,
                                 max.NA.col = 0.2,
                                 message.N.replicates = 10,
-                                N.cores = 10)
+                                N.cores = 5)
 
 Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #takes ca 3min!
                                                      clustering.method = "kmeans+BICthreshold")
-Monticola71_SOM_kmeansBICthreshold$optim_k_summary #98% k2
+Monticola71_SOM_kmeansBICthreshold$optim_k_summary #100% k2
 Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #takes ca 5min!
                                           clustering.method = "HDBSCAN")
 Monticola71_SOM_HDBSCAN$optim_k_summary #62% k2, 35% k3
@@ -122,7 +122,7 @@ Monticola71_SOM_OPTICSSilhouette <- clustering.SOM(Monticola71_SOM_tr, #ca 5min
 Monticola71_SOM_OPTICSSilhouette$optim_k_summary #88% k1, 12% k2
 Monticola71_SOM_kmeansBICelbow <- clustering.SOM(Monticola71_SOM_tr, #ca 3min
                                                  clustering.method = "kmeans+BICelbow")
-Monticola71_SOM_kmeansBICelbow$optim_k_summary #98% k2
+Monticola71_SOM_kmeansBICelbow$optim_k_summary #100% k2
 
 
 ## Evaluate and plot results
