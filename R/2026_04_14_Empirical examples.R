@@ -10,7 +10,8 @@ Bioconductor_packages <- "SeqArray" #Bioconductor package
 for(p in CRAN_packages) if(!requireNamespace(p, quietly = TRUE)) install.packages(p) #install missing CRAN packages
 if(!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager") #install BiocManager
 if(!requireNamespace(Bioconductor_packages, quietly = TRUE)) BiocManager::install(Bioconductor_packages, ask = FALSE, update = FALSE) #install missing Bioconductor package
-source("https://raw.githubusercontent.com/Daniel-1232/NicheDiv_R_tutorial/main/transform.skewed.variables") #import transform.skewed.variables function from my other package (under development)
+if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+remotes::install_github("Daniel-1232/NicheDiv") #import transform.skewed.variables function from my other package (under development)
 source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
 
 # setwd("C:/Users/danie/Desktop/PhD research/SOM package")
