@@ -120,7 +120,7 @@ try(SOM_single_k3_2 <- train.SOM(k3_test, max.NA.col = 0.1, max.NA.row = 0.1)) #
 SOM_single_k3_2 <- train.SOM(k3_test, max.NA.col = 0.1, max.NA.row = 0.2)
 try(SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3)) #will fail with message
 try(SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3, grid.size = 4)) #will fail with message
-SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3, grid.size = c(5, 5))) #will fail with message
+try(SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3, grid.size = c(5, 5))) #will fail with message
 SOM_single_MORPH <- train.SOM(MORPH, max.NA.row = 0.3, grid.size = c(3, 2))
 SOM_single_TestD <- train.SOM(TestD, max.NA.row = 0.3)
 try(SOM_multi_MORPH_ENV <- train.SOM(list(MORPH, ENV), max.NA.row = 0.2)) #will fail with message
