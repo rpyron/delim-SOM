@@ -5358,6 +5358,9 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                  invariant.loci.filter = TRUE, #whether to remove invariant loci
                                  verbose = TRUE #whether to show filtering messages and final summary
 ) {
+
+  # Set messages
+  messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Track whether any filtering message was printed
   filter.messages.printed <- FALSE
