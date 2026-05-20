@@ -4057,35 +4057,6 @@ plot.model.SOM <- function(SOM.output,
     }
     consensus_vec
   }
-
-  # Create function to relabel SOM clusters to match ancestry matrix columns
-  align.som.clusters.to.ancestry <- function(som_model, som_cluster, ancestry_matrix) {
-    if (is.null(ancestry_matrix) || !is.matrix(ancestry_matrix)) return(as.integer(som_cluster))
-    som_cluster <- as.integer(som_cluster)
-    number_of_som_clusters <- max(som_cluster, na.rm = TRUE)
-    number_of_ancestry_clusters <- ncol(ancestry_matrix)
-    if (number_of_som_clusters != number_of_ancestry_clusters) {
-      message("Warning: selected SOM model has ", number_of_som_clusters, " clusters but ancestry_matrix has ", number_of_ancestry_clusters, " clusters - cluster colors cannot be matched exactly")
-      return(som_cluster)
-    }
-    sample_names <- rownames(som_model$data[[1]])
-    if (is.null(sample_names)) return(som_cluster)
-    common_samples <- intersect(sample_names, rownames(ancestry_matrix))
-    if (length(common_samples) < 2) return(som_cluster)
-    sample_indices <- match(common_samples, sample_names)
-    ancestry_sample_cluster_labels <- max.col(ancestry_matrix[common_samples, , drop = FALSE], ties.method = "first")
-    som_sample_cluster_labels <- som_cluster[as.integer(som_model$unit.classif[sample_indices])]
-    valid_samples <- is.finite(ancestry_sample_cluster_labels) & is.finite(som_sample_cluster_labels)
-    if (sum(valid_samples) < 2) return(som_cluster)
-    cluster_overlap_count_matrix <- table(factor(ancestry_sample_cluster_labels[valid_samples], levels = seq_len(number_of_ancestry_clusters)), factor(som_sample_cluster_labels[valid_samples], levels = seq_len(number_of_som_clusters)))
-    assignment_cost_matrix <- max(cluster_overlap_count_matrix) - cluster_overlap_count_matrix
-    ancestry_cluster_to_som_cluster_map <- as.integer(clue::solve_LSAP(assignment_cost_matrix))
-    som_cluster_to_ancestry_cluster_map <- integer(number_of_som_clusters)
-    som_cluster_to_ancestry_cluster_map[ancestry_cluster_to_som_cluster_map] <- seq_len(number_of_ancestry_clusters)
-    som_cluster_aligned <- som_cluster_to_ancestry_cluster_map[som_cluster]
-    if (any(is.na(som_cluster_aligned)) || any(som_cluster_aligned < 1)) return(som_cluster)
-    as.integer(som_cluster_aligned)
-  }
                      
   # Reset plotting parameters
   old_dev <- dev.cur()
@@ -4314,11 +4285,6 @@ plot.model.SOM <- function(SOM.output,
     som_cluster <- som_clusters_use[[replicate.index]]
     nd_plot <- calc.unit.neighbor.dist(som_model)
   }
-  
-  # Relabel SOM clusters to match ancestry matrix columns so colors correspond to plot.structure.SOM
-  som_cluster <- align.som.clusters.to.ancestry(som_model = som_model,
-                                                som_cluster = som_cluster,
-                                                ancestry_matrix = SOM.output$ancestry_matrix)
   
   # Save file
   if (save) {
