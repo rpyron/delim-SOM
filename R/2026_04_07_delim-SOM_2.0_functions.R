@@ -4230,7 +4230,7 @@ plot.model.SOM <- function(SOM.output,
   replicate.index <- if (replicate.mode == "first") 1 else choose.representative.replicate(som_clusters_use)
   som_model <- som_models_use[[replicate.index]]
   
-  # Build plotting clusters + optionally averaged mapping
+  # Build plotting clusters and optionally averaged mapping
   if (replicate.mode == "average") {
     rep_k <- suppressWarnings(max(as.integer(som_clusters_use[[replicate.index]]), na.rm = TRUE))
     if (!is.finite(rep_k) || is.na(rep_k)) stop("Plotting aborted: representative replicate has invalid k")
@@ -4242,7 +4242,7 @@ plot.model.SOM <- function(SOM.output,
     rep_index_k <- which(keep_k == replicate.index)
     if (length(rep_index_k) != 1) rep_index_k <- 1
     
-    # Align neuron positions across replicates to representative replicate (ALL layers)
+    # Align neuron positions across replicates to representative replicate
     reference_som_model <- som_models_k[[rep_index_k]]
     reference_unit_classif <- as.integer(reference_som_model$unit.classif)
     reference_unit_cluster_labels <- as.integer(som_clusters_k[[rep_index_k]])
@@ -4266,9 +4266,7 @@ plot.model.SOM <- function(SOM.output,
       unit_classif_vec <- as.integer(som_models_k[[replicate_index]]$unit.classif)
       if (anyNA(unit_classif_vec)) stop("Plotting aborted: unit.classif contains NA in a replicate")
       unit_classif_aligned_matrix[, replicate_index] <- aligned_to_reference_map[unit_classif_vec]
-      
       som_clusters_aligned[[replicate_index]] <- as.integer(som_clusters_k[[replicate_index]])[reference_to_aligned_map]
-      
       neighbor_distances_vec <- calc.unit.neighbor.dist(som_models_k[[replicate_index]])
       neighbor_distances_aligned_matrix[, replicate_index] <- neighbor_distances_vec[reference_to_aligned_map]
     }
@@ -4329,7 +4327,7 @@ plot.model.SOM <- function(SOM.output,
               top.margin, 
               right.margin))
   
-  # Plot SOM neighbor distances (top plot) - ALWAYS use ALL layers via property vector
+  # Plot SOM neighbor distances (top plot) - use all layers via property vector
   plot(x = som_model,
        type = "property",
        property = nd_plot,
