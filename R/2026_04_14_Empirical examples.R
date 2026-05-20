@@ -1174,6 +1174,118 @@ length(unique(Polygonia_ancestry_SOM_cluster3$Species_revised)) #number of propo
 table(Polygonia_ancestry_SOM_cluster3$Species)
 table(Polygonia_ancestry_SOM_cluster3$Species_revised)
 
+                                  
+## Calculate pairwise Weir and Cockerham Fst among species
+SNP.ids <- rownames(Polygonia_SNP)
+metadata.ids <- as.character(Polygonia_metadata$ID)
+overlapping.ids <- intersect(SNP.ids, metadata.ids)
+if (length(overlapping.ids) < 2) stop("Fewer than two overlapping IDs were found between Polygonia_SNP and Polygonia_metadata")
+Polygonia_SNP <- Polygonia_SNP[overlapping.ids, , drop = FALSE]
+Polygonia_metadata <- Polygonia_metadata[match(overlapping.ids, metadata.ids), , drop = FALSE]
+rownames(Polygonia_metadata) <- overlapping.ids
+Polygonia_metadata$Species <- as.character(Polygonia_metadata$Species)
+Polygonia_metadata$Species[Polygonia_metadata$Species %in% c("Polygonia gracilis gracilis", "Polygonia gracilis zephyrus")] <- "Polygonia gracilis"
+species.rows <- !is.na(Polygonia_metadata$Species)
+species.rows <- species.rows & !Polygonia_metadata$Species %in% c("Polygonia comma", "Polygonia interrogationis")
+Polygonia_SNP <- Polygonia_SNP[species.rows, , drop = FALSE]
+Polygonia_metadata <- Polygonia_metadata[species.rows, , drop = FALSE]
+SNP.matrix <- as.matrix(Polygonia_SNP)
+storage.mode(SNP.matrix) <- "numeric"
+SNP.values <- unique(as.vector(SNP.matrix))
+SNP.values <- SNP.values[!is.na(SNP.values)]
+if (!all(SNP.values %in% c(0, 1, 2))) stop("Polygonia_SNP must only contain 0, 1, 2, or NA values")
+SNP.genotypes <- as.data.frame(apply(SNP.matrix, 2, function(x) {
+  genotype.vector <- rep(NA_character_, length(x))
+  genotype.vector[x == 0] <- "A/A"
+  genotype.vector[x == 1] <- "A/B"
+  genotype.vector[x == 2] <- "B/B"
+  return(genotype.vector)
+}))
+rownames(SNP.genotypes) <- rownames(Polygonia_SNP)
+Polygonia_genind <- adegenet::df2genind(SNP.genotypes, sep = "/", ncode = 1, ploidy = 2, pop = Polygonia_metadata$Species)
+calculate.overall.Fst <- function(genind.object) {
+  genotype.table <- genind.object@tab #extract allele-count table
+  locus.factor <- genind.object@loc.fac #extract locus factor for allele columns
+  population.vector <- as.character(adegenet::pop(genind.object)) #extract population assignments
+  if (is.null(genotype.table) || is.null(locus.factor)) stop("genind.object does not contain genotype table or locus factor")
+  if (length(population.vector) != nrow(genotype.table)) stop("Length mismatch between populations and genotype table rows")
+  population.names <- sort(unique(population.vector[!is.na(population.vector)]))
+  if (length(population.names) != 2) stop("Manual Weir and Cockerham Fst calculation expects exactly two populations")
+  locus.names <- unique(as.character(locus.factor))
+  a.vector <- rep(NA_real_, length(locus.names))
+  b.vector <- rep(NA_real_, length(locus.names))
+  c.vector <- rep(NA_real_, length(locus.names))
+  names(a.vector) <- locus.names
+  names(b.vector) <- locus.names
+  names(c.vector) <- locus.names
+  for (locus.index in seq_along(locus.names)) {
+    current.locus <- locus.names[locus.index]
+    locus.columns <- which(as.character(locus.factor) == current.locus)
+    if (length(locus.columns) != 2) next
+    locus.table <- genotype.table[, locus.columns, drop = FALSE]
+    population.sample.sizes <- rep(NA_real_, length(population.names))
+    population.alt.allele.frequencies <- rep(NA_real_, length(population.names))
+    population.observed.heterozygosities <- rep(NA_real_, length(population.names))
+    for (population.index in seq_along(population.names)) {
+      population.rows <- which(population.vector == population.names[population.index])
+      population.locus.table <- locus.table[population.rows, , drop = FALSE]
+      complete.rows <- rowSums(is.na(population.locus.table)) == 0
+      population.locus.table <- population.locus.table[complete.rows, , drop = FALSE]
+      if (nrow(population.locus.table) == 0) next
+      allele.copy.counts <- rowSums(population.locus.table)
+      diploid.rows <- allele.copy.counts == 2
+      population.locus.table <- population.locus.table[diploid.rows, , drop = FALSE]
+      if (nrow(population.locus.table) == 0) next
+      population.sample.sizes[population.index] <- nrow(population.locus.table)
+      population.alt.allele.frequencies[population.index] <- sum(population.locus.table[, 2]) / (2 * nrow(population.locus.table))
+      population.observed.heterozygosities[population.index] <- mean(population.locus.table[, 1] == 1 & population.locus.table[, 2] == 1)
+    }
+    if (any(is.na(population.sample.sizes)) || any(population.sample.sizes <= 1)) next
+    n.populations <- length(population.names)
+    total.sample.size <- sum(population.sample.sizes)
+    n.bar <- mean(population.sample.sizes)
+    n.c <- (total.sample.size - sum(population.sample.sizes^2) / total.sample.size) / (n.populations - 1)
+    p.bar <- sum(population.sample.sizes * population.alt.allele.frequencies) / total.sample.size
+    s.squared <- sum(population.sample.sizes * (population.alt.allele.frequencies - p.bar)^2) / ((n.populations - 1) * n.bar)
+    h.bar <- sum(population.sample.sizes * population.observed.heterozygosities) / total.sample.size
+    if (n.c <= 0 || p.bar <= 0 || p.bar >= 1) next
+    a.vector[locus.index] <- (n.bar / n.c) * (s.squared - (1 / (n.bar - 1)) * ((p.bar * (1 - p.bar)) - ((n.populations - 1) / n.populations) * s.squared - 0.25 * h.bar))
+    b.vector[locus.index] <- (n.bar / (n.bar - 1)) * ((p.bar * (1 - p.bar)) - ((n.populations - 1) / n.populations) * s.squared - ((2 * n.bar - 1) / (4 * n.bar)) * h.bar)
+    c.vector[locus.index] <- 0.5 * h.bar
+  }
+  denominator <- sum(a.vector + b.vector + c.vector, na.rm = TRUE)
+  if (is.na(denominator) || denominator == 0) return(NA_real_)
+  overall.fst <- sum(a.vector, na.rm = TRUE) / denominator
+  return(overall.fst)
+}
+calculate.pairwise.Fst <- function(genind.object) {
+  population.vector <- as.character(adegenet::pop(genind.object)) #extract population assignments
+  if (length(population.vector) != adegenet::nInd(genind.object)) stop("Length mismatch between populations and genind individuals")
+  population.names <- sort(unique(population.vector[!is.na(population.vector)]))
+  if (length(population.names) < 2) stop("At least two populations are required")
+  population.pairs <- utils::combn(population.names, 2, simplify = FALSE)
+  fst.matrix <- matrix(NA_real_, nrow = length(population.names), ncol = length(population.names))
+  rownames(fst.matrix) <- population.names
+  colnames(fst.matrix) <- population.names
+  diag(fst.matrix) <- 0
+  fst.table <- data.frame(Species_1 = character(), Species_2 = character(), Fst = numeric(), stringsAsFactors = FALSE)
+  for (pair.index in seq_along(population.pairs)) {
+    current.pair <- population.pairs[[pair.index]]
+    pair.rows <- population.vector %in% current.pair
+    pair.genind <- genind.object[pair.rows, ]
+    pair.genind@pop <- factor(population.vector[pair.rows], levels = current.pair)
+    current.fst <- calculate.overall.Fst(pair.genind)
+    fst.matrix[current.pair[1], current.pair[2]] <- current.fst
+    fst.matrix[current.pair[2], current.pair[1]] <- current.fst
+    fst.table <- rbind(fst.table, data.frame(Species_1 = current.pair[1], Species_2 = current.pair[2], Fst = current.fst, stringsAsFactors = FALSE))
+  }
+  return(list(Fst_matrix = fst.matrix, Fst_table = fst.table))
+}
+Polygonia_pairwise_Fst <- calculate.pairwise.Fst(Polygonia_genind)
+Polygonia_pairwise_Fst$Fst_matrix
+Polygonia_pairwise_Fst$Fst_table
+    
+
 
 
 ################################################################################
