@@ -961,7 +961,8 @@ calculate.topographic.error <- function(som_model) {
     dist_fcts <- som_model$dist.fcts[whatmap]
     user_weights <- som_model$user.weights[whatmap]
     distance_weights <- som_model$distance.weights[whatmap]
-    combined_weights <- user_weights * distance_weights
+    combined_weights <- as.numeric(user_weights) * as.numeric(distance_weights)
+    if (length(combined_weights) == 0 || any(!is.finite(combined_weights)) || sum(combined_weights) <= 0) return(NA_real_)
     combined_weights <- combined_weights / sum(combined_weights)
     unit_distance_matrix <- kohonen::unit.distances(som_model$grid)
     adjacency_matrix <- unit_distance_matrix <= 1
@@ -993,10 +994,15 @@ calculate.topographic.error <- function(som_model) {
     best_units <- som_model$unit.classif
     second_best_units <- vapply(seq_along(best_units), function(i) {
       distances <- distance_matrix[i, ]
+      if (!is.finite(best_units[i]) || best_units[i] < 1 || best_units[i] > length(distances)) return(NA_integer_)
+      if (sum(is.finite(distances)) < 2) return(NA_integer_)
       distances[best_units[i]] <- Inf
+      if (!any(is.finite(distances))) return(NA_integer_)
       which.min(distances)
     }, integer(1))
-    mean(!adjacency_matrix[cbind(best_units, second_best_units)], na.rm = TRUE)
+    valid_units <- is.finite(best_units) & is.finite(second_best_units)
+    if (!any(valid_units)) return(NA_real_)
+    mean(!adjacency_matrix[cbind(best_units[valid_units], second_best_units[valid_units])], na.rm = TRUE)
   }
   
   # Create function to run SOM
