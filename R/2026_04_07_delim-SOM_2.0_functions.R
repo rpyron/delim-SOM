@@ -65,12 +65,11 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (is.list(input_data) && length(input_data) == 0) stop("Data processing aborted: input_data is an empty list")
   
   # Validate specified N.steps
-  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")
-  if (N.steps < 60) messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 60–200)")
+  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || !is.finite(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")  if (N.steps < 60) messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 60–200)")
   if (N.steps > 200) messager("Warning: N.steps is high (", N.steps, ") - computation will be slow (recommended: 60–200)")
   
   # Validate specified N.replicates
-  if (!is.numeric(N.replicates) || length(N.replicates) != 1 || is.na(N.replicates) || N.replicates < 1 || (N.replicates %% 1 != 0)) stop("Data processing aborted: N.replicates must be a single positive integer (>= 1)")
+  if (!is.numeric(N.replicates) || length(N.replicates) != 1 || is.na(N.replicates) || !is.finite(N.replicates) || N.replicates < 1 || (N.replicates %% 1 != 0)) stop("Data processing aborted: N.replicates must be a single positive integer (>= 1)")
   if (N.replicates < 30) messager("Warning: N.replicates is low (", N.replicates, ") - results may be unreliable (recommended: 30–100)")
   if (N.replicates > 200) messager("Warning: N.replicates is high (", N.replicates, ") - computation will be slow (recommended: 50–150)")
   
@@ -79,7 +78,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   
   # Validate specified N.cores
   if (parallel) {
-    if (!is.numeric(N.cores) || length(N.cores) != 1 || is.na(N.cores) || N.cores < 1 || (N.cores %% 1 != 0)) stop("Data processing aborted: N.cores must be a single positive integer (>= 1)")
+    if (!is.numeric(N.cores) || length(N.cores) != 1 || is.na(N.cores) || !is.finite(N.cores) || N.cores < 1 || (N.cores %% 1 != 0)) stop("Data processing aborted: N.cores must be a single positive integer (>= 1)")
     max_cores <- parallel::detectCores(logical = FALSE)
     if (is.na(max_cores) || max_cores < 1) max_cores <- parallel::detectCores(logical = TRUE)
     if (is.na(max_cores) || max_cores < 1) max_cores <- 1
@@ -91,47 +90,40 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   
   # Validate specified grid.size
   if (!is.null(grid.size)) {
-    if (!is.numeric(grid.size) || length(grid.size) != 2 || any(is.na(grid.size)) || any(grid.size <= 0) || any(grid.size %% 1 != 0)) stop("Input aborted: grid.size must be NULL or numeric vector of length 2 with positive integers (e.g., c(5, 5))")
+    if (!is.numeric(grid.size) || length(grid.size) != 2 || any(is.na(grid.size)) || any(!is.finite(grid.size)) || any(grid.size <= 0) || any(grid.size %% 1 != 0)) stop("Input aborted: grid.size must be NULL or numeric vector of length 2 with positive integers (e.g., c(5, 5))")
   }
   
   # Validate specified grid.multiplier
-  if (!is.numeric(grid.multiplier) || length(grid.multiplier) != 1 || grid.multiplier < 1) stop("Data processing aborted: grid.multiplier must be a single numeric value (recommended: 5)")
+  if (!is.numeric(grid.multiplier) || length(grid.multiplier) != 1 || is.na(grid.multiplier) || !is.finite(grid.multiplier) || grid.multiplier < 1) stop("Data processing aborted: grid.multiplier must be a single numeric value (recommended: 5)")
   
   # Validate specified learning.rate.tuning
   if (!is.logical(learning.rate.tuning) || length(learning.rate.tuning) != 1 || is.na(learning.rate.tuning)) stop("Data processing aborted: learning.rate.tuning must be TRUE or FALSE")
   
   # Validate specified learning rate parameters if learning rate tuning is not done
   if (!learning.rate.tuning) {
-    if (!is.numeric(learning.rate.initial) || length(learning.rate.initial) != 1 || learning.rate.initial <= 0 || learning.rate.initial > 1) stop("Data processing aborted: learning.rate.initial must be a single numeric value between 0 and 1 (e.g. 0.6)")
+  if (!is.numeric(learning.rate.initial) || length(learning.rate.initial) != 1 || is.na(learning.rate.initial) || learning.rate.initial <= 0 || learning.rate.initial > 1) stop("Data processing aborted: learning.rate.initial must be a single numeric value between 0 and 1 (e.g. 0.6)")
     if (!is.numeric(learning.rate.final) || length(learning.rate.final) != 1 || is.na(learning.rate.final) || learning.rate.final < 0 || learning.rate.final > 1) stop("Data processing aborted: learning.rate.final must be a single numeric value between 0 and 1 (e.g. 0.1)")
-    if (learning.rate.final > learning.rate.initial) stop("Data processing aborted: learning.rate.final must be smaller than learning.rate.initial")
+    if (learning.rate.final >= learning.rate.initial) stop("Data processing aborted: learning.rate.final must be smaller than learning.rate.initial")
   }
   
   # Validate specified layer.distance.functions
+  valid_distance_functions <- c("sumofsquares", "euclidean", "manhattan", "tanimoto")
   if (!is.null(layer.distance.functions)) {
     n_layers_expected <- 1
     if (is.list(input_data) && length(input_data) > 1 && !is.data.frame(input_data)) n_layers_expected <- length(input_data)
-    if (!(is.character(layer.distance.functions) || is.list(layer.distance.functions))) stop("Data processing aborted: layer.distance.functions must be NULL, a character vector, or a list")
-    if (is.character(layer.distance.functions)) {
-      if (any(is.na(layer.distance.functions)) || any(trimws(layer.distance.functions) == "")) stop("Data processing aborted: layer.distance.functions contains NA or empty strings")
-      if (!(length(layer.distance.functions) %in% c(1, n_layers_expected))) stop(sprintf("Data processing aborted: layer.distance.functions must have length 1 or %d (number of layers in input_data)", n_layers_expected))
-    }
-    if (is.list(layer.distance.functions)) {
-      if (!(length(layer.distance.functions) %in% c(1, n_layers_expected))) stop(sprintf("Data processing aborted: layer.distance.functions must have length 1 or %d (number of layers in input_data)", n_layers_expected))
-      bad_types <- vapply(layer.distance.functions, function(x) !(is.character(x) || is.function(x)), logical(1))
-      if (any(bad_types)) stop("Data processing aborted: each element of layer.distance.functions must be a character string or a function")
-      bad_chr <- vapply(layer.distance.functions, function(x) is.character(x) && (length(x) != 1 || is.na(x) || trimws(x) == ""), logical(1))
-      if (any(bad_chr)) stop("Data processing aborted: layer.distance.functions list contains invalid character entries (must be single non-empty strings)")
-    }
+    if (!is.character(layer.distance.functions)) stop("Data processing aborted: layer.distance.functions must be NULL or a character vector")
+    if (any(is.na(layer.distance.functions)) || any(trimws(layer.distance.functions) == "")) stop("Data processing aborted: layer.distance.functions contains NA or empty strings")
+    if (!(length(layer.distance.functions) %in% c(1, n_layers_expected))) stop(sprintf("Data processing aborted: layer.distance.functions must have length 1 or %d (number of layers in input_data)", n_layers_expected))
+    if (any(!(layer.distance.functions %in% valid_distance_functions))) stop(sprintf("Data processing aborted: unsupported layer.distance.functions: %s", paste(unique(layer.distance.functions[!(layer.distance.functions %in% valid_distance_functions)]), collapse = ", ")))
   }
   
   # Validate specified manual.layer.weights
   if (!is.null(manual.layer.weights)) {
-    if (!is.numeric(manual.layer.weights) || any(is.na(manual.layer.weights)) || any(manual.layer.weights <= 0)) stop("Data processing aborted: manual.layer.weights must be NULL or a numeric vector of positive values")
+    if (!is.numeric(manual.layer.weights) || any(is.na(manual.layer.weights)) || any(!is.finite(manual.layer.weights)) || any(manual.layer.weights <= 0)) stop("Data processing aborted: manual.layer.weights must be NULL or a numeric vector of positive finite values")
   }
   
   # Validate specified NA‐max.NA.row
-  if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || max.NA.row < 0 || max.NA.row > 1) stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.5)")
+  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || !is.finite(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")
   
   # Validate specified NA‐max.NA.col
   if (!is.numeric(max.NA.col) || length(max.NA.col) != 1 || max.NA.col < 0 || max.NA.col > 1) stop("Data processing aborted: max.NA.col must be a single numeric value between 0 and 1 (recommended: 0.5)")
@@ -161,6 +153,18 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   # Validate set.seed.N
   if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Data processing aborted: set.seed.N must be a single positive integer (>= 1)")
     
+  # Create function to infer numeric layer type
+  infer_layer_numeric_type <- function(layer_matrix) {
+    layer_matrix <- as.matrix(layer_matrix) #force matrix
+    observed_values <- stats::na.omit(as.vector(layer_matrix)) #remove all non-NA values
+    if (length(observed_values) == 0) return("continuous") #fallback if layer is all NA
+    unique_values <- sort(unique(observed_values)) #extract unique values
+    if (length(unique_values) <= 2 && all(unique_values %in% c(0, 1))) return("binary") #binary 0/1 layer
+    is_integer_like <- all(abs(observed_values - round(observed_values)) < 1e-8) #check integer-like values
+    if (is_integer_like && all(unique_values %in% c(0, 1, 2))) return("count") #SNP dosage/count-like 0/1/2 layer
+    return("continuous") #continuous data
+  }
+  
   # Extract input_data_names and set save.SOM.results.name for saving ...
   
   # ... for list with multiple data sets
@@ -569,6 +573,24 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (ncol(mat) == 0) stop(paste0("Data processing aborted: dataset ", input_data_names[[1]], " has no columns (variables) remaining after removing all-NA columns - check input data")) #stop if no columns remain
     if (ncol(mat) == 1) stop(paste0("Data processing aborted: dataset ", input_data_names[[1]], " has only one column (variable) remaining after removing all-NA columns - check input data")) #stop if only one column remain
     
+    # Remove columns with > max.NA.col missing
+    col_na_frac <- colMeans(is.na(mat)) #fraction of NA per column
+    dropped_cols <- names(col_na_frac)[col_na_frac > max.NA.col] #extract columns exceeding threshold
+    if (length(dropped_cols)) { #print message if columns are removed
+      n_dropped <- length(dropped_cols)
+      if (n_dropped <= 30) {
+      messager(sprintf("Removed %d of %d columns (variables) due to more than %.0f%% NA in data (max.NA.col = %.2f): %s", n_dropped, ncol(mat), max.NA.col * 100, max.NA.col, paste(dropped_cols, collapse = ", ")))
+      } else {
+        messager(sprintf(
+          "Removed %d of %d columns (variables) due to more than %.0f%% NA in data (max.NA.col = %.2f)",
+          n_dropped, ncol(mat), max.NA.col * 100, max.NA.col
+        ))
+      }
+      mat <- mat[, !(colnames(mat) %in% dropped_cols), drop = FALSE] #remove columns
+    }
+    if (ncol(mat) == 0) stop(sprintf("Data processing aborted: no columns (variables) remain in dataset %s after applying max.NA.col = %.2f - check input data or increase max.NA.col", input_data_names[1], max.NA.col))
+    if (ncol(mat) == 1) stop(sprintf("Data processing aborted: only one column (variable) remains in dataset %s after applying max.NA.col = %.2f - check input data or increase max.NA.col", input_data_names[1], max.NA.col))
+
     # Remove columns with zero variance
     zero_var_cols <- vapply(mat, function(x) {
       variance <- stats::var(x, na.rm = TRUE)
@@ -592,37 +614,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     }
     if (ncol(mat) == 0) stop(paste0("Data processing aborted: dataset ", input_data_names[[1]], " has no columns (variables) remaining after removing columns with zero variance - check input data")) #stop if no columns (variables) remain
     if (ncol(mat) == 1) stop(paste0("Data processing aborted: dataset ", input_data_names[[1]], " has only one column (variable) remaining after removing columns with zero variance - check input data")) #stop if only one column (variable) remains
-    
-    # Remove columns with > max.NA.col missing
-    col_na_frac <- colMeans(is.na(mat)) #fraction of NA per column
-    dropped_cols <- names(col_na_frac)[col_na_frac > max.NA.col] #extract columns exceeding threshold
-    if (length(dropped_cols)) { #print message if columns are removed
-      n_dropped <- length(dropped_cols)
-      if (n_dropped <= 30) {
-        messager(sprintf(
-          "Removed %d of %d columns (variables) due to more than %.0f%% NA in data (max.NA.col = %.2f): %s",
-          n_dropped, ncol(mat), max.NA.col * 100, max.NA.col, paste(dropped_cols, collapse = ", ")
-        ))
-      } else {
-        messager(sprintf(
-          "Removed %d of %d columns (variables) due to more than %.0f%% NA in data (max.NA.col = %.2f)",
-          n_dropped, ncol(mat), max.NA.col * 100, max.NA.col
-        ))
-      }
-      mat <- mat[, !(colnames(mat) %in% dropped_cols), drop = FALSE] #remove columns
-    }
-    if (ncol(mat) == 0) {
-      stop(sprintf(
-        "Data processing aborted: no columns (variables) remain in dataset %s after applying max.NA.col = %.2f - check input data or increase max.NA.col",
-        input_data_names[1], max.NA.col
-      ))
-    }
-    if (ncol(mat) == 1) {
-      stop(sprintf(
-        "Data processing aborted: only one column (variable) remains in dataset %s after applying max.NA.col = %.2f - check input data or increase max.NA.col",
-        input_data_names[1], max.NA.col
-      ))
-    }
     
     # Store pre-normalization layer for type detection
     type_detection_layers <- list(as.matrix(mat))
@@ -691,16 +682,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   }
   
   # Infer layer types, set default distance functions (if not provided) and layer weights
-  infer_layer_numeric_type <- function(layer_matrix) {
-    layer_matrix <- as.matrix(layer_matrix) #force matrix
-    observed_values <- stats::na.omit(as.vector(layer_matrix)) #remove all non-NA values
-    if (length(observed_values) == 0) return("continuous") #fallback if layer is all NA
-    unique_values <- sort(unique(observed_values)) #extract unique values in layer
-    if (length(unique_values) <= 2 && all(unique_values %in% c(0, 1))) return("binary") #binary 0/1
-    is_integer_like <- all(abs(observed_values - round(observed_values)) < 1e-8) #check integer-like
-    if (is_integer_like && length(unique_values) == 3 && all(unique_values == c(0, 1, 2))) return("count") #SNP dosage 0/1/2
-    return("continuous") #continuous data
-  }
   layer_names <- names(input_data) #use list names if present
   if (is.null(layer_names) || any(layer_names == "")) layer_names <- as.character(input_data_names) #fallback to derived names
   if (is.null(manual.layer.weights)) { #set layer weights (manual.layer.weights)
@@ -723,21 +704,11 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     layer.distance.functions <- rep("sumofsquares", length(input_data)) #default for numeric continuous layers
     names(layer.distance.functions) <- layer_names
     layer.distance.functions[layer_numeric_types == "binary"] <- "tanimoto"
-    layer.distance.functions[layer_numeric_types == "binary" & 
-                               grepl("SNP|COI|COII|nexus|genetic|DNA|mtDNA|cytb|VCF|ND1|genotype", layer_names, ignore.case = TRUE) & 
-                               !grepl("host|plant|soil|parasite|pollinator|diet|phenology|habitat|behavior|ecology", layer_names, ignore.case = TRUE)] <- "manhattan"
     layer.distance.functions[layer_numeric_types == "count"] <- "manhattan"
     messager(sprintf("Layer types: %s", paste(sprintf("%s = %s", names(layer_numeric_types), layer_numeric_types), collapse = ", ")))
   } else {
-    if (is.character(layer.distance.functions) && length(layer.distance.functions) == 1 && length(input_data) > 1) {
-      layer.distance.functions <- rep(layer.distance.functions, length(input_data))
-    }
-    if (is.list(layer.distance.functions) && length(layer.distance.functions) == 1 && length(input_data) > 1) {
-      layer.distance.functions <- rep(layer.distance.functions, length(input_data))
-    }
-    if (length(layer.distance.functions) != length(input_data)) {
-      stop(sprintf("Data processing aborted: layer.distance.functions has length %d but expected %d (number of layers after filtering)", length(layer.distance.functions), length(input_data)))
-    }
+    if (is.character(layer.distance.functions) && length(layer.distance.functions) == 1 && length(input_data) > 1) layer.distance.functions <- rep(layer.distance.functions, length(input_data))
+    if (length(layer.distance.functions) != length(input_data)) stop(sprintf("Data processing aborted: layer.distance.functions has length %d but expected %d (number of layers after filtering)", length(layer.distance.functions), length(input_data)))
     names(layer.distance.functions) <- layer_names
   }
   
@@ -751,18 +722,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   # Use user-specified grid dimensions
   if (!is.null(grid.size)) {
     n_units <- prod(grid.size)
-    if (n_units > nrow(input_data[[1]])) { #if number of grid cells exceeds number of samples
-      stop(sprintf("Aborted SOM grid creation: requested SOM grid size %d x %d (%d units) exceeds number of samples (%d) - specify smaller grid.size", 
-                   grid.size[1], grid.size[2], n_units, nrow(input_data[[1]])))
-    }
-    if (grid.size[1] < 2 || grid.size[2] < 2) { #if specified grid.size is too small
-      stop(sprintf("Aborted SOM grid creation: custom SOM grid %d x %d is smaller than practical minimum 2 x 2 - use at least 2 x 2 for meaningful mapping", 
-                   grid.size[1], grid.size[2]))
-    }
-    if (grid.size[1] > 50 || grid.size[2] > 50) { #if specified grid.size is very large
-      messager(sprintf("Custom SOM grid %d x %d is very large! Consider smaller grid.size to avoid long training times", 
-                       grid.size[1], grid.size[2]))
-    }
+    if (n_units > nrow(input_data[[1]])) stop(sprintf("Aborted SOM grid creation: requested SOM grid size %d x %d (%d units) exceeds number of samples (%d) - specify smaller grid.size", grid.size[1], grid.size[2], n_units, nrow(input_data[[1]]))) #if number of grid cells exceeds number of samples
+    if (grid.size[1] < 2 || grid.size[2] < 2) stop(sprintf("Aborted SOM grid creation: custom SOM grid %d x %d is smaller than practical minimum 2 x 2 - use at least 2 x 2 for meaningful mapping", grid.size[1], grid.size[2]))
+    if (grid.size[1] > 50 || grid.size[2] > 50) messager(sprintf("Custom SOM grid %d x %d is very large! Consider smaller grid.size to avoid long training times", grid.size[1], grid.size[2]))
     SOM_output_grid <- kohonen::somgrid(xdim = grid.size[1], #create SOM grid
                                         ydim = grid.size[2],
                                         topo = "hexagonal",
@@ -917,13 +879,14 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     tuning_values <- tuning_values[tuning_values$learning_rate_final < tuning_values$learning_rate_initial, , drop = FALSE] #keep only valid combinations: final learning rate < initial learning rate
     tuning_values$qe_mean <- NA_real_
     tuning_values$qe_sd <- NA_real_
+    learning_rate_tuning_seeds <- set.seed.N + seq_len(learning_rate_N_replicates)
     
     # Run learning_rate_N_replicates replicates and record mean quantization error QE (average distance from each data point to its closest SOM node) each time
     for (i in seq_len(nrow(tuning_values))) {
       learning_rate_initial <- tuning_values$learning_rate_initial[i]
       learning_rate_final <- tuning_values$learning_rate_final[i]
-      base::set.seed(i + set.seed.N)
-      qes <- replicate(learning_rate_N_replicates, {
+      qes <- vapply(learning_rate_tuning_seeds, function(seed_i) {
+        base::set.seed(seed_i)
         som_tuning <- kohonen::supersom(data = input_data,
                                         grid = SOM_output_grid,
                                         maxNA.fraction = max.NA.row,
@@ -936,7 +899,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
                                         radius = radius.schedule,
                                         user.weights = manual.layer.weights)
         mean(som_tuning$distances, na.rm = TRUE)
-      })
+      }, numeric(1))
       tuning_values$qe_mean[i] <- mean(qes, na.rm = TRUE)
       tuning_values$qe_sd[i] <- stats::sd(qes, na.rm = TRUE)
     }
@@ -975,7 +938,6 @@ calculate.topographic.error <- function(som_model) {
         sample_values <- sample_values[observed]
         code_values <- code_values[observed]
         if (length(sample_values) == 0) return(Inf)
-        if (is.function(distance_function)) return(distance_function(sample_values, code_values))
         if (distance_function == "sumofsquares") return(sum((sample_values - code_values)^2))
         if (distance_function == "euclidean") return(sqrt(sum((sample_values - code_values)^2)))
         if (distance_function == "manhattan") return(sum(abs(sample_values - code_values)))
