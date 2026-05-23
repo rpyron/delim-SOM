@@ -65,7 +65,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (is.list(input_data) && length(input_data) == 0) stop("Data processing aborted: input_data is an empty list")
   
   # Validate specified N.steps
-  if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || is.na(max.NA.row) || !is.finite(max.NA.row) || max.NA.row < 0 || max.NA.row > 1) stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.5)")
+  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || !is.finite(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")
   if (N.steps < 60) messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 60–200)")
   if (N.steps > 200) messager("Warning: N.steps is high (", N.steps, ") - computation will be slow (recommended: 60–200)")
   
@@ -124,7 +124,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   }
   
   # Validate specified NA‐max.NA.row
-  if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || is.na(max.NA.row) || !is.finite(max.NA.row) || max.NA.row < 0 || max.NA.row > 1) stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.5)")
+  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || !is.finite(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")
   
   # Validate specified NA‐max.NA.col
   if (!is.numeric(max.NA.col) || length(max.NA.col) != 1 || is.na(max.NA.col) || !is.finite(max.NA.col) || max.NA.col < 0 || max.NA.col > 1) stop("Data processing aborted: max.NA.col must be a single numeric value between 0 and 1 (recommended: 0.5)")
@@ -199,8 +199,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (!overwrite.SOM.results && file.exists(save.SOM.results.name)) {
     messager("SOM results already exist - loading results from file and skipping SOM run")
     load(save.SOM.results.name)
-    required_fields <- c("distance_weights_matrix", "learning_values_list")
-    if (!all(required_fields %in% names(SOM_results))) stop("Data processing aborted: could not load SOM results (results do not contain expected objects 'distance_weights_matrix' and 'learning_values_list') - check saved file or rerun SOM") #check if structure of SOM_results is correct
+    required_fields <- c("distance_weights_matrix", "learning_values_list", "som_models", "quantization_error", "topographic_error")
+    if (!exists("SOM_results") || !all(required_fields %in% names(SOM_results))) stop("Data processing aborted: could not load SOM results because required objects are missing - check saved file or rerun SOM") #check if structure of SOM_results is correct
     return(SOM_results)
   }
   
@@ -943,10 +943,9 @@ calculate.topographic.error <- function(som_model) {
         if (distance_function == "euclidean") return(sqrt(sum((sample_values - code_values)^2)))
         if (distance_function == "manhattan") return(sum(abs(sample_values - code_values)))
         if (distance_function == "tanimoto") {
-          numerator <- sum(sample_values * code_values)
-          denominator <- sum(sample_values^2) + sum(code_values^2) - numerator
-          if (denominator <= .Machine$double.eps) return(0)
-          return(1 - numerator / denominator)
+          sample_values <- sample_values > 0.5
+          code_values <- code_values > 0.5
+          return(mean(sample_values != code_values))
         }
         stop(sprintf("Topographic error aborted: unsupported distance function '%s'", distance_function))
       })
