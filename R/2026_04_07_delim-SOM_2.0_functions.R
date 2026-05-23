@@ -3138,44 +3138,24 @@ plot.learning.SOM <- function(SOM.output,
   }
   
   # Validate specified lines.alpha (must be 0–1)
-  if (!is.numeric(lines.alpha) || length(lines.alpha) != 1 || is.na(lines.alpha) ||
-      lines.alpha < 0 || lines.alpha > 1) {
-    stop("Plotting aborted: lines.alpha must be numeric value between 0 and 1")
-  }
+  if (!is.numeric(lines.alpha) || length(lines.alpha) != 1 || is.na(lines.alpha) || lines.alpha < 0 || lines.alpha > 1) stop("Plotting aborted: lines.alpha must be numeric value between 0 and 1")
   
   # Validate specified lines.thickness (must be positive)
-  if (!is.numeric(lines.thickness) || length(lines.thickness) != 1 || is.na(lines.thickness) ||
-      lines.thickness <= 0) {
-    stop("Plotting aborted: lines.thickness must be a single positive numeric value")
-  }
+  if (!is.numeric(lines.thickness) || length(lines.thickness) != 1 || is.na(lines.thickness) || lines.thickness <= 0) stop("Plotting aborted: lines.thickness must be a single positive numeric value")
   
   # Validate specified title (must be NULL or character)
-  if (!is.null(title) && (!is.character(title) || length(title) != 1 || is.na(title))) {
-    stop("Plotting aborted: title must be NULL or single character string")
-  }
+  if (!is.null(title) && (!is.character(title) || length(title) != 1 || is.na(title))) stop("Plotting aborted: title must be NULL or single character string")
   
   # Validate specified legend.position
-  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", 
-                                "right", "left", "top", "bottom", "center")
-  if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) ||
-      !(legend.position %in% allowed.legend.positions)) {
-    stop(paste0("Plotting aborted: legend.position must be one of ", 
-                paste(allowed.legend.positions, collapse = ", ")))
-  }
+  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center")
+  if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) || !(legend.position %in% allowed.legend.positions)) stop(paste0("Plotting aborted: legend.position must be one of ", paste(allowed.legend.positions, collapse = ", ")))
   
   # Validate specified legend.lines.thickness (must be positive)
-  if (!is.numeric(legend.lines.thickness) || length(legend.lines.thickness) != 1 || is.na(legend.lines.thickness) ||
-      legend.lines.thickness <= 0) {
-    stop("Plotting aborted: legend.lines.thickness must be a single positive numeric value")
-  }
+  if (!is.numeric(legend.lines.thickness) || length(legend.lines.thickness) != 1 || is.na(legend.lines.thickness) || legend.lines.thickness <= 0) stop("Plotting aborted: legend.lines.thickness must be a single positive numeric value")
   
   # Validate specified x.axis.label and y.axis.label (must be character)
-  if (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label)) {
-    stop("Plotting aborted: x.axis.label must be a single character string")
-  }
-  if (!is.character(y.axis.label) || length(y.axis.label) != 1 || is.na(y.axis.label)) {
-    stop("Plotting aborted: y.axis.label must be a single character string")
-  }
+  if (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label)) stop("Plotting aborted: x.axis.label must be a single character string")
+  if (!is.character(y.axis.label) || length(y.axis.label) != 1 || is.na(y.axis.label)) stop("Plotting aborted: y.axis.label must be a single character string")
   
   # Check if learning_values or learning_values_list exists and is either matrix or list
   if ("learning_values" %in% names(SOM.output)) {
@@ -3194,9 +3174,7 @@ plot.learning.SOM <- function(SOM.output,
   
   # Check if file already exists and overwrite option is set to FALSE
   if (save) {
-    if (!overwrite && file.exists(file.name)) {
-      stop(sprintf("Plotting aborted: file '%s' already exists - skipping plot saving", file.name))
-    }
+    if (!overwrite && file.exists(file.name)) stop(sprintf("Plotting aborted: file '%s' already exists - skipping plot saving", file.name))
   }
   
   # Convert data.frames to matrices if necessary
@@ -3331,9 +3309,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   if (!is.matrix(d.mat)) d.mat <- as.matrix(d.mat)
   
   # Require multilayer input
-  if (ncol(d.mat) < 2) {
-    stop("Plotting aborted: layer plot requires at least two layers")
-  }
+  if (ncol(d.mat) < 2) stop("Plotting aborted: layer plot requires at least two layers")
   
   # Extract matrix names
   if ("input_data_names" %in% names(SOM.output)) {
@@ -3341,10 +3317,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   } else {
     matrix_names <- colnames(d.mat)
   }
-  
-  if (is.null(matrix_names) || length(matrix_names) != ncol(d.mat)) {
-    matrix_names <- paste0("Layer", seq_len(ncol(d.mat)))
-  }
+  if (is.null(matrix_names) || length(matrix_names) != ncol(d.mat)) matrix_names <- paste0("Layer", seq_len(ncol(d.mat)))
   
   # Convert distance weights back to mean pairwise distances
   mean_pairwise_distance_matrix <- 1 / d.mat
@@ -3552,16 +3525,9 @@ plot.K.SOM <- function(SOM.output,
         diff(diff(x))
       }
     })
-    
-    if (length(d_wss_raw) == 0 || all(is.na(d_wss_raw)) || all(!is.finite(d_wss_raw))) {
-      return(FALSE)
-    }
-    
+    if (length(d_wss_raw) == 0 || all(is.na(d_wss_raw)) || all(!is.finite(d_wss_raw))) return(FALSE)
     if (is.null(dim(d_wss_raw))) {
-      d_wss <- matrix(d_wss_raw,
-                      nrow = 1,
-                      dimnames = list(2:(SOM.output$max_k - 1),
-                                      colnames(SOM.output$BIC_values)))
+      d_wss <- matrix(d_wss_raw, nrow = 1, dimnames = list(2:(SOM.output$max_k - 1), colnames(SOM.output$BIC_values)))
     } else {
       d_wss <- d_wss_raw
       rownames(d_wss) <- 2:(SOM.output$max_k - 1)
@@ -3593,14 +3559,8 @@ plot.K.SOM <- function(SOM.output,
                    clustering.method,
                    "' - support panel will be omitted"))
   }
-  
-  if (support_available && !support_is_BIC) {
-    message(paste0("delta-BIC panel will be omitted (clustering.method = '", clustering.method, "' is not BIC-based)"))
-  }
-  
-  if (support_is_BIC && SOM.output$max_k <= 2) {
-    message("delta-BIC panel will be omitted (requires max.k >= 3)")
-  }
+  if (support_available && !support_is_BIC) message(paste0("delta-BIC panel will be omitted (clustering.method = '", clustering.method, "' is not BIC-based)"))
+  if (support_is_BIC && SOM.output$max_k <= 2) message("delta-BIC panel will be omitted (requires max.k >= 3)")
   
   # Decide layout and plot
   if (support_available && support_is_BIC && SOM.output$max_k > 2) {
@@ -6579,9 +6539,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   }
   
   # Validate specified verbose
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) {
-    stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
-  }
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   
   # Create function to return mean or NA
   mean.or.NA.SOM <- function(numeric_vector) {
@@ -6599,12 +6557,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Create function to build one-hot assignment probabilities from hard labels
   create.one.hot.assignment.probabilities.SOM <- function(hard_cluster_labels) {
-    if (is.null(hard_cluster_labels) || length(hard_cluster_labels) == 0) {
-      return(NULL)
-    }
-    if (is.null(names(hard_cluster_labels))) {
-      return(NULL)
-    }
+    if (is.null(hard_cluster_labels) || length(hard_cluster_labels) == 0) return(NULL)
+    if (is.null(names(hard_cluster_labels))) return(NULL)
     hard_cluster_labels <- as.character(hard_cluster_labels)
     unique_cluster_labels <- sort(unique(hard_cluster_labels))
     one_hot_assignment_probability_matrix <- matrix(0,
@@ -6619,14 +6573,10 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Create function to normalize assignment probability matrix
   normalize.assignment.probabilities.SOM <- function(assignment_probability_matrix) {
-    if (is.null(assignment_probability_matrix)) {
-      return(NULL)
-    }
+    if (is.null(assignment_probability_matrix)) return(NULL)
     assignment_probability_matrix <- as.matrix(assignment_probability_matrix) #convert to matrix
     storage.mode(assignment_probability_matrix) <- "numeric"
-    if (nrow(assignment_probability_matrix) == 0 || ncol(assignment_probability_matrix) == 0) { #validate matrix dimensions
-      return(NULL)
-    }
+    if (nrow(assignment_probability_matrix) == 0 || ncol(assignment_probability_matrix) == 0) return(NULL)
     
     # Replace invalid values
     assignment_probability_matrix[!is.finite(assignment_probability_matrix)] <- NA_real_
@@ -6655,9 +6605,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       stop("Hard cluster label extraction aborted: cluster_assignment_matrix is NULL")
     }
     cluster_assignment_matrix <- as.matrix(cluster_assignment_matrix)
-    if (nrow(cluster_assignment_matrix) == 0 || ncol(cluster_assignment_matrix) == 0) {
-      stop("Hard cluster label extraction aborted: cluster_assignment_matrix is empty")
-    }
+    if (nrow(cluster_assignment_matrix) == 0 || ncol(cluster_assignment_matrix) == 0) stop("Hard cluster label extraction aborted: cluster_assignment_matrix is empty")
     
     # Extract hard cluster labels
     hard_cluster_labels <- cluster_assignment_matrix[, 1]
@@ -6674,34 +6622,24 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     
     # Extract sample names from hard cluster labels
     sample_names <- names(hard_cluster_labels)
-    if (is.null(sample_names) || length(sample_names) == 0) {
-      return(create.one.hot.assignment.probabilities.SOM(hard_cluster_labels))
-    }
+    if (is.null(sample_names) || length(sample_names) == 0) return(create.one.hot.assignment.probabilities.SOM(hard_cluster_labels))
     
     # Create function to validate and align a candidate assignment-probability matrix
     validate.and.align.assignment.probabilities.SOM <- function(candidate_assignment_probability_matrix) {
       
       # Normalize candidate matrix
       candidate_assignment_probability_matrix <- normalize.assignment.probabilities.SOM(candidate_assignment_probability_matrix)
-      if (is.null(candidate_assignment_probability_matrix)) {
-        return(NULL)
-      }
+      if (is.null(candidate_assignment_probability_matrix)) return(NULL)
       
       # If row names are missing but dimensions match, assume sample order matches
-      if (is.null(rownames(candidate_assignment_probability_matrix)) && nrow(candidate_assignment_probability_matrix) == length(sample_names)) {
-        rownames(candidate_assignment_probability_matrix) <- sample_names
-      }
+      if (is.null(rownames(candidate_assignment_probability_matrix)) && nrow(candidate_assignment_probability_matrix) == length(sample_names)) rownames(candidate_assignment_probability_matrix) <- sample_names
       
       # Require row names after attempted repair
-      if (is.null(rownames(candidate_assignment_probability_matrix))) {
-        return(NULL)
-      }
+      if (is.null(rownames(candidate_assignment_probability_matrix))) return(NULL)
       
       # Require overlap with requested samples
       shared_sample_names <- intersect(sample_names, rownames(candidate_assignment_probability_matrix))
-      if (length(shared_sample_names) < 2) {
-        return(NULL)
-      }
+      if (length(shared_sample_names) < 2) return(NULL)
       
       # Align to hard-label sample order
       aligned_sample_names <- sample_names[sample_names %in% rownames(candidate_assignment_probability_matrix)]
@@ -6709,17 +6647,13 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       
       # Renormalize after alignment
       candidate_assignment_probability_matrix <- normalize.assignment.probabilities.SOM(candidate_assignment_probability_matrix)
-      if (is.null(candidate_assignment_probability_matrix)) {
-        return(NULL)
-      }
+      if (is.null(candidate_assignment_probability_matrix)) return(NULL)
       
       return(candidate_assignment_probability_matrix)
     }
     
     # Return one-hot fallback if output is invalid
-    if (is.null(clustered_SOM_output) || !is.list(clustered_SOM_output)) {
-      return(create.one.hot.assignment.probabilities.SOM(hard_cluster_labels))
-    }
+    if (is.null(clustered_SOM_output) || !is.list(clustered_SOM_output)) return(create.one.hot.assignment.probabilities.SOM(hard_cluster_labels))
     
     # Check common list-style fields first
     possible_list_field_names <- c("replicate_ancestry_matrices",
