@@ -697,9 +697,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     unique_values <- sort(unique(observed_values)) #extract unique values in layer
     if (length(unique_values) <= 2 && all(unique_values %in% c(0, 1))) return("binary") #binary 0/1
     is_integer_like <- all(abs(observed_values - round(observed_values)) < 1e-8) #check integer-like
-    min_value <- min(observed_values)
     if (is_integer_like && length(unique_values) == 3 && all(unique_values == c(0, 1, 2))) return("count") #SNP dosage 0/1/2
-    if (is_integer_like && min_value >= 0) return("count") #count data
     return("continuous") #continuous data
   }
   layer_names <- names(input_data) #use list names if present
@@ -950,23 +948,53 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     learning.rate.final <- tuning_values_best$learning_rate_final
   }
   
-  # Create function to calculate topographic error
-  calculate.topographic.error <- function(som_model) {
+# Create function to calculate topographic error
+calculate.topographic.error <- function(som_model) {
     codes <- kohonen::getCodes(som_model)
     if (!is.list(codes)) codes <- list(codes)
-    codebook_matrix <- do.call(cbind, lapply(codes, as.matrix))
-    sample_matrix <- do.call(cbind, lapply(som_model$data, as.matrix))
+    data_layers <- som_model$data
+    if (!is.list(data_layers)) data_layers <- list(data_layers)
+    whatmap <- if (!is.null(som_model$whatmap)) som_model$whatmap else seq_along(codes)
+    codes <- codes[whatmap]
+    data_layers <- data_layers[whatmap]
+    dist_fcts <- som_model$dist.fcts[whatmap]
+    user_weights <- som_model$user.weights[whatmap]
+    distance_weights <- som_model$distance.weights[whatmap]
+    combined_weights <- user_weights * distance_weights
+    combined_weights <- combined_weights / sum(combined_weights)
     unit_distance_matrix <- kohonen::unit.distances(som_model$grid)
     adjacency_matrix <- unit_distance_matrix <= 1
     diag(adjacency_matrix) <- FALSE
-    topographic_error_vector <- apply(sample_matrix, 1, function(sample_values) {
-      distance_to_codes <- apply(codebook_matrix, 1, function(code_values) {
-        sqrt(sum((sample_values - code_values)^2, na.rm = TRUE))
+    distance_matrix <- matrix(0, nrow = nrow(data_layers[[1]]), ncol = nrow(codes[[1]]))
+    calculate.layer.distance <- function(sample_values, code_matrix, distance_function) {
+      apply(code_matrix, 1, function(code_values) {
+        observed <- is.finite(sample_values) & is.finite(code_values)
+        if (mean(!observed) > som_model$maxNA.fraction) return(Inf)
+        sample_values <- sample_values[observed]
+        code_values <- code_values[observed]
+        if (length(sample_values) == 0) return(Inf)
+        if (is.function(distance_function)) return(distance_function(sample_values, code_values))
+        if (distance_function == "sumofsquares") return(sum((sample_values - code_values)^2))
+        if (distance_function == "manhattan") return(sum(abs(sample_values - code_values)))
+        if (distance_function == "tanimoto") {
+          denominator <- sum(sample_values^2) + sum(code_values^2) - sum(sample_values * code_values)
+          if (!is.finite(denominator) || denominator == 0) return(0)
+          return(1 - sum(sample_values * code_values) / denominator)
+        }
+        stop(sprintf("Topographic error aborted: unsupported distance function '%s'", distance_function))
       })
-      best_two_units <- order(distance_to_codes)[1:2]
-      if (adjacency_matrix[best_two_units[1], best_two_units[2]]) 0 else 1
-    })
-    mean(topographic_error_vector, na.rm = TRUE)
+    }
+    for (i in seq_along(data_layers)) {
+      layer_distance_matrix <- t(apply(as.matrix(data_layers[[i]]), 1, calculate.layer.distance, code_matrix = as.matrix(codes[[i]]), distance_function = dist_fcts[[i]]))
+      distance_matrix <- distance_matrix + combined_weights[i] * layer_distance_matrix
+    }
+    best_units <- som_model$unit.classif
+    second_best_units <- vapply(seq_along(best_units), function(i) {
+      distances <- distance_matrix[i, ]
+      distances[best_units[i]] <- Inf
+      which.min(distances)
+    }, integer(1))
+    mean(!adjacency_matrix[cbind(best_units, second_best_units)], na.rm = TRUE)
   }
   
   # Create function to run SOM
