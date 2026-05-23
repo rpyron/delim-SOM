@@ -279,7 +279,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       if (length(non_numeric_cols) > 0) { #print message if any columns were removed
         n_removed <- length(non_numeric_cols)
         n_total <- ncol(mat)
-        if (n_removed <= 30) messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type: %s", n_removed, n_total, name, paste(names(mat)[non_numeric_cols], collapse = ", ")))
+        if (n_removed <= 30) {
+          messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type: %s", n_removed, n_total, name, paste(names(mat)[non_numeric_cols], collapse = ", ")))
         } else {
           messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type", n_removed, n_total, name))
         }
@@ -975,11 +976,12 @@ calculate.topographic.error <- function(som_model) {
         if (length(sample_values) == 0) return(Inf)
         if (is.function(distance_function)) return(distance_function(sample_values, code_values))
         if (distance_function == "sumofsquares") return(sum((sample_values - code_values)^2))
+        if (distance_function == "euclidean") return(sqrt(sum((sample_values - code_values)^2)))
         if (distance_function == "manhattan") return(sum(abs(sample_values - code_values)))
         if (distance_function == "tanimoto") {
-          denominator <- sum(sample_values^2) + sum(code_values^2) - sum(sample_values * code_values)
-          if (!is.finite(denominator) || denominator == 0) return(0)
-          return(1 - sum(sample_values * code_values) / denominator)
+          sample_values <- as.numeric(sample_values > 0.5)
+          code_values <- as.numeric(code_values > 0.5)
+          return(mean(sample_values != code_values))
         }
         stop(sprintf("Topographic error aborted: unsupported distance function '%s'", distance_function))
       })
