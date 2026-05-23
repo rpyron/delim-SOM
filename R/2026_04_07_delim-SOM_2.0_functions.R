@@ -124,7 +124,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   }
   
   # Validate specified NA‐max.NA.row
-  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || !is.finite(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")
+  if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || is.na(max.NA.row) || !is.finite(max.NA.row) || max.NA.row < 0 || max.NA.row > 1) stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.5)")
   
   # Validate specified NA‐max.NA.col
   if (!is.numeric(max.NA.col) || length(max.NA.col) != 1 || is.na(max.NA.col) || !is.finite(max.NA.col) || max.NA.col < 0 || max.NA.col > 1) stop("Data processing aborted: max.NA.col must be a single numeric value between 0 and 1 (recommended: 0.5)")
@@ -954,7 +954,11 @@ calculate.topographic.error <- function(som_model) {
       layer_distance_matrix <- t(apply(as.matrix(data_layers[[i]]), 1, calculate.layer.distance, code_matrix = as.matrix(codes[[i]]), distance_function = dist_fcts[[i]]))
       distance_matrix <- distance_matrix + combined_weights[i] * layer_distance_matrix
     }
-    best_units <- som_model$unit.classif
+    best_units <- vapply(seq_len(nrow(distance_matrix)), function(i) {
+      distances <- distance_matrix[i, ]
+      if (sum(is.finite(distances)) < 2) return(NA_integer_)
+      which.min(distances)
+    }, integer(1))
     second_best_units <- vapply(seq_along(best_units), function(i) {
       distances <- distance_matrix[i, ]
       if (!is.finite(best_units[i]) || best_units[i] < 1 || best_units[i] > length(distances)) return(NA_integer_)
@@ -963,7 +967,7 @@ calculate.topographic.error <- function(som_model) {
       if (!any(is.finite(distances))) return(NA_integer_)
       which.min(distances)
     }, integer(1))
-    valid_units <- is.finite(best_units) & is.finite(second_best_units)
+  finite(best_units) & is.finite(second_best_units)
     if (!any(valid_units)) return(NA_real_)
     mean(!adjacency_matrix[cbind(best_units[valid_units], second_best_units[valid_units])], na.rm = TRUE)
   }
