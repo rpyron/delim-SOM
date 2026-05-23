@@ -65,7 +65,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (is.list(input_data) && length(input_data) == 0) stop("Data processing aborted: input_data is an empty list")
   
   # Validate specified N.steps
-  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || !is.finite(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")  if (N.steps < 60) messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 60–200)")
+  if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || is.na(max.NA.row) || !is.finite(max.NA.row) || max.NA.row < 0 || max.NA.row > 1) stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.5)")
+  if (N.steps < 60) messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 60–200)")
   if (N.steps > 200) messager("Warning: N.steps is high (", N.steps, ") - computation will be slow (recommended: 60–200)")
   
   # Validate specified N.replicates
@@ -101,8 +102,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   
   # Validate specified learning rate parameters if learning rate tuning is not done
   if (!learning.rate.tuning) {
-  if (!is.numeric(learning.rate.initial) || length(learning.rate.initial) != 1 || is.na(learning.rate.initial) || learning.rate.initial <= 0 || learning.rate.initial > 1) stop("Data processing aborted: learning.rate.initial must be a single numeric value between 0 and 1 (e.g. 0.6)")
-    if (!is.numeric(learning.rate.final) || length(learning.rate.final) != 1 || is.na(learning.rate.final) || learning.rate.final < 0 || learning.rate.final > 1) stop("Data processing aborted: learning.rate.final must be a single numeric value between 0 and 1 (e.g. 0.1)")
+    if (!is.numeric(learning.rate.initial) || length(learning.rate.initial) != 1 || is.na(learning.rate.initial) || !is.finite(learning.rate.initial) || learning.rate.initial <= 0 || learning.rate.initial > 1) stop("Data processing aborted: learning.rate.initial must be a single numeric value between 0 and 1 (e.g. 0.6)")
+    if (!is.numeric(learning.rate.final) || length(learning.rate.final) != 1 || is.na(learning.rate.final) || !is.finite(learning.rate.final) || learning.rate.final < 0 || learning.rate.final > 1) stop("Data processing aborted: learning.rate.final must be a single numeric value between 0 and 1 (e.g. 0.1)")
     if (learning.rate.final >= learning.rate.initial) stop("Data processing aborted: learning.rate.final must be smaller than learning.rate.initial")
   }
   
@@ -123,13 +124,13 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   }
   
   # Validate specified NA‐max.NA.row
-  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || !is.finite(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")
+  if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || is.na(max.NA.row) || !is.finite(max.NA.row) || max.NA.row < 0 || max.NA.row > 1) stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.5)")
   
   # Validate specified NA‐max.NA.col
-  if (!is.numeric(max.NA.col) || length(max.NA.col) != 1 || max.NA.col < 0 || max.NA.col > 1) stop("Data processing aborted: max.NA.col must be a single numeric value between 0 and 1 (recommended: 0.5)")
+  if (!is.numeric(max.NA.col) || length(max.NA.col) != 1 || is.na(max.NA.col) || !is.finite(max.NA.col) || max.NA.col < 0 || max.NA.col > 1) stop("Data processing aborted: max.NA.col must be a single numeric value between 0 and 1 (recommended: 0.5)")
   
   # Validate specified training.neighborhoods
-  if (!is.character(training.neighborhoods) || length(training.neighborhoods) != 1 || !(training.neighborhoods %in% c("gaussian", "bubble"))) stop("Data processing aborted: training.neighborhoods must be 'gaussian' or 'bubble'")
+  if (!is.character(training.neighborhoods) || length(training.neighborhoods) != 1 || is.na(training.neighborhoods) || !(training.neighborhoods %in% c("gaussian", "bubble"))) stop("Data processing aborted: training.neighborhoods must be 'gaussian' or 'bubble'")
   
   # Validate specified save.SOM.results
   if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Data processing aborted: save.SOM.results must be TRUE or FALSE")
@@ -148,10 +149,10 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Data processing aborted: verbose must be TRUE or FALSE")
   
   # Validate message.N.replicates
-  if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Data processing aborted: message.N.replicates must be a single positive integer (>= 1)")
+  if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || !is.finite(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Data processing aborted: message.N.replicates must be a single positive integer (>= 1)")
   
   # Validate set.seed.N
-  if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Data processing aborted: set.seed.N must be a single positive integer (>= 1)")
+  if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || !is.finite(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Data processing aborted: set.seed.N must be a single positive integer (>= 1)")
     
   # Create function to infer numeric layer type
   infer_layer_numeric_type <- function(layer_matrix) {
@@ -942,9 +943,10 @@ calculate.topographic.error <- function(som_model) {
         if (distance_function == "euclidean") return(sqrt(sum((sample_values - code_values)^2)))
         if (distance_function == "manhattan") return(sum(abs(sample_values - code_values)))
         if (distance_function == "tanimoto") {
-          sample_values <- as.numeric(sample_values > 0.5)
-          code_values <- as.numeric(code_values > 0.5)
-          return(mean(sample_values != code_values))
+          numerator <- sum(sample_values * code_values)
+          denominator <- sum(sample_values^2) + sum(code_values^2) - numerator
+          if (denominator <= .Machine$double.eps) return(0)
+          return(1 - numerator / denominator)
         }
         stop(sprintf("Topographic error aborted: unsupported distance function '%s'", distance_function))
       })
@@ -972,7 +974,7 @@ calculate.topographic.error <- function(som_model) {
   messager("TRAINING SOM ...")
   replicate_seeds <- set.seed.N + seq_len(N.replicates)
   replicate_som <- function(j) {
-  base::set.seed(replicate_seeds[j])
+    base::set.seed(replicate_seeds[j])
     
     # Initialize results for replicate
     d_vec <- numeric(length(input_data))
