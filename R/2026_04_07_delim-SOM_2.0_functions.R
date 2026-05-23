@@ -31,7 +31,7 @@ for (pkg in CRAN_packages) {
 
 ## Function to train single-layer SOM (one matrix) or multi-layer Super-SOM (multiple matrices)
 train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dataframes provided as list()
-                      N.steps = 200, #number of training iterations S for SOM
+                      N.steps = 150, #number of training iterations S for SOM
                       N.replicates = 110, #number of SOM runs R
                       parallel = TRUE, #whether to run SOM training in parallel 
                       N.cores = 3, #number of cores for training SOM in parallel (if parallel = TRUE)
@@ -967,7 +967,7 @@ calculate.topographic.error <- function(som_model) {
       if (!any(is.finite(distances))) return(NA_integer_)
       which.min(distances)
     }, integer(1))
-  finite(best_units) & is.finite(second_best_units)
+  valid_units <- is.finite(best_units) & is.finite(second_best_units)
     if (!any(valid_units)) return(NA_real_)
     mean(!adjacency_matrix[cbind(best_units[valid_units], second_best_units[valid_units])], na.rm = TRUE)
   }
