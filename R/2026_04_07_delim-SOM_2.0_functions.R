@@ -1229,12 +1229,8 @@ calculate.topographic.error <- function(som_model) {
     
     # Save results
     save(SOM_results, file = save.SOM.results.name)
-    if (save.SOM.results && !overwrite.SOM.results) {
-      messager("SOM results saved as ", save.SOM.results.name)
-    }
-    if (save.SOM.results && overwrite.SOM.results) {
-      messager("SOM results overwritten as ", save.SOM.results.name)
-    }
+    if (save.SOM.results && !overwrite.SOM.results) messager("SOM results saved as ", save.SOM.results.name)
+    if (save.SOM.results && overwrite.SOM.results) messager("SOM results overwritten as ", save.SOM.results.name)
   }
   messager("")
   messager("FINISHED SUCCESSFULLY")
@@ -1293,10 +1289,7 @@ clustering.SOM <- function(SOM.output,
   }
   if (!is.numeric(BIC.thresh) || length(BIC.thresh) != 1 || is.na(BIC.thresh) || BIC.thresh <= 0) stop("Aborted SOM clustering: BIC.thresh must be a single positive numeric value (e.g., 2, 6, or 10 for low, moderate or strong support, respectively)")
   if (!is.null(quantization.error.quantile)) {
-    if (!is.numeric(quantization.error.quantile) || length(quantization.error.quantile) != 1 || is.na(quantization.error.quantile) ||
-        quantization.error.quantile <= 0 || quantization.error.quantile >= 1) {
-      stop("Aborted SOM clustering: quantization.error.quantile must be NULL or a single numeric value in (0, 1)")
-    }
+    if (!is.numeric(quantization.error.quantile) || length(quantization.error.quantile) != 1 || is.na(quantization.error.quantile) || quantization.error.quantile <= 0 || quantization.error.quantile >= 1) stop("Aborted SOM clustering: quantization.error.quantile must be NULL or a single numeric value in (0, 1)")
   }
   if (!is.null(topographic.error.quantile)) {
     if (!is.numeric(topographic.error.quantile) || length(topographic.error.quantile) != 1 || is.na(topographic.error.quantile) ||
@@ -1310,13 +1303,9 @@ clustering.SOM <- function(SOM.output,
   if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Aborted SOM clustering: message.N.replicates must be a single positive integer (>= 1)")
   if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Aborted SOM clustering: save.SOM.results must be TRUE or FALSE")
   if (save.SOM.results && !is.null(save.SOM.results.name)) {
-    if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") {
-      stop("Aborted SOM clustering: save.SOM.results.name must be non-empty character string (file path) if provided")
-    }
+    if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") stop("Aborted SOM clustering: save.SOM.results.name must be non-empty character string (file path) if provided")
     valid_ext <- tolower(tools::file_ext(save.SOM.results.name)) #extract extension
-    if (valid_ext != "rdata") {
-      stop("Aborted SOM clustering: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
-    }
+    if (valid_ext != "rdata") stop("Aborted SOM clustering: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
   }
   if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) stop("Aborted SOM clustering: overwrite.SOM.results must be TRUE or FALSE")
   if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Aborted SOM clustering: set.seed.N must be a single positive integer (>= 1)")
@@ -1337,9 +1326,7 @@ clustering.SOM <- function(SOM.output,
     messager("SOM clustering results already exist - loading results from file and skipping SOM clustering")
     load(save.SOM.results.name)
     required_fields <- c("cluster_assignment", "optim_k_vals", "som_clusters")
-    if (!exists("SOM_results") || !all(required_fields %in% names(SOM_results))) {
-      stop("Aborted SOM clustering: could not load SOM clustering results (results do not contain expected clustering objects) - check saved file or rerun clustering")
-    }
+    if (!exists("SOM_results") || !all(required_fields %in% names(SOM_results))) stop("Aborted SOM clustering: could not load SOM clustering results (results do not contain expected clustering objects) - check saved file or rerun clustering")
     return(SOM_results)
   }
   
@@ -1454,9 +1441,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   }
   
   # Stop if unsupported distance function is specified
-  if (!distance_function %in% c("sumofsquares", "manhattan", "tanimoto")) {
-    stop("Soft assignment calculation aborted: unsupported distance function in compute.layer.sample.to.unit.distance.SOM")
-  }
+  if (!distance_function %in% c("sumofsquares", "manhattan", "tanimoto")) stop("Soft assignment calculation aborted: unsupported distance function in compute.layer.sample.to.unit.distance.SOM")
   
   return(distance_matrix) #return distance matrix
 }
@@ -1469,34 +1454,21 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   ) {
     
     # Validate specified som_model
-    if (is.null(som_model) || is.null(som_model$data)) {
-      stop("Soft assignment calculation aborted: som_model does not contain data")
-    }
+    if (is.null(som_model) || is.null(som_model$data)) stop("Soft assignment calculation aborted: som_model does not contain data")
     
     # Extract sample data and codebook vectors
     sample_data_list <- som_model$data
-    if (!is.list(sample_data_list)) {
-      sample_data_list <- list(sample_data_list)
-    }
+    if (!is.list(sample_data_list)) sample_data_list <- list(sample_data_list)
     codebook_list <- kohonen::getCodes(som_model)
     if (!is.list(codebook_list)) {
       codebook_list <- list(codebook_list)
     }
-    
-    if (length(sample_data_list) != length(codebook_list)) {
-      stop("Soft assignment calculation aborted: number of SOM data layers does not match number of codebook layers")
-    }
+    if (length(sample_data_list) != length(codebook_list)) stop("Soft assignment calculation aborted: number of SOM data layers does not match number of codebook layers")
     
     # Validate specified layer.distance.functions
-    if (is.null(layer.distance.functions)) {
-      layer.distance.functions <- rep("sumofsquares", length(sample_data_list))
-    }
-    if (length(layer.distance.functions) == 1 && length(sample_data_list) > 1) {
-      layer.distance.functions <- rep(layer.distance.functions, length(sample_data_list))
-    }
-    if (length(layer.distance.functions) != length(sample_data_list)) {
-      stop("Soft assignment calculation aborted: layer.distance.functions does not match number of SOM layers")
-    }
+    if (is.null(layer.distance.functions)) layer.distance.functions <- rep("sumofsquares", length(sample_data_list))
+    if (length(layer.distance.functions) == 1 && length(sample_data_list) > 1) layer.distance.functions <- rep(layer.distance.functions, length(sample_data_list))
+    if (length(layer.distance.functions) != length(sample_data_list)) stop("Soft assignment calculation aborted: layer.distance.functions does not match number of SOM layers")
     
     # Set layer weights
     if (is.null(layer.weights)) {
@@ -1506,12 +1478,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
         layer.weights <- rep(1, length(sample_data_list))
       }
     }
-    if (length(layer.weights) == 1 && length(sample_data_list) > 1) {
-      layer.weights <- rep(layer.weights, length(sample_data_list))
-    }
-    if (length(layer.weights) != length(sample_data_list)) {
-      stop("Soft assignment calculation aborted: layer.weights does not match number of SOM layers")
-    }
+    if (length(layer.weights) == 1 && length(sample_data_list) > 1) layer.weights <- rep(layer.weights, length(sample_data_list))
+    if (length(layer.weights) != length(sample_data_list)) stop("Soft assignment calculation aborted: layer.weights does not match number of SOM layers")
     
     # Calculate layer-specific distance matrices
     layer_distance_matrices <- vector("list", length(sample_data_list))
@@ -1557,14 +1525,10 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   ) {
     
     # Validate specified sample_to_unit_distance_matrix
-    if (is.null(sample_to_unit_distance_matrix)) {
-      stop("Replicate ancestry calculation aborted: sample_to_unit_distance_matrix is NULL")
-    }
+    if (is.null(sample_to_unit_distance_matrix)) stop("Replicate ancestry calculation aborted: sample_to_unit_distance_matrix is NULL")
     sample_to_unit_distance_matrix <- as.matrix(sample_to_unit_distance_matrix)
     storage.mode(sample_to_unit_distance_matrix) <- "numeric"
-    if (nrow(sample_to_unit_distance_matrix) == 0 || ncol(sample_to_unit_distance_matrix) == 0) {
-      stop("Replicate ancestry calculation aborted: sample_to_unit_distance_matrix is empty")
-    }
+    if (nrow(sample_to_unit_distance_matrix) == 0 || ncol(sample_to_unit_distance_matrix) == 0) stop("Replicate ancestry calculation aborted: sample_to_unit_distance_matrix is empty")
     
     # Validate specified unit_cluster_labels
     if (is.null(unit_cluster_labels) || length(unit_cluster_labels) != ncol(sample_to_unit_distance_matrix)) {
@@ -1587,22 +1551,16 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     if (is.null(temperature)) {
       finite_distances <- as.numeric(sample_to_unit_distance_matrix)
       finite_distances <- finite_distances[is.finite(finite_distances) & !is.na(finite_distances)]
-      if (length(finite_distances) == 0) {
-        stop("Replicate ancestry calculation aborted: no finite sample-to-unit distances found")
-      }
+      if (length(finite_distances) == 0) stop("Replicate ancestry calculation aborted: no finite sample-to-unit distances found")
       temperature <- stats::median(finite_distances)
-      if (!is.finite(temperature) || temperature <= 0) {
-        temperature <- 1
-      }
+      if (!is.finite(temperature) || temperature <= 0) temperature <- 1
     }
     
     # Convert distances to soft unit weights
     unit_weight_matrix <- exp(-(sample_to_unit_distance_matrix ^ 2) / (2 * temperature ^ 2))
     unit_weight_row_sums <- rowSums(unit_weight_matrix, na.rm = TRUE)
     valid_rows <- is.finite(unit_weight_row_sums) & unit_weight_row_sums > 0
-    if (!any(valid_rows)) {
-      stop("Replicate ancestry calculation aborted: all unit weight row sums are invalid")
-    }
+    if (!any(valid_rows)) stop("Replicate ancestry calculation aborted: all unit weight row sums are invalid")
     unit_weight_matrix[valid_rows, ] <- unit_weight_matrix[valid_rows, , drop = FALSE] / unit_weight_row_sums[valid_rows]
     
     # Aggregate unit weights to cluster probabilities
@@ -1631,9 +1589,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     if (is.null(assignment_probability_matrix)) return(NA_real_)
     
     # k = 1 provides no meaningful separation metric
-    if (ncol(assignment_probability_matrix) <= 1) {
-      return(NA_real_)
-    }
+    if (ncol(assignment_probability_matrix) <= 1) return(NA_real_)
     
     # Calculate mean assignment margin
     row_sorted_probabilities <- t(apply(assignment_probability_matrix, 1, sort, decreasing = TRUE))
@@ -1650,9 +1606,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     if (is.null(assignment_probability_matrix)) return(NA_real_)
     
     # k = 1 provides no meaningful separation metric
-    if (ncol(assignment_probability_matrix) <= 1) {
-      return(NA_real_)
-    }
+    if (ncol(assignment_probability_matrix) <= 1) return(NA_real_)
     
     # Calculate mean normalized assignment entropy
     safe_assignment_probability_matrix <- pmax(assignment_probability_matrix, .Machine$double.eps)
@@ -1669,25 +1623,19 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Filter poorly fitting SOM mappings based on quantization error and/or topographic error
   replicate_ids <- names(SOM.output$som_models)
-  if (is.null(replicate_ids) || any(replicate_ids == "")) {
-    replicate_ids <- paste0("R", seq_len(length(SOM.output$som_models)))
-  }
+  if (is.null(replicate_ids) || any(replicate_ids == "")) replicate_ids <- paste0("R", seq_len(length(SOM.output$som_models)))
   retained_replicates <- replicate_ids
   removed_replicates <- character(0)
   if (!is.null(quantization.error.quantile) || !is.null(topographic.error.quantile)) {
     replicates_to_remove_qe <- integer(0)
     replicates_to_remove_te <- integer(0)
     if (!is.null(quantization.error.quantile)) {
-      if (is.null(SOM.output$quantization_error)) {
-        stop("Aborted SOM clustering: SOM.output does not contain quantization_error - rerun train.SOM")
-      }
+      if (is.null(SOM.output$quantization_error)) stop("Aborted SOM clustering: SOM.output does not contain quantization_error - rerun train.SOM")
       quantization_error <- SOM.output$quantization_error
       if (length(quantization_error) != length(SOM.output$som_models)) {
         stop("Aborted SOM clustering: length of quantization_error does not match number of som_models - rerun train.SOM")
       }
-      if (any(!is.finite(quantization_error) | is.na(quantization_error))) {
-        stop("Aborted SOM clustering: quantization_error contains NA or non-finite values")
-      }
+      if (any(!is.finite(quantization_error) | is.na(quantization_error))) stop("Aborted SOM clustering: quantization_error contains NA or non-finite values")
       quantization_error_cutoff <- stats::quantile(quantization_error,
                                                    probs = quantization.error.quantile,
                                                    na.rm = TRUE,
@@ -1696,16 +1644,12 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     }
     
     if (!is.null(topographic.error.quantile)) {
-      if (is.null(SOM.output$topographic_error)) {
-        stop("Aborted SOM clustering: SOM.output does not contain topographic_error - rerun train.SOM")
-      }
+      if (is.null(SOM.output$topographic_error)) stop("Aborted SOM clustering: SOM.output does not contain topographic_error - rerun train.SOM")
       topographic_error <- SOM.output$topographic_error
       if (length(topographic_error) != length(SOM.output$som_models)) {
         stop("Aborted SOM clustering: length of topographic_error does not match number of som_models - rerun train.SOM")
       }
-      if (any(!is.finite(topographic_error) | is.na(topographic_error))) {
-        stop("Aborted SOM clustering: topographic_error contains NA or non-finite values")
-      }
+      if (any(!is.finite(topographic_error) | is.na(topographic_error))) stop("Aborted SOM clustering: topographic_error contains NA or non-finite values")
       topographic_error_cutoff <- stats::quantile(topographic_error,
                                                   probs = topographic.error.quantile,
                                                   na.rm = TRUE,
@@ -1715,17 +1659,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     removed_index <- sort(unique(c(replicates_to_remove_qe, replicates_to_remove_te)))
     removed_replicates <- replicate_ids[removed_index]
     retained_replicates <- setdiff(replicate_ids, removed_replicates)
-    if (length(retained_replicates) < 2) {
-      stop("Aborted SOM clustering: filtering removed too many SOM replicates - relax quantile thresholds")
-    }
+    if (length(retained_replicates) < 2) stop("Aborted SOM clustering: filtering removed too many SOM replicates - relax quantile thresholds")
     retained_index <- match(retained_replicates, replicate_ids)
     SOM.output$som_models <- SOM.output$som_models[retained_index]
     if (!is.null(SOM.output$quantization_error)) {
       SOM.output$quantization_error <- SOM.output$quantization_error[retained_index]
     }
-    if (!is.null(SOM.output$topographic_error)) {
-      SOM.output$topographic_error <- SOM.output$topographic_error[retained_index]
-    }
+    if (!is.null(SOM.output$topographic_error)) SOM.output$topographic_error <- SOM.output$topographic_error[retained_index]
     if (!is.null(SOM.output$distance_weights_matrix)) {
       SOM.output$distance_weights_matrix <- SOM.output$distance_weights_matrix[retained_index, , drop = FALSE]
     }
@@ -1751,9 +1691,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     base::set.seed(j + set.seed.N)
 
     # Print message every N replicates (N specified by message.N.replicates)
-    if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) {
-      messager(paste("Running clustering replicate:", j, "of", N.replicates))
-    }
+    if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) messager(paste("Running clustering replicate:", j, "of", N.replicates))
     
     # Extract SOM models
     som_model <- SOM.output$som_models[[j]] 
@@ -1783,21 +1721,9 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     
     # Ensure max.k is equal to or smaller than number of available codebook vectors (rows of som_codes)
     n_codes <- nrow(som_codes)
-    if (!is.null(set.k) && set.k >= n_codes) {
-        stop(sprintf(
-      "Aborted SOM clustering: set.k = %d exceeds available codebook rows of %d - reduce set.k to ≤ %d",
-      set.k, n_codes, n_codes - 1
-    ))
-  }
-  if (is.null(set.k) && max.k >= n_codes) {
-    stop(sprintf(
-      "Aborted SOM clustering: max.k = %d exceeds available codebook rows of %d - reduce max.k to ≤ %d",
-      max.k, n_codes, n_codes - 1
-    ))
-  }
-  if (!is.null(set.k) && max.k < set.k) {
-    max.k <- set.k
-  }
+    if (!is.null(set.k) && set.k >= n_codes) stop(sprintf("Aborted SOM clustering: set.k = %d exceeds available codebook rows of %d - reduce set.k to ≤ %d", set.k, n_codes, n_codes - 1))
+  if (is.null(set.k) && max.k >= n_codes) stop(sprintf("Aborted SOM clustering: max.k = %d exceeds available codebook rows of %d - reduce max.k to ≤ %d", max.k, n_codes, n_codes - 1))
+  if (!is.null(set.k) && max.k < set.k) max.k <- set.k
     
 # Create function to perform kmeans clustering and calculate within-cluster sum of squares (wss) for each cluster (sum of squared Euclidean distances of SOM units to cluster center)
     calculate.wss <- function(som_codes, max.k, set.k = NULL) {
@@ -2035,9 +1961,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             }
           }
         }
-        if (!is.na(best_BIC_value_for_k) && is.finite(best_BIC_value_for_k)) {
-          BIC_vec[k_value] <- best_BIC_value_for_k #store best BIC for this k
-        }
+        if (!is.na(best_BIC_value_for_k) && is.finite(best_BIC_value_for_k)) BIC_vec[k_value] <- best_BIC_value_for_k #store best BIC for this k
       }
       if (all(is.na(BIC_vec))) stop("All GMM BIC values are NA - cannot determine optimal number of clusters")
       BIC_vec <- -BIC_vec #invert sign so threshold selector (which assumes lower = better) works with mclust BIC (higher = better)
