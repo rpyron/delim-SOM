@@ -60,48 +60,26 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   messager("PROCESSING INPUT DATA ...")
   
   # Validate specified input_data
-  if (is.null(input_data)) {
-    stop("Data processing aborted: input_data cannot be NULL")
-  }
-  if (!(is.matrix(input_data) || is.data.frame(input_data) || is.list(input_data))) {
-    stop("Data processing aborted: input_data must be a matrix, data.frame or list of such objects")
-  }
-  if (is.list(input_data) && length(input_data) == 0) {
-    stop("Data processing aborted: input_data is an empty list")
-  }
+  if (is.null(input_data)) stop("Data processing aborted: input_data cannot be NULL")
+  if (!(is.matrix(input_data) || is.data.frame(input_data) || is.list(input_data))) stop("Data processing aborted: input_data must be a matrix, data.frame or list of such objects")
+  if (is.list(input_data) && length(input_data) == 0) stop("Data processing aborted: input_data is an empty list")
   
   # Validate specified N.steps
-  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) {
-    stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")
-  }
-  if (N.steps < 60) {
-    messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 60–200)")
-  }
-  if (N.steps > 200) {
-    messager("Warning: N.steps is high (", N.steps, ") - computation will be slow (recommended: 60–200)")
-  }
+  if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")
+  if (N.steps < 60) messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 60–200)")
+  if (N.steps > 200) messager("Warning: N.steps is high (", N.steps, ") - computation will be slow (recommended: 60–200)")
   
   # Validate specified N.replicates
-  if (!is.numeric(N.replicates) || length(N.replicates) != 1 || is.na(N.replicates) || N.replicates < 1 || (N.replicates %% 1 != 0)) {
-    stop("Data processing aborted: N.replicates must be a single positive integer (>= 1)")
-  }
-  if (N.replicates < 30) {
-    messager("Warning: N.replicates is low (", N.replicates, ") - results may be unreliable (recommended: 30–100)")
-  }
-  if (N.replicates > 200) {
-    messager("Warning: N.replicates is high (", N.replicates, ") - computation will be slow (recommended: 50–150)")
-  }
+  if (!is.numeric(N.replicates) || length(N.replicates) != 1 || is.na(N.replicates) || N.replicates < 1 || (N.replicates %% 1 != 0)) stop("Data processing aborted: N.replicates must be a single positive integer (>= 1)")
+  if (N.replicates < 30) messager("Warning: N.replicates is low (", N.replicates, ") - results may be unreliable (recommended: 30–100)")
+  if (N.replicates > 200) messager("Warning: N.replicates is high (", N.replicates, ") - computation will be slow (recommended: 50–150)")
   
   # Validate specified parallel
-  if (!is.logical(parallel) || length(parallel) != 1 || is.na(parallel)) {
-    stop("Data processing aborted: parallel must be TRUE or FALSE")
-  }
+  if (!is.logical(parallel) || length(parallel) != 1 || is.na(parallel)) stop("Data processing aborted: parallel must be TRUE or FALSE")
   
   # Validate specified N.cores
   if (parallel) {
-    if (!is.numeric(N.cores) || length(N.cores) != 1 || is.na(N.cores) || N.cores < 1 || (N.cores %% 1 != 0)) {
-      stop("Data processing aborted: N.cores must be a single positive integer (>= 1)")
-    }
+    if (!is.numeric(N.cores) || length(N.cores) != 1 || is.na(N.cores) || N.cores < 1 || (N.cores %% 1 != 0)) stop("Data processing aborted: N.cores must be a single positive integer (>= 1)")
     max_cores <- parallel::detectCores(logical = FALSE)
     if (is.na(max_cores) || max_cores < 1) max_cores <- parallel::detectCores(logical = TRUE)
     if (is.na(max_cores) || max_cores < 1) max_cores <- 1
@@ -113,53 +91,33 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   
   # Validate specified grid.size
   if (!is.null(grid.size)) {
-    if (!is.numeric(grid.size) || length(grid.size) != 2 || any(is.na(grid.size)) || any(grid.size <= 0) || any(grid.size %% 1 != 0)) {
-      stop("Input aborted: grid.size must be NULL or numeric vector of length 2 with positive integers (e.g., c(5, 5))")
-    }
+    if (!is.numeric(grid.size) || length(grid.size) != 2 || any(is.na(grid.size)) || any(grid.size <= 0) || any(grid.size %% 1 != 0)) stop("Input aborted: grid.size must be NULL or numeric vector of length 2 with positive integers (e.g., c(5, 5))")
   }
   
   # Validate specified grid.multiplier
-  if (!is.numeric(grid.multiplier) || length(grid.multiplier) != 1 || grid.multiplier < 1) {
-    stop("Data processing aborted: grid.multiplier must be a single numeric value (recommended: 5)")
-  }
+  if (!is.numeric(grid.multiplier) || length(grid.multiplier) != 1 || grid.multiplier < 1) stop("Data processing aborted: grid.multiplier must be a single numeric value (recommended: 5)")
   
   # Validate specified learning.rate.tuning
-  if (!is.logical(learning.rate.tuning) || length(learning.rate.tuning) != 1 || is.na(learning.rate.tuning)) {
-    stop("Data processing aborted: learning.rate.tuning must be TRUE or FALSE")
-  }
+  if (!is.logical(learning.rate.tuning) || length(learning.rate.tuning) != 1 || is.na(learning.rate.tuning)) stop("Data processing aborted: learning.rate.tuning must be TRUE or FALSE")
   
   # Validate specified learning rate parameters if learning rate tuning is not done
   if (!learning.rate.tuning) {
-    if (!is.numeric(learning.rate.initial) || length(learning.rate.initial) != 1 || learning.rate.initial <= 0 || learning.rate.initial > 1) {
-      stop("Data processing aborted: learning.rate.initial must be a single numeric value between 0 and 1 (e.g. 0.6)")
-    }
-    if (!is.numeric(learning.rate.final) || length(learning.rate.final) != 1 || is.na(learning.rate.final) || learning.rate.final < 0 || learning.rate.final > 1) {
-      stop("Data processing aborted: learning.rate.final must be a single numeric value between 0 and 1 (e.g. 0.1)")
-    }
-    if (learning.rate.final > learning.rate.initial) {
-      stop("Data processing aborted: learning.rate.final must be smaller than learning.rate.initial")
-    }
+    if (!is.numeric(learning.rate.initial) || length(learning.rate.initial) != 1 || learning.rate.initial <= 0 || learning.rate.initial > 1) stop("Data processing aborted: learning.rate.initial must be a single numeric value between 0 and 1 (e.g. 0.6)")
+    if (!is.numeric(learning.rate.final) || length(learning.rate.final) != 1 || is.na(learning.rate.final) || learning.rate.final < 0 || learning.rate.final > 1) stop("Data processing aborted: learning.rate.final must be a single numeric value between 0 and 1 (e.g. 0.1)")
+    if (learning.rate.final > learning.rate.initial) stop("Data processing aborted: learning.rate.final must be smaller than learning.rate.initial")
   }
   
   # Validate specified layer.distance.functions
   if (!is.null(layer.distance.functions)) {
     n_layers_expected <- 1
     if (is.list(input_data) && length(input_data) > 1 && !is.data.frame(input_data)) n_layers_expected <- length(input_data)
-    if (!(is.character(layer.distance.functions) || is.list(layer.distance.functions))) {
-      stop("Data processing aborted: layer.distance.functions must be NULL, a character vector, or a list")
-    }
+    if (!(is.character(layer.distance.functions) || is.list(layer.distance.functions))) stop("Data processing aborted: layer.distance.functions must be NULL, a character vector, or a list")
     if (is.character(layer.distance.functions)) {
-      if (any(is.na(layer.distance.functions)) || any(trimws(layer.distance.functions) == "")) {
-        stop("Data processing aborted: layer.distance.functions contains NA or empty strings")
-      }
-      if (!(length(layer.distance.functions) %in% c(1, n_layers_expected))) {
-        stop(sprintf("Data processing aborted: layer.distance.functions must have length 1 or %d (number of layers in input_data)", n_layers_expected))
-      }
+      if (any(is.na(layer.distance.functions)) || any(trimws(layer.distance.functions) == "")) stop("Data processing aborted: layer.distance.functions contains NA or empty strings")
+      if (!(length(layer.distance.functions) %in% c(1, n_layers_expected))) stop(sprintf("Data processing aborted: layer.distance.functions must have length 1 or %d (number of layers in input_data)", n_layers_expected))
     }
     if (is.list(layer.distance.functions)) {
-      if (!(length(layer.distance.functions) %in% c(1, n_layers_expected))) {
-        stop(sprintf("Data processing aborted: layer.distance.functions must have length 1 or %d (number of layers in input_data)", n_layers_expected))
-      }
+      if (!(length(layer.distance.functions) %in% c(1, n_layers_expected))) stop(sprintf("Data processing aborted: layer.distance.functions must have length 1 or %d (number of layers in input_data)", n_layers_expected))
       bad_types <- vapply(layer.distance.functions, function(x) !(is.character(x) || is.function(x)), logical(1))
       if (any(bad_types)) stop("Data processing aborted: each element of layer.distance.functions must be a character string or a function")
       bad_chr <- vapply(layer.distance.functions, function(x) is.character(x) && (length(x) != 1 || is.na(x) || trimws(x) == ""), logical(1))
@@ -169,64 +127,40 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   
   # Validate specified manual.layer.weights
   if (!is.null(manual.layer.weights)) {
-    if (!is.numeric(manual.layer.weights) || any(is.na(manual.layer.weights)) || any(manual.layer.weights <= 0)) {
-      stop("Data processing aborted: manual.layer.weights must be NULL or a numeric vector of positive values")
-    }
+    if (!is.numeric(manual.layer.weights) || any(is.na(manual.layer.weights)) || any(manual.layer.weights <= 0)) stop("Data processing aborted: manual.layer.weights must be NULL or a numeric vector of positive values")
   }
   
   # Validate specified NA‐max.NA.row
-  if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || max.NA.row < 0 || max.NA.row > 1) {
-    stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.3)")
-  }
+  if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || max.NA.row < 0 || max.NA.row > 1) stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.5)")
   
   # Validate specified NA‐max.NA.col
-  if (!is.numeric(max.NA.col) || length(max.NA.col) != 1 ||
-      max.NA.col < 0 || max.NA.col > 1) {
-    stop("Data processing aborted: max.NA.col must be a single numeric value between 0 and 1 (recommended: 0.7)")
-  }
+  if (!is.numeric(max.NA.col) || length(max.NA.col) != 1 || max.NA.col < 0 || max.NA.col > 1) stop("Data processing aborted: max.NA.col must be a single numeric value between 0 and 1 (recommended: 0.5)")
   
   # Validate specified training.neighborhoods
-  if (!is.character(training.neighborhoods) || length(training.neighborhoods) != 1 || !(training.neighborhoods %in% c("gaussian", "bubble"))) {
-    stop("Data processing aborted: training.neighborhoods must be 'gaussian' or 'bubble'")
-  }
+  if (!is.character(training.neighborhoods) || length(training.neighborhoods) != 1 || !(training.neighborhoods %in% c("gaussian", "bubble"))) stop("Data processing aborted: training.neighborhoods must be 'gaussian' or 'bubble'")
   
   # Validate specified save.SOM.results
-  if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) {
-    stop("Data processing aborted: save.SOM.results must be TRUE or FALSE")
-  }
+  if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Data processing aborted: save.SOM.results must be TRUE or FALSE")
   
   # Validate specified save.SOM.results.name
   if (save.SOM.results && !is.null(save.SOM.results.name)) {
-    if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") {
-      stop("Data processing aborted: save.SOM.results.name must be non-empty character string (file path) if provided")
-    }
+    if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") stop("Data processing aborted: save.SOM.results.name must be non-empty character string (file path) if provided")
     valid_ext <- tolower(tools::file_ext(save.SOM.results.name)) #extract extension
-    if (valid_ext != "rdata") {
-      stop("Data processing aborted: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
-    }
+    if (valid_ext != "rdata") stop("Data processing aborted: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
   }
   
   # Validate specified overwrite.SOM.results
-  if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) {
-    stop("Data processing aborted: overwrite.SOM.results must be TRUE or FALSE")
-  }
+  if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) stop("Data processing aborted: overwrite.SOM.results must be TRUE or FALSE")
   
   # Validate specified verbose
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) {
-    stop("Data processing aborted: verbose must be TRUE or FALSE")
-  }
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Data processing aborted: verbose must be TRUE or FALSE")
   
   # Validate message.N.replicates
-  if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) {
-    stop("Data processing aborted: message.N.replicates must be a single positive integer (>= 1)")
-  }
+  if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Data processing aborted: message.N.replicates must be a single positive integer (>= 1)")
   
   # Validate set.seed.N
-  if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || set.seed.N < 1 || (set.seed.N %% 1 != 0)) {
-    stop("Data processing aborted: set.seed.N must be a single positive integer (>= 1)")
-  }
-  
-  
+  if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Data processing aborted: set.seed.N must be a single positive integer (>= 1)")
+    
   # Extract input_data_names and set save.SOM.results.name for saving ...
   
   # ... for list with multiple data sets
@@ -237,9 +171,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       list_names <- match.call()$input_data
       input_data_names <- sapply(as.list(list_names)[-1], deparse)
     }
-    if (is.null(save.SOM.results.name)) { #assign default saving name if save.SOM.results.name is NULL
-      save.SOM.results.name <- paste0("SOM_results_", paste(input_data_names, collapse = "_"), ".Rdata")
-    }
+    if (is.null(save.SOM.results.name)) save.SOM.results.name <- paste0("SOM_results_", paste(input_data_names, collapse = "_"), ".Rdata") #assign default saving name if save.SOM.results.name is NULL
     
     # ... for list with one data set
   } else if (is.list(input_data) && length(input_data) == 1) {
@@ -250,27 +182,20 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       input_data_names <- gsub("^list\\((.+)\\)$", "\\1", input_data_names) #remove "list" from name
       input_data_names <- gsub("\"", "", input_data_names) #remove quotes from name
     }
-    if (is.null(save.SOM.results.name)) { #assign default name for saving if save.SOM.results.name is NULL
-      save.SOM.results.name <- paste0("SOM_results_", input_data_names, ".Rdata")
-    }
+    if (is.null(save.SOM.results.name)) save.SOM.results.name <- paste0("SOM_results_", input_data_names, ".Rdata") #assign default name for saving if save.SOM.results.name is NULL
     
     # ... for non-list object with one dataset
   } else {
     input_data_names <- deparse(substitute(input_data)) #extract names of dataset
-    if (is.null(save.SOM.results.name)) { #assign default name for savings if save.SOM.results.name is NULL
-      save.SOM.results.name <- paste0("SOM_results_", input_data_names, ".Rdata")
-    }
+    if (is.null(save.SOM.results.name)) save.SOM.results.name <- paste0("SOM_results_", input_data_names, ".Rdata") #assign default name for savings if save.SOM.results.name is NULL
   }
   
   # If overwrite.SOM.results is FALSE and file already exists, return saved results
   if (!overwrite.SOM.results && file.exists(save.SOM.results.name)) {
     messager("SOM results already exist - loading results from file and skipping SOM run")
     load(save.SOM.results.name)
-    
     required_fields <- c("distance_weights_matrix", "learning_values_list")
-    if (!all(required_fields %in% names(SOM_results))) { #check if structure of SOM_results is correct
-      stop("Data processing aborted: could not load SOM results (results do not contain expected objects 'distance_weights_matrix' and 'learning_values_list') - check saved file or rerun SOM")
-    }
+    if (!all(required_fields %in% names(SOM_results))) stop("Data processing aborted: could not load SOM results (results do not contain expected objects 'distance_weights_matrix' and 'learning_values_list') - check saved file or rerun SOM") #check if structure of SOM_results is correct
     return(SOM_results)
   }
   
@@ -281,9 +206,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (is.list(input_data) && length(input_data) > 1 && !is.data.frame(input_data)) { 
     
     # Ensure each layer has rownames
-    if (any(vapply(input_data, function(x) is.null(rownames(x)), logical(1)))) {
-      stop("Data processing aborted: all provided data layers must have matching rownames")
-    }
+    if (any(vapply(input_data, function(x) is.null(rownames(x)), logical(1)))) stop("Data processing aborted: all provided data layers must have matching rownames")
     
     # Extract shared samples across all matrices (before filtering)
     all_samples <- unique(unlist(lapply(input_data, rownames)))
@@ -305,12 +228,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         ))
       }
     }
-    if (length(common_samples) == 0) { #stop with message if no shared samples remain
-      stop("Data processing aborted: no matching rownames (samples) across layers - check input data")
-    }
-    if (length(common_samples) == 1) { #stop with message if only one shared samples remain
-      stop("Data processing aborted: only one row (sample) matches rownames across layers - check input data")
-    }
+    if (length(common_samples) == 0) stop("Data processing aborted: no matching rownames (samples) across layers - check input data") #stop with message if no shared samples remain
+    if (length(common_samples) == 1) stop("Data processing aborted: only one row (sample) matches rownames across layers - check input data") #stop with message if only one shared sample remains
     input_data <- lapply(input_data, function(mat) mat[common_samples, , drop = FALSE])
     
     # Filter by max.NA.row
@@ -332,18 +251,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         }
       }
       mat <- mat[na_frac <= max.NA.row, , drop = FALSE]
-      if (nrow(mat) == 0) {
-        stop(sprintf(
-          "Data processing aborted: no rows (samples) remain in dataset %s after applying max.NA.row = %.2f - check input data or increase max.NA.row",
-          input_data_names[i], max.NA.row
-        ))
-      }
-      if (nrow(mat) == 1) {
-        stop(sprintf(
-          "Data processing aborted: only one row (sample) remains in dataset %s after applying max.NA.row = %.2f - check input data or increase max.NA.row",
-          input_data_names[i], max.NA.row
-        ))
-      }
+      if (nrow(mat) == 0) stop(sprintf("Data processing aborted: no rows (samples) remain in dataset %s after applying max.NA.row = %.2f - check input data or increase max.NA.row", input_data_names[i], max.NA.row))
+      if (nrow(mat) == 1) stop(sprintf("Data processing aborted: only one row (sample) remains in dataset %s after applying max.NA.row = %.2f - check input data or increase max.NA.row", input_data_names[i], max.NA.row))
       input_data[[i]] <- mat
     }
     
@@ -351,12 +260,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     all_samples <- unique(unlist(lapply(input_data, rownames)))
     common_samples <- Reduce(intersect, lapply(input_data, rownames))
     not_shared <- setdiff(all_samples, common_samples)
-    if (length(common_samples) == 0) { #stop with message if no shared samples remain
-      stop("Data processing aborted: no shared samples remain after NA filtering - check input data or increase max.NA.row")
-    }
-    if (length(common_samples) == 1) { #stop with message if only one shared sample remain
-      stop("Data processing aborted: only one shared sample remains after NA filtering - check input data or increase max.NA.row")
-    }
+    if (length(common_samples) == 0) stop("Data processing aborted: no shared samples remain after NA filtering - check input data or increase max.NA.row") #stop with message if no shared samples remain
+    if (length(common_samples) == 1) stop("Data processing aborted: only one shared sample remains after NA filtering - check input data or increase max.NA.row") #stop with message if only one shared sample remains
     input_data <- lapply(input_data, function(mat) mat[common_samples, , drop = FALSE])
     dataset_names <- input_data_names
     processed_data <- list()
@@ -374,23 +279,13 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       if (length(non_numeric_cols) > 0) { #print message if any columns were removed
         n_removed <- length(non_numeric_cols)
         n_total <- ncol(mat)
-        if (n_removed <= 30) {
-          messager(sprintf(
-            "Removed %d of %d columns (variables) in dataset %s due to non-numeric type: %s",
-            n_removed, n_total, name, paste(names(mat)[non_numeric_cols], collapse = ", ")
-          ))
+        if (n_removed <= 30) messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type: %s", n_removed, n_total, name, paste(names(mat)[non_numeric_cols], collapse = ", ")))
         } else {
-          messager(sprintf(
-            "Removed %d of %d columns (variables) in dataset %s due to non-numeric type",
-            n_removed, n_total, name
-          ))
+          messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type", n_removed, n_total, name))
         }
         mat <- mat[, -non_numeric_cols, drop = FALSE]
       }
-      if (ncol(mat) == 0) stop(sprintf(
-        "Data processing aborted: no columns (variables) remain in dataset %s after removing all non-numeric columns - check input data",
-        name
-      ))
+      if (ncol(mat) == 0) stop(sprintf("Data processing aborted: no columns (variables) remain in dataset %s after removing all non-numeric columns - check input data", name))
       if (ncol(mat) == 1) {
         messager(sprintf(
           "Warning: dataset %s has only one column (variable) remaining after removing all non-numeric columns - proceeding because multiple layers are present",
