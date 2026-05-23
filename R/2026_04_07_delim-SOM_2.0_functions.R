@@ -970,7 +970,9 @@ calculate.topographic.error <- function(som_model) {
   # Create function to run SOM
   messager("")
   messager("TRAINING SOM ...")
+  replicate_seeds <- set.seed.N + seq_len(N.replicates)
   replicate_som <- function(j) {
+  base::set.seed(replicate_seeds[j])
     
     # Initialize results for replicate
     d_vec <- numeric(length(input_data))
@@ -1045,7 +1047,8 @@ calculate.topographic.error <- function(som_model) {
                   "radius.schedule",
                   "N.replicates",
                   "messager",
-                  "message.N.replicates"),
+                  "message.N.replicates",
+                  "replicate_seeds"),
       envir = environment())
     doParallel::registerDoParallel(parallel_cluster) #register cluster for foreach
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
@@ -1073,10 +1076,8 @@ calculate.topographic.error <- function(som_model) {
   } else {
     
     # Run SOM normally (non-parallel)
-    base::set.seed(set.seed.N)
     results <- tryCatch(
       lapply(seq_len(N.replicates), function(j) {
-        base::set.seed(j + set.seed.N) # set unique seed for each replicate
         replicate_som(j)
       }),
       error = function(e) { #print error message if SOM training fails
@@ -1191,7 +1192,7 @@ calculate.topographic.error <- function(som_model) {
     # Check if directory exists
     dir_path <- dirname(save.SOM.results.name) #extract directory path
     if (!dir.exists(dir_path)) { 
-      dir.create(dir_path, recursive = T) #create directory if it does not exist
+      dir.create(dir_path, recursive = TRUE) #create directory if it does not exist
       messager(paste("Specified directory", dir_path, "did not exist and was created"))
     }
     
