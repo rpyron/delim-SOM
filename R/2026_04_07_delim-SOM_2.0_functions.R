@@ -1062,7 +1062,6 @@ calculate.topographic.error <- function(som_model) {
     
     # Run SOM normally (non-parallel)
     results <- tryCatch(lapply(seq_len(N.replicates), function(j) {replicate_som(j)}), error = function(e) {stop("SOM training aborted: try reducing grid.size or increasing max.NA.col and max.NA.row or check input data")})
-    if (is.null(results)) return(invisible(NULL))
   }
   
   # Set replicate IDs
@@ -5695,19 +5694,13 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   }
   
   # Validate specified overwrite
-  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) {
-    stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  }
+  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   
   # Validate specified plot.type
-  if (!is.character(plot.type) || length(plot.type) != 1 || !(plot.type %in% c("svg", "png", "jpg"))) {
-    stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
-  }
+  if (!is.character(plot.type) || length(plot.type) != 1 || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
   
   # Validate specified title.font.size
-  if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) {
-    stop("Plotting aborted: title.font.size must be a single positive numeric value")
-  }
+  if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Plotting aborted: title.font.size must be a single positive numeric value")
   
   # Validate specified axis.font.size
   if (!is.numeric(axis.font.size) || length(axis.font.size) != 1 || is.na(axis.font.size) || axis.font.size <= 0) stop("Plotting aborted: axis.font.size must be a single positive numeric value")
@@ -5747,9 +5740,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     if (is.null(names(map_variance_variable_importance_list)) && length(map_variance_variable_importance_list) == length(SOM_layer_names)) {
       names(map_variance_variable_importance_list) <- SOM_layer_names
     }
-    if (!is.null(names(map_variance_variable_importance_list)) && all(SOM_layer_names %in% names(map_variance_variable_importance_list))) {
-      map_variance_variable_importance_list <- map_variance_variable_importance_list[SOM_layer_names]
-    }
+    if (!is.null(names(map_variance_variable_importance_list)) && all(SOM_layer_names %in% names(map_variance_variable_importance_list))) map_variance_variable_importance_list <- map_variance_variable_importance_list[SOM_layer_names]
     map_variance_variable_importance_list <- lapply(map_variance_variable_importance_list, function(variable_importance_values) {
       variable_importance_values <- as.numeric(variable_importance_values)
       variable_importance_values <- variable_importance_values[is.finite(variable_importance_values) & !is.na(variable_importance_values)]
