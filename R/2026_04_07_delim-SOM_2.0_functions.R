@@ -4199,23 +4199,11 @@ plot.map.SOM <- function(SOM.output,
     if (grDevices::dev.cur() == old_dev) graphics::par(old_plotting_parameters)
   }, add = TRUE)
   
-  # Validate SOM.output
-  if (is.null(SOM.output$ancestry_matrix) || !is.matrix(SOM.output$ancestry_matrix)) {
-    stop("Plotting aborted: ancestry_matrix of SOM.output is not valid")
-  }
-  
-  # Validate Coordinates data
-  if (!all(c("Latitude", "Longitude") %in% names(Coordinates))) {
-    stop("Plotting aborted: Coordinates must contain 'Latitude' and 'Longitude' columns")
-  }
-  if (is.null(rownames(Coordinates))) {
-    stop("Plotting aborted: Coordinates must have rownames matching rownames of ancestry_matrix")
-  }
-  if (!is.data.frame(Coordinates) && !is.matrix(Coordinates)) {
-    stop("Plotting aborted: Coordinates must be a data frame or matrix")
-  }
-  
-  # Validate specified color palette
+  # Validate input
+  if (is.null(SOM.output$ancestry_matrix) || !is.matrix(SOM.output$ancestry_matrix)) stop("Plotting aborted: ancestry_matrix of SOM.output is not valid")
+  if (!all(c("Latitude", "Longitude") %in% names(Coordinates))) stop("Plotting aborted: Coordinates must contain 'Latitude' and 'Longitude' columns")
+  if (is.null(rownames(Coordinates))) stop("Plotting aborted: Coordinates must have rownames matching rownames of ancestry_matrix")
+  if (!is.data.frame(Coordinates) && !is.matrix(Coordinates)) stop("Plotting aborted: Coordinates must be a data frame or matrix")
   viridis_palettes <- list(viridis::viridis,
                            viridis::magma,
                            viridis::plasma,
@@ -4224,150 +4212,62 @@ plot.map.SOM <- function(SOM.output,
                            viridis::rocket,
                            viridis::mako,
                            viridis::turbo
-  )
-  if (!any(vapply(viridis_palettes, identical, logical(1), pie.col.pal))) {
-    stop("Plotting aborted: pie.col.pal must viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  }
-  
-  # Validate specified save
-  if (!is.logical(save) || length(save) != 1 || is.na(save)) {
-    stop("Plotting aborted: save must be TRUE or FALSE")
-  }
-  
-  # Validate specified overwrite
-  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) {
-    stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  }
-  
-  # Validate specified plot.type
+  if (!any(vapply(viridis_palettes, identical, logical(1), pie.col.pal))) stop("Plotting aborted: pie.col.pal must viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
+  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   if (save) {
-    allowed_plot.types <- c("svg", "png", "jpg")
-    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% allowed_plot.types)) {
-      stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
-    }
+    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
   }
-  
-  # Validate specified file.name
-  if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) {
-    stop("Plotting aborted: file.name must be NULL or single character string")
-  }
-  
-  # Validate specified width and height (reasonable values: 4–50 cm)
+  if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
   if (save) {
-    if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) {
-      stop("Plotting aborted: width must be a single positive number (cm)")
-    }
-    if (width < 4) {
-      messager("Warning: width is very small (", width, " cm) – plot may be hard to read")
-    }
-    if (width > 50) {
-      messager("Warning: width is very large (", width, " cm) – plot may be unwieldy")
-    }
-    if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) {
-      stop("Plotting aborted: height must be a single positive number (cm)")
-    }
-    if (height < 4) {
-      messager("Warning: height is very small (", height, " cm) – plot may be hard to read")
-    }
-    if (height > 50) {
-      messager("Warning: height is very large (", height, " cm) – plot may be unwieldy")
-    }
+    if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
+    if (width < 4) messager("Warning: width is very small (", width, " cm) – plot may be hard to read")
+    if (width > 50) messager("Warning: width is very large (", width, " cm) – plot may be unwieldy")
+    if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
+    if (height < 4) messager("Warning: height is very small (", height, " cm) – plot may be hard to read")
+    if (height > 50) messager("Warning: height is very large (", height, " cm) – plot may be unwieldy")
   }
-  
-  # Validate specified resolution (reasonable range: 72–1200 dpi)
   if (save) {
     if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) {
       stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
     }
-    if (resolution > 1200) {
-      messager("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
-    }
+    if (resolution > 1200) messager("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
   }
-  
-  # Validate specified lat.buffer.range
-  if (!is.numeric(lat.buffer.range) || length(lat.buffer.range) != 1 || is.na(lat.buffer.range) || lat.buffer.range < 0) {
-    stop("Plotting aborted: lat.buffer.range must be a single non-negative number")
-  }
-  
-  # Validate specified lon.buffer.range
-  if (!is.numeric(lon.buffer.range) || length(lon.buffer.range) != 1 || is.na(lon.buffer.range) || lon.buffer.range < 0) {
-    stop("Plotting aborted: lon.buffer.range must be a single non-negative number")
-  }
-  
-  # Validate specified pie.size
+  if (!is.numeric(lat.buffer.range) || length(lat.buffer.range) != 1 || is.na(lat.buffer.range) || lat.buffer.range < 0) stop("Plotting aborted: lat.buffer.range must be a single non-negative number")
+  if (!is.numeric(lon.buffer.range) || length(lon.buffer.range) != 1 || is.na(lon.buffer.range) || lon.buffer.range < 0) stop("Plotting aborted: lon.buffer.range must be a single non-negative number")
   if (!is.numeric(pie.size) || length(pie.size) != 1 || is.na(pie.size) || pie.size <= 0) {
     stop("Plotting aborted: pie.size must be a single positive number")
   }
-  
-  # Validate specified pie.col.pal
   viridis_palettes <- list(viridis::viridis, viridis::magma, viridis::plasma, viridis::inferno,
                            viridis::cividis, viridis::rocket, viridis::mako, viridis::turbo)
   if (!any(vapply(viridis_palettes, identical, logical(1), pie.col.pal))) {
     stop("Plotting aborted: pie.col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
   }
-  
-  # Validate specified USA.add.states
   if (!is.logical(USA.add.states) || length(USA.add.states) != 1 || is.na(USA.add.states)) {
     stop("Plotting aborted: USA.add.states must be TRUE or FALSE")
   }
-  
-  # Validate specified USA.add.counties
   if (!is.logical(USA.add.counties) || length(USA.add.counties) != 1 || is.na(USA.add.counties)) {
     stop("Plotting aborted: USA.add.counties must be TRUE or FALSE")
   }
-  
-  # Validate specified USA.state.lwd
   if (!is.numeric(USA.state.lwd) || length(USA.state.lwd) != 1 || is.na(USA.state.lwd) || USA.state.lwd <= 0) {
     stop("Plotting aborted: USA.state.lwd must be a single positive number")
   }
-  
-  # Validate specified USA.county.lwd
   if (!is.numeric(USA.county.lwd) || length(USA.county.lwd) != 1 || is.na(USA.county.lwd) || USA.county.lwd <= 0) {
     stop("Plotting aborted: USA.county.lwd must be a single positive number")
   }
-  # Validate specified north.arrow.position
   if (!is.numeric(north.arrow.position) || length(north.arrow.position) != 2 || any(is.na(north.arrow.position)) ||
       any(north.arrow.position < 0) || any(north.arrow.position > 1)) {
     stop("Plotting aborted: north.arrow.position must be numeric vector of length 2 with values in between 0 and 1")
   }
-  
-  # Validate specified north.arrow.length
   if (!is.numeric(north.arrow.length) || length(north.arrow.length) != 1 || is.na(north.arrow.length) || north.arrow.length <= 0) {
     stop("Plotting aborted: north.arrow.length must be a single positive number")
   }
-  
-  # Validate specified north.arrow.lwd
-  if (!is.numeric(north.arrow.lwd) || length(north.arrow.lwd) != 1 || is.na(north.arrow.lwd) || north.arrow.lwd <= 0) {
-    stop("Plotting aborted: north.arrow.lwd must be a single positive number")
-  }
-  
-  # Validate specified north.arrow.N.position
-  if (!is.numeric(north.arrow.N.position) || length(north.arrow.N.position) != 1 || is.na(north.arrow.N.position) || north.arrow.N.position < 0) {
-    stop("Plotting aborted: north.arrow.N.position must be a single non-negative number")
-  }
-  
-  # Validate specified north.arrow.N.size
-  if (!is.numeric(north.arrow.N.size) || length(north.arrow.N.size) != 1 || is.na(north.arrow.N.size) || north.arrow.N.size <= 0) {
-    stop("Plotting aborted: north.arrow.N.size must be a single positive number")
-  }
-  
-  # Validate specified scale.position
-  if (!is.numeric(scale.position) || length(scale.position) != 2 || any(is.na(scale.position)) ||
-      any(scale.position < 0) || any(scale.position > 1)) {
-    stop("Plotting aborted: scale.position must be numeric vector of length 2 with values in between 0 and 1")
-  }
-  
-  # Validate specified scale.size
-  if (!is.numeric(scale.size) || length(scale.size) != 1 || is.na(scale.size) || scale.size <= 0) {
-    stop("Plotting aborted: scale.size must be a single positive number")
-  }
-  
-  # Validate specified scale.font.size
-  if (!is.numeric(scale.font.size) || length(scale.font.size) != 1 || is.na(scale.font.size) || scale.font.size <= 0) {
-    stop("Plotting aborted: scale.font.size must be a single positive number")
-  }
-  
-  # Validate specified legend.position
+  if (!is.numeric(north.arrow.lwd) || length(north.arrow.lwd) != 1 || is.na(north.arrow.lwd) || north.arrow.lwd <= 0) stop("Plotting aborted: north.arrow.lwd must be a single positive number")
+  if (!is.numeric(north.arrow.N.position) || length(north.arrow.N.position) != 1 || is.na(north.arrow.N.position) || north.arrow.N.position < 0) stop("Plotting aborted: north.arrow.N.position must be a single non-negative number")
+  if (!is.numeric(north.arrow.N.size) || length(north.arrow.N.size) != 1 || is.na(north.arrow.N.size) || north.arrow.N.size <= 0) stop("Plotting aborted: north.arrow.N.size must be a single positive number")
+  if (!is.numeric(scale.position) || length(scale.position) != 2 || any(is.na(scale.position)) || any(scale.position < 0) || any(scale.position > 1)) stop("Plotting aborted: scale.position must be numeric vector of length 2 with values in between 0 and 1")
+  if (!is.numeric(scale.size) || length(scale.size) != 1 || is.na(scale.size) || scale.size <= 0) stop("Plotting aborted: scale.size must be a single positive number")
+  if (!is.numeric(scale.font.size) || length(scale.font.size) != 1 || is.na(scale.font.size) || scale.font.size <= 0) stop("Plotting aborted: scale.font.size must be a single positive number")
   allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", 
                                 "right", "left", "top", "bottom", "center")
   if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) ||
@@ -4375,8 +4275,6 @@ plot.map.SOM <- function(SOM.output,
     stop(paste0("Plotting aborted: legend.position must be one of ", 
                 paste(allowed.legend.positions, collapse = ", ")))
   }
-  
-  # Validate specified legend.cluster.names
   if (!is.null(legend.cluster.names)) {
     if (!is.character(legend.cluster.names) || any(is.na(legend.cluster.names))) {
       stop("Plotting aborted: legend.cluster.names must be NULL or character vector (no NAs)")
@@ -4387,26 +4285,12 @@ plot.map.SOM <- function(SOM.output,
                   ") must match number of clusters (", n.clusters, ")"))
     }
   }
-  
-  # Validate specified legend.font.size
-  if (!is.numeric(legend.font.size) || length(legend.font.size) != 1 || is.na(legend.font.size) || legend.font.size <= 0) {
-    stop("Plotting aborted: legend.font.size must be a single positive number")
-  }
-  
-  # Validate specified legend.box
-  if (!is.logical(legend.box) || length(legend.box) != 1 || is.na(legend.box)) {
-    stop("Plotting aborted: legend.box must be TRUE or FALSE")
-  }
-  
-  # Validate specified legend.symbol.size
-  if (!is.numeric(legend.symbol.size) || length(legend.symbol.size) != 1 || is.na(legend.symbol.size) || legend.symbol.size <= 0) {
-    stop("Plotting aborted: legend.symbol.size must be a single positive number")
-  }
+  if (!is.numeric(legend.font.size) || length(legend.font.size) != 1 || is.na(legend.font.size) || legend.font.size <= 0) stop("Plotting aborted: legend.font.size must be a single positive number")
+  if (!is.logical(legend.box) || length(legend.box) != 1 || is.na(legend.box)) stop("Plotting aborted: legend.box must be TRUE or FALSE")
+  if (!is.numeric(legend.symbol.size) || length(legend.symbol.size) != 1 || is.na(legend.symbol.size) || legend.symbol.size <= 0) stop("Plotting aborted: legend.symbol.size must be a single positive number")
   
   # Convert matrix to data frame if necessary
-  if (is.matrix(Coordinates)) {
-    Coordinates <- as.data.frame(Coordinates)
-  }
+  if (is.matrix(Coordinates)) Coordinates <- as.data.frame(Coordinates)
   
   # Check rownames match ancestry matrix, try to reorder, remove non-matching
   coord_names <- rownames(Coordinates)
@@ -4446,9 +4330,7 @@ plot.map.SOM <- function(SOM.output,
   q_matrix = as.data.frame(ancestry) #convert ancestry_matrix to dataframe
   
   # Check if number of rows (samples) in ancestry matrix matches number of Coordinates
-  if (nrow(q_matrix) != nrow(Coordinates)) {
-    stop("Plotting aborted: number of samples in ancestry_matrix does not match number of samples in Coordinates")
-  }
+  if (nrow(q_matrix) != nrow(Coordinates)) stop("Plotting aborted: number of samples in ancestry_matrix does not match number of samples in Coordinates")
   
   # Define color palette for pie charts
   k.cols = pie.col.pal(ncol(ancestry))
@@ -4480,9 +4362,7 @@ plot.map.SOM <- function(SOM.output,
     if (is.null(x.lim)) {
       x.lim <- c(min(coords[, 1]) - 1, max(coords[, 1]) + 1)
     }
-    if (is.null(y.lim)) {
-      y.lim <- c(min(coords[, 2]) - 1, max(coords[, 2]) + 1)
-    }
+    if (is.null(y.lim)) y.lim <- c(min(coords[, 2]) - 1, max(coords[, 2]) + 1)
     suppressWarnings(caroline::pies(pie.list, 
                                     x0 = coords[, 1], 
                                     y0 = coords[, 2], 
@@ -4506,16 +4386,12 @@ plot.map.SOM <- function(SOM.output,
   lat_max = max(Coordinates$Latitude) + lat.buffer.range
   
   # Create plot
-  if (grDevices::dev.cur() > 1) {
-    grDevices::dev.off() #close current device if open to avoid unwanted graphic distortions and other effects
-  }
+  if (grDevices::dev.cur() > 1) grDevices::dev.off() #close current device if open to avoid unwanted graphic distortions and other effects
   
   # Set plot saving
   if (save) {
     # Set file name for saving
-    if (is.null(file.name)) {
-      file.name <- paste0("SOM_map_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
-    }
+    if (is.null(file.name)) file.name <- paste0("SOM_map_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
     # Set overwriting 
     if (file.exists(file.name) && !overwrite) {
       stop(paste(file.name, "already exists - set overwrite = T to overwrite"))
