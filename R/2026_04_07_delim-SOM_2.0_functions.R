@@ -1057,40 +1057,17 @@ calculate.topographic.error <- function(som_model) {
       envir = environment())
     doParallel::registerDoParallel(parallel_cluster) #register cluster for foreach
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
-    results <- foreach::`%dopar%`(
-      foreach::foreach(
-        j = seq_len(N.replicates),
-        .packages = required_packages_parallel
-      ),
-      {
-    replicate_som(j)
-    }
-  )
+    results <- tryCatch(foreach::`%dopar%`(foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel), {replicate_som(j)}), error = function(e) {stop("SOM training aborted: try reducing grid.size or increasing max.NA.col and max.NA.row or check input data")})
   } else {
     
     # Run SOM normally (non-parallel)
-    results <- tryCatch(
-      lapply(seq_len(N.replicates), function(j) {
-        replicate_som(j)
-      }),
-      error = function(e) { #print error message if SOM training fails
-        stop("SOM training aborted: try reducing grid.size or increasing max.NA.col and max.NA.row or check input data")
-      }
-    )
+    results <- tryCatch(lapply(seq_len(N.replicates), function(j) {replicate_som(j)}), error = function(e) {stop("SOM training aborted: try reducing grid.size or increasing max.NA.col and max.NA.row or check input data")})
     if (is.null(results)) return(invisible(NULL))
   }
   
-  # Drop failed replicates and preserve original replicate IDs
-  original_replicate_ids <- paste0("R", seq_len(length(results)))
-  names(results) <- original_replicate_ids
-  failed <- vapply(results, function(x) !is.null(x$error) || is.null(x$som_model), logical(1))
-  failed_replicate_ids <- names(results)[failed]
-  if (any(failed)) {
-    messager(sprintf("Dropped %d replicate(s) that failed during training", sum(failed)))
-    results <- results[!failed]
-  }
-  if (length(results) < 1) stop("SOM training aborted: all replicates failed - check input data or relax NA thresholds / grid size")
-  retained_replicate_ids <- names(results)
+  # Set replicate IDs
+  replicate_ids <- paste0("R", seq_len(N.replicates))
+  names(results) <- replicate_ids
   
   # Combine results from all replicates
   distance_weights_matrix <- do.call(rbind, lapply(results, `[[`, "d_vec"))
@@ -1139,10 +1116,8 @@ calculate.topographic.error <- function(som_model) {
     input_data_names = as.character(input_data_names),
     N_steps = N.steps,
     N_replicates = length(som_models),
-    N_replicates_requested = N.replicates,
-    N_replicates_failed = length(failed_replicate_ids),
-    retained_replicate_ids = retained_replicate_ids,
-    failed_replicate_ids = failed_replicate_ids,
+    N_replicates = N.replicates,
+    replicate_ids = replicate_ids,
     learning_rate_initial = learning.rate.initial,
     learning_rate_final = learning.rate.final,
     codebook_vectors = all_layer_codes,
@@ -1155,7 +1130,7 @@ calculate.topographic.error <- function(som_model) {
     train.SOM.set.seed.N = set.seed.N,
     train.SOM.args = list(
       N.steps = N.steps,
-      N.replicates = length(som_models),
+      N.replicates = N.replicates,
       parallel = parallel,
       N.cores = N.cores,
       grid.size = grid.size,
@@ -4567,60 +4542,37 @@ plot.variable.importance.SOM <- function(SOM.output,
   
   # Validate specified resolution
   if (save) {
-    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) {
-      stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
-    }
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
   }
   
   # Validate specified margins
-  margin.list <- c(bottom.margin.total, left.margin.total, top.margin.total, right.margin.total,
-                   bottom.margin, left.margin, top.margin, right.margin)
-  margin.names <- c("bottom.margin.total", "left.margin.total", "top.margin.total", "right.margin.total",
-                    "bottom.margin", "left.margin", "top.margin", "right.margin")
+  margin.list <- c(bottom.margin.total, left.margin.total, top.margin.total, right.margin.total, bottom.margin, left.margin, top.margin, right.margin)
+  margin.names <- c("bottom.margin.total", "left.margin.total", "top.margin.total", "right.margin.total", "bottom.margin", "left.margin", "top.margin", "right.margin")
   for (i in seq_along(margin.list)) {
-    if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) {
-      stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
-    }
-    if (margin.list[i] < 0) {
-      stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
-    }
+    if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
+    if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
   }
   
   # Validate specified bars.threshold.N
-  if (!is.numeric(bars.threshold.N) || length(bars.threshold.N) != 1 || is.na(bars.threshold.N) ||
-      bars.threshold.N < 0 || bars.threshold.N %% 1 != 0) {
-    stop("Plotting aborted: bars.threshold.N must be a single non-negative integer")
-  }
+  if (!is.numeric(bars.threshold.N) || length(bars.threshold.N) != 1 || is.na(bars.threshold.N) || bars.threshold.N < 0 || bars.threshold.N %% 1 != 0) stop("Plotting aborted: bars.threshold.N must be a single non-negative integer")
   
   # Validate specified title.font.size
-  if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) {
-    stop("Plotting aborted: title.font.size must be a single positive number")
-  }
+  if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Plotting aborted: title.font.size must be a single positive number")
   
   # Validate specified matrix.label.font.size
-  if (!is.numeric(matrix.label.font.size) || length(matrix.label.font.size) != 1 || is.na(matrix.label.font.size) || matrix.label.font.size <= 0) {
-    stop("Plotting aborted: matrix.label.font.size must be a single positive number")
-  }
+  if (!is.numeric(matrix.label.font.size) || length(matrix.label.font.size) != 1 || is.na(matrix.label.font.size) || matrix.label.font.size <= 0) stop("Plotting aborted: matrix.label.font.size must be a single positive number")
   
   # Validate specified bar.label.font.size
-  if (!is.numeric(bar.label.font.size) || length(bar.label.font.size) != 1 || is.na(bar.label.font.size) || bar.label.font.size <= 0) {
-    stop("Plotting aborted: bar.label.font.size must be a single positive number")
-  }
+  if (!is.numeric(bar.label.font.size) || length(bar.label.font.size) != 1 || is.na(bar.label.font.size) || bar.label.font.size <= 0) stop("Plotting aborted: bar.label.font.size must be a single positive number")
   
   # Validate specified add.boxplot.whiskers
-  if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) {
-    stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
-  }
+  if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
   
   # Validate specified importance.threshold
-  if (!is.numeric(importance.threshold) || length(importance.threshold) != 1 || is.na(importance.threshold) || importance.threshold < 0) {
-    stop("Plotting aborted: importance.threshold must be a single non-negative number")
-  }
+  if (!is.numeric(importance.threshold) || length(importance.threshold) != 1 || is.na(importance.threshold) || importance.threshold < 0) stop("Plotting aborted: importance.threshold must be a single non-negative number")
   
   # Validate specified set.k
-  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || set.k %% 1 != 0)) {
-    stop("Plotting aborted: set.k must be NULL or single positive integer")
-  }
+  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || set.k %% 1 != 0)) stop("Plotting aborted: set.k must be NULL or single positive integer")
   
   # Create function to calculate weighted eta squared effect size per variable (weighted by neurons + sample counts)
   calculate.etasquared.per.variable <- function(codebook_matrix, neuron_cluster_vector, som_model, baseline_weight = 1) {
@@ -4693,13 +4645,9 @@ plot.variable.importance.SOM <- function(SOM.output,
         return(invisible(NULL))
       }
     }
-    if (length(keep.reps) == 0) {
-      stop("Plotting aborted: no replicates matched set.k")
-    }
+    if (length(keep.reps) == 0) stop("Plotting aborted: no replicates matched set.k")
   }
-  if (mode == "Map.variance") {
-    keep.reps <- seq_along(SOM.output$som_models)
-  }
+  if (mode == "Map.variance") keep.reps <- seq_along(SOM.output$som_models)
   
   # Compute per-replicate metric matrices per layer
   metric_layers <- vector("list", num_layers)
@@ -4715,12 +4663,8 @@ plot.variable.importance.SOM <- function(SOM.output,
     }
     for (i in seq_len(num_layers)) {
       if (is.null(colnames(codes[[i]]))) colnames(codes[[i]]) <- paste0("V", seq_len(ncol(codes[[i]]))) #ensure variable names exist
-      if (mode == "Cluster.separation") {
-        metric_layers[[i]][[paste0("R", r)]] <- calculate.etasquared.per.variable(codes[[i]], som_cluster, som_model)
-      }
-      if (mode == "Map.variance") {
-        metric_layers[[i]][[paste0("R", r)]] <- calculate.map.variance.per.variable(codes[[i]], som_model)
-      }
+      if (mode == "Cluster.separation") metric_layers[[i]][[paste0("R", r)]] <- calculate.etasquared.per.variable(codes[[i]], som_cluster, som_model)
+      if (mode == "Map.variance") metric_layers[[i]][[paste0("R", r)]] <- calculate.map.variance.per.variable(codes[[i]], som_model)
     }
   }
   
@@ -4743,12 +4687,8 @@ plot.variable.importance.SOM <- function(SOM.output,
     
     # Set default plotting name
     if (is.null(file.name)) {
-      if (mode == "Cluster.separation") {
-        file.name <- paste0("SOM_etasquared_plot_", paste(matrix_names, collapse = "_"), ".", plot.type)
-      }
-      if (mode == "Map.variance") {
-        file.name <- paste0("SOM_map_variance_plot_", paste(matrix_names, collapse = "_"), ".", plot.type)
-      }
+      if (mode == "Cluster.separation") file.name <- paste0("SOM_etasquared_plot_", paste(matrix_names, collapse = "_"), ".", plot.type)
+      if (mode == "Map.variance") file.name <- paste0("SOM_map_variance_plot_", paste(matrix_names, collapse = "_"), ".", plot.type)
     }
     
     # Check overwrite
@@ -4849,12 +4789,8 @@ plot.variable.importance.SOM <- function(SOM.output,
   }
   
   # Add main title in outer margin
-  if (mode == "Cluster.separation") {
-    mtext("Variable importance of SOM layers (eta squared cluster separation)", outer = TRUE, side = 3, line = 0, cex = title.font.size)
-  }
-  if (mode == "Map.variance") {
-    mtext("Variable importance across SOM map (variation in neuron weights)", outer = TRUE, side = 3, line = 0, cex = title.font.size)
-  }
+  if (mode == "Cluster.separation") mtext("Variable importance of SOM layers (eta squared cluster separation)", outer = TRUE, side = 3, line = 0, cex = title.font.size)
+  if (mode == "Map.variance") mtext("Variable importance across SOM map (variation in neuron weights)", outer = TRUE, side = 3, line = 0, cex = title.font.size)
   
   # Close graphics device
   if (save) {
