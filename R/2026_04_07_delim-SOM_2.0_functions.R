@@ -6161,6 +6161,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     } else if (length(SOM_layer_names) == 1) {
       messager("Eta squared could not be calculated because only one layer was detected")
     }
+  }
   if (!eta_squared_available && !map_variance_available) stop("Plotting aborted: no valid eta squared or map variance values found across layers")
   
   # Calculate summary table
