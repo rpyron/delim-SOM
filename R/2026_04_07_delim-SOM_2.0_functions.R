@@ -1071,24 +1071,24 @@ calculate.topographic.error <- function(som_model) {
   
   # Combine results from all replicates
   distance_weights_matrix <- do.call(rbind, lapply(results, `[[`, "d_vec"))
-  rownames(distance_weights_matrix) <- retained_replicate_ids
+  rownames(distance_weights_matrix) <- replicate_ids
   colnames(distance_weights_matrix) <- as.character(input_data_names)
   
   learning_values_list <- lapply(1:length(input_data), function(i) {
     learning_values_combined <- do.call(cbind, lapply(results, function(res) res$learning_values_list[[i]]))
     rownames(learning_values_combined) <- paste0("S", seq_len(N.steps))
-    colnames(learning_values_combined) <- retained_replicate_ids
+    colnames(learning_values_combined) <- replicate_ids
     return(learning_values_combined)
   })
   
   quantization_error <- vapply(results, `[[`, numeric(1), "quantization_error")
-  names(quantization_error) <- retained_replicate_ids
+  names(quantization_error) <- replicate_ids
   
   topographic_error <- vapply(results, `[[`, numeric(1), "topographic_error")
-  names(topographic_error) <- retained_replicate_ids
+  names(topographic_error) <- replicate_ids
   
   som_models <- lapply(results, `[[`, "som_model")
-  names(som_models) <- retained_replicate_ids
+  names(som_models) <- replicate_ids
   
   # Compute codebook vectors for each layer across replicates
   codes0 <- kohonen::getCodes(som_models[[1]]) #get codes from first model
@@ -1115,7 +1115,6 @@ calculate.topographic.error <- function(som_model) {
     learning_values_list = learning_values_list, 
     input_data_names = as.character(input_data_names),
     N_steps = N.steps,
-    N_replicates = length(som_models),
     N_replicates = N.replicates,
     replicate_ids = replicate_ids,
     learning_rate_initial = learning.rate.initial,
@@ -1198,7 +1197,7 @@ clustering.SOM <- function(SOM.output,
   
   # Validate input arguments
   if (!is.list(SOM.output) || is.null(SOM.output$som_models) || !is.list(SOM.output$som_models) || length(SOM.output$som_models) < 1) stop("Aborted SOM clustering: SOM.output must be list from train.SOM() with non-empty $som_models")
-  required_SOM_fields <- c("som_models", "codebook_vectors", "retained_replicate_ids", "quantization_error", "topographic_error", "layer.distance.functions")
+  required_SOM_fields <- c("som_models", "codebook_vectors", "replicate_ids", "quantization_error", "topographic_error", "layer.distance.functions")
   missing_SOM_fields <- required_SOM_fields[!(required_SOM_fields %in% names(SOM.output))]
   if (length(missing_SOM_fields) > 0) stop("Aborted SOM clustering: SOM.output is missing required field(s): ", paste(missing_SOM_fields, collapse = ", "))
   if (!is.numeric(max.k) || length(max.k) != 1 || is.na(max.k) || max.k < 2 || (max.k %% 1 != 0)) stop("Aborted SOM clustering: max.k must be a single integer >= 2")
@@ -2367,7 +2366,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     messager("Running SOM clustering sequentially")
     results <- lapply(seq_len(N.replicates), replicate_clust) #run clustering sequentially
   }
-  if (is.null(results)) return(invisible(NULL))
   
   # Combine results from all replicates
   cluster_assignment <- do.call(cbind, lapply(results, `[[`, "cluster_assignment"))
@@ -2396,9 +2394,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   rownames(optim_k_vals) <- "optim_k_vals"
   colnames(optim_k_vals) <- paste0("R", seq_len(N.replicates))
   optim_k_mean <- mean(optim_k_vals, na.rm = T)
-  if (all(is.na(optim_k_vals))) {
-    stop("Aborted SOM clustering: all optimal K values are NA - check input data") 
-  }
+  if (all(is.na(optim_k_vals))) stop("Aborted SOM clustering: all optimal K values are NA - check input data") 
   optim_k_vector <- as.numeric(optim_k_vals)
   optim_k_vector <- optim_k_vector[is.finite(optim_k_vector)]
   k_levels <- sort(unique(optim_k_vector))
@@ -2463,9 +2459,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Build ancestry from the re-labelled matrix
   k.max <- max(assignment_matrix, na.rm = TRUE)
-  prop_list <- lapply(seq_len(nrow(assignment_matrix)), function(i) {
-    prop.table(table(factor(assignment_matrix[i, ], levels = seq_len(k.max))))
-  })
+  prop_list <- lapply(seq_len(nrow(assignment_matrix)), function(i) {prop.table(table(factor(assignment_matrix[i, ], levels = seq_len(k.max))))})
   ancestry_matrix <- do.call(rbind, prop_list)
   colnames(ancestry_matrix) <- paste0("Cluster_", seq_len(ncol(ancestry_matrix)))
   rownames(ancestry_matrix) <- rownames(assignment_matrix)
@@ -2644,12 +2638,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     
     # Save results
     save(SOM_results, file = save.SOM.results.name)
-    if (save.SOM.results && !overwrite.SOM.results) {
-      messager("SOM clustering results saved as ", save.SOM.results.name)
-    }
-    if (save.SOM.results && overwrite.SOM.results) {
-      messager("SOM clustering results overwritten as ", save.SOM.results.name)
-    }
+    if (save.SOM.results && !overwrite.SOM.results) messager("SOM clustering results saved as ", save.SOM.results.name)
+    if (save.SOM.results && overwrite.SOM.results) messager("SOM clustering results overwritten as ", save.SOM.results.name)
   }                             
                                
   # Return results
@@ -2689,18 +2679,10 @@ plot.structure.SOM <- function(SOM.output,
   }, add = TRUE)
   
   # Validate SOM.output
-  if (is.null(SOM.output$ancestry_matrix) || !is.matrix(SOM.output$ancestry_matrix)) {
-    stop("Plotting aborted: ancestry_matrix of SOM.output not valid - check SOM.output or rerun run.SOM")
-  }
-  if (nrow(SOM.output$ancestry_matrix) < 2) {
-    stop("Plotting aborted: ancestry_matrix must have at least 2 rows (individuals)")
-  }
-  if (ncol(SOM.output$ancestry_matrix) < 1) {
-    stop("Plotting aborted: ancestry_matrix must have at least one column (clusters)")
-  }
-  if (all(is.na(SOM.output$ancestry_matrix))) {
-    stop("Plotting aborted: ancestry_matrix has all NA values")
-  }
+  if (is.null(SOM.output$ancestry_matrix) || !is.matrix(SOM.output$ancestry_matrix)) stop("Plotting aborted: ancestry_matrix of SOM.output not valid - check SOM.output or rerun run.SOM")
+  if (nrow(SOM.output$ancestry_matrix) < 2) stop("Plotting aborted: ancestry_matrix must have at least 2 rows (individuals)")
+  if (ncol(SOM.output$ancestry_matrix) < 1) stop("Plotting aborted: ancestry_matrix must have at least one column (clusters)")
+  if (all(is.na(SOM.output$ancestry_matrix))) stop("Plotting aborted: ancestry_matrix has all NA values")
   
   # Validate specified color palette
   viridis_palettes <- list(
@@ -2713,9 +2695,7 @@ plot.structure.SOM <- function(SOM.output,
     viridis::mako,
     viridis::turbo
   )
-  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) {
-    stop("Plotting aborted: col.pal must viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  }
+  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
   
   # Validate specified save
   if (!is.logical(save) || length(save) != 1) {
@@ -2724,9 +2704,7 @@ plot.structure.SOM <- function(SOM.output,
   
   # Validate specified overwrite
   if (save) {
-    if (!is.logical(overwrite) || length(overwrite) != 1) {
-      stop("Plotting aborted: overwrite must be TRUE or FALSE")
-    }
+    if (!is.logical(overwrite) || length(overwrite) != 1) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   }
   
   # Validate specified plot.type
@@ -2739,9 +2717,7 @@ plot.structure.SOM <- function(SOM.output,
   
   # Validate specified file.name
   if (save) {
-    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) {
-      stop("Plotting aborted: file.name must be NULL or single character string")
-    }
+    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
   }
   
   # Validate specified width and height (reasonable values: 4–50 cm)
