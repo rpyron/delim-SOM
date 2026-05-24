@@ -6243,18 +6243,10 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Validate specified SOM_output
-  if (is.null(SOM_output) || !is.list(SOM_output)) {
-    stop("Leave-one-layer-out layer importance aborted: SOM_output must be a non-NULL list")
-  }
-  if (is.null(SOM_output$som_models) || length(SOM_output$som_models) < 1) {
-    stop("Leave-one-layer-out layer importance aborted: SOM_output must contain non-empty som_models")
-  }
-  if (is.null(SOM_output$cluster_assignment)) {
-    stop("Leave-one-layer-out layer importance aborted: SOM_output must contain cluster_assignment")
-  }
-  if (is.null(SOM_output$optim_k_vals)) {
-    stop("Leave-one-layer-out layer importance aborted: SOM_output must contain optim_k_vals")
-  }
+  if (is.null(SOM_output) || !is.list(SOM_output)) stop("Leave-one-layer-out layer importance aborted: SOM_output must be a non-NULL list")
+  if (is.null(SOM_output$som_models) || length(SOM_output$som_models) < 1) stop("Leave-one-layer-out layer importance aborted: SOM_output must contain non-empty som_models")
+  if (is.null(SOM_output$cluster_assignment)) stop("Leave-one-layer-out layer importance aborted: SOM_output must contain cluster_assignment")
+  if (is.null(SOM_output$optim_k_vals)) stop("Leave-one-layer-out layer importance aborted: SOM_output must contain optim_k_vals")
   
   # Recover input_data from SOM_output
   if (!is.null(SOM_output$input_data)) {
@@ -6343,34 +6335,22 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   }
   
   # Validate specified add.points
-  if (!is.logical(add.points) || length(add.points) != 1 || is.na(add.points)) {
-    stop("Leave-one-layer-out layer importance aborted: add.points must be TRUE or FALSE")
-  }
+  if (!is.logical(add.points) || length(add.points) != 1 || is.na(add.points)) stop("Leave-one-layer-out layer importance aborted: add.points must be TRUE or FALSE")
   
   # Validate specified distance.axis.label
-  if (!is.numeric(distance.axis.label) || length(distance.axis.label) != 1 || is.na(distance.axis.label) || distance.axis.label <= 0) {
-    stop("Leave-one-layer-out layer importance aborted: distance.axis.label must be a single positive numeric value")
-  }
+  if (!is.numeric(distance.axis.label) || length(distance.axis.label) != 1 || is.na(distance.axis.label) || distance.axis.label <= 0) stop("Leave-one-layer-out layer importance aborted: distance.axis.label must be a single positive numeric value")
   
   # Validate specified save.leave.one.layer.out.results
-  if (!is.logical(save.leave.one.layer.out.results) || length(save.leave.one.layer.out.results) != 1 || is.na(save.leave.one.layer.out.results)) {
-    stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results must be TRUE or FALSE")
-  }
+  if (!is.logical(save.leave.one.layer.out.results) || length(save.leave.one.layer.out.results) != 1 || is.na(save.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results must be TRUE or FALSE")
   
   # Validate specified save.leave.one.layer.out.results.name
   if (save.leave.one.layer.out.results && !is.null(save.leave.one.layer.out.results.name)) {
-    if (!is.character(save.leave.one.layer.out.results.name) || length(save.leave.one.layer.out.results.name) != 1 || is.na(save.leave.one.layer.out.results.name) || trimws(save.leave.one.layer.out.results.name) == "") {
-      stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must be a non-empty character string if provided")
-    }
-    if (tolower(tools::file_ext(save.leave.one.layer.out.results.name)) != "rdata") {
-      stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must end with '.Rdata'")
-    }
+    if (!is.character(save.leave.one.layer.out.results.name) || length(save.leave.one.layer.out.results.name) != 1 || is.na(save.leave.one.layer.out.results.name) || trimws(save.leave.one.layer.out.results.name) == "") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must be a non-empty character string if provided")
+    if (tolower(tools::file_ext(save.leave.one.layer.out.results.name)) != "rdata") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must end with '.Rdata'")
   }
   
   # Validate specified overwrite.leave.one.layer.out.results
-  if (!is.logical(overwrite.leave.one.layer.out.results) || length(overwrite.leave.one.layer.out.results) != 1 || is.na(overwrite.leave.one.layer.out.results)) {
-    stop("Leave-one-layer-out layer importance aborted: overwrite.leave.one.layer.out.results must be TRUE or FALSE")
-  }
+  if (!is.logical(overwrite.leave.one.layer.out.results) || length(overwrite.leave.one.layer.out.results) != 1 || is.na(overwrite.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: overwrite.leave.one.layer.out.results must be TRUE or FALSE")
   
   # Validate specified save
   if (!is.logical(save) || length(save) != 1 || is.na(save)) {
