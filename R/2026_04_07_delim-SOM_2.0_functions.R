@@ -6336,14 +6336,10 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.logical(overwrite.leave.one.layer.out.results) || length(overwrite.leave.one.layer.out.results) != 1 || is.na(overwrite.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: overwrite.leave.one.layer.out.results must be TRUE or FALSE")
   
   # Validate specified save
-  if (!is.logical(save) || length(save) != 1 || is.na(save)) {
-    stop("Leave-one-layer-out layer importance aborted: save must be TRUE or FALSE")
-  }
+  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Leave-one-layer-out layer importance aborted: save must be TRUE or FALSE")
   
   # Validate specified overwrite
-  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) {
-    stop("Leave-one-layer-out layer importance aborted: overwrite must be TRUE or FALSE")
-  }
+  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Leave-one-layer-out layer importance aborted: overwrite must be TRUE or FALSE")
   
   # Validate specified plot.type
   if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(tolower(plot.type) %in% c("svg", "png", "jpg"))) {
@@ -6353,31 +6349,21 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Validate specified file.name
   if (!is.null(file.name)) {
-    if (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "") {
-      stop("Leave-one-layer-out layer importance aborted: file.name must be NULL or a non-empty character string")
-    }
+    if (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "") stop("Leave-one-layer-out layer importance aborted: file.name must be NULL or a non-empty character string")
   }
   
   # Validate specified width
-  if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) {
-    stop("Leave-one-layer-out layer importance aborted: width must be a single positive numeric value")
-  }
+  if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Leave-one-layer-out layer importance aborted: width must be a single positive numeric value")
   
   # Validate specified height
-  if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) {
-    stop("Leave-one-layer-out layer importance aborted: height must be a single positive numeric value")
-  }
+  if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Leave-one-layer-out layer importance aborted: height must be a single positive numeric value")
   
   # Validate specified resolution
-  if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution <= 0) {
-    stop("Leave-one-layer-out layer importance aborted: resolution must be a single positive numeric value")
-  }
+  if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution <= 0) stop("Leave-one-layer-out layer importance aborted: resolution must be a single positive numeric value")
   
   # Validate specified title
   if (!is.null(title)) {
-    if (!is.character(title) || length(title) != 1 || is.na(title)) {
-      stop("Leave-one-layer-out layer importance aborted: title must be NULL or a character string of length 1")
-    }
+    if (!is.character(title) || length(title) != 1 || is.na(title)) stop("Leave-one-layer-out layer importance aborted: title must be NULL or a character string of length 1")
   }
   
   # Validate specified verbose
@@ -6441,18 +6427,11 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Create function to extract hard cluster labels from cluster_assignment
   get.hard.cluster.labels.from.assignment.SOM <- function(cluster_assignment_matrix) {
-    
-    # Validate specified cluster_assignment_matrix
-    if (is.null(cluster_assignment_matrix)) {
-      stop("Hard cluster label extraction aborted: cluster_assignment_matrix is NULL")
-    }
+    if (is.null(cluster_assignment_matrix)) stop("Hard cluster label extraction aborted: cluster_assignment_matrix is NULL")
     cluster_assignment_matrix <- as.matrix(cluster_assignment_matrix)
     if (nrow(cluster_assignment_matrix) == 0 || ncol(cluster_assignment_matrix) == 0) stop("Hard cluster label extraction aborted: cluster_assignment_matrix is empty")
-    
-    # Extract hard cluster labels
     hard_cluster_labels <- cluster_assignment_matrix[, 1]
     names(hard_cluster_labels) <- rownames(cluster_assignment_matrix)
-    
     return(hard_cluster_labels)
   }
   
@@ -6513,15 +6492,11 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         current_assignment_probability_matrix_list <- clustered_SOM_output[[field_name]]
         if (!is.null(retained_replicate_position) && length(current_assignment_probability_matrix_list) >= retained_replicate_position) {
           current_assignment_probability_matrix <- validate.and.align.assignment.probabilities.SOM(current_assignment_probability_matrix_list[[retained_replicate_position]])
-          if (!is.null(current_assignment_probability_matrix)) {
-            return(current_assignment_probability_matrix)
-          }
+          if (!is.null(current_assignment_probability_matrix)) return(current_assignment_probability_matrix)
         }
         if (is.null(retained_replicate_position) && length(current_assignment_probability_matrix_list) == 1) {
           current_assignment_probability_matrix <- validate.and.align.assignment.probabilities.SOM(current_assignment_probability_matrix_list[[1]])
-          if (!is.null(current_assignment_probability_matrix)) {
-            return(current_assignment_probability_matrix)
-          }
+          if (!is.null(current_assignment_probability_matrix)) return(current_assignment_probability_matrix)
         }
       }
     }
@@ -6696,21 +6671,12 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Create function to calculate mean normalized assignment entropy
   calculate.mean.normalized.assignment.entropy.SOM <- function(assignment_probability_matrix) {
-    
-    # Return missing if matrix is unavailable
     if (is.null(assignment_probability_matrix)) return(NA_real_)
-    
-    # k = 1 provides no meaningful separation metric
-    if (ncol(assignment_probability_matrix) <= 1) {
-      return(NA_real_)
-    }
-    
-    # Calculate mean normalized assignment entropy
+    if (ncol(assignment_probability_matrix) <= 1) return(NA_real_)
     safe_assignment_probability_matrix <- pmax(assignment_probability_matrix, .Machine$double.eps)
     row_assignment_entropies <- -rowSums(safe_assignment_probability_matrix * log(safe_assignment_probability_matrix), na.rm = TRUE)
     normalized_row_assignment_entropies <- row_assignment_entropies / log(ncol(assignment_probability_matrix))
     mean_normalized_assignment_entropy <- mean(normalized_row_assignment_entropies, na.rm = TRUE)
-    
     return(mean_normalized_assignment_entropy)
   }
   
@@ -6850,12 +6816,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       if (is.factor(baseline_retained_replicate_indices)) {
         baseline_retained_replicate_indices <- as.character(baseline_retained_replicate_indices)
       }
-      if (is.list(baseline_retained_replicate_indices)) {
-        baseline_retained_replicate_indices <- unlist(baseline_retained_replicate_indices, recursive = TRUE, use.names = FALSE)
-      }
-      if (is.character(baseline_retained_replicate_indices)) {
-        baseline_retained_replicate_indices <- sub("^R", "", baseline_retained_replicate_indices)
-      }
+      if (is.list(baseline_retained_replicate_indices)) baseline_retained_replicate_indices <- unlist(baseline_retained_replicate_indices, recursive = TRUE, use.names = FALSE)
+      if (is.character(baseline_retained_replicate_indices)) baseline_retained_replicate_indices <- sub("^R", "", baseline_retained_replicate_indices)
       baseline_retained_replicate_indices <- suppressWarnings(as.integer(baseline_retained_replicate_indices))
       if (any(!is.finite(baseline_retained_replicate_indices)) || any(is.na(baseline_retained_replicate_indices)) || any(baseline_retained_replicate_indices < 1)) {
         stop("Leave-one-layer-out layer importance aborted: SOM_output$retained_replicates could not be converted to positive integer replicate indices")
@@ -6866,15 +6828,11 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     
     # Extract baseline replicate-wise cluster assignments
     baseline_cluster_assignment_matrix <- as.matrix(SOM_output$cluster_assignment)
-    if (ncol(baseline_cluster_assignment_matrix) != length(SOM_output$som_models)) {
-      stop("Leave-one-layer-out layer importance aborted: number of cluster_assignment columns does not match number of retained som_models")
-    }
+    if (ncol(baseline_cluster_assignment_matrix) != length(SOM_output$som_models)) stop("Leave-one-layer-out layer importance aborted: number of cluster_assignment columns does not match number of retained som_models")
     
     # Extract baseline replicate-wise optimal k values
     baseline_optimal_k_values <- as.numeric(SOM_output$optim_k_vals)
-    if (length(baseline_optimal_k_values) != length(SOM_output$som_models)) {
-      stop("Leave-one-layer-out layer importance aborted: number of optim_k_vals does not match number of retained som_models")
-    }
+    if (length(baseline_optimal_k_values) != length(SOM_output$som_models)) stop("Leave-one-layer-out layer importance aborted: number of optim_k_vals does not match number of retained som_models")
     
     # Run replicate-matched leave-one-layer-out analyses
     messager("RUNNING LEAVE-ONE-LAYER-OUT ANALYSES ...")
@@ -6891,9 +6849,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         baseline_training_replicate_index <- sub("^R", "", baseline_training_replicate_index)
       }
       baseline_training_replicate_index <- suppressWarnings(as.integer(baseline_training_replicate_index))
-      if (!is.finite(baseline_training_replicate_index) || is.na(baseline_training_replicate_index) || baseline_training_replicate_index < 1) {
-        stop("Leave-one-layer-out layer importance aborted: baseline retained replicate index could not be converted to a positive integer")
-      }
+      if (!is.finite(baseline_training_replicate_index) || is.na(baseline_training_replicate_index) || baseline_training_replicate_index < 1) stop("Leave-one-layer-out layer importance aborted: baseline retained replicate index could not be converted to a positive integer")
       matched_training_seed <- as.integer(baseline.train.SOM.set.seed.N + baseline_training_replicate_index - 1)
       matched_clustering_seed <- as.integer(baseline.clustering.SOM.set.seed.N + retained_replicate_position - 1)
       
@@ -6925,16 +6881,12 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         
         # Subset layer.distance.functions to match remaining layers
         if (!is.null(current_train.SOM.args$layer.distance.functions)) {
-          if (length(current_train.SOM.args$layer.distance.functions) > 1) {
-            current_train.SOM.args$layer.distance.functions <- current_train.SOM.args$layer.distance.functions[-layer_index]
-          }
+          if (length(current_train.SOM.args$layer.distance.functions) > 1) current_train.SOM.args$layer.distance.functions <- current_train.SOM.args$layer.distance.functions[-layer_index]
         }
         
         # Subset manual.layer.weights to match remaining layers
         if (!is.null(current_train.SOM.args$manual.layer.weights)) {
-          if (length(current_train.SOM.args$manual.layer.weights) > 1) {
-            current_train.SOM.args$manual.layer.weights <- current_train.SOM.args$manual.layer.weights[-layer_index]
-          }
+          if (length(current_train.SOM.args$manual.layer.weights) > 1) current_train.SOM.args$manual.layer.weights <- current_train.SOM.args$manual.layer.weights[-layer_index]
         }
         
         # Fit leave-one-layer-out matched single-replicate SOM
@@ -7015,10 +6967,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                                                          leave_one_layer_out_cluster_labels = leave_one_layer_out_hard_cluster_labels)
         pairwise.coassignment.change <- calculate.pairwise.coassignment.change.SOM(baseline_cluster_labels = baseline_hard_cluster_labels,
                                                                                    leave_one_layer_out_cluster_labels = leave_one_layer_out_hard_cluster_labels)
-        adjusted.rand.index <- tryCatch({
-          mclust::adjustedRandIndex(baseline_hard_cluster_labels[shared_sample_names],
-                                    leave_one_layer_out_hard_cluster_labels[shared_sample_names])
-        }, error = function(error_message) NA_real_)
+        adjusted.rand.index <- tryCatch({mclust::adjustedRandIndex(baseline_hard_cluster_labels[shared_sample_names], leave_one_layer_out_hard_cluster_labels[shared_sample_names])}, error = function(error_message) NA_real_)
         
         # Calculate new continuous certainty/separation metrics
         delta.mean.assignment.margin <- baseline_mean_assignment_margin - leave_one_layer_out_mean_assignment_margin
@@ -7112,12 +7061,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       
       # Save results
       save(leave.one.layer.out.results, file = save.leave.one.layer.out.results.name)
-      if (!overwrite.leave.one.layer.out.results) {
-        messager("Leave-one-layer-out results saved as ", save.leave.one.layer.out.results.name)
-      }
-      if (overwrite.leave.one.layer.out.results) {
-        messager("Leave-one-layer-out results overwritten as ", save.leave.one.layer.out.results.name)
-      }
+      if (!overwrite.leave.one.layer.out.results) messager("Leave-one-layer-out results saved as ", save.leave.one.layer.out.results.name)
+      if (overwrite.leave.one.layer.out.results) messager("Leave-one-layer-out results overwritten as ", save.leave.one.layer.out.results.name)
     }
   }
   
@@ -7143,9 +7088,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (save) {
     
     # Check whether plot file already exists
-    if (file.exists(file.name) && !overwrite) {
-      stop("Leave-one-layer-out layer importance aborted: plot file already exists and overwrite = FALSE")
-    }
+    if (file.exists(file.name) && !overwrite) stop("Leave-one-layer-out layer importance aborted: plot file already exists and overwrite = FALSE")
     
     # Check if directory exists
     plot_directory_path <- dirname(file.name)
@@ -7304,12 +7247,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Report saved plot if requested
   if (save) {
-    if (overwrite) {
-      messager("Leave-one-layer-out plot overwritten as ", file.name)
-    }
-    if (!overwrite) {
-      messager("Leave-one-layer-out plot saved as ", file.name)
-    }
+    if (overwrite) messager("Leave-one-layer-out plot overwritten as ", file.name)
+    if (!overwrite) messager("Leave-one-layer-out plot saved as ", file.name)
   }
   
   # Return results
