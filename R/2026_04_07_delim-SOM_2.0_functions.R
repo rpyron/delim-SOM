@@ -1063,21 +1063,9 @@ calculate.topographic.error <- function(som_model) {
         .packages = required_packages_parallel
       ),
       {
-        tryCatch(
-          replicate_som(j),
-          error = function(e) {
-            list(
-              d_vec = rep(NA_real_, length(input_data)),
-              learning_values_list = lapply(seq_along(input_data), function(k) rep(NA_real_, N.steps)),
-              som_model = NULL,
-              quantization_error = NA_real_,
-              topographic_error = NA_real_,
-              error = conditionMessage(e)
-            )
-          }
-        )
-      }
-    )
+    replicate_som(j)
+    }
+  )
   } else {
     
     # Run SOM normally (non-parallel)
@@ -1168,8 +1156,6 @@ calculate.topographic.error <- function(som_model) {
     train.SOM.args = list(
       N.steps = N.steps,
       N.replicates = length(som_models),
-      N.replicates.requested = N.replicates,
-      N.replicates.failed = length(failed_replicate_ids),
       parallel = parallel,
       N.cores = N.cores,
       grid.size = grid.size,
@@ -5812,36 +5798,22 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   }
   
   # Validate specified axis.font.size
-  if (!is.numeric(axis.font.size) || length(axis.font.size) != 1 || is.na(axis.font.size) || axis.font.size <= 0) {
-    stop("Plotting aborted: axis.font.size must be a single positive numeric value")
-  }
+  if (!is.numeric(axis.font.size) || length(axis.font.size) != 1 || is.na(axis.font.size) || axis.font.size <= 0) stop("Plotting aborted: axis.font.size must be a single positive numeric value")
   
   # Validate specified add.boxplot.whiskers
-  if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) {
-    stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
-  }
+  if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
   
   # Validate specified sort.by.median
-  if (!is.logical(sort.by.median) || length(sort.by.median) != 1 || is.na(sort.by.median)) {
-    stop("Plotting aborted: sort.by.median must be TRUE or FALSE")
-  }
+  if (!is.logical(sort.by.median) || length(sort.by.median) != 1 || is.na(sort.by.median)) stop("Plotting aborted: sort.by.median must be TRUE or FALSE")
   
   # Validate specified verbose
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) {
-    stop("Plotting aborted: verbose must be TRUE or FALSE")
-  }
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Plotting aborted: verbose must be TRUE or FALSE")
   
   # Extract layer names
   SOM_layer_names <- NULL
-  if (!is.null(SOM.output$input_data_names)) {
-    SOM_layer_names <- as.character(SOM.output$input_data_names)
-  }
-  if (is.null(SOM_layer_names) && !is.null(SOM.output$distance_weights_matrix)) {
-    SOM_layer_names <- colnames(SOM.output$distance_weights_matrix)
-  }
-  if (is.null(SOM_layer_names) || length(SOM_layer_names) == 0) {
-    stop("Plotting aborted: layer names could not be determined from SOM.output")
-  }
+  if (!is.null(SOM.output$input_data_names)) SOM_layer_names <- as.character(SOM.output$input_data_names)
+  if (is.null(SOM_layer_names) && !is.null(SOM.output$distance_weights_matrix)) SOM_layer_names <- colnames(SOM.output$distance_weights_matrix)
+  if (is.null(SOM_layer_names) || length(SOM_layer_names) == 0) stop("Plotting aborted: layer names could not be determined from SOM.output")
   
   # Extract eta squared and map variance lists if present
   eta_squared_variable_importance_list <- NULL
@@ -5851,9 +5823,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     if (is.null(names(eta_squared_variable_importance_list)) && length(eta_squared_variable_importance_list) == length(SOM_layer_names)) {
       names(eta_squared_variable_importance_list) <- SOM_layer_names
     }
-    if (!is.null(names(eta_squared_variable_importance_list)) && all(SOM_layer_names %in% names(eta_squared_variable_importance_list))) {
-      eta_squared_variable_importance_list <- eta_squared_variable_importance_list[SOM_layer_names]
-    }
+    if (!is.null(names(eta_squared_variable_importance_list)) && all(SOM_layer_names %in% names(eta_squared_variable_importance_list))) eta_squared_variable_importance_list <- eta_squared_variable_importance_list[SOM_layer_names]
     eta_squared_variable_importance_list <- lapply(eta_squared_variable_importance_list, function(variable_importance_values) {
       variable_importance_values <- as.numeric(variable_importance_values)
       variable_importance_values <- variable_importance_values[is.finite(variable_importance_values) & !is.na(variable_importance_values)]
@@ -5878,29 +5848,18 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   # Check whether there are valid values
   eta_squared_available <- FALSE
   map_variance_available <- FALSE
-  if (!is.null(eta_squared_variable_importance_list)) {
-    eta_squared_available <- any(vapply(eta_squared_variable_importance_list, length, numeric(1)) > 0)
-  }
-  if (!is.null(map_variance_variable_importance_list)) {
-    map_variance_available <- any(vapply(map_variance_variable_importance_list, length, numeric(1)) > 0)
-  }
+  if (!is.null(eta_squared_variable_importance_list)) eta_squared_available <- any(vapply(eta_squared_variable_importance_list, length, numeric(1)) > 0)
+  if (!is.null(map_variance_variable_importance_list)) map_variance_available <- any(vapply(map_variance_variable_importance_list, length, numeric(1)) > 0)
   
   # Report informative messages for special cases
-  if (length(SOM_layer_names) == 1) {
-    messager("Only one SOM layer was detected")
-  }
-  
+  if (length(SOM_layer_names) == 1) messager("Only one SOM layer was detected")
   if (!eta_squared_available) {
     if (!is.null(SOM.output$optim_k_vals) && length(SOM.output$optim_k_vals) > 0 && all(SOM.output$optim_k_vals == 1, na.rm = TRUE)) {
       messager("Eta squared could not be calculated because all retained SOM replicates had k = 1")
     } else if (length(SOM_layer_names) == 1) {
       messager("Eta squared could not be calculated because only one layer was detected")
     }
-  }
-  
-  if (!eta_squared_available && !map_variance_available) {
-    stop("Plotting aborted: no valid eta squared or map variance values found across layers")
-  }
+  if (!eta_squared_available && !map_variance_available) stop("Plotting aborted: no valid eta squared or map variance values found across layers")
   
   # Calculate summary table
   layer_importance_summary_table <- data.frame(layer = SOM_layer_names,
@@ -5966,18 +5925,12 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     if (eta_squared_available && map_variance_available) {
       file.name <- paste0("SOM_variable_importance_layers_both_", paste(SOM_layer_names, collapse = "_"), ".", plot.type)
     }
-    if (eta_squared_available && !map_variance_available) {
-      file.name <- paste0("SOM_variable_importance_layers_eta_squared_", paste(SOM_layer_names, collapse = "_"), ".", plot.type)
-    }
-    if (!eta_squared_available && map_variance_available) {
-      file.name <- paste0("SOM_variable_importance_layers_map_variance_", paste(SOM_layer_names, collapse = "_"), ".", plot.type)
-    }
+    if (eta_squared_available && !map_variance_available) file.name <- paste0("SOM_variable_importance_layers_eta_squared_", paste(SOM_layer_names, collapse = "_"), ".", plot.type)
+    if (!eta_squared_available && map_variance_available) file.name <- paste0("SOM_variable_importance_layers_map_variance_", paste(SOM_layer_names, collapse = "_"), ".", plot.type)
   }
   
   # Check for file existence if overwrite is FALSE
-  if (!overwrite && file.exists(file.name)) {
-    stop(file.name, " already exists - skipping plot saving")
-  }
+  if (!overwrite && file.exists(file.name)) stop(file.name, " already exists - skipping plot saving")
   
   # Define color palette for layers
   layer_colors <- setNames(col.pal(length(SOM_layer_names)), SOM_layer_names)
