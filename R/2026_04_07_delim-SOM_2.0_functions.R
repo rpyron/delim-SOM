@@ -4205,14 +4205,15 @@ plot.map.SOM <- function(SOM.output,
   if (is.null(rownames(Coordinates))) stop("Plotting aborted: Coordinates must have rownames matching rownames of ancestry_matrix")
   if (!is.data.frame(Coordinates) && !is.matrix(Coordinates)) stop("Plotting aborted: Coordinates must be a data frame or matrix")
   viridis_palettes <- list(viridis::viridis,
-                           viridis::magma,
-                           viridis::plasma,
-                           viridis::inferno,
-                           viridis::cividis,
-                           viridis::rocket,
-                           viridis::mako,
-                           viridis::turbo
-  if (!any(vapply(viridis_palettes, identical, logical(1), pie.col.pal))) stop("Plotting aborted: pie.col.pal must viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+                         viridis::magma,
+                         viridis::plasma,
+                         viridis::inferno,
+                         viridis::cividis,
+                         viridis::rocket,
+                         viridis::mako,
+                         viridis::turbo)
+
+  if (!any(vapply(viridis_palettes, identical, logical(1), pie.col.pal))) stop("Plotting aborted: pie.col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   if (save) {
@@ -4235,33 +4236,15 @@ plot.map.SOM <- function(SOM.output,
   }
   if (!is.numeric(lat.buffer.range) || length(lat.buffer.range) != 1 || is.na(lat.buffer.range) || lat.buffer.range < 0) stop("Plotting aborted: lat.buffer.range must be a single non-negative number")
   if (!is.numeric(lon.buffer.range) || length(lon.buffer.range) != 1 || is.na(lon.buffer.range) || lon.buffer.range < 0) stop("Plotting aborted: lon.buffer.range must be a single non-negative number")
-  if (!is.numeric(pie.size) || length(pie.size) != 1 || is.na(pie.size) || pie.size <= 0) {
-    stop("Plotting aborted: pie.size must be a single positive number")
-  }
-  viridis_palettes <- list(viridis::viridis, viridis::magma, viridis::plasma, viridis::inferno,
-                           viridis::cividis, viridis::rocket, viridis::mako, viridis::turbo)
-  if (!any(vapply(viridis_palettes, identical, logical(1), pie.col.pal))) {
-    stop("Plotting aborted: pie.col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  }
-  if (!is.logical(USA.add.states) || length(USA.add.states) != 1 || is.na(USA.add.states)) {
-    stop("Plotting aborted: USA.add.states must be TRUE or FALSE")
-  }
-  if (!is.logical(USA.add.counties) || length(USA.add.counties) != 1 || is.na(USA.add.counties)) {
-    stop("Plotting aborted: USA.add.counties must be TRUE or FALSE")
-  }
-  if (!is.numeric(USA.state.lwd) || length(USA.state.lwd) != 1 || is.na(USA.state.lwd) || USA.state.lwd <= 0) {
-    stop("Plotting aborted: USA.state.lwd must be a single positive number")
-  }
-  if (!is.numeric(USA.county.lwd) || length(USA.county.lwd) != 1 || is.na(USA.county.lwd) || USA.county.lwd <= 0) {
-    stop("Plotting aborted: USA.county.lwd must be a single positive number")
-  }
-  if (!is.numeric(north.arrow.position) || length(north.arrow.position) != 2 || any(is.na(north.arrow.position)) ||
-      any(north.arrow.position < 0) || any(north.arrow.position > 1)) {
-    stop("Plotting aborted: north.arrow.position must be numeric vector of length 2 with values in between 0 and 1")
-  }
-  if (!is.numeric(north.arrow.length) || length(north.arrow.length) != 1 || is.na(north.arrow.length) || north.arrow.length <= 0) {
-    stop("Plotting aborted: north.arrow.length must be a single positive number")
-  }
+  if (!is.numeric(pie.size) || length(pie.size) != 1 || is.na(pie.size) || pie.size <= 0) stop("Plotting aborted: pie.size must be a single positive number")
+  viridis_palettes <- list(viridis::viridis, viridis::magma, viridis::plasma, viridis::inferno, viridis::cividis, viridis::rocket, viridis::mako, viridis::turbo)
+  if (!any(vapply(viridis_palettes, identical, logical(1), pie.col.pal))) stop("Plotting aborted: pie.col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+  if (!is.logical(USA.add.states) || length(USA.add.states) != 1 || is.na(USA.add.states)) stop("Plotting aborted: USA.add.states must be TRUE or FALSE")
+  if (!is.logical(USA.add.counties) || length(USA.add.counties) != 1 || is.na(USA.add.counties)) stop("Plotting aborted: USA.add.counties must be TRUE or FALSE")
+  if (!is.numeric(USA.state.lwd) || length(USA.state.lwd) != 1 || is.na(USA.state.lwd) || USA.state.lwd <= 0) stop("Plotting aborted: USA.state.lwd must be a single positive number")
+  if (!is.numeric(USA.county.lwd) || length(USA.county.lwd) != 1 || is.na(USA.county.lwd) || USA.county.lwd <= 0) stop("Plotting aborted: USA.county.lwd must be a single positive number")
+  if (!is.numeric(north.arrow.position) || length(north.arrow.position) != 2 || any(is.na(north.arrow.position)) || any(north.arrow.position < 0) || any(north.arrow.position > 1)) stop("Plotting aborted: north.arrow.position must be numeric vector of length 2 with values in between 0 and 1")
+  if (!is.numeric(north.arrow.length) || length(north.arrow.length) != 1 || is.na(north.arrow.length) || north.arrow.length <= 0) stop("Plotting aborted: north.arrow.length must be a single positive number")
   if (!is.numeric(north.arrow.lwd) || length(north.arrow.lwd) != 1 || is.na(north.arrow.lwd) || north.arrow.lwd <= 0) stop("Plotting aborted: north.arrow.lwd must be a single positive number")
   if (!is.numeric(north.arrow.N.position) || length(north.arrow.N.position) != 1 || is.na(north.arrow.N.position) || north.arrow.N.position < 0) stop("Plotting aborted: north.arrow.N.position must be a single non-negative number")
   if (!is.numeric(north.arrow.N.size) || length(north.arrow.N.size) != 1 || is.na(north.arrow.N.size) || north.arrow.N.size <= 0) stop("Plotting aborted: north.arrow.N.size must be a single positive number")
