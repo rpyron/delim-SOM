@@ -4184,20 +4184,13 @@ plot.model.SOM <- function(SOM.output,
   }, add = TRUE)
   
   # Validate SOM.output
-  if (is.null(SOM.output$som_models) || is.null(SOM.output$som_clusters)) {
-    stop("Plotting aborted: SOM.output is missing 'som_models' or 'som_clusters' - check SOM.output or rerun train.SOM/clustering.SOM")
-  }
+  if (is.null(SOM.output$som_models) || is.null(SOM.output$som_clusters)) stop("Plotting aborted: SOM.output is missing 'som_models' or 'som_clusters' - check SOM.output or rerun train.SOM/clustering.SOM")
   
   # Validate replicate.mode
-  allowed_rep_modes <- c("first", "representative", "average")
-  if (!is.character(replicate.mode) || length(replicate.mode) != 1 || is.na(replicate.mode) || !(replicate.mode %in% allowed_rep_modes)) {
-    stop("Plotting aborted: replicate.mode must be 'first', 'representative', or 'average'")
-  }
+  if (!is.character(replicate.mode) || length(replicate.mode) != 1 || is.na(replicate.mode) || !(replicate.mode %in% c("first", "representative", "average"))) {stop("Plotting aborted: replicate.mode must be 'first', 'representative', or 'average'")
   
   # Validate specified set.k
-  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || (set.k %% 1 != 0))) {
-    stop("Plotting aborted: set.k must be NULL or single positive integer >= 1")
-  }
+  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || (set.k %% 1 != 0))) stop("Plotting aborted: set.k must be NULL or single positive integer >= 1")
   
   # Validate specified col.pal.neighbor.dist and col.pal.clusters
   viridis_palettes <- list(
@@ -4210,106 +4203,61 @@ plot.model.SOM <- function(SOM.output,
     viridis::mako,
     viridis::turbo
   )
-  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal.neighbor.dist))) {
-    stop("Plotting aborted: col.pal.neighbor.dist must be a viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  }
-  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal.clusters))) {
-    stop("Plotting aborted: col.pal.clusters must be a viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  }
+  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal.neighbor.dist))) stop("Plotting aborted: col.pal.neighbor.dist must be a viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal.clusters))) stop("Plotting aborted: col.pal.clusters must be a viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
   
   # Validate specified save
-  if (!is.logical(save) || length(save) != 1 || is.na(save)) {
-    stop("Plotting aborted: save must be TRUE or FALSE")
-  }
+  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
   
   # Validate specified overwrite
-  if (save && (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite))) {
-    stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  }
+  if (save && (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite))) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   
   # Validate specified plot.type
   if (save) {
-    allowed_types <- c("svg", "png", "jpg")
-    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% allowed_types)) {
-      stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
-    }
+    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
   }
   
   # Validate specified file.name
-  if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) {
-    stop("Plotting aborted: file.name must be NULL or single character string")
-  }
+  if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
   
   # Validate specified width and height (reasonable values: 4–50 cm)
   if (save) {
-    if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) {
-      stop("Plotting aborted: width must be a single positive number (cm)")
-    }
-    if (width < 4) {
-      message("Warning: width is very small (", width, " cm) – plot may be hard to read")
-    }
-    if (width > 50) {
-      message("Warning: width is very large (", width, " cm) – plot may be unwieldy")
-    }
-    if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) {
-      stop("Plotting aborted: height must be a single positive number (cm)")
-    }
-    if (height < 4) {
-      message("Warning: height is very small (", height, " cm) – plot may be hard to read")
-    }
-    if (height > 50) {
-      message("Warning: height is very large (", height, " cm) – plot may be unwieldy")
-    }
+    if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
+    if (width < 4) messager("Warning: width is very small (", width, " cm) – plot may be hard to read")
+    if (width > 50) messager("Warning: width is very large (", width, " cm) – plot may be unwieldy")
+    if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
+    if (height < 4) messager("Warning: height is very small (", height, " cm) – plot may be hard to read")
+    if (height > 50) message("Warning: height is very large (", height, " cm) – plot may be unwieldy")
   }
   
   # Validate specified resolution (reasonable range: 72–1200 dpi)
   if (save) {
-    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) {
-      stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
-    }
-    if (resolution > 1200) {
-      message("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
-    }
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
+    if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
   }
   
   # Validate specified margins (reasonable range: 0–10)
   margin.list <- c(bottom.margin, left.margin, top.margin, right.margin)
   margin.names <- c("bottom.margin", "left.margin", "top.margin", "right.margin")
   for (i in seq_along(margin.list)) {
-    if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) {
-      stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
-    }
-    if (margin.list[i] < 0) {
-      stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
-    }
-    if (margin.list[i] > 10) {
-      message("Warning: ", margin.names[i], " is large (", margin.list[i], ") – plot area may shrink")
-    }
+    if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
+    if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
+    if (margin.list[i] > 10) message("Warning: ", margin.names[i], " is large (", margin.list[i], ") – plot area may shrink")
   }
   
   # Validate specified boundary.lwd.clusters
-  if (!is.numeric(boundary.lwd.clusters) || length(boundary.lwd.clusters) != 1 || is.na(boundary.lwd.clusters) || boundary.lwd.clusters <= 0) {
-    stop("Plotting aborted: boundary.lwd.clusters must be a single positive number")
-  }
+  if (!is.numeric(boundary.lwd.clusters) || length(boundary.lwd.clusters) != 1 || is.na(boundary.lwd.clusters) || boundary.lwd.clusters <= 0) stop("Plotting aborted: boundary.lwd.clusters must be a single positive number")
   
   # Validate specified point.size.clusters
-  if (!is.numeric(point.size.clusters) || length(point.size.clusters) != 1 || is.na(point.size.clusters) || point.size.clusters <= 0) {
-    stop("Plotting aborted: point.size.clusters must be a single positive number")
-  }
+  if (!is.numeric(point.size.clusters) || length(point.size.clusters) != 1 || is.na(point.size.clusters) || point.size.clusters <= 0) stop("Plotting aborted: point.size.clusters must be a single positive number")
   
   # Validate specified point.shape.clusters (should be integer)
-  if (!is.numeric(point.shape.clusters) || length(point.shape.clusters) != 1 || is.na(point.shape.clusters) || (point.shape.clusters %% 1 != 0)) {
-    stop("Plotting aborted: point.shape.clusters must be a single integer")
-  }
+  if (!is.numeric(point.shape.clusters) || length(point.shape.clusters) != 1 || is.na(point.shape.clusters) || (point.shape.clusters %% 1 != 0)) stop("Plotting aborted: point.shape.clusters must be a single integer")
   
   # Validate specified cluster.shape.clusters and cluster.shape.neighbor.dist
   allowed_shapes <- c("straight", "round")
-  if (!is.character(cluster.shape.clusters) || length(cluster.shape.clusters) != 1 || is.na(cluster.shape.clusters) || !(cluster.shape.clusters %in% allowed_shapes)) {
-    stop("Plotting aborted: cluster.shape.clusters must be 'straight' or 'round'")
-  }
-  if (!is.character(cluster.shape.neighbor.dist) || length(cluster.shape.neighbor.dist) != 1 || is.na(cluster.shape.neighbor.dist) || !(cluster.shape.neighbor.dist %in% allowed_shapes)) {
-    stop("Plotting aborted: cluster.shape.neighbor.dist must be 'straight' or 'round'")
-  }
+  if (!is.character(cluster.shape.clusters) || length(cluster.shape.clusters) != 1 || is.na(cluster.shape.clusters) || !(cluster.shape.clusters %in% allowed_shapes)) stop("Plotting aborted: cluster.shape.clusters must be 'straight' or 'round'")
+  if (!is.character(cluster.shape.neighbor.dist) || length(cluster.shape.neighbor.dist) != 1 || is.na(cluster.shape.neighbor.dist) || !(cluster.shape.neighbor.dist %in% allowed_shapes)) stop("Plotting aborted: cluster.shape.neighbor.dist must be 'straight' or 'round'")
   
   # Validate specified shift.plot.clusters (should be >= 0 and < 0.5)
   if (!is.numeric(shift.plot.clusters) || length(shift.plot.clusters) != 1 || is.na(shift.plot.clusters) || shift.plot.clusters < 0 || shift.plot.clusters >= 0.5) {
@@ -4318,20 +4266,12 @@ plot.model.SOM <- function(SOM.output,
   }
   
   # Validate specified boundary.col.clusters and point.col.clusters (character)
-  if (!is.character(boundary.col.clusters) || length(boundary.col.clusters) != 1 || is.na(boundary.col.clusters)) {
-    stop("Plotting aborted: boundary.col.clusters must be a single character (color name or hex)")
-  }
-  if (!is.character(point.col.clusters) || length(point.col.clusters) != 1 || is.na(point.col.clusters)) {
-    stop("Plotting aborted: point.col.clusters must be a single character (color name or hex)")
-  }
+  if (!is.character(boundary.col.clusters) || length(boundary.col.clusters) != 1 || is.na(boundary.col.clusters)) stop("Plotting aborted: boundary.col.clusters must be a single character (color name or hex)")
+  if (!is.character(point.col.clusters) || length(point.col.clusters) != 1 || is.na(point.col.clusters)) stop("Plotting aborted: point.col.clusters must be a single character (color name or hex)")
   
   # Validate specified title.clusters and title.neighbor.dist (NULL or character)
-  if (!is.null(title.clusters) && (!is.character(title.clusters) || length(title.clusters) != 1 || is.na(title.clusters))) {
-    stop("Plotting aborted: title.clusters must be NULL or single character string")
-  }
-  if (!is.null(title.neighbor.dist) && (!is.character(title.neighbor.dist) || length(title.neighbor.dist) != 1 || is.na(title.neighbor.dist))) {
-    stop("Plotting aborted: title.neighbor.dist must be NULL or single character string")
-  }
+  if (!is.null(title.clusters) && (!is.character(title.clusters) || length(title.clusters) != 1 || is.na(title.clusters))) stop("Plotting aborted: title.clusters must be NULL or single character string")
+  if (!is.null(title.neighbor.dist) && (!is.character(title.neighbor.dist) || length(title.neighbor.dist) != 1 || is.na(title.neighbor.dist))) stop("Plotting aborted: title.neighbor.dist must be NULL or single character string")
   
   # Subset replicates by set.k (if provided)
   som_models_use <- SOM.output$som_models
