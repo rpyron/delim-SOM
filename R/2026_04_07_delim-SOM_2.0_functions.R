@@ -7517,6 +7517,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
                                  remove.original.cols = TRUE, #remove.original.cols - if TRUE, remove original categorical columns after processing
                                  append.to.original = FALSE #append.to.original - if TRUE, append to input; if FALSE, return only binary indicators
 ) {
+  messager <- function(...) if (isTRUE(verbose)) message(...)
   if (!is.data.frame(dataframe)) stop("dataframe must be a data frame") #ensure input is a data frame
   if (!is.character(make.binary.cols)) stop("make.binary.cols must be character vector of column names") #check type
   if (length(make.binary.cols) == 0) stop("make.binary.cols must contain at least one column name") #non-empty
