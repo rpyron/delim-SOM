@@ -4187,7 +4187,7 @@ plot.model.SOM <- function(SOM.output,
   if (is.null(SOM.output$som_models) || is.null(SOM.output$som_clusters)) stop("Plotting aborted: SOM.output is missing 'som_models' or 'som_clusters' - check SOM.output or rerun train.SOM/clustering.SOM")
   
   # Validate replicate.mode
-  if (!is.character(replicate.mode) || length(replicate.mode) != 1 || is.na(replicate.mode) || !(replicate.mode %in% c("first", "representative", "average"))) {stop("Plotting aborted: replicate.mode must be 'first', 'representative', or 'average'")
+  if (!is.character(replicate.mode) || length(replicate.mode) != 1 || is.na(replicate.mode) || !(replicate.mode %in% c("first", "representative", "average"))) stop("Plotting aborted: replicate.mode must be 'first', 'representative', or 'average'")
   
   # Validate specified set.k
   if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || (set.k %% 1 != 0))) stop("Plotting aborted: set.k must be NULL or single positive integer >= 1")
@@ -6064,9 +6064,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   map_variance_variable_importance_list <- NULL
   if (!is.null(SOM.output$median_etasquared_variable_importance)) {
     eta_squared_variable_importance_list <- SOM.output$median_etasquared_variable_importance
-    if (is.null(names(eta_squared_variable_importance_list)) && length(eta_squared_variable_importance_list) == length(SOM_layer_names)) {
-      names(eta_squared_variable_importance_list) <- SOM_layer_names
-    }
+    if (is.null(names(eta_squared_variable_importance_list)) && length(eta_squared_variable_importance_list) == length(SOM_layer_names)) {names(eta_squared_variable_importance_list) <- SOM_layer_names
     if (!is.null(names(eta_squared_variable_importance_list)) && all(SOM_layer_names %in% names(eta_squared_variable_importance_list))) eta_squared_variable_importance_list <- eta_squared_variable_importance_list[SOM_layer_names]
     eta_squared_variable_importance_list <- lapply(eta_squared_variable_importance_list, function(variable_importance_values) {
       variable_importance_values <- as.numeric(variable_importance_values)
@@ -6286,8 +6284,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
          tick = FALSE,
          line = -0.5,
          cex.axis = axis.font.size)
-    axis(2,
-         cex.axis = axis.font.size)
+    axis(2, cex.axis = axis.font.size)
     box()
   }
   
@@ -6331,8 +6328,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
          tick = FALSE,
          line = -0.5,
          cex.axis = axis.font.size)
-    axis(2,
-         cex.axis = axis.font.size)
+    axis(2, cex.axis = axis.font.size)
     box()
   }
   
@@ -6376,8 +6372,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
          tick = FALSE,
          line = -0.5,
          cex.axis = axis.font.size)
-    axis(2,
-         cex.axis = axis.font.size)
+    axis(2, cex.axis = axis.font.size)
     box()
   }
   
@@ -6477,9 +6472,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Set or validate message frequency for leave-one-layer-out progress messages
   if (is.null(message.N.replicates)) {
-    if (is.null(train.SOM.args$message.N.replicates)) {
-      train.SOM.args$message.N.replicates <- 20
-    }
+    if (is.null(train.SOM.args$message.N.replicates)) train.SOM.args$message.N.replicates <- 20
   } else {
     if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) ||
         message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) {
@@ -6489,29 +6482,19 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   }
   
   # Validate specified input_data
-  if (!is.list(input_data) || length(input_data) < 2) {
-    stop("Plotting aborted: function requires at least two layers")
-  }
-  if (is.null(names(input_data)) || any(names(input_data) == "")) {
-    names(input_data) <- paste0("Layer_", seq_along(input_data))
-  }
+  if (!is.list(input_data) || length(input_data) < 2) stop("Plotting aborted: function requires at least two layers")
+  if (is.null(names(input_data)) || any(names(input_data) == "")) {names(input_data) <- paste0("Layer_", seq_along(input_data))
   
   # Convert input_data to matrices and validate row names
   input_data <- lapply(input_data, function(input_layer_matrix) {
     input_layer_matrix <- as.matrix(input_layer_matrix)
-    if (is.null(rownames(input_layer_matrix))) {
-      stop("Leave-one-layer-out layer importance aborted: all input layers must have rownames")
-    }
+    if (is.null(rownames(input_layer_matrix))) stop("Leave-one-layer-out layer importance aborted: all input layers must have rownames")
     return(input_layer_matrix)
   })
   
   # Validate specified seeds
-  if (!is.numeric(baseline.train.SOM.set.seed.N) || length(baseline.train.SOM.set.seed.N) != 1 || is.na(baseline.train.SOM.set.seed.N) || baseline.train.SOM.set.seed.N < 1 || baseline.train.SOM.set.seed.N %% 1 != 0) {
-    stop("Leave-one-layer-out layer importance aborted: baseline.train.SOM.set.seed.N must be a single positive integer")
-  }
-  if (!is.numeric(baseline.clustering.SOM.set.seed.N) || length(baseline.clustering.SOM.set.seed.N) != 1 || is.na(baseline.clustering.SOM.set.seed.N) || baseline.clustering.SOM.set.seed.N < 1 || baseline.clustering.SOM.set.seed.N %% 1 != 0) {
-    stop("Leave-one-layer-out layer importance aborted: baseline.clustering.SOM.set.seed.N must be a single positive integer")
-  }
+  if (!is.numeric(baseline.train.SOM.set.seed.N) || length(baseline.train.SOM.set.seed.N) != 1 || is.na(baseline.train.SOM.set.seed.N) || baseline.train.SOM.set.seed.N < 1 || baseline.train.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.train.SOM.set.seed.N must be a single positive integer")
+  if (!is.numeric(baseline.clustering.SOM.set.seed.N) || length(baseline.clustering.SOM.set.seed.N) != 1 || is.na(baseline.clustering.SOM.set.seed.N) || baseline.clustering.SOM.set.seed.N < 1 || baseline.clustering.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.clustering.SOM.set.seed.N must be a single positive integer")
   
   # Validate specified add.points
   if (!is.logical(add.points) || length(add.points) != 1 || is.na(add.points)) stop("Leave-one-layer-out layer importance aborted: add.points must be TRUE or FALSE")
@@ -6538,9 +6521,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Leave-one-layer-out layer importance aborted: overwrite must be TRUE or FALSE")
   
   # Validate specified plot.type
-  if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(tolower(plot.type) %in% c("svg", "png", "jpg"))) {
-    stop("Leave-one-layer-out layer importance aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
-  }
+  if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(tolower(plot.type) %in% c("svg", "png", "jpg"))) stop("Leave-one-layer-out layer importance aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
   plot.type <- tolower(plot.type)
   
   # Validate specified file.name
