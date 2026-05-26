@@ -6064,7 +6064,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   map_variance_variable_importance_list <- NULL
   if (!is.null(SOM.output$median_etasquared_variable_importance)) {
     eta_squared_variable_importance_list <- SOM.output$median_etasquared_variable_importance
-    if (is.null(names(eta_squared_variable_importance_list)) && length(eta_squared_variable_importance_list) == length(SOM_layer_names)) {names(eta_squared_variable_importance_list) <- SOM_layer_names
+    if (is.null(names(eta_squared_variable_importance_list)) && length(eta_squared_variable_importance_list) == length(SOM_layer_names)) names(eta_squared_variable_importance_list) <- SOM_layer_names
     if (!is.null(names(eta_squared_variable_importance_list)) && all(SOM_layer_names %in% names(eta_squared_variable_importance_list))) eta_squared_variable_importance_list <- eta_squared_variable_importance_list[SOM_layer_names]
     eta_squared_variable_importance_list <- lapply(eta_squared_variable_importance_list, function(variable_importance_values) {
       variable_importance_values <- as.numeric(variable_importance_values)
@@ -6483,7 +6483,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Validate specified input_data
   if (!is.list(input_data) || length(input_data) < 2) stop("Plotting aborted: function requires at least two layers")
-  if (is.null(names(input_data)) || any(names(input_data) == "")) {names(input_data) <- paste0("Layer_", seq_along(input_data))
+  if (is.null(names(input_data)) || any(names(input_data) == "")) names(input_data) <- paste0("Layer_", seq_along(input_data))
   
   # Convert input_data to matrices and validate row names
   input_data <- lapply(input_data, function(input_layer_matrix) {
