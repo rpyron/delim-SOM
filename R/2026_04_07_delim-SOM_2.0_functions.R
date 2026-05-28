@@ -2268,7 +2268,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             optics_model <- try(dbscan::optics(som_codes, minPts = minPts_value, eps = NULL), silent = TRUE) #run OPTICS
             if (inherits(optics_model, "try-error")) next
             for (xi_value in xi_vals) { #iterate over Xi values
-              xi_model <- try(withCallingHandlers(dbscan::extractXi(optics_model, xi = xi_value), warning = function(w) {if (grepl("No clusters were found", conditionMessage(w))) invokeRestart("muffleWarning"))), silent = TRUE)
+              xi_model <- try(withCallingHandlers(dbscan::extractXi(optics_model, xi = xi_value), warning = function(w) {if (grepl("No clusters were found", conditionMessage(w))) invokeRestart("muffleWarning")}), silent = TRUE)
               if (inherits(xi_model, "try-error") || is.null(xi_model$cluster)) next
               cluster_assignments <- as.integer(xi_model$cluster) #0 indicates noise/unassigned
               if (all(cluster_assignments == 0L)) next #no usable clustering for this parameter combination
@@ -6783,10 +6783,8 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
   # Log-transform retained count variables only for correlation filtering
   variables.for.correlation <- variables.retained.for.correlation
   retained.count.variable.names <- intersect(names(count.variable.logical)[count.variable.logical], colnames(variables.for.correlation))
-  
   if (length(retained.count.variable.names) > 0) {
     for (variable.name in retained.count.variable.names) variables.for.correlation[[variable.name]] <- log1p(variables.for.correlation[[variable.name]])
-    }
   }
   
   # Calculate absolute correlation matrix, ignoring NAs pairwise
