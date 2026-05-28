@@ -226,7 +226,7 @@ for (pkg in CRAN_packages) {
 #' neighborhood relationships and are commonly recommended for SOM visualization
 #' and training (Kohonen, 1995, 1998, 2013; Vesanto & Alhoniemi, 2000).
 
-#' Repeated SOM training is recommended because stochastic initialization and
+#' Multiple SOM replicates are performed because stochastic initialization and
 #' online training order can produce different local organizations even when the
 #' same data and settings are used (Wehrens & Buydens, 2007; Wehrens &
 #' Kruisselbrink, 2018). Users should interpret recurring structure across
@@ -605,15 +605,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       removed <- rownames(mat)[na_frac > max.NA.row]
       if (length(removed) > 0) { #show message if samples are removed
         if (length(removed) <= 30) {
-          messager(sprintf(
-            "Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f): %s",
-            length(removed), nrow(mat), input_data_names[i], max.NA.row * 100, max.NA.row, paste(removed, collapse = ", ")
-          ))
+          messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f): %s", length(removed), nrow(mat), input_data_names[i], max.NA.row * 100, max.NA.row, paste(removed, collapse = ", ")))
         } else {
-          messager(sprintf(
-            "Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f)",
-            length(removed), nrow(mat), input_data_names[i], max.NA.row * 100, max.NA.row
-          ))
+          messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f)", length(removed), nrow(mat), input_data_names[i], max.NA.row * 100, max.NA.row))
         }
       }
       mat <- mat[na_frac <= max.NA.row, , drop = FALSE]
@@ -653,12 +647,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         mat <- mat[, -non_numeric_cols, drop = FALSE]
       }
       if (ncol(mat) == 0) stop(sprintf("Data processing aborted: no columns (variables) remain in dataset %s after removing all non-numeric columns - check input data", name))
-      if (ncol(mat) == 1) {
-        messager(sprintf(
-          "Warning: dataset %s has only one column (variable) remaining after removing all non-numeric columns - proceeding because multiple layers are present",
-          name
-        ))
-      }
+      if (ncol(mat) == 1) messager(sprintf("Warning: dataset %s has only one column (variable) remaining after removing all non-numeric columns - proceeding because multiple layers are present", name))
       
       # Remove columns filled with only NA
       n_cols <- ncol(mat)
@@ -666,21 +655,12 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       if (any(all_na_cols)) { #print message if any columns were removed
         n_removed <- sum(all_na_cols)
         if (n_removed <= 30) {
-          messager(sprintf(
-            "Removed %d of %d columns (variables) in dataset %s due to all NA: %s",
-            n_removed, n_cols, name, paste(colnames(mat)[all_na_cols], collapse = ", ")
-          ))
+          messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA: %s", n_removed, n_cols, name, paste(colnames(mat)[all_na_cols], collapse = ", ")))
         } else {
-          messager(sprintf(
-            "Removed %d of %d columns (variables) in dataset %s due to all NA",
-            n_removed, n_cols, name
-          ))
+          messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA", n_removed, n_cols, name))
         }
         mat <- mat[, !all_na_cols, drop = FALSE]
-        if (ncol(mat) == 0) stop(sprintf(
-          "Data processing aborted: no columns (variables) remain in dataset %s after removing columns with all NA - check input data",
-          name
-        ))
+        if (ncol(mat) == 0) stop(sprintf("Data processing aborted: no columns (variables) remain in dataset %s after removing columns with all NA - check input data", name))
       }
       
       # Remove variables (columns) with > max.NA.col missing
@@ -690,29 +670,13 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         n0 <- ncol(mat)
         n_dropped <- length(dropped_cols)
         if (n_dropped <= 30) {
-          messager(sprintf(
-            "Removed %d of %d columns (variables) in dataset %s due to more than %.0f%% NA in data (max.NA.col = %.2f): %s",
-            n_dropped, n0, name, max.NA.col * 100, max.NA.col, paste(dropped_cols, collapse = ", ")
-          ))
+          messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to more than %.0f%% NA in data (max.NA.col = %.2f): %s", n_dropped, n0, name, max.NA.col * 100, max.NA.col, paste(dropped_cols, collapse = ", ")))
         } else {
-          messager(sprintf(
-            "Removed %d of %d columns (variables) in dataset %s due to more than %.0f%% NA in data (max.NA.col = %.2f)",
-            n_dropped, n0, name, max.NA.col * 100, max.NA.col
-          ))
+          messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to more than %.0f%% NA in data (max.NA.col = %.2f)", n_dropped, n0, name, max.NA.col * 100, max.NA.col))
         }
         mat <- mat[, !(colnames(mat) %in% dropped_cols), drop = FALSE]
-        if (ncol(mat) == 0) {
-          stop(sprintf(
-            "Data processing aborted: no columns (variables) remain in dataset %s after applying max.NA.col = %.2f - check input data or increase max.NA.col",
-            input_data_names[i], max.NA.col
-          ))
-        }
-        if (ncol(mat) == 1) {
-          messager(sprintf(
-            "Warning: dataset %s has only one column (variable) remaining after applying max.NA.col = %.2f - proceeding because multiple layers are present",
-            name, max.NA.col
-          ))
-        }
+        if (ncol(mat) == 0) stop(sprintf("Data processing aborted: no columns (variables) remain in dataset %s after applying max.NA.col = %.2f - check input data or increase max.NA.col", input_data_names[i], max.NA.col))
+        if (ncol(mat) == 1) messager(sprintf("Warning: dataset %s has only one column (variable) remaining after applying max.NA.col = %.2f - proceeding because multiple layers are present", name, max.NA.col))
       }
       
       # Remove variables (columns) with zero variance
@@ -725,27 +689,13 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         n_removed <- length(removed_cols)
         total_cols <- ncol(mat)
         if (n_removed <= 30) {
-          messager(sprintf(
-            "Removed %d of %d columns (variables) in dataset %s due to zero variance: %s",
-            n_removed, total_cols, name, paste(removed_cols, collapse = ", ")
-          ))
+          messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to zero variance: %s", n_removed, total_cols, name, paste(removed_cols, collapse = ", ")))
         } else {
-          messager(sprintf(
-            "Removed %d of %d columns (variables) in dataset %s due to zero variance",
-            n_removed, total_cols, name
-          ))
+          messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to zero variance", n_removed, total_cols, name))
         }
         mat <- mat[, !zero_var_cols, drop = FALSE]
-        if (ncol(mat) == 0) stop(sprintf(
-          "Data processing aborted: no columns (variables) remain in dataset %s after removing columns with zero variance - check input data",
-          name
-        ))
-        if (ncol(mat) == 1) {
-          messager(sprintf(
-            "Warning: dataset %s has only one column (variable) remaining after removing columns with zero variance - proceeding because multiple layers are present",
-            name
-          ))
-        }
+        if (ncol(mat) == 0) stop(sprintf("Data processing aborted: no columns (variables) remain in dataset %s after removing columns with zero variance - check input data", name))
+        if (ncol(mat) == 1) messager(sprintf("Warning: dataset %s has only one column (variable) remaining after removing columns with zero variance - proceeding because multiple layers are present", name))
       }
       
       # Remove all-NA rows after column filtering
@@ -755,29 +705,13 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         n_removed <- sum(all_na_rows)
         n_rows <- nrow(mat)
         if (n_removed <= 30) {
-          messager(sprintf(
-            "Removed %d of %d rows (samples) in dataset %s due to all values being NA after column filtering: %s",
-            n_removed, n_rows, name, paste(removed_names, collapse = ", ")
-          ))
+          messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to all values being NA after column filtering: %s", n_removed, n_rows, name, paste(removed_names, collapse = ", ")))
         } else {
-          messager(sprintf(
-            "Removed %d of %d rows (samples) in dataset %s due to all values being NA after column filtering",
-            n_removed, n_rows, name
-          ))
+          messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to all values being NA after column filtering", n_removed, n_rows, name))
         }
         mat <- mat[!all_na_rows, , drop = FALSE]
-        if (nrow(mat) == 0) {
-          stop(sprintf(
-            "Data processing aborted: no rows (samples) remain in dataset %s after removing all-NA rows after column filtering - check input data",
-            name
-          ))
-        }
-        if (nrow(mat) == 1) {
-          stop(sprintf(
-            "Data processing aborted: only one row (sample) remains in dataset %s after removing all-NA rows after column filtering - check input data",
-            name
-          ))
-        }
+        if (nrow(mat) == 0) stop(sprintf("Data processing aborted: no rows (samples) remain in dataset %s after removing all-NA rows after column filtering - check input data", name))
+        if (nrow(mat) == 1) stop(sprintf("Data processing aborted: only one row (sample) remains in dataset %s after removing all-NA rows after column filtering - check input data", name))
       }
       
       # Add processed matrix to list for output (after filtering)
@@ -788,12 +722,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     # Intersect and match samples across processed matrices
     all_samples <- unique(unlist(lapply(processed_data, rownames)))
     common_samples <- Reduce(intersect, lapply(processed_data, rownames))
-    if (length(common_samples) == 0) {
-      stop("Data processing aborted: no shared samples remain after all-NA row filtering - check input data or increase max.NA.row")
-    }
-    if (length(common_samples) == 1) {
-      stop("Data processing aborted: only one shared sample remains after final all-NA row filtering - check input data or increase max.NA.row")
-    }
+    if (length(common_samples) == 0) stop("Data processing aborted: no shared samples remain after all-NA row filtering - check input data or increase max.NA.row")
+    if (length(common_samples) == 1) stop("Data processing aborted: only one shared sample remains after final all-NA row filtering - check input data or increase max.NA.row")
     processed_data <- lapply(processed_data, function(mat) mat[common_samples, , drop = FALSE])
     
     # Store pre-normalization layers for type detection
@@ -829,20 +759,13 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         n_removed <- sum(all_na_cols)
         removed_names <- colnames(mat)[all_na_cols]
         if (n_removed <= 30) {
-          messager(sprintf("Removed %d columns (variables) in dataset %s after normalization because all values are NA: %s",
-                           n_removed, processed_names[i], paste(removed_names, collapse = ", ")))
+          messager(sprintf("Removed %d columns (variables) in dataset %s after normalization because all values are NA: %s", n_removed, processed_names[i], paste(removed_names, collapse = ", ")))
         } else {
-          messager(sprintf("Removed %d columns (variables) in dataset %s after normalization because all values are NA",
-                           n_removed, processed_names[i]))
+          messager(sprintf("Removed %d columns (variables) in dataset %s after normalization because all values are NA", n_removed, processed_names[i]))
         }
         mat <- mat[, !all_na_cols, drop = FALSE]
         if (is.null(dim(mat)) || ncol(mat) == 0) stop("Data processing aborted: no columns (variables) remain after removing all-NA columns - check input data or increase max.NA.col")
-        if (ncol(mat) == 1) {
-          messager(sprintf(
-            "Warning: dataset %s has only one column (variable) remaining after removing all-NA columns post-normalization - proceeding because multiple layers are present",
-            processed_names[i]
-          ))
-        }
+        if (ncol(mat) == 1) messager(sprintf("Warning: dataset %s has only one column (variable) remaining after removing all-NA columns post-normalization - proceeding because multiple layers are present", processed_names[i]))
       }
       processed_data[[i]] <- as.matrix(mat)
     }
@@ -869,53 +792,28 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       n_removed <- length(non_numeric_cols)
       n_total <- ncol(mat) #number of columns before removal
       if (n_removed <= 30) {
-        messager(sprintf(
-          "Removed %d of %d columns (variables) in dataset %s due to non-numeric type: %s",
-          n_removed, n_total, input_data_names[[1]], paste(names(mat)[non_numeric_cols], collapse = ", ")
-        ))
+        messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type: %s", n_removed, n_total, input_data_names[[1]], paste(names(mat)[non_numeric_cols], collapse = ", ")))
       } else {
-        messager(sprintf(
-          "Removed %d of %d columns (variables) in dataset %s due to non-numeric type",
-          n_removed, n_total, input_data_names[[1]]
-        ))
+        messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type", n_removed, n_total, input_data_names[[1]]))
       }
       mat <- mat[, -non_numeric_cols, drop = FALSE] #drop non-numeric columns
     }
     if (ncol(mat) == 0) stop("Data processing aborted: no columns (variables) remain after removing all non-numeric columns - check input data")
-    if (ncol(mat) == 1) stop(sprintf(
-      "Data processing aborted: dataset %s has only one column (variable) remaining after removing all non-numeric columns - check input data",
-      input_data_names[[1]]
-    ))
+    if (ncol(mat) == 1) stop(sprintf("Data processing aborted: dataset %s has only one column (variable) remaining after removing all non-numeric columns - check input data", input_data_names[[1]]))
     
     # Remove rows with > max.NA.row missing
     na_props <- rowMeans(is.na(mat)) #fraction of NA per row
     bad_samples <- rownames(mat)[na_props > max.NA.row] #extract rows exceeding threshold
     if (length(bad_samples) > 0) { #print message if rows (samples) are removed
       if (length(bad_samples) <= 30) {
-        messager(sprintf(
-          "Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f): %s",
-          length(bad_samples), nrow(mat), input_data_names[[1]], max.NA.row * 100, max.NA.row, paste(bad_samples, collapse = ", ")
-        ))
+        messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f): %s", length(bad_samples), nrow(mat), input_data_names[[1]], max.NA.row * 100, max.NA.row, paste(bad_samples, collapse = ", ")))
       } else {
-        messager(sprintf(
-          "Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f)",
-          length(bad_samples), nrow(mat), input_data_names[[1]], max.NA.row * 100, max.NA.row
-        ))
+        messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f)", length(bad_samples), nrow(mat), input_data_names[[1]], max.NA.row * 100, max.NA.row))
       }
       mat <- mat[!rownames(mat) %in% bad_samples, , drop = FALSE] #remove rows
     }
-    if (nrow(mat) == 0) {
-      stop(sprintf(
-        "Data processing aborted: no rows (samples) remain in dataset %s after applying max.NA.row = %.2f - check input data or increase max.NA.row",
-        input_data_names[[1]], max.NA.row
-      ))
-    }
-    if (nrow(mat) == 1) {
-      stop(sprintf(
-        "Data processing aborted: only one row (sample) remains in dataset %s after applying max.NA.row = %.2f - check input data or increase max.NA.row",
-        input_data_names[[1]], max.NA.row
-      ))
-    }
+    if (nrow(mat) == 0) stop(sprintf("Data processing aborted: no rows (samples) remain in dataset %s after applying max.NA.row = %.2f - check input data or increase max.NA.row", input_data_names[[1]], max.NA.row))
+    if (nrow(mat) == 1) stop(sprintf("Data processing aborted: only one row (sample) remains in dataset %s after applying max.NA.row = %.2f - check input data or increase max.NA.row", input_data_names[[1]], max.NA.row))
     
     # Remove columns with all NA
     all_na_cols <- vapply(mat, function(x) all(is.na(x)), logical(1)) #identify columns with all NA
@@ -924,11 +822,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       n_total <- ncol(mat)
       removed_names <- colnames(mat)[all_na_cols]
       if (n_removed <= 30) {
-        messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA: %s",
-                         n_removed, n_total, input_data_names[[1]], paste(removed_names, collapse = ", ")))
+        messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA: %s", n_removed, n_total, input_data_names[[1]], paste(removed_names, collapse = ", ")))
       } else {
-        messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA",
-                         n_removed, n_total, input_data_names[[1]]))
+        messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA", n_removed, n_total, input_data_names[[1]]))
       }
       mat <- mat[, !all_na_cols, drop = FALSE] #remove columns
     }
@@ -944,9 +840,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       messager(sprintf("Removed %d of %d columns (variables) due to more than %.0f%% NA in data (max.NA.col = %.2f): %s", n_dropped, ncol(mat), max.NA.col * 100, max.NA.col, paste(dropped_cols, collapse = ", ")))
       } else {
         messager(sprintf(
-          "Removed %d of %d columns (variables) due to more than %.0f%% NA in data (max.NA.col = %.2f)",
-          n_dropped, ncol(mat), max.NA.col * 100, max.NA.col
-        ))
+          "Removed %d of %d columns (variables) due to more than %.0f%% NA in data (max.NA.col = %.2f)", n_dropped, ncol(mat), max.NA.col * 100, max.NA.col))
       }
       mat <- mat[, !(colnames(mat) %in% dropped_cols), drop = FALSE] #remove columns
     }
@@ -962,15 +856,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       removed_cols <- names(which(zero_var_cols))
       n_removed <- length(removed_cols)
       if (n_removed <= 30) {
-        messager(sprintf(
-          "Removed %d of %d columns (variables) in dataset %s due to zero variance: %s",
-          n_removed, ncol(mat), input_data_names[[1]], paste(removed_cols, collapse = ", ")
-        ))
+        messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to zero variance: %s", n_removed, ncol(mat), input_data_names[[1]], paste(removed_cols, collapse = ", ")))
       } else {
-        messager(sprintf(
-          "Removed %d of %d columns (variables) in dataset %s due to zero variance",
-          n_removed, ncol(mat), input_data_names[[1]]
-        ))
+        messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to zero variance", n_removed, ncol(mat), input_data_names[[1]]))
       }
       mat <- mat[, !zero_var_cols, drop = FALSE] #remove columns
     }
@@ -983,9 +871,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     # Normalize each column to 0–1 range
     mat <- apply(mat, 2, function(x) {
       col_range <- range(x, na.rm = TRUE)
-      if (diff(col_range) == 0) { #avoid division by zero for constant columns
-        return(rep(NA_real_, length(x)))
-      }
+      if (diff(col_range) == 0) return(rep(NA_real_, length(x))) #avoid division by zero for constant columns
       return((x - col_range[1]) / diff(col_range)) #apply normalization to each column
     })
     if (ncol(mat) == 0) stop(sprintf("Data processing aborted: dataset %s has no columns (variables) remaining after normalization - check input data", input_data_names[1])) #check if all columns are gone after normalization
@@ -1001,15 +887,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       n_total <- ncol(mat)
       removed_names <- colnames(mat)[all_na_cols]
       if (n_removed <= 30) {
-        messager(sprintf(
-          "Removed %d of %d columns (variables) after normalization because all values are NA: %s",
-          n_removed, n_total, paste(removed_names, collapse = ", ")
-        ))
+        messager(sprintf("Removed %d of %d columns (variables) after normalization because all values are NA: %s", n_removed, n_total, paste(removed_names, collapse = ", ")))
       } else {
-        messager(sprintf(
-          "Removed %d of %d columns (variables) after normalization because all values are NA",
-          n_removed, n_total
-        ))
+        messager(sprintf("Removed %d of %d columns (variables) after normalization because all values are NA", n_removed, n_total))
       }
       mat <- mat[, !all_na_cols, drop = FALSE] #remove columns with all NA
     }
@@ -1023,15 +903,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       n_removed <- sum(all_na_rows)
       n_total <- nrow(mat) #total number of rows before removal
       if (n_removed <= 30) {
-        messager(sprintf(
-          "Removed %d of %d rows (samples) with all NA after column filtering: %s",
-          n_removed, n_total, paste(removed_names, collapse = ", ")
-        ))
+        messager(sprintf("Removed %d of %d rows (samples) with all NA after column filtering: %s", n_removed, n_total, paste(removed_names, collapse = ", ")))
       } else {
-        messager(sprintf(
-          "Removed %d of %d rows (samples) with all NA after column filtering",
-          n_removed, n_total
-        ))
+        messager(sprintf("Removed %d of %d rows (samples) with all NA after column filtering", n_removed, n_total))
       }
       mat <- mat[!all_na_rows, , drop = FALSE] #remove rows
     }
@@ -1040,7 +914,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     
     # Wrap matrix as list
     input_data <- list(as.matrix(mat)) #final output is list of matrix
-    
   }
   
   # Infer layer types, set default distance functions (if not provided) and layer weights
@@ -1049,15 +922,8 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (is.null(manual.layer.weights)) { #set layer weights (manual.layer.weights)
     manual.layer.weights <- rep(1, length(input_data)) #equal weights
   } else {
-    if (length(manual.layer.weights) == 1 && length(input_data) > 1) {
-      manual.layer.weights <- rep(manual.layer.weights, length(input_data))
-    }
-    if (length(manual.layer.weights) != length(input_data)) {
-      stop(sprintf(
-        "Data processing aborted: manual.layer.weights has length %d but expected %d (number of layers)",
-        length(manual.layer.weights), length(input_data)
-      ))
-    }
+    if (length(manual.layer.weights) == 1 && length(input_data) > 1) manual.layer.weights <- rep(manual.layer.weights, length(input_data))
+    if (length(manual.layer.weights) != length(input_data)) stop(sprintf("Data processing aborted: manual.layer.weights has length %d but expected %d (number of layers)", length(manual.layer.weights), length(input_data)))
   }
   names(manual.layer.weights) <- layer_names
   layer_numeric_types <- vapply(type_detection_layers, infer_layer_numeric_type, character(1)) #binary / count / continuous
@@ -1087,12 +953,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (n_units > nrow(input_data[[1]])) stop(sprintf("Aborted SOM grid creation: requested SOM grid size %d x %d (%d units) exceeds number of samples (%d) - specify smaller grid.size", grid.size[1], grid.size[2], n_units, nrow(input_data[[1]]))) #if number of grid cells exceeds number of samples
     if (grid.size[1] < 2 || grid.size[2] < 2) stop(sprintf("Aborted SOM grid creation: custom SOM grid %d x %d is smaller than practical minimum 2 x 2 - use at least 2 x 2 for meaningful mapping", grid.size[1], grid.size[2]))
     if (grid.size[1] > 50 || grid.size[2] > 50) messager(sprintf("Custom SOM grid %d x %d is very large! Consider smaller grid.size to avoid long training times", grid.size[1], grid.size[2]))
-    SOM_output_grid <- kohonen::somgrid(xdim = grid.size[1], #create SOM grid
-                                        ydim = grid.size[2],
-                                        topo = "hexagonal",
-                                        neighbourhood.fct = training.neighborhoods)
+    SOM_output_grid <- kohonen::somgrid(xdim = grid.size[1], ydim = grid.size[2], topo = "hexagonal", neighbourhood.fct = training.neighborhoods)
     
-    # Determine grid size and shape automatically based on number of samples and aspect ratio
+  # Determine grid size and shape automatically based on number of samples and aspect ratio
   } else {
     n_samples <- nrow(input_data[[1]])
     n_units <- round(grid.multiplier * sqrt(n_samples))
@@ -1120,11 +983,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       group_sizes <- sapply(data_list, ncol) #extract number of columns for each layer (MFA group sizes)
       if (!is.null(MFA_data) && nrow(MFA_data) >= 5 && ncol(MFA_data) >= 2) { #proceed if enough rows and columns are present
         MFA_results <- tryCatch({
-          FactoMineR::MFA(MFA_data, #run MFA
-                          group = group_sizes,
-                          type = rep("s", length(group_sizes)),
-                          ncp = 2,
-                          graph = FALSE)
+          FactoMineR::MFA(MFA_data, group = group_sizes, type = rep("s", length(group_sizes)), ncp = 2, graph = FALSE) #run MFA                
         }, error = function(e) {
           messager("Aspect ratio calculation failed (not enough samples or too much NA) - using square/square-like default aspect ratio for SOM grid")
           return(NULL)
@@ -1152,7 +1011,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       row_good <- which(rowSums(!is.na(mat1)) >= 2) #keep rows with at least 2 non-NA
       mat1 <- mat1[row_good, , drop = FALSE] #subset to those rows
       mat_cc <- mat1[complete.cases(mat1), , drop = FALSE] #subset to complete-case rows
-      
       if (nrow(mat_cc) >= 2 && ncol(mat_cc) >= 2) { #enough complete rows/cols for covariance
         covariance_mat <- stats::cov(mat_cc) #calculate covariance matrix
         eigenvalues <- tryCatch(eigen(covariance_mat)$values, error = function(e) c(1, 1)) #get eigenvalues or fallback
@@ -1164,7 +1022,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       } else {
         SOM_grid_aspect_ratio <- NA #flag to try next step
       }
-      
       if (is.na(SOM_grid_aspect_ratio)) { #mean-imputation step: only try if missing data is not excessive (<25% missing overall)
         col_missing_prop <- colMeans(is.na(mat)) #fraction of missing data per column
         col_good2 <- which(col_missing_prop < 0.25 & colSums(!is.na(mat)) >= 2) #columns with <25% missing and at least 2 non-NA
@@ -1194,32 +1051,17 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     ydim <- max(2, round(sqrt(n_units / SOM_grid_aspect_ratio)))
     xdim <- max(2, round(n_units / ydim))
     SOM_grid_units <- xdim * ydim
-    if (xdim > 50 || ydim > 50) { #large grid size
-      messager(sprintf("Computed SOM grid size %d x %d is very large - consider reducing grid.multiplier or set smaller grid.size manually to avoid long training times", 
-                       xdim, ydim))
-    }
-    if (SOM_grid_units > n_samples) { #grid cell number less than number of samples
-      stop(sprintf("Aborted SOM grid creation: SOM grid size %d x %d (%d units) exceeds number of samples (%d) - decrease grid.multiplier or set grid.size manually", 
-                   xdim, ydim, SOM_grid_units, n_samples))
-    }
-    if (xdim < 2 || ydim < 2) { #small grid size
-      stop(sprintf("Aborted SOM grid creation: SOM grid size %d x %d is smaller than 2 x 2 - increase grid.multiplier or grid.size", 
-                   xdim, ydim))
-    }
-    SOM_output_grid <- kohonen::somgrid(xdim = xdim, #create SOM grid
-                                        ydim = ydim,
-                                        topo = "hexagonal",
-                                        neighbourhood.fct = training.neighborhoods)
+    if (xdim > 50 || ydim > 50) messager(sprintf("Computed SOM grid size %d x %d is very large - consider reducing grid.multiplier or set smaller grid.size manually to avoid long training times",  xdim, ydim)) #large grid size
+    if (SOM_grid_units > n_samples) stop(sprintf("Aborted SOM grid creation: SOM grid size %d x %d (%d units) exceeds number of samples (%d) - decrease grid.multiplier or set grid.size manually", xdim, ydim, SOM_grid_units, n_samples)) #grid cell number less than number of samples
+    if (xdim < 2 || ydim < 2) stop(sprintf("Aborted SOM grid creation: SOM grid size %d x %d is smaller than 2 x 2 - increase grid.multiplier or grid.size", xdim, ydim)) #small grid size
+    SOM_output_grid <- kohonen::somgrid(xdim = xdim, ydim = ydim, topo = "hexagonal", neighbourhood.fct = training.neighborhoods) #create SOM grid
   }
   
   # Report grid dimensions
   SOM_grid_x <- SOM_output_grid$xdim
   SOM_grid_y <- SOM_output_grid$ydim
   SOM_grid_cells <- SOM_grid_x * SOM_grid_y
-  messager(sprintf(
-    "Created %d x %d SOM grid (%d cells)", #message showing grid size and total cells
-    SOM_grid_x, SOM_grid_y, SOM_grid_cells
-  ))
+  messager(sprintf("Created %d x %d SOM grid (%d cells)", SOM_grid_x, SOM_grid_y, SOM_grid_cells))
   
   # Set neighborhood radius schedule
   nhbrdist <- kohonen::unit.distances(SOM_output_grid)
@@ -1235,9 +1077,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     learning_rate_final_tuning_values <- c(0.001, 0.01, 0.1, 0.3, 0.5)
     learning_rate_N_steps <- 50
     learning_rate_N_replicates <- 10
-    tuning_values <- expand.grid(learning_rate_initial = learning_rate_initial_tuning_values,
-                                 learning_rate_final = learning_rate_final_tuning_values,
-                                 stringsAsFactors = FALSE)
+    tuning_values <- expand.grid(learning_rate_initial = learning_rate_initial_tuning_values, learning_rate_final = learning_rate_final_tuning_values, stringsAsFactors = FALSE)
     tuning_values <- tuning_values[tuning_values$learning_rate_final < tuning_values$learning_rate_initial, , drop = FALSE] #keep only valid combinations: final learning rate < initial learning rate
     tuning_values$qe_mean <- NA_real_
     tuning_values$qe_sd <- NA_real_
@@ -1267,9 +1107,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     }
     tuning_values_sorted <- tuning_values[order(tuning_values$qe_mean), ]
     tuning_values_best <- tuning_values_sorted[1, ]
-    messager(sprintf("Best tuning parameters: initial = %s, final = %s",
-                     tuning_values_best$learning_rate_initial, tuning_values_best$learning_rate_final
-    ))
+    messager(sprintf("Best tuning parameters: initial = %s, final = %s", tuning_values_best$learning_rate_initial, tuning_values_best$learning_rate_final))
     learning.rate.initial <- tuning_values_best$learning_rate_initial
     learning.rate.final <- tuning_values_best$learning_rate_final
   }
@@ -1344,9 +1182,7 @@ calculate.topographic.error <- function(som_model) {
     d_vec <- numeric(length(input_data))
     
     # Print message every N replicates (N specified by message.N.replicates)
-    if (j %% message.N.replicates == 0) {
-      messager(paste("Running replicate:", j, "of", N.replicates))
-    }
+    if (j %% message.N.replicates == 0) messager(paste("Running replicate:", j, "of", N.replicates))
     
     # Run SOM model
     som_model <- kohonen::supersom(data = input_data, 
@@ -1388,12 +1224,7 @@ calculate.topographic.error <- function(som_model) {
   # Run in parallel
   if (parallel) { 
     messager(sprintf("Running SOM in parallel with %d cores", N.cores))
-    required_packages_parallel <- c(
-      "kohonen",
-      "foreach",
-      "doParallel",
-      "doRNG"
-    )
+    required_packages_parallel <- c("kohonen", "foreach", "doParallel", "doRNG")
     parallel_cluster <- parallel::makeCluster(N.cores) #start PSOCK cluster
     on.exit(parallel::stopCluster(parallel_cluster), add = TRUE)
     parallel::clusterExport( #export helper and all needed globals to each worker
@@ -1433,20 +1264,16 @@ calculate.topographic.error <- function(som_model) {
   distance_weights_matrix <- do.call(rbind, lapply(results, `[[`, "d_vec"))
   rownames(distance_weights_matrix) <- replicate_ids
   colnames(distance_weights_matrix) <- as.character(input_data_names)
-  
   learning_values_list <- lapply(1:length(input_data), function(i) {
     learning_values_combined <- do.call(cbind, lapply(results, function(res) res$learning_values_list[[i]]))
     rownames(learning_values_combined) <- paste0("S", seq_len(N.steps))
     colnames(learning_values_combined) <- replicate_ids
     return(learning_values_combined)
   })
-  
   quantization_error <- vapply(results, `[[`, numeric(1), "quantization_error")
   names(quantization_error) <- replicate_ids
-  
   topographic_error <- vapply(results, `[[`, numeric(1), "topographic_error")
   names(topographic_error) <- replicate_ids
-  
   som_models <- lapply(results, `[[`, "som_model")
   names(som_models) <- replicate_ids
   
@@ -1526,6 +1353,8 @@ calculate.topographic.error <- function(som_model) {
     if (save.SOM.results && !overwrite.SOM.results) messager("SOM results saved as ", save.SOM.results.name)
     if (save.SOM.results && overwrite.SOM.results) messager("SOM results overwritten as ", save.SOM.results.name)
   }
+
+  # Return results                                      
   messager("")
   messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
@@ -1586,10 +1415,7 @@ clustering.SOM <- function(SOM.output,
     if (!is.numeric(quantization.error.quantile) || length(quantization.error.quantile) != 1 || is.na(quantization.error.quantile) || quantization.error.quantile <= 0 || quantization.error.quantile >= 1) stop("Aborted SOM clustering: quantization.error.quantile must be NULL or a single numeric value in (0, 1)")
   }
   if (!is.null(topographic.error.quantile)) {
-    if (!is.numeric(topographic.error.quantile) || length(topographic.error.quantile) != 1 || is.na(topographic.error.quantile) ||
-        topographic.error.quantile <= 0 || topographic.error.quantile >= 1) {
-      stop("Aborted SOM clustering: topographic.error.quantile must be NULL or a single numeric value in (0, 1)")
-    }
+    if (!is.numeric(topographic.error.quantile) || length(topographic.error.quantile) != 1 || is.na(topographic.error.quantile) || topographic.error.quantile <= 0 || topographic.error.quantile >= 1) stop("Aborted SOM clustering: topographic.error.quantile must be NULL or a single numeric value in (0, 1)")
   }
   if (!is.logical(calculate.soft.ancestry) || length(calculate.soft.ancestry) != 1 || is.na(calculate.soft.ancestry)) stop("Aborted SOM clustering: calculate.soft.ancestry must be TRUE or FALSE")
   if (!is.logical(calculate.variable.importance) || length(calculate.variable.importance) != 1 || is.na(calculate.variable.importance)) stop("Aborted SOM clustering: calculate.variable.importance must be TRUE or FALSE")
@@ -1633,12 +1459,7 @@ clustering.SOM <- function(SOM.output,
     if (anyNA(reference_data) || anyNA(query_data)) stop("Data include NAs") #NA values are not allowed
     if (ncol(reference_data) != ncol(query_data)) stop("Number of columns must be same!") #dimensions must match
     if (nrow(reference_data) == 0) stop("reference_data must contain at least one row") #need at least one candidate neighbor
-    if (nrow(query_data) == 0) { #return empty result if there are no query points
-      return(list(
-        nn.index = matrix(integer(0), ncol = 1),
-        nn.dist = matrix(numeric(0), ncol = 1)
-      ))
-    }
+    if (nrow(query_data) == 0) return(list(nn.index = matrix(integer(0), ncol = 1), nn.dist = matrix(numeric(0), ncol = 1))) #return empty result if there are no query points
     nearest_neighbor_indices <- integer(nrow(query_data)) #store row index of nearest reference point for each query point
     nearest_neighbor_distances <- numeric(nrow(query_data)) #store distance to nearest reference point for each query point
     for (query_row_index in seq_len(nrow(query_data))) {
@@ -1678,8 +1499,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   distance_matrix <- matrix(NA_real_,
                             nrow = n_samples,
                             ncol = n_units,
-                            dimnames = list(rownames(sample_matrix),
-                                            rownames(codebook_matrix)))
+                            dimnames = list(rownames(sample_matrix), rownames(codebook_matrix)))
   
   # Pre-compute finite mask for samples once (reused across all units)
   sample_finite <- is.finite(sample_matrix) #logical matrix: n_samples x n_vars
@@ -1736,7 +1556,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Stop if unsupported distance function is specified
   if (!distance_function %in% c("sumofsquares", "manhattan", "tanimoto")) stop("Soft assignment calculation aborted: unsupported distance function in compute.layer.sample.to.unit.distance.SOM")
-  
+
+  # Return results
   return(distance_matrix) #return distance matrix
 }
   
@@ -1754,9 +1575,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     sample_data_list <- som_model$data
     if (!is.list(sample_data_list)) sample_data_list <- list(sample_data_list)
     codebook_list <- kohonen::getCodes(som_model)
-    if (!is.list(codebook_list)) {
-      codebook_list <- list(codebook_list)
-    }
+    if (!is.list(codebook_list)) codebook_list <- list(codebook_list)
     if (length(sample_data_list) != length(codebook_list)) stop("Soft assignment calculation aborted: number of SOM data layers does not match number of codebook layers")
     
     # Validate specified layer.distance.functions
@@ -1796,7 +1615,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     valid_weight_matrix <- matrix(0,
                                   nrow = nrow(integrated_distance_matrix),
                                   ncol = ncol(integrated_distance_matrix))
-    
     for (layer_index in seq_along(layer_distance_matrices)) {
       current_distance_matrix <- layer_distance_matrices[[layer_index]]
       current_weight <- layer.weights[layer_index]
@@ -1804,10 +1622,10 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       integrated_distance_matrix[valid_entries] <- integrated_distance_matrix[valid_entries] + (current_distance_matrix[valid_entries] * current_weight)
       valid_weight_matrix[valid_entries] <- valid_weight_matrix[valid_entries] + current_weight
     }
-    
     integrated_distance_matrix[valid_weight_matrix > 0] <- integrated_distance_matrix[valid_weight_matrix > 0] / valid_weight_matrix[valid_weight_matrix > 0]
     integrated_distance_matrix[valid_weight_matrix == 0] <- NA_real_
-    
+
+    # Return results
     return(integrated_distance_matrix)
   }
   
@@ -1825,9 +1643,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     if (nrow(sample_to_unit_distance_matrix) == 0 || ncol(sample_to_unit_distance_matrix) == 0) stop("Replicate ancestry calculation aborted: sample_to_unit_distance_matrix is empty")
     
     # Validate specified unit_cluster_labels
-    if (is.null(unit_cluster_labels) || length(unit_cluster_labels) != ncol(sample_to_unit_distance_matrix)) {
-      stop("Replicate ancestry calculation aborted: unit_cluster_labels must have one label per SOM unit")
-    }
+    if (is.null(unit_cluster_labels) || length(unit_cluster_labels) != ncol(sample_to_unit_distance_matrix)) stop("Replicate ancestry calculation aborted: unit_cluster_labels must have one label per SOM unit")
     unit_cluster_labels <- as.character(unit_cluster_labels)
     unique_cluster_labels <- sort(unique(unit_cluster_labels))
     
@@ -1872,23 +1688,17 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     ancestry_row_sums <- rowSums(replicate_ancestry_matrix, na.rm = TRUE)
     valid_rows <- is.finite(ancestry_row_sums) & ancestry_row_sums > 0
     replicate_ancestry_matrix[valid_rows, ] <- replicate_ancestry_matrix[valid_rows, , drop = FALSE] / ancestry_row_sums[valid_rows]
-    
+
+    # Return results
     return(replicate_ancestry_matrix)
   }
   
   # Create function to calculate mean assignment margin
   calculate.mean.assignment.margin.SOM <- function(assignment_probability_matrix) {
-    
-    # Return missing if matrix is unavailable
     if (is.null(assignment_probability_matrix)) return(NA_real_)
-    
-    # k = 1 provides no meaningful separation metric
     if (ncol(assignment_probability_matrix) <= 1) return(NA_real_)
-    
-    # Calculate mean assignment margin
     row_sorted_probabilities <- t(apply(assignment_probability_matrix, 1, sort, decreasing = TRUE))
     mean_assignment_margin <- mean(row_sorted_probabilities[, 1] - row_sorted_probabilities[, 2], na.rm = TRUE)
-    
     return(mean_assignment_margin)
   }
   
@@ -1926,28 +1736,18 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     if (!is.null(quantization.error.quantile)) {
       if (is.null(SOM.output$quantization_error)) stop("Aborted SOM clustering: SOM.output does not contain quantization_error - rerun train.SOM")
       quantization_error <- SOM.output$quantization_error
-      if (length(quantization_error) != length(SOM.output$som_models)) {
-        stop("Aborted SOM clustering: length of quantization_error does not match number of som_models - rerun train.SOM")
-      }
+      if (length(quantization_error) != length(SOM.output$som_models)) stop("Aborted SOM clustering: length of quantization_error does not match number of som_models - rerun train.SOM")
       if (any(!is.finite(quantization_error) | is.na(quantization_error))) stop("Aborted SOM clustering: quantization_error contains NA or non-finite values")
-      quantization_error_cutoff <- stats::quantile(quantization_error,
-                                                   probs = quantization.error.quantile,
-                                                   na.rm = TRUE,
-                                                   names = FALSE)
+      quantization_error_cutoff <- stats::quantile(quantization_error, probs = quantization.error.quantile, na.rm = TRUE, names = FALSE)
       replicates_to_remove_qe <- which(quantization_error > quantization_error_cutoff)
     }
     
     if (!is.null(topographic.error.quantile)) {
       if (is.null(SOM.output$topographic_error)) stop("Aborted SOM clustering: SOM.output does not contain topographic_error - rerun train.SOM")
       topographic_error <- SOM.output$topographic_error
-      if (length(topographic_error) != length(SOM.output$som_models)) {
-        stop("Aborted SOM clustering: length of topographic_error does not match number of som_models - rerun train.SOM")
-      }
+      if (length(topographic_error) != length(SOM.output$som_models)) stop("Aborted SOM clustering: length of topographic_error does not match number of som_models - rerun train.SOM")
       if (any(!is.finite(topographic_error) | is.na(topographic_error))) stop("Aborted SOM clustering: topographic_error contains NA or non-finite values")
-      topographic_error_cutoff <- stats::quantile(topographic_error,
-                                                  probs = topographic.error.quantile,
-                                                  na.rm = TRUE,
-                                                  names = FALSE)
+      topographic_error_cutoff <- stats::quantile(topographic_error, probs = topographic.error.quantile, na.rm = TRUE, names = FALSE)
       replicates_to_remove_te <- which(topographic_error > topographic_error_cutoff)
     }
     removed_index <- sort(unique(c(replicates_to_remove_qe, replicates_to_remove_te)))
@@ -1956,13 +1756,9 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     if (length(retained_replicates) < 2) stop("Aborted SOM clustering: filtering removed too many SOM replicates - relax quantile thresholds")
     retained_index <- match(retained_replicates, replicate_ids)
     SOM.output$som_models <- SOM.output$som_models[retained_index]
-    if (!is.null(SOM.output$quantization_error)) {
-      SOM.output$quantization_error <- SOM.output$quantization_error[retained_index]
-    }
+    if (!is.null(SOM.output$quantization_error)) SOM.output$quantization_error <- SOM.output$quantization_error[retained_index]
     if (!is.null(SOM.output$topographic_error)) SOM.output$topographic_error <- SOM.output$topographic_error[retained_index]
-    if (!is.null(SOM.output$distance_weights_matrix)) {
-      SOM.output$distance_weights_matrix <- SOM.output$distance_weights_matrix[retained_index, , drop = FALSE]
-    }
+    if (!is.null(SOM.output$distance_weights_matrix)) SOM.output$distance_weights_matrix <- SOM.output$distance_weights_matrix[retained_index, , drop = FALSE]
     if (!is.null(SOM.output$learning_values_list)) {
       SOM.output$learning_values_list <- lapply(SOM.output$learning_values_list, function(x) {
         x[, retained_index, drop = FALSE]
@@ -1995,7 +1791,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     if (!is.list(codes)) codes <- list(codes)
     som_codes <- do.call(cbind, codes)
     rownames(som_codes) <- paste0("G", seq_len(nrow(som_codes)))
-    
     support_vec <- rep(NA_real_, max.k) #method-specific support values across k
     support_label <- NULL #name of support metric
     support_higher_is_better <- NA #whether larger values indicate better support
@@ -2016,8 +1811,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     # Ensure max.k is equal to or smaller than number of available codebook vectors (rows of som_codes)
     n_codes <- nrow(som_codes)
     if (!is.null(set.k) && set.k >= n_codes) stop(sprintf("Aborted SOM clustering: set.k = %d exceeds available codebook rows of %d - reduce set.k to ≤ %d", set.k, n_codes, n_codes - 1))
-  if (is.null(set.k) && max.k >= n_codes) stop(sprintf("Aborted SOM clustering: max.k = %d exceeds available codebook rows of %d - reduce max.k to ≤ %d", max.k, n_codes, n_codes - 1))
-  if (!is.null(set.k) && max.k < set.k) max.k <- set.k
+    if (is.null(set.k) && max.k >= n_codes) stop(sprintf("Aborted SOM clustering: max.k = %d exceeds available codebook rows of %d - reduce max.k to ≤ %d", max.k, n_codes, n_codes - 1))
+    if (!is.null(set.k) && max.k < set.k) max.k <- set.k
     
 # Create function to perform kmeans clustering and calculate within-cluster sum of squares (wss) for each cluster (sum of squared Euclidean distances of SOM units to cluster center)
     calculate.wss <- function(som_codes, max.k, set.k = NULL) {
@@ -2068,9 +1863,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
           break
         }
       }
-      if (is.na(som_N_clusters)) {
-        som_N_clusters <- which.min(replace(BIC_vec, is.na(BIC_vec), Inf)) #if all differences exceed threshold, pick k with lowest BIC
-      }
+      if (is.na(som_N_clusters)) som_N_clusters <- which.min(replace(BIC_vec, is.na(BIC_vec), Inf)) #if all differences exceed threshold, pick k with lowest BIC
       som_N_clusters
     }
     
@@ -2192,9 +1985,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
           }
           mclust_BIC_set <- mclust_BIC_set[1, , drop = FALSE] #force 1-row matrix
           mclust_BIC_set[!is.finite(mclust_BIC_set) | is.na(mclust_BIC_set)] <- NA_real_ #replace non-finite BIC with NA
-          for (mn in colnames(mclust_BIC_set)) { #store BIC values in the full matrix
-            mclust_BIC_matrix[as.character(k_value), mn] <- as.numeric(mclust_BIC_set[1, mn])
-          }
+          for (mn in colnames(mclust_BIC_set)) mclust_BIC_matrix[as.character(k_value), mn] <- as.numeric(mclust_BIC_set[1, mn]) #store BIC values in the full matrix
           row_vals <- as.numeric(mclust_BIC_set[1, ]) #extract BIC values for this k across covariance models
           names(row_vals) <- colnames(mclust_BIC_set)
           row_vals <- row_vals[is.finite(row_vals) & !is.na(row_vals)] #keep only finite values
@@ -2241,9 +2032,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             }
             mclust_BIC_set <- mclust_BIC_set[1, , drop = FALSE] #force 1-row matrix
             mclust_BIC_set[!is.finite(mclust_BIC_set) | is.na(mclust_BIC_set)] <- NA_real_ #replace non-finite BIC with NA
-            for (mn in colnames(mclust_BIC_set)) { #store BIC values in the full matrix
-              mclust_BIC_matrix[as.character(k_value), mn] <- as.numeric(mclust_BIC_set[1, mn])
-            }
+            for (mn in colnames(mclust_BIC_set)) mlust_BIC_matrix[as.character(k_value), mn] <- as.numeric(mclust_BIC_set[1, mn]) #store BIC values in the full matrix
             row_vals <- as.numeric(mclust_BIC_set[1, ]) #extract BIC values for this k across covariance models
             names(row_vals) <- colnames(mclust_BIC_set)
             row_vals <- row_vals[is.finite(row_vals) & !is.na(row_vals)] #keep only finite values
@@ -2336,9 +2125,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       max_minPts <- max(2L, floor(nrow(som_codes) / 1.5)) #set max minPts
       minPts_min <- max(3L, floor(0.05 * nrow(som_codes))) #at least 3, or 5% of units
       minPts_min <- min(minPts_min, max_minPts) #ensure valid range
-            minPts_vals <- unique(round(seq(minPts_min,
-                                      max_minPts,
-                                      length.out = min(15, max_minPts - minPts_min + 1L)))) #grid of minPts values
+            minPts_vals <- unique(round(seq(minPts_min, max_minPts, length.out = min(15, max_minPts - minPts_min + 1L)))) #grid of minPts values
       hdbscan_model_results <- data.frame(minPts = integer(), n_clusters = integer(), mean_mem = numeric()) #initialize result table
       for (m in minPts_vals) { #for each minPts value ...
         hdbscan_model <- dbscan::hdbscan(som_codes, minPts = m) #run HDBSCAN
@@ -2415,9 +2202,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               clusters_nearest <- as.integer(factor(clusters_nearest)) #relabel clusters sequentially
               k_nearest <- length(unique(clusters_nearest)) #extract number of clusters
               silhouette_nearest <- NA_real_
-              if (k_nearest >= 2) {
-                silhouette_nearest <- tryCatch({mean(cluster::silhouette(clusters_nearest, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
-              }
+              if (k_nearest >= 2) silhouette_nearest <- tryCatch({mean(cluster::silhouette(clusters_nearest, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
               dist_thresh <- stats::quantile(hdbscan_nn_result$nn.dist, 0.95) #distance threshold for singleton assignment
               clusters_singleton <- base_clusters
               next_cluster <- max(base_clusters)
@@ -2434,9 +2219,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               clusters_singleton <- as.integer(factor(clusters_singleton)) #relabel clusters sequentially
               k_singleton <- length(unique(clusters_singleton)) #extract number of clusters
               silhouette_singleton <- NA_real_
-              if (k_singleton >= 2) {
-                silhouette_singleton <- tryCatch({mean(cluster::silhouette(clusters_singleton, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
-              }
+              if (k_singleton >= 2) silhouette_singleton <- tryCatch({mean(cluster::silhouette(clusters_singleton, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
               if (is.na(silhouette_singleton) && is.na(silhouette_nearest)) { #compare both strategies and select best based on silhouette score (or cluster count fallback)
                 if (k_singleton > k_nearest) {
                   som_cluster <- clusters_singleton
@@ -2471,9 +2254,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
         max_minPts <- max(2L, min(15L, n_codes - 1L, floor(n_codes / 2))) #maximum minPts
         minPts_start <- min(max(3L, floor(0.10 * n_codes)), max_minPts) #minimum minPts
         minPts_length <- max(1L, min(8L, max_minPts - minPts_start + 1L)) #number of minPts values
-        minPts_vals <- unique(round(seq(minPts_start,
-                                max_minPts,
-                                length.out = minPts_length))) #grid of minPts values
+        minPts_vals <- unique(round(seq(minPts_start, max_minPts, length.out = minPts_length))) #grid of minPts values
           xi_vals <- c(0.05, 0.10, 0.20, 0.30, 0.40) #Xi grid (include slightly larger values to make extraction less strict)
           optics_model_results <- data.frame(minPts = integer(),
                                              xi = numeric(),
@@ -2487,12 +2268,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             optics_model <- try(dbscan::optics(som_codes, minPts = minPts_value, eps = NULL), silent = TRUE) #run OPTICS
             if (inherits(optics_model, "try-error")) next
             for (xi_value in xi_vals) { #iterate over Xi values
-              xi_model <- try(withCallingHandlers(
-                dbscan::extractXi(optics_model, xi = xi_value),
-                warning = function(w) {
-                  if (grepl("No clusters were found", conditionMessage(w))) invokeRestart("muffleWarning")
-                }
-              ), silent = TRUE)
+              xi_model <- try(withCallingHandlers(dbscan::extractXi(optics_model, xi = xi_value), warning = function(w) {if (grepl("No clusters were found", conditionMessage(w))) invokeRestart("muffleWarning"))), silent = TRUE)
               if (inherits(xi_model, "try-error") || is.null(xi_model$cluster)) next
               cluster_assignments <- as.integer(xi_model$cluster) #0 indicates noise/unassigned
               if (all(cluster_assignments == 0L)) next #no usable clustering for this parameter combination
@@ -2507,9 +2283,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               if (number_of_clusters != som_N_clusters) next #enforce user-specified k
               silhouette_value <- tryCatch({mean(cluster::silhouette(cluster_assignments_relabelled, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
               if (!is.na(silhouette_value) && is.finite(silhouette_value) && number_of_clusters <= max.k) {
-                if (is.na(silhouette_values[number_of_clusters]) || silhouette_value > silhouette_values[number_of_clusters]) {
-                  silhouette_values[number_of_clusters] <- silhouette_value
-                }
+                if (is.na(silhouette_values[number_of_clusters]) || silhouette_value > silhouette_values[number_of_clusters]) silhouette_values[number_of_clusters] <- silhouette_value
               }
               if (is.na(silhouette_value)) next
               result_counter <- result_counter + 1L #increment result counter
@@ -2544,9 +2318,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
        max_minPts <- max(2L, min(15L, n_codes - 1L, floor(n_codes / 2))) #maximum minPts
        minPts_start <- min(max(5L, floor(0.10 * n_codes)), max_minPts) #minimum minPts
        minPts_length <- max(1L, min(8L, max_minPts - minPts_start + 1L)) #number of minPts values
-       minPts_vals <- unique(round(seq(minPts_start,
-                                max_minPts,
-                                length.out = minPts_length))) #grid of minPts values
+       minPts_vals <- unique(round(seq(minPts_start, max_minPts, length.out = minPts_length))) #grid of minPts values
         xi_vals <- c(0.05, 0.10, 0.20, 0.30, 0.40) #Xi grid
         optics_model_results <- data.frame(minPts = integer(),
                                            xi = numeric(),
@@ -2560,12 +2332,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
           optics_model <- try(dbscan::optics(som_codes, minPts = minPts_value, eps = NULL), silent = TRUE) #run OPTICS
           if (inherits(optics_model, "try-error")) next
           for (xi_value in xi_vals) { #iterate over Xi values
-            xi_model <- try(withCallingHandlers(
-              dbscan::extractXi(optics_model, xi = xi_value),
-              warning = function(w) {
-                if (grepl("No clusters were found", conditionMessage(w))) invokeRestart("muffleWarning")
-              }
-            ), silent = TRUE)
+            xi_model <- try(withCallingHandlers(dbscan::extractXi(optics_model, xi = xi_value), warning = function(w) if (grepl("No clusters were found", conditionMessage(w))) invokeRestart("muffleWarning")), silent = TRUE)
             if (inherits(xi_model, "try-error") || is.null(xi_model$cluster)) next
             cluster_assignments <- as.integer(xi_model$cluster) #0 indicates noise/unassigned
             if (all(cluster_assignments == 0L)) next #no usable clustering for this parameter combination
@@ -2715,13 +2482,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       envir = environment())
     doParallel::registerDoParallel(parallel_cluster) #register cluster for foreach
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
-    results <- foreach::`%dopar%`(
-      foreach::foreach(
-        j = seq_len(N.replicates),
-        .packages = required_packages_parallel
-      ),
-      replicate_clust(j)
-    )
+    results <- foreach::`%dopar%`(foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel), replicate_clust(j))
   } else {
     messager("Running SOM clustering sequentially")
     results <- lapply(seq_len(N.replicates), replicate_clust) #run clustering sequentially
@@ -2732,23 +2493,18 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   sample_names <- rownames(results[[1]]$cluster_assignment)
   rownames(cluster_assignment) <- sample_names
   colnames(cluster_assignment) <- paste0("R", seq_len(ncol(cluster_assignment)))
-  
   BIC_values <- do.call(cbind, lapply(results, `[[`, "BIC_vec"))
   rownames(BIC_values) <- paste0("k", seq_len(max.k))
   colnames(BIC_values) <- paste0("R", seq_len(ncol(BIC_values)))
-  
   support_values <- do.call(cbind, lapply(results, `[[`, "support_vec"))
   rownames(support_values) <- paste0("k", seq_len(max.k))
   colnames(support_values) <- paste0("R", seq_len(ncol(support_values)))
-  
   support_labels <- unique(unlist(lapply(results, function(x) x$support_label)))
   support_labels <- support_labels[!is.na(support_labels) & nzchar(support_labels)]
   support_label <- if (length(support_labels) == 0) NULL else support_labels[1]
-  
   support_directions <- unique(unlist(lapply(results, function(x) x$support_higher_is_better)))
   support_directions <- support_directions[!is.na(support_directions)]
   support_higher_is_better <- if (length(support_directions) == 0) NA else support_directions[1]
-  
   optim_k_vals <- sapply(results, `[[`, "som_N_clusters")
   optim_k_vals <- t(as.matrix(optim_k_vals))
   rownames(optim_k_vals) <- "optim_k_vals"
@@ -2760,24 +2516,15 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   k_levels <- sort(unique(optim_k_vector))
   optim_k_vals_counts <- as.numeric(table(factor(optim_k_vector, levels = k_levels)))
   optim_k_vals_props <- optim_k_vals_counts / sum(optim_k_vals_counts)
-  optim_k_summary <- cbind(Count = optim_k_vals_counts,
-                           Proportion = round(optim_k_vals_props, 2)
-  )
+  optim_k_summary <- cbind(Count = optim_k_vals_counts, Proportion = round(optim_k_vals_props, 2))
   rownames(optim_k_summary) <- paste0("k", k_levels)
-  
   som_models <- lapply(results, `[[`, "som_model")
   som_clusters <- lapply(results, `[[`, "som_cluster")
   cluster_gridcell_assignments <- lapply(results, `[[`, "cluster_gridcell_assignments")
   replicate_ancestry_matrices <- lapply(results, `[[`, "replicate_ancestry_matrix")
-  
-  mean_assignment_margin <- vapply(replicate_ancestry_matrices,
-                                   calculate.mean.assignment.margin.SOM,
-                                   numeric(1))
+  mean_assignment_margin <- vapply(replicate_ancestry_matrices, calculate.mean.assignment.margin.SOM, numeric(1))
   names(mean_assignment_margin) <- paste0("R", seq_along(mean_assignment_margin))
-  
-  mean_normalized_assignment_entropy <- vapply(replicate_ancestry_matrices,
-                                               calculate.mean.normalized.assignment.entropy.SOM,
-                                               numeric(1))
+  mean_normalized_assignment_entropy <- vapply(replicate_ancestry_matrices, calculate.mean.normalized.assignment.entropy.SOM, numeric(1))
   names(mean_normalized_assignment_entropy) <- paste0("R", seq_along(mean_normalized_assignment_entropy))
   
   # Replace NA values with 0.5 for labeling
@@ -2988,15 +2735,11 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
 
   # Save results
   if (save.SOM.results) {
-    
-    # Check if directory exists
     dir_path <- dirname(save.SOM.results.name) #extract directory path
     if (!dir.exists(dir_path)) {
       dir.create(dir_path, recursive = T) #create directory if it does not exist
       messager(paste("Specified directory", dir_path, "did not exist and was created"))
     }
-    
-    # Save results
     save(SOM_results, file = save.SOM.results.name)
     if (save.SOM.results && !overwrite.SOM.results) messager("SOM clustering results saved as ", save.SOM.results.name)
     if (save.SOM.results && overwrite.SOM.results) messager("SOM clustering results overwritten as ", save.SOM.results.name)
@@ -3034,17 +2777,13 @@ plot.structure.SOM <- function(SOM.output,
   # Reset plotting parameters
   old_dev <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
-  on.exit({
-    if (dev.cur() == old_dev) par(old_plotting_parameters)
-  }, add = TRUE)
+  on.exit({if (dev.cur() == old_dev) par(old_plotting_parameters)}, add = TRUE)
   
-  # Validate SOM.output
+  # Validate input
   if (is.null(SOM.output$ancestry_matrix) || !is.matrix(SOM.output$ancestry_matrix)) stop("Plotting aborted: ancestry_matrix of SOM.output not valid - check SOM.output or rerun run.SOM")
   if (nrow(SOM.output$ancestry_matrix) < 2) stop("Plotting aborted: ancestry_matrix must have at least 2 rows (individuals)")
   if (ncol(SOM.output$ancestry_matrix) < 1) stop("Plotting aborted: ancestry_matrix must have at least one column (clusters)")
   if (all(is.na(SOM.output$ancestry_matrix))) stop("Plotting aborted: ancestry_matrix has all NA values")
-  
-  # Validate specified color palette
   viridis_palettes <- list(
     viridis::viridis,
     viridis::magma,
@@ -3056,29 +2795,16 @@ plot.structure.SOM <- function(SOM.output,
     viridis::turbo
   )
   if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  
-  # Validate specified save
   if (!is.logical(save) || length(save) != 1) stop("Plotting aborted: save must be TRUE or FALSE")
-  
-  # Validate specified overwrite
   if (save) {
     if (!is.logical(overwrite) || length(overwrite) != 1) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   }
-  
-  # Validate specified plot.type
   if (save) {
-    allowed_plot.types <- c("svg", "png", "jpg")
-    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% allowed_plot.types)) {
-      stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
-    }
+    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
   }
-  
-  # Validate specified file.name
   if (save) {
     if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
   }
-  
-  # Validate specified width and height (reasonable values: 4–50 cm)
   if (save) {
     if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
     if (width < 4) message("Warning: width is very small (", width, " cm) – plot may be hard to read")
@@ -3087,14 +2813,10 @@ plot.structure.SOM <- function(SOM.output,
     if (height < 4) message("Warning: height is very small (", height, " cm) – plot may be hard to read")
     if (height > 50) message("Warning: height is very large (", height, " cm) – plot may be unwieldy")
   }
-  
-  # Validate specified resolution (reasonable range: 72–1200 dpi)
   if (save) {
     if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
     if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
   }
-  
-  # Validate specified margins (reasonable range: 0–10)
   margin.list <- c(bottom.margin, left.margin, top.margin, right.margin)
   margin.names <- c("bottom.margin", "left.margin", "top.margin", "right.margin")
   for (i in seq_along(margin.list)) {
@@ -3102,37 +2824,21 @@ plot.structure.SOM <- function(SOM.output,
     if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
     if (margin.list[i] > 10) message("Warning: ", margin.names[i], " is large (", margin.list[i], ") – plot area may shrink")
   }
-  
-  # Validate specified Individual.labels.font.size (reasonable: 0.2–4)
   if (!is.numeric(Individual.labels.font.size) || length(Individual.labels.font.size) != 1 || is.na(Individual.labels.font.size) || Individual.labels.font.size <= 0) stop("Plotting aborted: Individual.labels.font.size must be a single positive number")
   if (Individual.labels.font.size < 0.2) message("Warning: Individual.labels.font.size is very small (", Individual.labels.font.size, ") – labels may not be readable")
   if (Individual.labels.font.size > 4) message("Warning: Individual.labels.font.size is large (", Individual.labels.font.size, ") – labels may overlap")
-  
-  # Validate specified sort.by.col
   if (!is.null(sort.by.col)) {
-    if (!is.numeric(sort.by.col) || length(sort.by.col) != 1 ||
-        is.na(sort.by.col) || sort.by.col < 1 || sort.by.col > ncol(SOM.output$ancestry_matrix) ||
-        (sort.by.col %% 1 != 0)) {
-      stop(paste0("Plotting aborted: sort.by.col must be integer between 1 and ", ncol(SOM.output$ancestry_matrix), " or NULL"))
-    }
+  if (!is.numeric(sort.by.col) || length(sort.by.col) != 1 || is.na(sort.by.col) || sort.by.col < 1 || sort.by.col > ncol(SOM.output$ancestry_matrix) || (sort.by.col %% 1 != 0)) stop(paste0("Plotting aborted: sort.by.col must be integer between 1 and ", ncol(SOM.output$ancestry_matrix), " or NULL"))
   }
-  
-  # Validate specified linkage.method
   allowed_linkage <- c("single", "complete", "average", "ward.D", "ward.D2", "mcquitty", "median", "centroid")
   if (!linkage.method %in% allowed_linkage) stop("Plotting aborted: linkage.method must be one of: ", paste(allowed_linkage, collapse = ", "))
-  
-  # Validate bar.border.col
   if (!is.null(bar.border.col)) {
     if (!is.character(bar.border.col) || length(bar.border.col) != 1 || is.na(bar.border.col)) stop("Plotting aborted: bar.border.col must be NULL or single character string (e.g. 'white' or 'black')")
   }
-  
-  # Validate bar.border.lwd
   if (!is.null(bar.border.lwd)) {
     if (!is.numeric(bar.border.lwd) || length(bar.border.lwd) != 1 || is.na(bar.border.lwd) || bar.border.lwd <= 0) stop("Plotting aborted: bar.border.lwd must be a single positive number")
     if (bar.border.lwd > 5) message("Warning: bar.border.lwd is large (", bar.border.lwd, ") — lines may obscure adjacent bars")
   }
-  
-  # If there is only one cluster, skip plotting
   if (ncol(SOM.output$ancestry_matrix) == 1) stop("Only one cluster detected - skipping Structure-like plot")
   
   # Order rows of ancestry_matrix
@@ -3155,28 +2861,16 @@ plot.structure.SOM <- function(SOM.output,
     if (is.null(file.name)) file.name <- paste0("SOM_structure_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
     if (file.exists(file.name) && !overwrite) stop("Plotting aborted: ", paste(file.name), "already exists - set overwrite = TRUE to overwrite")
     if (plot.type == "svg") {
-      svg(file.name, 
-          width = width / 2.54, 
-          height = height / 2.54)
+      svg(file.name, width = width / 2.54, height = height / 2.54)
     } else if (plot.type == "png") {
-      png(file.name,
-          width = width, 
-          height = height, 
-          res = resolution, 
-          units = "cm")
+      png(file.name, width = width, height = height, res = resolution, units = "cm")
     } else if (plot.type == "jpg") {
-      jpeg(file.name, 
-           width = width,
-           height = height, 
-           res = resolution, 
-           units = "cm")
+      jpeg(file.name, width = width, height = height, res = resolution, units = "cm")
     }
   }
   
   # Set plot layout
-  par(mfrow = c(1, 1),
-      mar = c(5.1, 4.1, 4.1, 2.1),
-      oma = c(0, 0, 0, 0))
+  par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
   
   # Create function to plot Structure-like plot (based on conStruct)
   plot.Structure <- function(admix.proportions, 
@@ -3204,8 +2898,6 @@ plot.structure.SOM <- function(SOM.output,
          xlab = "",
          xaxt = "n") #create empty plot with custom axes
     plotting.admix.props <- apply(cbind(0, admix.proportions[, layer.order]), 1, cumsum) #compute cumulative admixture proportions for polygons
-    
-    # Draw bars with no internal segment borders
     for (i in 1:K) {
       for (j in 1:N) {
         polygon(
@@ -3219,16 +2911,9 @@ plot.structure.SOM <- function(SOM.output,
         )
       }
     }
-    
-    # Optional: draw vertical lines between bars (samples)
     if (!is.null(bar.border.col)) {
-      for (j in 2:N) {
-        segments(x0 = j - 1, y0 = 0, x1 = j - 1, y1 = 1,
-                 col = bar.border.col, lwd = bar.border.lwd)
-      }
+      for (j in 2:N) segments(x0 = j - 1, y0 = 0, x1 = j - 1, y1 = 1, col = bar.border.col, lwd = bar.border.lwd)
     }
-    
-    
     if (!is.null(sample.names)) {
       axis(side = 1,
            at = seq(1:N) - 0.5,
@@ -3236,7 +2921,6 @@ plot.structure.SOM <- function(SOM.output,
            cex.axis = Individual.labels.font.size,
            las = 2) #add sample names to x-axis
     }
-    
     return(invisible(NULL)) #return invisible
   }
   
@@ -3252,8 +2936,6 @@ plot.structure.SOM <- function(SOM.output,
                  bar.border.col = bar.border.col,
                  bar.border.lwd = bar.border.lwd,
                  sort.by = sort.by.col)
-  
-  # Close graphics device
   if (save) {
     dev.off()
     message(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
@@ -3289,10 +2971,8 @@ plot.learning.SOM <- function(SOM.output,
   old_plotting_parameters <- par(no.readonly = TRUE)
   on.exit({if (dev.cur() == old_dev) par(old_plotting_parameters)}, add = TRUE)
   
-  # Validate learning_values_list
+  # Validate input
   if (!is.list(SOM.output$learning_values_list)) stop("Plotting aborted: learning_values_list must be list of matrices")
-  
-  # Validate specified color palette
   viridis_palettes <- list(
     viridis::viridis,
     viridis::magma,
@@ -3304,27 +2984,16 @@ plot.learning.SOM <- function(SOM.output,
     viridis::turbo
   )
   if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  
-  # Validate specified save
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
-  
-  # Validate specified overwrite
   if (save) {
     if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   }
-  
-  # Validate specified plot.type
   if (save) {
-    allowed_plot.types <- c("svg", "png", "jpg")
-    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% allowed_plot.types)) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
+    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
   }
-  
-  # Validate specified file.name
   if (save) {
     if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
   }
-  
-  # Validate specified width and height (reasonable values: 4–50 cm)
   if (save) {
     if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
     if (width < 4) message("Warning: width is very small (", width, " cm) – plot may be hard to read")
@@ -3333,14 +3002,10 @@ plot.learning.SOM <- function(SOM.output,
     if (height < 4) message("Warning: height is very small (", height, " cm) – plot may be hard to read")
     if (height > 50) message("Warning: height is very large (", height, " cm) – plot may be unwieldy")
   }
-  
-  # Validate specified resolution (reasonable range: 72–1200 dpi)
   if (save) {
     if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
     if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
   }
-  
-  # Validate specified margins (reasonable range: 0–10)
   margin.list <- c(bottom.margin, left.margin, top.margin, right.margin)
   margin.names <- c("bottom.margin", "left.margin", "top.margin", "right.margin")
   for (i in seq_along(margin.list)) {
@@ -3348,43 +3013,23 @@ plot.learning.SOM <- function(SOM.output,
     if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
     if (margin.list[i] > 10) message("Warning: ", margin.names[i], " is large (", margin.list[i], ") – plot area may shrink")
   }
-  
-  # Validate specified lines.alpha (must be 0–1)
   if (!is.numeric(lines.alpha) || length(lines.alpha) != 1 || is.na(lines.alpha) || lines.alpha < 0 || lines.alpha > 1) stop("Plotting aborted: lines.alpha must be numeric value between 0 and 1")
-  
-  # Validate specified lines.thickness (must be positive)
   if (!is.numeric(lines.thickness) || length(lines.thickness) != 1 || is.na(lines.thickness) || lines.thickness <= 0) stop("Plotting aborted: lines.thickness must be a single positive numeric value")
-  
-  # Validate specified title (must be NULL or character)
   if (!is.null(title) && (!is.character(title) || length(title) != 1 || is.na(title))) stop("Plotting aborted: title must be NULL or single character string")
-  
-  # Validate specified legend.position
   allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center")
   if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) || !(legend.position %in% allowed.legend.positions)) stop(paste0("Plotting aborted: legend.position must be one of ", paste(allowed.legend.positions, collapse = ", ")))
-  
-  # Validate specified legend.lines.thickness (must be positive)
   if (!is.numeric(legend.lines.thickness) || length(legend.lines.thickness) != 1 || is.na(legend.lines.thickness) || legend.lines.thickness <= 0) stop("Plotting aborted: legend.lines.thickness must be a single positive numeric value")
-  
-  # Validate specified x.axis.label and y.axis.label (must be character)
   if (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label)) stop("Plotting aborted: x.axis.label must be a single character string")
   if (!is.character(y.axis.label) || length(y.axis.label) != 1 || is.na(y.axis.label)) stop("Plotting aborted: y.axis.label must be a single character string")
-  
-  # Check if learning_values or learning_values_list exists and is either matrix or list
   if ("learning_values" %in% names(SOM.output)) {
     SOM.output$learning_values_list <- list(SOM.output$learning_values) #convert to list for single-layer case
   } else if ("learning_values_list" %in% names(SOM.output)) { #for multi-layer case, no changes needed
   } else {
     stop("Plotting aborted: neither learning_values nor learning_values_list found in SOM.output - recheck or rerun run.SOM")
   }
-  
-  # Set default file.name for saving
   if (save) {
-    if (is.null(file.name)) { 
-      file.name <- paste0("SOM_learning_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
-    }
+    if (is.null(file.name)) file.name <- paste0("SOM_learning_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
   }
-  
-  # Check if file already exists and overwrite option is set to FALSE
   if (save) {
     if (!overwrite && file.exists(file.name)) stop(sprintf("Plotting aborted: file '%s' already exists - skipping plot saving", file.name))
   }
@@ -3424,28 +3069,17 @@ plot.learning.SOM <- function(SOM.output,
   # Save plot if requested
   if (save) {
     if (plot.type == "svg") {
-      svg(file.name, 
-          width = width / 2.54, 
-          height = height / 2.54)
+      svg(file.name, width = width / 2.54,  height = height / 2.54)
     } else if (plot.type == "png") {
-      png(file.name, 
-          width = width, 
-          height = height, 
-          units = "cm", 
-          res = resolution)
+      png(file.name, width = width, height = height, units = "cm", res = resolution)
     } else if (plot.type == "jpg") {
-      jpeg(file.name, 
-           width = width, 
-           height = height, 
-           units = "cm", 
-           res = resolution)
+      jpeg(file.name, width = width, height = height, units = "cm", res = resolution)
     }
   }
   
   # Prepare base plot
   first_matrix <- SOM.output$learning_values_list[[1]]
-  par(mfrow = c(1, 1), 
-      mar = c(bottom.margin, left.margin, top.margin, right.margin))
+  par(mfrow = c(1, 1), mar = c(bottom.margin, left.margin, top.margin, right.margin))
   plot(NULL, 
        xlim = c(1, nrow(first_matrix)), 
        ylim = global_ylim, 
@@ -3460,9 +3094,7 @@ plot.learning.SOM <- function(SOM.output,
     mat <- SOM.output$learning_values_list[[i]]
     current_layer_name <- matrix_names[i]
     for (j in 1:ncol(mat)) 
-      lines(mat[, j], 
-            col = grDevices::adjustcolor(layer_colors[current_layer_name], alpha.f = lines.alpha),
-            lwd = lines.thickness)
+      lines(mat[, j], col = grDevices::adjustcolor(layer_colors[current_layer_name], alpha.f = lines.alpha), lwd = lines.thickness)
   }
   
   # Add legend
@@ -3546,29 +3178,18 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   # Save plot if requested
   if (save) {
     if (plot.type == "svg") {
-      svg(file.name,
-          width = width / 2.54,
-          height = height / 2.54)
+      svg(file.name, width = width / 2.54, height = height / 2.54)
     } else if (plot.type == "png") {
-      png(file.name,
-          width = width,
-          height = height,
-          units = "cm",
-          res = resolution)
+      png(file.name, width = width, height = height, units = "cm", res = resolution)
     } else if (plot.type == "jpg") {
-      jpeg(file.name,
-           width = width,
-           height = height,
-           units = "cm",
-           res = resolution)
+      jpeg(file.name, width = width, height = height, units = "cm", res = resolution)
     } else {
       stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
     }
   }
   
   # Prepare plot
-  par(mfrow = c(1, 1),
-      mar = c(bottom.margin, left.margin, top.margin, right.margin))
+  par(mfrow = c(1, 1), mar = c(bottom.margin, left.margin, top.margin, right.margin))
   layer_colors <- setNames(col.pal(length(SOM.output$input_data_names)), SOM.output$input_data_names)
   
   # Create barplot
@@ -3611,7 +3232,10 @@ plot.K.SOM <- function(SOM.output,
   # Reset plotting parameters
   old_dev <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
-  on.exit({if (dev.cur() == old_dev) par(old_plotting_parameters)}, add = TRUE)
+  on.exit({
+    if (dev.cur() == old_dev) 
+      par(old_plotting_parameters)
+    }, add = TRUE)
   
   # Validate SOM.output
   if (is.null(SOM.output$N_replicates)) {
@@ -3634,9 +3258,7 @@ plot.K.SOM <- function(SOM.output,
   
   # Open graphics device if saving
   if (save) {
-    if (file.exists(file.name) && !overwrite) {
-      stop(paste("Plotting aborted: file already exists:", file.name))
-    }
+    if (file.exists(file.name) && !overwrite) stop(paste("Plotting aborted: file already exists:", file.name))
     if (plot.type == "svg") {
       svg(filename = file.name, width = width / 2.54, height = height / 2.54)
     } else if (plot.type == "png") {
@@ -3652,13 +3274,11 @@ plot.K.SOM <- function(SOM.output,
   plot_support_values <- NULL
   support_label <- NULL
   support_higher_is_better <- NA
-  if (!is.null(SOM.output$support_values) && is.matrix(SOM.output$support_values) &&
-      any(is.finite(SOM.output$support_values), na.rm = TRUE)) {
+  if (!is.null(SOM.output$support_values) && is.matrix(SOM.output$support_values) && any(is.finite(SOM.output$support_values), na.rm = TRUE)) {
     plot_support_values <- SOM.output$support_values
     support_label <- SOM.output$support_label
     support_higher_is_better <- SOM.output$support_higher_is_better
-  } else if (!is.null(SOM.output$BIC_values) && is.matrix(SOM.output$BIC_values) &&
-             any(is.finite(SOM.output$BIC_values), na.rm = TRUE)) {
+  } else if (!is.null(SOM.output$BIC_values) && is.matrix(SOM.output$BIC_values) && any(is.finite(SOM.output$BIC_values), na.rm = TRUE)) {
     plot_support_values <- SOM.output$BIC_values
     support_label <- "BIC"
     support_higher_is_better <- FALSE
@@ -3747,33 +3367,25 @@ plot.K.SOM <- function(SOM.output,
   if (support_available && !support_is_BIC) message(paste0("delta-BIC panel will be omitted (clustering.method = '", clustering.method, "' is not BIC-based)"))
   if (support_is_BIC && SOM.output$max_k <= 2) message("delta-BIC panel will be omitted (requires max.k >= 3)")
   
-  # Decide layout and plot
+  # Set layout and plot
   if (support_available && support_is_BIC && SOM.output$max_k > 2) {
-    par(mfrow = c(3, 1),
-        bty = "n",
-        mar = c(bottom.margin, left.margin, top.margin, right.margin))
+    par(mfrow = c(3, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
     plot.support.panel(plot_support_values, ylab_text = "BIC", axis_digits = round.axis.labels.BIC.plot)
     deltaBIC_plotted <- plot.deltaBIC.panel()
     if (!deltaBIC_plotted) {
       message("Plotting support panel and K-frequency only (insufficient finite BIC values for delta-BIC panel)")
-      par(mfrow = c(2, 1),
-          bty = "n",
-          mar = c(bottom.margin, left.margin, top.margin, right.margin))
+      par(mfrow = c(2, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
       plot.support.panel(plot_support_values, ylab_text = "BIC", axis_digits = round.axis.labels.BIC.plot)
       plot.frequency.panel()
     } else {
       plot.frequency.panel()
     }
   } else if (support_available) {
-    par(mfrow = c(2, 1),
-        bty = "n",
-        mar = c(bottom.margin, left.margin, top.margin, right.margin))
+    par(mfrow = c(2, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
     plot.support.panel(plot_support_values, ylab_text = support_label, axis_digits = round.axis.labels.BIC.plot)
     plot.frequency.panel()
   } else {
-    par(mfrow = c(1, 1),
-        bty = "n",
-        mar = c(bottom.margin, left.margin, top.margin, right.margin))
+    par(mfrow = c(1, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
     plot.frequency.panel()
     title(title, line = 0)
   }
@@ -3825,8 +3437,6 @@ plot.model.SOM <- function(SOM.output,
     if (is.null(som_model$grid) || is.null(som_model$grid$pts)) stop("som_model has no grid points")
     grid_points <- som_model$grid$pts
     if (nrow(codebook_vectors) != nrow(grid_points)) stop("codes and grid points mismatch")
-    
-    # Replace invalid entries in combined codebook (NA/Inf) with column means
     codebook_vectors <- as.matrix(codebook_vectors)
     invalid <- !is.finite(codebook_vectors) | is.na(codebook_vectors)
     if (any(invalid)) {
@@ -3850,15 +3460,13 @@ plot.model.SOM <- function(SOM.output,
     unit_mean_neighbor_distances
   }
   
-  # Create function to extract combined codebook vectors from SOM (ALL layers combined)
+  # Create function to extract combined codebook vectors from SOM
   get.combined.codebook <- function(som_model) {
     codes <- kohonen::getCodes(som_model) #extract codes (matrix or list)
     if (is.null(codes)) stop("som_model has no codes")
     if (!is.list(codes)) codes <- list(codes)
     codebook_vectors <- do.call(cbind, codes) #combine all layers
     if (is.null(codebook_vectors) || nrow(codebook_vectors) < 1) stop("som_model codes are empty after combining layers")
-    
-    # Replace invalid entries in combined codebook (NA/Inf) with column means
     codebook_vectors <- as.matrix(codebook_vectors)
     invalid <- !is.finite(codebook_vectors) | is.na(codebook_vectors)
     if (any(invalid)) {
@@ -4027,16 +3635,10 @@ plot.model.SOM <- function(SOM.output,
   old_plotting_parameters <- par(no.readonly = TRUE)
   on.exit({if (dev.cur() == old_dev) par(old_plotting_parameters)}, add = TRUE)
   
-  # Validate SOM.output
+  # Validate input
   if (is.null(SOM.output$som_models) || is.null(SOM.output$som_clusters)) stop("Plotting aborted: SOM.output is missing 'som_models' or 'som_clusters' - check SOM.output or rerun train.SOM/clustering.SOM")
-  
-  # Validate replicate.mode
   if (!is.character(replicate.mode) || length(replicate.mode) != 1 || is.na(replicate.mode) || !(replicate.mode %in% c("first", "representative", "average"))) stop("Plotting aborted: replicate.mode must be 'first', 'representative', or 'average'")
-  
-  # Validate specified set.k
   if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || (set.k %% 1 != 0))) stop("Plotting aborted: set.k must be NULL or single positive integer >= 1")
-  
-  # Validate specified col.pal.neighbor.dist and col.pal.clusters
   viridis_palettes <- list(
     viridis::viridis,
     viridis::magma,
@@ -4049,22 +3651,12 @@ plot.model.SOM <- function(SOM.output,
   )
   if (!any(vapply(viridis_palettes, identical, logical(1), col.pal.neighbor.dist))) stop("Plotting aborted: col.pal.neighbor.dist must be a viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
   if (!any(vapply(viridis_palettes, identical, logical(1), col.pal.clusters))) stop("Plotting aborted: col.pal.clusters must be a viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  
-  # Validate specified save
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
-  
-  # Validate specified overwrite
   if (save && (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite))) stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  
-  # Validate specified plot.type
   if (save) {
     if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
   }
-  
-  # Validate specified file.name
   if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
-  
-  # Validate specified width and height (reasonable values: 4–50 cm)
   if (save) {
     if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
     if (width < 4) messager("Warning: width is very small (", width, " cm) – plot may be hard to read")
@@ -4073,14 +3665,10 @@ plot.model.SOM <- function(SOM.output,
     if (height < 4) messager("Warning: height is very small (", height, " cm) – plot may be hard to read")
     if (height > 50) message("Warning: height is very large (", height, " cm) – plot may be unwieldy")
   }
-  
-  # Validate specified resolution (reasonable range: 72–1200 dpi)
   if (save) {
     if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
     if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
   }
-  
-  # Validate specified margins (reasonable range: 0–10)
   margin.list <- c(bottom.margin, left.margin, top.margin, right.margin)
   margin.names <- c("bottom.margin", "left.margin", "top.margin", "right.margin")
   for (i in seq_along(margin.list)) {
@@ -4088,32 +3676,18 @@ plot.model.SOM <- function(SOM.output,
     if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
     if (margin.list[i] > 10) message("Warning: ", margin.names[i], " is large (", margin.list[i], ") – plot area may shrink")
   }
-  
-  # Validate specified boundary.lwd.clusters
   if (!is.numeric(boundary.lwd.clusters) || length(boundary.lwd.clusters) != 1 || is.na(boundary.lwd.clusters) || boundary.lwd.clusters <= 0) stop("Plotting aborted: boundary.lwd.clusters must be a single positive number")
-  
-  # Validate specified point.size.clusters
   if (!is.numeric(point.size.clusters) || length(point.size.clusters) != 1 || is.na(point.size.clusters) || point.size.clusters <= 0) stop("Plotting aborted: point.size.clusters must be a single positive number")
-  
-  # Validate specified point.shape.clusters (should be integer)
   if (!is.numeric(point.shape.clusters) || length(point.shape.clusters) != 1 || is.na(point.shape.clusters) || (point.shape.clusters %% 1 != 0)) stop("Plotting aborted: point.shape.clusters must be a single integer")
-  
-  # Validate specified cluster.shape.clusters and cluster.shape.neighbor.dist
   allowed_shapes <- c("straight", "round")
   if (!is.character(cluster.shape.clusters) || length(cluster.shape.clusters) != 1 || is.na(cluster.shape.clusters) || !(cluster.shape.clusters %in% allowed_shapes)) stop("Plotting aborted: cluster.shape.clusters must be 'straight' or 'round'")
   if (!is.character(cluster.shape.neighbor.dist) || length(cluster.shape.neighbor.dist) != 1 || is.na(cluster.shape.neighbor.dist) || !(cluster.shape.neighbor.dist %in% allowed_shapes)) stop("Plotting aborted: cluster.shape.neighbor.dist must be 'straight' or 'round'")
-  
-  # Validate specified shift.plot.clusters (should be >= 0 and < 0.5)
   if (!is.numeric(shift.plot.clusters) || length(shift.plot.clusters) != 1 || is.na(shift.plot.clusters) || shift.plot.clusters < 0 || shift.plot.clusters >= 0.5) {
     message("Invalid shift.plot.clusters value (needs to be 0 - 0.5) - default of 0.099 is used")
     shift.plot.clusters <- 0.099
   }
-  
-  # Validate specified boundary.col.clusters and point.col.clusters (character)
   if (!is.character(boundary.col.clusters) || length(boundary.col.clusters) != 1 || is.na(boundary.col.clusters)) stop("Plotting aborted: boundary.col.clusters must be a single character (color name or hex)")
   if (!is.character(point.col.clusters) || length(point.col.clusters) != 1 || is.na(point.col.clusters)) stop("Plotting aborted: point.col.clusters must be a single character (color name or hex)")
-  
-  # Validate specified title.clusters and title.neighbor.dist (NULL or character)
   if (!is.null(title.clusters) && (!is.character(title.clusters) || length(title.clusters) != 1 || is.na(title.clusters))) stop("Plotting aborted: title.clusters must be NULL or single character string")
   if (!is.null(title.neighbor.dist) && (!is.character(title.neighbor.dist) || length(title.neighbor.dist) != 1 || is.na(title.neighbor.dist))) stop("Plotting aborted: title.neighbor.dist must be NULL or single character string")
   
@@ -4179,7 +3753,8 @@ plot.model.SOM <- function(SOM.output,
     
     # Average neighbor distances per neuron (aligned to reference unit space)
     nd_plot <- rowMeans(neighbor_distances_aligned_matrix, na.rm = TRUE)
-    
+
+  # Use selected replicate directly for non-average plotting modes                   
   } else {
     som_cluster <- som_clusters_use[[replicate.index]]
     nd_plot <- calc.unit.neighbor.dist(som_model)
@@ -4198,31 +3773,17 @@ plot.model.SOM <- function(SOM.output,
     
     # Set plot format
     if (plot.type == "svg") {
-      svg(file.name, 
-          width = width / 2.54, 
+      svg(file.name, width = width / 2.54, 
           height = height / 2.54)
     } else if (plot.type == "png") {
-      png(file.name, 
-          width = width, 
-          height = height, 
-          res = resolution, 
-          units = "cm")
+      png(file.name, width = width,  height = height, res = resolution, units = "cm")
     } else if (plot.type == "jpg") {
-      jpeg(file.name, 
-           width = width,
-           height = height, 
-           res = resolution, 
-           units = "cm")
+      jpeg(file.name, width = width, height = height, res = resolution, units = "cm")
     }
   }
   
   # Set plotting area
-  par(mfrow = c(2, 1), 
-      oma = c(0, 0, 0, 0),
-      mar = c(bottom.margin, 
-              left.margin, 
-              top.margin, 
-              right.margin))
+  par(mfrow = c(2, 1), oma = c(0, 0, 0, 0), mar = c(bottom.margin, left.margin,  top.margin,  right.margin))
   
   # Plot SOM neighbor distances (top plot) - use all layers via property vector
   plot(x = som_model,
@@ -4338,9 +3899,7 @@ plot.map.SOM <- function(SOM.output,
     if (height > 50) messager("Warning: height is very large (", height, " cm) – plot may be unwieldy")
   }
   if (save) {
-    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) {
-      stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
-    }
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
     if (resolution > 1200) messager("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
   }
   if (!is.numeric(lat.buffer.range) || length(lat.buffer.range) != 1 || is.na(lat.buffer.range) || lat.buffer.range < 0) stop("Plotting aborted: lat.buffer.range must be a single non-negative number")
@@ -4360,22 +3919,12 @@ plot.map.SOM <- function(SOM.output,
   if (!is.numeric(scale.position) || length(scale.position) != 2 || any(is.na(scale.position)) || any(scale.position < 0) || any(scale.position > 1)) stop("Plotting aborted: scale.position must be numeric vector of length 2 with values in between 0 and 1")
   if (!is.numeric(scale.size) || length(scale.size) != 1 || is.na(scale.size) || scale.size <= 0) stop("Plotting aborted: scale.size must be a single positive number")
   if (!is.numeric(scale.font.size) || length(scale.font.size) != 1 || is.na(scale.font.size) || scale.font.size <= 0) stop("Plotting aborted: scale.font.size must be a single positive number")
-  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", 
-                                "right", "left", "top", "bottom", "center")
-  if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) ||
-      !(legend.position %in% allowed.legend.positions)) {
-    stop(paste0("Plotting aborted: legend.position must be one of ", 
-                paste(allowed.legend.positions, collapse = ", ")))
-  }
+  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center")
+  if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) || !(legend.position %in% allowed.legend.positions)) stop(paste0("Plotting aborted: legend.position must be one of ", paste(allowed.legend.positions, collapse = ", ")))
   if (!is.null(legend.cluster.names)) {
-    if (!is.character(legend.cluster.names) || any(is.na(legend.cluster.names))) {
-      stop("Plotting aborted: legend.cluster.names must be NULL or character vector (no NAs)")
-    }
+    if (!is.character(legend.cluster.names) || any(is.na(legend.cluster.names))) stop("Plotting aborted: legend.cluster.names must be NULL or character vector (no NAs)")
     n.clusters <- ncol(SOM.output$ancestry_matrix)
-    if (length(legend.cluster.names) != n.clusters) {
-      stop(paste0("Plotting aborted: length of legend.cluster.names (", length(legend.cluster.names), 
-                  ") must match number of clusters (", n.clusters, ")"))
-    }
+    if (length(legend.cluster.names) != n.clusters) stop(paste0("Plotting aborted: length of legend.cluster.names (", length(legend.cluster.names), ") must match number of clusters (", n.clusters, ")"))
   }
   if (!is.numeric(legend.font.size) || length(legend.font.size) != 1 || is.na(legend.font.size) || legend.font.size <= 0) stop("Plotting aborted: legend.font.size must be a single positive number")
   if (!is.logical(legend.box) || length(legend.box) != 1 || is.na(legend.box)) stop("Plotting aborted: legend.box must be TRUE or FALSE")
@@ -4395,14 +3944,7 @@ plot.map.SOM <- function(SOM.output,
   n_not_in_coords <- length(not_in_coords)
   n_not_in_ancestry <- length(not_in_ancestry)
   n_keep <- length(keep_names)
-  if (n_not_in_coords > 0 | n_not_in_ancestry > 0) {
-    messager(sprintf(
-      "Matching samples between ancestry matrix and coordinates:\n  - %s unique %s only in ancestry_matrix\n  - %s unique %s only in Coordinates\n  - %s matching %s will be plotted",
-      fmt_count(n_not_in_coords), fmt_label(n_not_in_coords, "sample", "samples"),
-      fmt_count(n_not_in_ancestry), fmt_label(n_not_in_ancestry, "sample", "samples"),
-      fmt_count(n_keep), fmt_label(n_keep, "sample", "samples")
-    ))
-  }
+  if (n_not_in_coords > 0 | n_not_in_ancestry > 0) messager(sprintf("Matching samples between ancestry matrix and coordinates:\n  - %s unique %s only in ancestry_matrix\n  - %s unique %s only in Coordinates\n  - %s matching %s will be plotted", fmt_count(n_not_in_coords), fmt_label(n_not_in_coords, "sample", "samples"), fmt_count(n_not_in_ancestry), fmt_label(n_not_in_ancestry, "sample", "samples"), fmt_count(n_keep), fmt_label(n_keep, "sample", "samples")))
   if (length(keep_names) == 0) stop("Plotting aborted: no matching rownames between Coordinates and ancestry_matrix")
   Coordinates <- Coordinates[keep_names, , drop = FALSE]
   ancestry <- SOM.output$ancestry_matrix[keep_names, , drop = FALSE]
@@ -4447,9 +3989,7 @@ plot.map.SOM <- function(SOM.output,
     } else {
       graphics::par(mar = mar)
     }
-    if (is.null(x.lim)) {
-      x.lim <- c(min(coords[, 1]) - 1, max(coords[, 1]) + 1)
-    }
+    if (is.null(x.lim)) x.lim <- c(min(coords[, 1]) - 1, max(coords[, 1]) + 1)
     if (is.null(y.lim)) y.lim <- c(min(coords[, 2]) - 1, max(coords[, 2]) + 1)
     suppressWarnings(caroline::pies(pie.list, 
                                     x0 = coords[, 1], 
@@ -4622,73 +4162,42 @@ plot.variable.importance.SOM <- function(SOM.output,
   old_plotting_parameters <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(old_plotting_parameters), add = TRUE)
   
-  # Validate SOM.output
+  # Validate input
   if (is.null(SOM.output$som_models) || length(SOM.output$som_models) < 1) stop("Plotting aborted: som_models not found in SOM.output - run train.SOM()")
   if (is.null(SOM.output$input_data_names)) stop("Plotting aborted: input_data_names not found in SOM.output - check SOM.output or rerun train.SOM()")
   if (!is.character(mode) || length(mode) != 1 || is.na(mode) || !(mode %in% c("Cluster.separation", "Map.variance"))) stop("Plotting aborted: mode must be 'Cluster.separation' or 'Map.variance'")
   if (mode == "Cluster.separation") {
     if (is.null(SOM.output$som_clusters) || length(SOM.output$som_clusters) != length(SOM.output$som_models)) stop("Plotting aborted: som_clusters not found in SOM.output or length mismatch - run clustering.SOM()")
   }
-  
-  # Validate specified col.pal
   viridis_palettes <- list(viridis::viridis, viridis::magma, viridis::plasma,
                            viridis::inferno, viridis::cividis, viridis::rocket,
                            viridis::mako, viridis::turbo)
   if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  
-  # Validate specified save
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
-  
-  # Validate specified overwrite
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  
-  # Validate specified plot.type
   if (save) {
-    allowed_plot.types <- c("svg", "png", "jpg")
-    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% allowed_plot.types)) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
+    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
   }
-  
-  # Validate specified file.name
   if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
-  
-  # Validate specified width and height
   if (save) {
     if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
     if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
   }
-  
-  # Validate specified resolution
   if (save) {
     if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
   }
-  
-  # Validate specified margins
   margin.list <- c(bottom.margin.total, left.margin.total, top.margin.total, right.margin.total, bottom.margin, left.margin, top.margin, right.margin)
   margin.names <- c("bottom.margin.total", "left.margin.total", "top.margin.total", "right.margin.total", "bottom.margin", "left.margin", "top.margin", "right.margin")
   for (i in seq_along(margin.list)) {
     if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
     if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
   }
-  
-  # Validate specified bars.threshold.N
   if (!is.numeric(bars.threshold.N) || length(bars.threshold.N) != 1 || is.na(bars.threshold.N) || bars.threshold.N < 0 || bars.threshold.N %% 1 != 0) stop("Plotting aborted: bars.threshold.N must be a single non-negative integer")
-  
-  # Validate specified title.font.size
   if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Plotting aborted: title.font.size must be a single positive number")
-  
-  # Validate specified matrix.label.font.size
   if (!is.numeric(matrix.label.font.size) || length(matrix.label.font.size) != 1 || is.na(matrix.label.font.size) || matrix.label.font.size <= 0) stop("Plotting aborted: matrix.label.font.size must be a single positive number")
-  
-  # Validate specified bar.label.font.size
   if (!is.numeric(bar.label.font.size) || length(bar.label.font.size) != 1 || is.na(bar.label.font.size) || bar.label.font.size <= 0) stop("Plotting aborted: bar.label.font.size must be a single positive number")
-  
-  # Validate specified add.boxplot.whiskers
   if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
-  
-  # Validate specified importance.threshold
   if (!is.numeric(importance.threshold) || length(importance.threshold) != 1 || is.na(importance.threshold) || importance.threshold < 0) stop("Plotting aborted: importance.threshold must be a single non-negative number")
-  
-  # Validate specified set.k
   if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || set.k %% 1 != 0)) stop("Plotting aborted: set.k must be NULL or single positive integer")
   
   # Create function to calculate weighted eta squared effect size per variable (weighted by neurons + sample counts)
@@ -4768,16 +4277,12 @@ plot.variable.importance.SOM <- function(SOM.output,
   
   # Compute per-replicate metric matrices per layer
   metric_layers <- vector("list", num_layers)
-  for (i in seq_len(num_layers)) {
-    metric_layers[[i]] <- list()
-  }
+  for (i in seq_len(num_layers)) metric_layers[[i]] <- list()
   for (r in keep.reps) {
     som_model <- SOM.output$som_models[[r]]
     codes <- kohonen::getCodes(som_model)
     if (!is.list(codes)) codes <- list(codes)
-    if (mode == "Cluster.separation") {
-      som_cluster <- SOM.output$som_clusters[[r]]
-    }
+    if (mode == "Cluster.separation") som_cluster <- SOM.output$som_clusters[[r]]
     for (i in seq_len(num_layers)) {
       if (is.null(colnames(codes[[i]]))) colnames(codes[[i]]) <- paste0("V", seq_len(ncol(codes[[i]]))) #ensure variable names exist
       if (mode == "Cluster.separation") metric_layers[[i]][[paste0("R", r)]] <- calculate.etasquared.per.variable(codes[[i]], som_cluster, som_model)
@@ -4809,27 +4314,15 @@ plot.variable.importance.SOM <- function(SOM.output,
     }
     
     # Check overwrite
-    if (file.exists(file.name) && !overwrite) {
-      stop(paste(file.name, "already exists - set overwrite = TRUE to overwrite"))
-    }
+    if (file.exists(file.name) && !overwrite) stop(paste(file.name, "already exists - set overwrite = TRUE to overwrite"))
     
     # Set plot plot.type
     if (plot.type == "svg") {
-      grDevices::svg(file.name, 
-                     width = width / 2.54, 
-                     height = height / 2.54)
+      svg(file.name, width = width / 2.54, height = height / 2.54)
     } else if (plot.type == "png") {
-      grDevices::png(file.name,
-                     width = width, 
-                     height = height, 
-                     res = resolution, 
-                     units = "cm")
+      png(file.name, width = width, height = height, res = resolution, units = "cm")
     } else if (plot.type == "jpg") {
-      grDevices::jpeg(file.name, 
-                      width = width, 
-                      height = height, 
-                      res = resolution, 
-                      units = "cm")
+      jpeg(file.name, width = width, height = height, res = resolution, units = "cm")
     } else {
       stop("Plotting aborted: unsupported file plot.type - choose from 'svg', 'png', or 'jpg'")
     }
@@ -4838,10 +4331,7 @@ plot.variable.importance.SOM <- function(SOM.output,
   # Set plotting area
   graphics::par(mfrow = if (num_layers <= 3) c(1, num_layers) else if (num_layers == 4) c(2, 2) else if (num_layers <= 6) c(2, 3) else if (num_layers <= 8) c(2, 4) else if (num_layers == 9) c(3, 3) else c(ceiling(num_layers / 3), 3),
                 oma = c(bottom.margin.total, left.margin.total, top.margin.total, right.margin.total),
-                mar = c(bottom.margin, 
-                        left.margin, 
-                        top.margin, 
-                        right.margin))
+                mar = c(bottom.margin, left.margin, top.margin, right.margin))
   
   # Iterate over each matrix and generate plots
   for (i in seq_along(all_layer_metric)) {
@@ -4911,7 +4401,7 @@ plot.variable.importance.SOM <- function(SOM.output,
   
   # Close graphics device
   if (save) {
-    grDevices::dev.off()
+    dev.off()
     messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
 }
@@ -5097,9 +4587,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (is.data.frame(snp.matrix)) snp.matrix <- as.matrix(snp.matrix) #convert data frame
     if (!is.matrix(snp.matrix)) stop(input.name, " must be a matrix or data frame") #check matrix
     if (nrow(snp.matrix) == 0 || ncol(snp.matrix) == 0) stop(input.name, " is empty") #check empty
-    
     original.dimnames <- dimnames(snp.matrix) #store dimnames
-    
     if (!is.numeric(snp.matrix) && !is.integer(snp.matrix)) {
       character.matrix <- matrix(as.character(snp.matrix), nrow = nrow(snp.matrix), ncol = ncol(snp.matrix), dimnames = original.dimnames) #convert to character
       character.matrix[character.matrix %in% c("", ".", "NA", "NaN", "nan")] <- NA_character_ #standardize missing strings
@@ -5110,16 +4598,13 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     } else {
       storage.mode(snp.matrix) <- "numeric" #coerce numeric
     }
-    
     valid.values <- if (snp.matrix.ploidy == 1) c(0, 1) else c(0, 1, 2) #valid dosage values
     invalid.values <- !is.na(snp.matrix) & !(snp.matrix %in% valid.values) #invalid dosage values
     if (any(invalid.values)) stop(input.name, " must contain only ", paste(valid.values, collapse = ", "), ", or NA values for snp.matrix.ploidy = ", snp.matrix.ploidy) #validate dosage values
-    
     if (is.null(rownames(snp.matrix))) rownames(snp.matrix) <- paste0("Sample", seq_len(nrow(snp.matrix))) #fallback sample names
     if (is.null(colnames(snp.matrix))) colnames(snp.matrix) <- paste0("SNP", seq_len(ncol(snp.matrix))) #fallback SNP names
     rownames(snp.matrix) <- make.unique(as.character(rownames(snp.matrix))) #unique rownames
     colnames(snp.matrix) <- make.unique(as.character(colnames(snp.matrix))) #unique colnames
-    
     storage.mode(snp.matrix) <- "integer" #store as integer dosage
     return(snp.matrix) #return dosage matrix
   }
@@ -5134,13 +4619,14 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                      snp.matrix.ploidy = 2
                                      
   ) {
-    
+
+    # Validate SNP dosage matrix and initialize filter tracking variables
     snp.matrix <- coerce.and.validate.dosage.matrix(snp.matrix = snp.matrix, input.name = "SNP dosage matrix", snp.matrix.ploidy = snp.matrix.ploidy) #validate matrix
     dosage.ploidy <- as.integer(snp.matrix.ploidy) #use declared ploidy
     invariant.loci.removed.total <- 0L #track total invariant loci removed
     invariant.loci.reference.count <- NA_integer_ #track denominator for invariant message
     
-    # Loci missing (lenient)
+    # Filter loci by missing data (lenient)
     if (!is.null(missing.loci.cutoff.lenient)) {
       locus.count.before.lenient.missing.filter <- ncol(snp.matrix) #loci before filter
       keep.loci <- colMeans(is.na(snp.matrix)) <= missing.loci.cutoff.lenient #loci passing filter
@@ -5150,7 +4636,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       if (ncol(snp.matrix) == 0) stop("All loci removed after lenient missing data filter") #stop if all gone
     }
     
-    # Individuals missing
+    # Filter individuals by missing data
     if (!is.null(missing.individuals.cutoff)) {
       individual.count.before.missing.filter <- nrow(snp.matrix) #individuals before filter
       keep.individuals <- rowMeans(is.na(snp.matrix)) <= missing.individuals.cutoff #individuals passing filter
@@ -5160,7 +4646,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       if (nrow(snp.matrix) == 0) stop("All individuals removed after missing data filter") #stop if all gone
     }
     
-    # Singleton loci filter
+    # Filter singleton loci
     if (isTRUE(singleton.loci.filter)) {
       locus.count.before.singleton.filter <- ncol(snp.matrix) #loci before filter
       alternate.allele.counts <- colSums(snp.matrix, na.rm = TRUE) #alternate allele counts
@@ -5173,7 +4659,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       if (ncol(snp.matrix) == 0) stop("All loci removed after singleton filter") #stop if all gone
     }
     
-    # Loci missing (strict)
+    # Filter loci by missing data (strict)
     if (!is.null(missing.loci.cutoff.final)) {
       locus.count.before.strict.missing.filter <- ncol(snp.matrix) #loci before filter
       keep.loci <- colMeans(is.na(snp.matrix)) <= missing.loci.cutoff.final #loci passing filter
@@ -5183,7 +4669,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       if (ncol(snp.matrix) == 0) stop("All loci removed after final missing data filter") #stop if all gone
     }
     
-    # Invariant loci filter
+    # Filter invariant loci
     if (isTRUE(invariant.loci.filter)) {
       locus.count.before.final.invariant.filter <- ncol(snp.matrix) #loci before filter
       invariant.loci.reference.count <- locus.count.before.final.invariant.filter #store denominator
@@ -5195,7 +4681,8 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       if (invariant.loci.removed.total > 0) print.filter.message(invariant.loci.removed.total, " of ", invariant.loci.reference.count, " invariant loci removed") #report
       if (ncol(snp.matrix) == 0) stop("All loci removed after invariant filter") #stop if all gone
     }
-    
+
+    # Return results
     return(as.data.frame(snp.matrix, stringsAsFactors = FALSE)) #return data frame
   }
   
@@ -5256,18 +4743,14 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   }
   
   # Create function to encode multiallelic alignment as k-1 dosage columns
-  encode.multiallelic.alignment.as.k.minus.one <- function(alignment.matrix,
-                                                           missing.symbols = c("?", "-", "N", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "X")
+  encode.multiallelic.alignment.as.k.minus.one <- function(alignment.matrix, missing.symbols = c("?", "-", "N", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "X")
   ) {
     observed.alleles.per.locus <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols))) #observed alleles
     retained.alleles.per.locus <- lapply(observed.alleles.per.locus, function(observed.alleles) if (length(observed.alleles) < 2) character(0) else observed.alleles[-length(observed.alleles)]) #retained k-1 alleles
     retained.column.counts <- lengths(retained.alleles.per.locus) #number of retained columns per locus
     total.retained.columns <- sum(retained.column.counts) #total retained columns
     if (total.retained.columns == 0) return(data.frame(row.names = rownames(alignment.matrix))) #return empty if none
-    multiallelic.snp.matrix <- matrix(NA_integer_,
-                                      nrow = nrow(alignment.matrix),
-                                      ncol = total.retained.columns,
-                                      dimnames = list(rownames(alignment.matrix), NULL)) #initialize matrix
+    multiallelic.snp.matrix <- matrix(NA_integer_, nrow = nrow(alignment.matrix), ncol = total.retained.columns, dimnames = list(rownames(alignment.matrix), NULL)) #initialize matrix
     multiallelic.snp.names <- character(total.retained.columns) #initialize names
     output.column.index <- 1L #initialize output column index
     for (locus.index in seq_len(ncol(alignment.matrix))) {
@@ -5362,9 +4845,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     reference.sequence <- alignment.matrix[1, ] #first sequence is NEXUS match reference
     for (locus.index in seq_len(ncol(alignment.matrix))) {
       replacement.allele <- reference.sequence[locus.index] #reference allele at locus
-      if (!is.na(replacement.allele) && replacement.allele != match.symbol) {
-        alignment.matrix[match.position.matrix[, locus.index], locus.index] <- replacement.allele #replace match symbols
-      }
+      if (!is.na(replacement.allele) && replacement.allele != match.symbol) alignment.matrix[match.position.matrix[, locus.index], locus.index] <- replacement.allele #replace match symbols
     }
     alignment.matrix[alignment.matrix == match.symbol] <- "?" #unresolved match symbols become missing
     return(alignment.matrix) #return expanded alignment
@@ -5388,20 +4869,23 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     observed.alleles.per.site <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols))) #observed alleles per site
     total.locus.count.before.filtering <- ncol(alignment.matrix) #total loci before filtering
     
-    # Biallelic alignment processing
+    # Process biallelic alignment
     if (isTRUE(make.biallelic)) {
+
+      # Identify biallelic sites
       biallelic.site.indices <- which(sapply(observed.alleles.per.site, length) == 2) #index of biallelic sites
       loci.removed <- total.locus.count.before.filtering - length(biallelic.site.indices) #number removed
       if (loci.removed > 0) print.filter.message(loci.removed, " of ", total.locus.count.before.filtering, " loci removed because they were not biallelic") #report non-biallelic filter
       if (length(biallelic.site.indices) == 0) stop("No biallelic SNPs found in alignment") #stop if none
-      
+
+      # Initialize biallelic SNP matrix
       biallelic.alignment.matrix <- alignment.matrix[, biallelic.site.indices, drop = FALSE] #keep only biallelic sites
       biallelic.snp.matrix <- matrix(NA_integer_,
                                      nrow = nrow(biallelic.alignment.matrix),
                                      ncol = ncol(biallelic.alignment.matrix),
                                      dimnames = list(rownames(biallelic.alignment.matrix), paste0("SNP", seq_len(ncol(biallelic.alignment.matrix))))) #initialize matrix
       
-      # Recoding to 0/1
+      # Recode biallelic SNPs to 0/1
       alleles.at.biallelic.sites <- observed.alleles.per.site[biallelic.site.indices] #alleles at biallelic sites
       ref.alleles <- vapply(alleles.at.biallelic.sites, `[`, character(1L), 1L) #reference allele per site
       alt.alleles <- vapply(alleles.at.biallelic.sites, `[`, character(1L), 2L) #alternate allele per site
@@ -5409,11 +4893,12 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       alt.broadcast.matrix <- matrix(alt.alleles, nrow = nrow(biallelic.alignment.matrix), ncol = length(alt.alleles), byrow = TRUE) #broadcast alt alleles
       biallelic.snp.matrix[biallelic.alignment.matrix == ref.broadcast.matrix] <- 0L #assign reference
       biallelic.snp.matrix[biallelic.alignment.matrix == alt.broadcast.matrix] <- 1L #assign alternate
-      
+
+      # Initialize invariant-locus filter tracking variables
       invariant.loci.removed.total <- 0L #track total invariant loci removed
       invariant.loci.reference.count <- NA_integer_ #track denominator for invariant message
       
-      # Loci missing (lenient)
+      # Filter loci by missing data (lenient)
       if (!is.null(missing.loci.cutoff.lenient)) {
         locus.count.before.lenient.missing.filter <- ncol(biallelic.snp.matrix) #loci before filter
         biallelic.snp.matrix <- biallelic.snp.matrix[, (colMeans(is.na(biallelic.snp.matrix)) <= missing.loci.cutoff.lenient), drop = FALSE] #filter loci
@@ -5422,7 +4907,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
         if (ncol(biallelic.snp.matrix) == 0) stop("All loci removed after lenient missing data filter") #stop if all gone
       }
       
-      # Individuals missing
+      # Filter individuals by missing data
       if (!is.null(missing.individuals.cutoff)) {
         individual.count.before.missing.filter <- nrow(biallelic.snp.matrix) #individuals before filter
         biallelic.snp.matrix <- biallelic.snp.matrix[(rowMeans(is.na(biallelic.snp.matrix)) <= missing.individuals.cutoff), , drop = FALSE] #filter individuals
@@ -5431,7 +4916,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
         if (nrow(biallelic.snp.matrix) == 0) stop("All individuals removed after missing data filter") #stop if all gone
       }
       
-      # Singleton loci filter
+      # Filter singleton loci
       if (isTRUE(singleton.loci.filter)) {
         locus.count.before.singleton.filter <- ncol(biallelic.snp.matrix) #loci before singleton filter
         called.counts <- colSums(!is.na(biallelic.snp.matrix)) #non-missing calls per locus
@@ -5444,7 +4929,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
         if (ncol(biallelic.snp.matrix) == 0) stop("All loci removed after singleton filter") #stop if all gone
       }
       
-      # Loci missing (strict)
+      # Filter loci by missing data  (strict)
       if (!is.null(missing.loci.cutoff.final)) {
         locus.count.before.strict.missing.filter <- ncol(biallelic.snp.matrix) #loci before filter
         biallelic.snp.matrix <- biallelic.snp.matrix[, (colMeans(is.na(biallelic.snp.matrix)) <= missing.loci.cutoff.final), drop = FALSE] #filter loci
@@ -5453,7 +4938,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
         if (ncol(biallelic.snp.matrix) == 0) stop("All loci removed after final missing data filter") #stop if all gone
       }
       
-      # Invariant loci filter
+      # Filter invariant loci
       if (isTRUE(invariant.loci.filter)) {
         locus.count.before.final.invariant.filter <- ncol(biallelic.snp.matrix) #loci before final invariant filter
         invariant.loci.reference.count <- locus.count.before.final.invariant.filter #store denominator
@@ -5466,7 +4951,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
         if (ncol(biallelic.snp.matrix) == 0) stop("All loci removed after invariant filter") #stop if all gone
       }
       
-      # Final summary
+      # Summarize final biallelic SNP matrix
       biallelic.snp.matrix <- as.data.frame(biallelic.snp.matrix, stringsAsFactors = FALSE) #convert to data frame
       print.final.summary(biallelic.snp.matrix) #summary
       return(biallelic.snp.matrix) #return binary SNP matrix
@@ -5549,9 +5034,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   validate.arguments() #validate inputs
   
   # Process direct SNP matrix input
-  if (!is.null(snp.matrix.input)) {
-    return(process.dosage.matrix.input(snp.matrix = snp.matrix.input, input.name = "snp.matrix.input")) #process matrix
-  }
+  if (!is.null(snp.matrix.input)) return(process.dosage.matrix.input(snp.matrix = snp.matrix.input, input.name = "snp.matrix.input")) #process matrix
   
   # Process genlight input
   if (!is.null(genlight.input)) {
@@ -5565,18 +5048,16 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     return(process.dosage.matrix.input(snp.matrix = snp.matrix, input.name = "plink.raw.path")) #process matrix
   }
   
-  # Process biallelic diploid VCF directly
+  # Process biallelic diploid VCF
   if (!is.null(vcf.path) && isTRUE(make.biallelic)) {
     fast.vcf.result <- tryCatch({
       vcf.object <- suppressWarnings(vcfR::read.vcfR(vcf.path, verbose = FALSE)) #read VCF
       fixed.matrix <- vcf.object@fix #extract fixed fields
       biallelic.variant.indices <- which(!grepl(",", fixed.matrix[, "ALT"]) & !is.na(fixed.matrix[, "ALT"]) & fixed.matrix[, "ALT"] != ".") #biallelic variants
       if (length(biallelic.variant.indices) == 0) stop("No biallelic loci found") #stop if none
-      
       loci.removed <- nrow(fixed.matrix) - length(biallelic.variant.indices) #number removed
       if (loci.removed > 0) print.filter.message(loci.removed, " of ", nrow(fixed.matrix), " loci removed because they were not biallelic") #report
       vcf.object <- vcf.object[biallelic.variant.indices, ] #keep biallelic variants
-      
       genotype.matrix <- vcfR::extract.gt(vcf.object, element = "GT", as.numeric = FALSE) #variants x samples
       if (is.null(dim(genotype.matrix))) stop("VCF genotype matrix could not be extracted as a matrix") #check matrix
       genotype.matrix <- t(genotype.matrix) #samples x variants
@@ -5585,25 +5066,20 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                 nrow = nrow(genotype.matrix),
                                 ncol = ncol(genotype.matrix),
                                 dimnames = genotype.dimnames) #standardize phased genotypes
-      
       missing.genotype.codes <- c("./.", ".", "0/.", "./0", "1/.", "./1") #missing and partial-missing genotypes
       recognized.genotype.matrix <- genotype.matrix %in% c("0/0", "0/1", "1/0", "1/1", missing.genotype.codes) | is.na(genotype.matrix) #recognized genotypes
       if (any(!recognized.genotype.matrix)) stop("UNSUPPORTED_FAST_VCF_GENOTYPES") #fallback trigger
-      
       snp.matrix <- matrix(NA_integer_,
                            nrow = nrow(genotype.matrix),
                            ncol = ncol(genotype.matrix),
                            dimnames = dimnames(genotype.matrix)) #initialize SNP matrix
-      
       snp.matrix[genotype.matrix == "0/0"] <- 0L #homozygous reference
       snp.matrix[genotype.matrix %in% c("0/1", "1/0")] <- 1L #heterozygous
       snp.matrix[genotype.matrix == "1/1"] <- 2L #homozygous alternate
-      
       variant.names <- fixed.matrix[biallelic.variant.indices, "ID"] #variant IDs
       missing.variant.names <- is.na(variant.names) | variant.names == "." | variant.names == "" #missing IDs
       variant.names[missing.variant.names] <- paste0("SNP", seq_along(variant.names)[missing.variant.names]) #fallback names
       colnames(snp.matrix) <- make.unique(variant.names) #set unique names
-      
       snp.matrix <- filter.SNP.matrix.fast(snp.matrix = snp.matrix,
                                            missing.loci.cutoff.lenient = missing.loci.cutoff.lenient,
                                            missing.loci.cutoff.final = missing.loci.cutoff.final,
@@ -5611,7 +5087,6 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                            singleton.loci.filter = singleton.loci.filter,
                                            invariant.loci.filter = invariant.loci.filter,
                                            snp.matrix.ploidy = 2L) #filter
-      
       print.final.summary(snp.matrix) #summary
       snp.matrix #return result
     }, error = function(fast.vcf.error) {
@@ -5622,7 +5097,6 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       }
       stop(fast.vcf.error) #do not hide real filtering/input errors
     })
-    
     if (!is.null(fast.vcf.result)) return(fast.vcf.result) #return fast VCF result
   }
   
@@ -5742,7 +5216,6 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     locus.membership.vector <- factor(as.character(genind.object@loc.fac), levels = locus.names) #locus membership
     locus.column.list <- split(seq_along(locus.membership.vector), locus.membership.vector, drop = TRUE) #columns per locus
     allele.present <- colSums(allele.count.matrix, na.rm = TRUE) > 0 #observed allele columns
-    
     retained.info <- lapply(names(locus.column.list), function(current.locus.name) {
       locus.column.indices <- locus.column.list[[current.locus.name]] #columns for locus
       observed.column.indices <- locus.column.indices[allele.present[locus.column.indices]] #observed allele columns
@@ -5750,19 +5223,15 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       return(list(index = observed.column.indices[length(observed.column.indices)], name = current.locus.name)) #retain one allele dosage column
     }) #retained column information
     retained.info <- Filter(Negate(is.null), retained.info) #remove skipped loci
-    
     if (length(retained.info) == 0) stop("No biallelic SNP columns remain after filtering") #stop if empty
     retained.column.indices <- vapply(retained.info, function(single.info) single.info$index, integer(1)) #retained column indices
     retained.allele.dosage.names <- vapply(retained.info, function(single.info) single.info$name, character(1)) #retained locus names
-    
     biallelic.snp.matrix <- as.data.frame(allele.count.matrix[, retained.column.indices, drop = FALSE], stringsAsFactors = FALSE) #subset once
     rownames(biallelic.snp.matrix) <- adegenet::indNames(genind.object) #set rownames
     colnames(biallelic.snp.matrix) <- retained.allele.dosage.names #set colnames
-    
     print.final.summary(biallelic.snp.matrix) #summary
     return(biallelic.snp.matrix) #return SNP matrix
   }
-  
   multiallelic.snp.matrix <- convert.genind.to.k.minus.one.dosage(genind.object) #convert to k-1 dosage matrix
   if (ncol(multiallelic.snp.matrix) == 0) stop("No multiallelic SNP columns remain after filtering") #stop if empty
   print.final.summary(multiallelic.snp.matrix) #summary
@@ -5850,9 +5319,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   }
   if (!is.null(SOM.output$median_map_variance_variable_importance)) {
     map_variance_variable_importance_list <- SOM.output$median_map_variance_variable_importance
-    if (is.null(names(map_variance_variable_importance_list)) && length(map_variance_variable_importance_list) == length(SOM_layer_names)) {
-      names(map_variance_variable_importance_list) <- SOM_layer_names
-    }
+    if (is.null(names(map_variance_variable_importance_list)) && length(map_variance_variable_importance_list) == length(SOM_layer_names)) names(map_variance_variable_importance_list) <- SOM_layer_names
     if (!is.null(names(map_variance_variable_importance_list)) && all(SOM_layer_names %in% names(map_variance_variable_importance_list))) map_variance_variable_importance_list <- map_variance_variable_importance_list[SOM_layer_names]
     map_variance_variable_importance_list <- lapply(map_variance_variable_importance_list, function(variable_importance_values) {
       variable_importance_values <- as.numeric(variable_importance_values)
@@ -5861,7 +5328,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     })
   }
   
-  # Check whether there are valid values
+  # Check for valid values
   eta_squared_available <- FALSE
   map_variance_available <- FALSE
   if (!is.null(eta_squared_variable_importance_list)) eta_squared_available <- any(vapply(eta_squared_variable_importance_list, length, numeric(1)) > 0)
@@ -5957,31 +5424,18 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
       plot_width_to_use <- width / 2
     }
     if (plot.type == "svg") {
-      svg(file.name,
-          width = plot_width_to_use / 2.54,
-          height = height / 2.54)
+      svg(file.name, width = plot_width_to_use / 2.54, height = height / 2.54)
     } else if (plot.type == "png") {
-      png(file.name,
-          width = plot_width_to_use,
-          height = height,
-          units = "cm",
-          res = resolution)
+      png(file.name, width = plot_width_to_use, height = height, units = "cm", res = resolution)
     } else if (plot.type == "jpg") {
-      jpeg(file.name,
-           width = plot_width_to_use,
-           height = height,
-           units = "cm",
-           res = resolution)
+      jpeg(file.name, width = plot_width_to_use, height = height, units = "cm", res = resolution)
     }
   }
   
   # Plot both panels
   if (eta_squared_available && map_variance_available) {
     par(mfrow = c(1, 2),
-        mar = c(bottom.margin,
-                left.margin,
-                top.margin,
-                right.margin),
+        mar = c(bottom.margin, left.margin, top.margin, right.margin),
         mgp = c(2.5, 0.8, 0),
         xpd = FALSE)
     
@@ -5990,12 +5444,10 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     eta_squared_y_axis_limits <- range(eta_squared_boxplot_object$stats, na.rm = TRUE)
     if (diff(eta_squared_y_axis_limits) == 0) {
       eta_squared_axis_padding <- max(abs(eta_squared_y_axis_limits[1]) * 0.05, 0.01)
-      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding,
-                                     eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
+      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding, eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
     } else {
       eta_squared_axis_padding <- diff(eta_squared_y_axis_limits) * 0.05
-      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding,
-                                     eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
+      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding, eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
     }
     
     # Calculate map variance boxplot object and y-axis limits
@@ -6003,12 +5455,10 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     map_variance_y_axis_limits <- range(map_variance_boxplot_object$stats, na.rm = TRUE)
     if (diff(map_variance_y_axis_limits) == 0) {
       map_variance_axis_padding <- max(abs(map_variance_y_axis_limits[1]) * 0.05, 0.01)
-      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding,
-                                      map_variance_y_axis_limits[2] + map_variance_axis_padding)
+      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding, map_variance_y_axis_limits[2] + map_variance_axis_padding)
     } else {
       map_variance_axis_padding <- diff(map_variance_y_axis_limits) * 0.05
-      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding,
-                                      map_variance_y_axis_limits[2] + map_variance_axis_padding)
+      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding, map_variance_y_axis_limits[2] + map_variance_axis_padding)
     }
     
     # Plot eta squared boxplots
@@ -6063,22 +5513,17 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   # Plot eta squared only
   if (eta_squared_available && !map_variance_available) {
     par(mfrow = c(1, 1),
-        mar = c(bottom.margin,
-                left.margin,
-                top.margin,
-                right.margin),
+        mar = c(bottom.margin, left.margin, top.margin, right.margin),
         mgp = c(2.5, 0.8, 0),
         xpd = FALSE)
     eta_squared_boxplot_object <- boxplot(eta_squared_plot_list, plot = FALSE, outline = FALSE)
     eta_squared_y_axis_limits <- range(eta_squared_boxplot_object$stats, na.rm = TRUE)
     if (diff(eta_squared_y_axis_limits) == 0) {
       eta_squared_axis_padding <- max(abs(eta_squared_y_axis_limits[1]) * 0.05, 0.01)
-      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding,
-                                     eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
+      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding, eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
     } else {
       eta_squared_axis_padding <- diff(eta_squared_y_axis_limits) * 0.05
-      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding,
-                                     eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
+      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding, eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
     }
     boxplot(eta_squared_plot_list,
             names = FALSE,
@@ -6107,22 +5552,17 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   # Plot map variance only
   if (!eta_squared_available && map_variance_available) {
     par(mfrow = c(1, 1),
-        mar = c(bottom.margin,
-                left.margin,
-                top.margin,
-                right.margin),
+        mar = c(bottom.margin, left.margin, top.margin, right.margin),
         mgp = c(2.5, 0.8, 0),
         xpd = FALSE)
     map_variance_boxplot_object <- boxplot(map_variance_plot_list, plot = FALSE, outline = FALSE)
     map_variance_y_axis_limits <- range(map_variance_boxplot_object$stats, na.rm = TRUE)
     if (diff(map_variance_y_axis_limits) == 0) {
       map_variance_axis_padding <- max(abs(map_variance_y_axis_limits[1]) * 0.05, 0.01)
-      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding,
-                                      map_variance_y_axis_limits[2] + map_variance_axis_padding)
+      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding, map_variance_y_axis_limits[2] + map_variance_axis_padding)
     } else {
       map_variance_axis_padding <- diff(map_variance_y_axis_limits) * 0.05
-      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding,
-                                      map_variance_y_axis_limits[2] + map_variance_axis_padding)
+      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding, map_variance_y_axis_limits[2] + map_variance_axis_padding)
     }
     boxplot(map_variance_plot_list,
             names = FALSE,
@@ -6153,6 +5593,8 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     dev.off()
     messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
+
+  # Return results                                         
   return(layer_importance_summary_table)
 }
 
@@ -6263,58 +5705,30 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     return(input_layer_matrix)
   })
   
-  # Validate specified seeds
+  # Validate input
   if (!is.numeric(baseline.train.SOM.set.seed.N) || length(baseline.train.SOM.set.seed.N) != 1 || is.na(baseline.train.SOM.set.seed.N) || baseline.train.SOM.set.seed.N < 1 || baseline.train.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.train.SOM.set.seed.N must be a single positive integer")
   if (!is.numeric(baseline.clustering.SOM.set.seed.N) || length(baseline.clustering.SOM.set.seed.N) != 1 || is.na(baseline.clustering.SOM.set.seed.N) || baseline.clustering.SOM.set.seed.N < 1 || baseline.clustering.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.clustering.SOM.set.seed.N must be a single positive integer")
-  
-  # Validate specified add.points
   if (!is.logical(add.points) || length(add.points) != 1 || is.na(add.points)) stop("Leave-one-layer-out layer importance aborted: add.points must be TRUE or FALSE")
-  
-  # Validate specified distance.axis.label
   if (!is.numeric(distance.axis.label) || length(distance.axis.label) != 1 || is.na(distance.axis.label) || distance.axis.label <= 0) stop("Leave-one-layer-out layer importance aborted: distance.axis.label must be a single positive numeric value")
-  
-  # Validate specified save.leave.one.layer.out.results
   if (!is.logical(save.leave.one.layer.out.results) || length(save.leave.one.layer.out.results) != 1 || is.na(save.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results must be TRUE or FALSE")
-  
-  # Validate specified save.leave.one.layer.out.results.name
   if (save.leave.one.layer.out.results && !is.null(save.leave.one.layer.out.results.name)) {
     if (!is.character(save.leave.one.layer.out.results.name) || length(save.leave.one.layer.out.results.name) != 1 || is.na(save.leave.one.layer.out.results.name) || trimws(save.leave.one.layer.out.results.name) == "") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must be a non-empty character string if provided")
     if (tolower(tools::file_ext(save.leave.one.layer.out.results.name)) != "rdata") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must end with '.Rdata'")
   }
-  
-  # Validate specified overwrite.leave.one.layer.out.results
   if (!is.logical(overwrite.leave.one.layer.out.results) || length(overwrite.leave.one.layer.out.results) != 1 || is.na(overwrite.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: overwrite.leave.one.layer.out.results must be TRUE or FALSE")
-  
-  # Validate specified save
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Leave-one-layer-out layer importance aborted: save must be TRUE or FALSE")
-  
-  # Validate specified overwrite
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Leave-one-layer-out layer importance aborted: overwrite must be TRUE or FALSE")
-  
-  # Validate specified plot.type
   if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(tolower(plot.type) %in% c("svg", "png", "jpg"))) stop("Leave-one-layer-out layer importance aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
   plot.type <- tolower(plot.type)
-  
-  # Validate specified file.name
   if (!is.null(file.name)) {
     if (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "") stop("Leave-one-layer-out layer importance aborted: file.name must be NULL or a non-empty character string")
   }
-  
-  # Validate specified width
   if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Leave-one-layer-out layer importance aborted: width must be a single positive numeric value")
-  
-  # Validate specified height
   if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Leave-one-layer-out layer importance aborted: height must be a single positive numeric value")
-  
-  # Validate specified resolution
   if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution <= 0) stop("Leave-one-layer-out layer importance aborted: resolution must be a single positive numeric value")
-  
-  # Validate specified title
   if (!is.null(title)) {
     if (!is.character(title) || length(title) != 1 || is.na(title)) stop("Leave-one-layer-out layer importance aborted: title must be NULL or a character string of length 1")
   }
-  
-  # Validate specified verbose
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   
   # Create function to return mean or NA
@@ -6340,10 +5754,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     one_hot_assignment_probability_matrix <- matrix(0,
                                                     nrow = length(hard_cluster_labels),
                                                     ncol = length(unique_cluster_labels),
-                                                    dimnames = list(names(hard_cluster_labels),
-                                                                    unique_cluster_labels))
-    one_hot_assignment_probability_matrix[cbind(seq_along(hard_cluster_labels),
-                                                match(hard_cluster_labels, unique_cluster_labels))] <- 1
+                                                    dimnames = list(names(hard_cluster_labels), unique_cluster_labels))
+    one_hot_assignment_probability_matrix[cbind(seq_along(hard_cluster_labels), match(hard_cluster_labels, unique_cluster_labels))] <- 1
     return(one_hot_assignment_probability_matrix)
   }
   
@@ -6361,9 +5773,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     # Normalize rows
     assignment_row_sums <- rowSums(assignment_probability_matrix, na.rm = TRUE)
     valid_assignment_rows <- is.finite(assignment_row_sums) & assignment_row_sums > 0
-    if (!any(valid_assignment_rows)) {
-      return(NULL)
-    }
+    if (!any(valid_assignment_rows)) return(NULL)
     assignment_probability_matrix[valid_assignment_rows, ] <- assignment_probability_matrix[valid_assignment_rows, , drop = FALSE] / assignment_row_sums[valid_assignment_rows]
     
     # Keep only valid rows
@@ -6384,10 +5794,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   }
   
   # Create function to extract replicate-level assignment probabilities if available
-  extract.single.replicate.assignment.probabilities.SOM <- function(clustered_SOM_output,
-                                                                    hard_cluster_labels = NULL,
-                                                                    retained_replicate_position = NULL
-  ) {
+  extract.single.replicate.assignment.probabilities.SOM <- function(clustered_SOM_output, hard_cluster_labels = NULL, retained_replicate_position = NULL) {
     
     # Extract sample names from hard cluster labels
     sample_names <- names(hard_cluster_labels)
@@ -6417,7 +5824,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       # Renormalize after alignment
       candidate_assignment_probability_matrix <- normalize.assignment.probabilities.SOM(candidate_assignment_probability_matrix)
       if (is.null(candidate_assignment_probability_matrix)) return(NULL)
-      
+
+      # Return results
       return(candidate_assignment_probability_matrix)
     }
     
@@ -6452,9 +5860,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     # For single-replicate leave-one-layer-out output, ancestry_matrix may already correspond to that single run
     if (is.null(retained_replicate_position) && !is.null(clustered_SOM_output$ancestry_matrix)) {
       current_assignment_probability_matrix <- validate.and.align.assignment.probabilities.SOM(clustered_SOM_output$ancestry_matrix)
-      if (!is.null(current_assignment_probability_matrix)) {
-        return(current_assignment_probability_matrix)
-      }
+      if (!is.null(current_assignment_probability_matrix)) return(current_assignment_probability_matrix)
     }
     
     # Fallback to one-hot hard assignments
@@ -6473,23 +5879,20 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     k_value_table <- table(k_values)
     k_value_proportions <- prop.table(k_value_table)
     k_distribution_summary <- paste0("k", names(k_value_proportions), "=", round(as.numeric(k_value_proportions), 3), collapse = "; ")
-    
+
+    # Return results
     return(k_distribution_summary)
   }
   
   # Create function to calculate total variation distance between baseline and leave-one-layer-out k distributions
-  calculate.k.distribution.TVD.SOM <- function(baseline_k_values,
-                                               leave_one_layer_out_k_values
-  ) {
+  calculate.k.distribution.TVD.SOM <- function(baseline_k_values, leave_one_layer_out_k_values) {
     
     # Clean k values
     baseline_k_values <- as.numeric(baseline_k_values)
     leave_one_layer_out_k_values <- as.numeric(leave_one_layer_out_k_values)
     baseline_k_values <- baseline_k_values[is.finite(baseline_k_values) & !is.na(baseline_k_values)]
     leave_one_layer_out_k_values <- leave_one_layer_out_k_values[is.finite(leave_one_layer_out_k_values) & !is.na(leave_one_layer_out_k_values)]
-    if (length(baseline_k_values) == 0 || length(leave_one_layer_out_k_values) == 0) {
-      return(NA_real_)
-    }
+    if (length(baseline_k_values) == 0 || length(leave_one_layer_out_k_values) == 0) return(NA_real_)
     
     # Extract all observed k values
     all_observed_k_values <- sort(unique(c(baseline_k_values, leave_one_layer_out_k_values)))
@@ -6510,9 +5913,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   }
   
   # Create function to calculate pairwise co-assignment change
-  calculate.pairwise.coassignment.change.SOM <- function(baseline_cluster_labels,
-                                                         leave_one_layer_out_cluster_labels
-  ) {
+  calculate.pairwise.coassignment.change.SOM <- function(baseline_cluster_labels, leave_one_layer_out_cluster_labels) {
     
     # Match samples
     shared_sample_names <- intersect(names(baseline_cluster_labels), names(leave_one_layer_out_cluster_labels))
@@ -6551,9 +5952,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   }
   
   # Create function to calculate assignment accuracy compared to original baseline replicate
-  calculate.assignment.accuracy.to.original.SOM <- function(baseline_cluster_labels,
-                                                            leave_one_layer_out_cluster_labels
-  ) {
+  calculate.assignment.accuracy.to.original.SOM <- function(baseline_cluster_labels, leave_one_layer_out_cluster_labels) {
     
     # Match samples
     shared_sample_names <- intersect(names(baseline_cluster_labels), names(leave_one_layer_out_cluster_labels))
@@ -6578,7 +5977,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         current_assignment_accuracy <- mean(as.character(baseline_cluster_labels) == relabeled_leave_one_layer_out_cluster_labels, na.rm = TRUE)
         if (current_assignment_accuracy > best_assignment_accuracy) best_assignment_accuracy <- current_assignment_accuracy
       }
-      
+
+      # Return results
       return(best_assignment_accuracy)
     }
     
@@ -6587,7 +5987,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     relabel_map <- apply(cluster_label_contingency_table, 1, function(cluster_count_vector) colnames(cluster_label_contingency_table)[which.max(cluster_count_vector)])
     relabeled_leave_one_layer_out_cluster_labels <- relabel_map[as.character(leave_one_layer_out_cluster_labels)]
     assignment_accuracy_to_original <- mean(as.character(baseline_cluster_labels) == relabeled_leave_one_layer_out_cluster_labels, na.rm = TRUE)
-    
+
+    # Return results 
     return(assignment_accuracy_to_original)
   }
   
@@ -6670,14 +6071,11 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         single_cluster_assignment <- matrix(1,
                                             nrow = nrow(input_data_for_SOM[[1]]),
                                             ncol = 1,
-                                            dimnames = list(rownames(input_data_for_SOM[[1]]),
-                                                            "R1"))
+                                            dimnames = list(rownames(input_data_for_SOM[[1]]), "R1"))
         clustered_single_replicate_SOM_output <- trained_single_replicate_SOM_output
         clustered_single_replicate_SOM_output$cluster_assignment <- single_cluster_assignment
         clustered_single_replicate_SOM_output$optim_k_vals <- 1
-        clustered_single_replicate_SOM_output$optim_k_summary <- data.frame(Count = 1,
-                                                                            Proportion = 1,
-                                                                            row.names = "k1")
+        clustered_single_replicate_SOM_output$optim_k_summary <- data.frame(Count = 1, Proportion = 1, row.names = "k1")
       } else {
         
         # Reduce max.k / set.k if leave-one-layer-out SOM has too few distinct codebook rows
@@ -6705,26 +6103,19 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                            verbose = FALSE,
                            set.seed.N = matched_clustering_seed),
             warning = function(w) {
-              if (grepl("^Eta squared effect size \\(variable importance\\) could not be computed because all replicates produced k = 1$",
-                        conditionMessage(w))) {
-                invokeRestart("muffleWarning")
-              }
+              if (grepl("^Eta squared effect size \\(variable importance\\) could not be computed because all replicates produced k = 1$", conditionMessage(w))) {invokeRestart("muffleWarning")}
             }
           ),
           error = function(error_message) {
-            if (grepl("mehr Clusterzentren als verschiedene Datenpunkte|more cluster centers than distinct data points",
-                      conditionMessage(error_message))) {
+            if (grepl("mehr Clusterzentren als verschiedene Datenpunkte|more cluster centers than distinct data points", conditionMessage(error_message))) {
               single_cluster_assignment <- matrix(1,
                                                  nrow = nrow(input_data_for_SOM[[1]]),
                                                   ncol = 1,
-                                                  dimnames = list(rownames(input_data_for_SOM[[1]]),
-                                                                  "R1"))
+                                                  dimnames = list(rownames(input_data_for_SOM[[1]]), "R1"))
               clustered_single_replicate_SOM_output <- trained_single_replicate_SOM_output
               clustered_single_replicate_SOM_output$cluster_assignment <- single_cluster_assignment
               clustered_single_replicate_SOM_output$optim_k_vals <- 1
-              clustered_single_replicate_SOM_output$optim_k_summary <- data.frame(Count = 1,
-                                                                                  Proportion = 1,
-                                                                                  row.names = "k1")
+              clustered_single_replicate_SOM_output$optim_k_summary <- data.frame(Count = 1, Proportion = 1, row.names = "k1")
               return(clustered_single_replicate_SOM_output)
             }
             stop(error_message)
@@ -6958,13 +6349,11 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                  stringsAsFactors = FALSE)
     })
     layer_summary_table <- do.call(rbind, layer_summary_list)
-    layer_summary_table <- layer_summary_table[order(layer_summary_table$mean.absolute.k.deviation,
-                                                     decreasing = TRUE), , drop = FALSE]
+    layer_summary_table <- layer_summary_table[order(layer_summary_table$mean.absolute.k.deviation, decreasing = TRUE), , drop = FALSE]
     rownames(layer_summary_table) <- NULL
     
     # Create results object
-    leave.one.layer.out.results <- list(layer.summary = layer_summary_table,
-                                        replicate.matched.results = replicate_matched_results_table)
+    leave.one.layer.out.results <- list(layer.summary = layer_summary_table, replicate.matched.results = replicate_matched_results_table)
     
     # Save results if requested
     if (save.leave.one.layer.out.results) {
@@ -6998,8 +6387,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   layer_colors <- setNames(col.pal(length(SOM_layer_names)), SOM_layer_names)
   
   # Reorder replicate-level table to match layer.summary order
-  successful_replicate_matched_results_table$layer <- factor(successful_replicate_matched_results_table$layer,
-                                                             levels = SOM_layer_names)
+  successful_replicate_matched_results_table$layer <- factor(successful_replicate_matched_results_table$layer, levels = SOM_layer_names)
   
   # Open plot device if requested
   if (save) {
@@ -7016,25 +6404,15 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     
     # Open graphics device
     if (plot.type == "svg") {
-      grDevices::svg(filename = file.name,
-                     width = width / 2.54,
-                     height = height / 2.54)
+      svg(filename = file.name, width = width / 2.54, height = height / 2.54)
     }
     if (plot.type == "png") {
-      grDevices::png(filename = file.name,
-                     width = width,
-                     height = height,
-                     units = "cm",
-                     res = resolution)
+      png(filename = file.name, width = width, height = height, units = "cm", res = resolution)
     }
     if (plot.type == "jpg") {
-      grDevices::jpeg(filename = file.name,
-                      width = width,
-                      height = height,
-                      units = "cm",
-                      res = resolution)
+      jpeg(filename = file.name, width = width, height = height, units = "cm",res = resolution)
     }
-    on.exit(grDevices::dev.off(), add = TRUE)
+    on.exit(dev.off(), add = TRUE)
   }
   
   # Reset plotting parameters
@@ -7042,26 +6420,18 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   on.exit(par(old_plotting_parameters), add = TRUE)
   
   # Determine whether certainty/separation plots can be shown
-  show.assignment.margin.plot <- any(is.finite(successful_replicate_matched_results_table$delta.mean.assignment.margin) &
-                                       !is.na(successful_replicate_matched_results_table$delta.mean.assignment.margin))
-  show.assignment.entropy.plot <- any(is.finite(successful_replicate_matched_results_table$increase.mean.normalized.assignment.entropy) &
-                                        !is.na(successful_replicate_matched_results_table$increase.mean.normalized.assignment.entropy))
+  show.assignment.margin.plot <- any(is.finite(successful_replicate_matched_results_table$delta.mean.assignment.margin) & !is.na(successful_replicate_matched_results_table$delta.mean.assignment.margin))
+  show.assignment.entropy.plot <- any(is.finite(successful_replicate_matched_results_table$increase.mean.normalized.assignment.entropy) & !is.na(successful_replicate_matched_results_table$increase.mean.normalized.assignment.entropy))
   
   # Set plotting layout
   if (show.assignment.margin.plot || show.assignment.entropy.plot) {
     par(mfrow = c(3, 2),
-        mar = c(bottom.margin,
-                left.margin,
-                top.margin,
-                right.margin),
+        mar = c(bottom.margin, left.margin, top.margin, right.margin),
         oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
         mgp = c(distance.axis.label, 1, 0))
   } else {
     par(mfrow = c(2, 2),
-        mar = c(bottom.margin,
-                left.margin,
-                top.margin,
-                right.margin),
+        mar = c(bottom.margin, left.margin, top.margin, right.margin),
         oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
         mgp = c(distance.axis.label, 1, 0))
     messager("Assignment margin and entropy plots skipped because all successful replicates had k = 1")
@@ -7395,9 +6765,7 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
   }
   
   # Calculate CV for non-binary variables only
-  coefficient.of.variation.values <- sapply(names(variables.to.filter)[!binary.variable.logical], function(variable.name) {
-    compute_CV(variables.to.filter[[variable.name]], variable.name)
-  })
+  coefficient.of.variation.values <- sapply(names(variables.to.filter)[!binary.variable.logical], function(variable.name) {compute_CV(variables.to.filter[[variable.name]], variable.name)})
   
   # Variables to keep after prevalence and CV filtering
   variables.removed.by.prevalence <- unique(c(variables.removed.rare.binary, variables.removed.rare.count))
@@ -7417,8 +6785,7 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
   retained.count.variable.names <- intersect(names(count.variable.logical)[count.variable.logical], colnames(variables.for.correlation))
   
   if (length(retained.count.variable.names) > 0) {
-    for (variable.name in retained.count.variable.names) {
-      variables.for.correlation[[variable.name]] <- log1p(variables.for.correlation[[variable.name]])
+    for (variable.name in retained.count.variable.names) variables.for.correlation[[variable.name]] <- log1p(variables.for.correlation[[variable.name]])
     }
   }
   
@@ -7439,16 +6806,12 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
   variables.removed.by.correlation <- character(0)
   while (length(absolute.correlation.matrix) > 0 && any(absolute.correlation.matrix > cor.threshold, na.rm = TRUE)) {
     maximum.correlation.index <- which(absolute.correlation.matrix == max(absolute.correlation.matrix, na.rm = TRUE), arr.ind = TRUE)[1, ]
-    
     variable.name.1 <- colnames(absolute.correlation.matrix)[maximum.correlation.index[1]]
     variable.name.2 <- colnames(absolute.correlation.matrix)[maximum.correlation.index[2]]
-    
     variable.values.1 <- variables.retained.for.correlation[[variable.name.1]]
     variable.values.2 <- variables.retained.for.correlation[[variable.name.2]]
-    
     variable.NA.count.1 <- sum(is.na(variable.values.1))
     variable.NA.count.2 <- sum(is.na(variable.values.2))
-    
     if (variable.NA.count.1 > variable.NA.count.2) {
       variable.name.to.remove <- variable.name.1
     } else if (variable.NA.count.2 > variable.NA.count.1) {
@@ -7456,20 +6819,15 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
     } else {
       variable.values.finite.1 <- variable.values.1[is.finite(variable.values.1)]
       variable.values.finite.2 <- variable.values.2[is.finite(variable.values.2)]
-      
       variable.mean.1 <- if (length(variable.values.finite.1) > 0) mean(variable.values.finite.1) else NA_real_
       variable.mean.2 <- if (length(variable.values.finite.2) > 0) mean(variable.values.finite.2) else NA_real_
-      
       variable.mean.close.to.zero.1 <- !is.finite(variable.mean.1) || abs(variable.mean.1) < 1e-7
       variable.mean.close.to.zero.2 <- !is.finite(variable.mean.2) || abs(variable.mean.2) < 1e-7
-      
       if (variable.mean.close.to.zero.1 || variable.mean.close.to.zero.2) {
         variable.mean.correlation.1 <- mean(absolute.correlation.matrix[variable.name.1, ], na.rm = TRUE)
         variable.mean.correlation.2 <- mean(absolute.correlation.matrix[variable.name.2, ], na.rm = TRUE)
-        
         if (!is.finite(variable.mean.correlation.1)) variable.mean.correlation.1 <- 0
         if (!is.finite(variable.mean.correlation.2)) variable.mean.correlation.2 <- 0
-        
         if (variable.mean.correlation.1 > variable.mean.correlation.2) {
           variable.name.to.remove <- variable.name.1
         } else if (variable.mean.correlation.2 > variable.mean.correlation.1) {
@@ -7484,10 +6842,8 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
       } else {
         variable.CV.1 <- compute_CV(variable.values.1, variable.name.1)
         variable.CV.2 <- compute_CV(variable.values.2, variable.name.2)
-        
         if (!is.finite(variable.CV.1)) variable.CV.1 <- 0
         if (!is.finite(variable.CV.2)) variable.CV.2 <- 0
-        
         if (variable.CV.1 < variable.CV.2) {
           variable.name.to.remove <- variable.name.1
         } else if (variable.CV.2 < variable.CV.1) {
@@ -7497,7 +6853,6 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
         }
       }
     }
-    
     variables.removed.by.correlation <- c(variables.removed.by.correlation, as.character(variable.name.to.remove))
     absolute.correlation.matrix[, variable.name.to.remove] <- 0
     absolute.correlation.matrix[variable.name.to.remove, ] <- 0
