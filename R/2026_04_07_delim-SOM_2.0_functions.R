@@ -1386,7 +1386,7 @@ clustering.SOM <- function(SOM.output,
   required_SOM_fields <- c("som_models", "codebook_vectors", "replicate_ids", "quantization_error", "topographic_error", "layer.distance.functions")
   missing_SOM_fields <- required_SOM_fields[!(required_SOM_fields %in% names(SOM.output))]
   if (length(missing_SOM_fields) > 0) stop("Aborted SOM clustering: SOM.output is missing required field(s): ", paste(missing_SOM_fields, collapse = ", "))
-  if (!is.numeric(max.k) || length(max.k) != 1 || is.na(max.k) || max.k < 2 || (max.k %% 1 != 0)) stop("Aborted SOM clustering: max.k must be a single integer >= 2")
+  if (!is.numeric(max.k) || length(max.k) != 1 || is.na(max.k) || !is.finite(max.k) || max.k < 2 || (max.k %% 1 != 0)) stop("Aborted SOM clustering: max.k must be a single integer >= 2")
   if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || !is.finite(set.k) || set.k < 1 || (set.k %% 1 != 0))) stop("Aborted SOM clustering: set.k must be NULL or single integer >= 1")
   if (!is.null(set.k) && set.k > max.k) max.k <- set.k
   valid.methods <- c("kmeans+BICelbow",
@@ -1502,13 +1502,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   sample_finite <- is.finite(sample_matrix) #logical matrix: n_samples x n_vars
   
   # Calculate distances using sum of squares (Euclidean)
-  if (distance_function == "sumofsquares") {
+  if (distance_function %in% c("sumofsquares", "euclidean")) {
     if (!anyNA(sample_matrix) && !anyNA(codebook_matrix)) { #fast BLAS path when no missing values present
       a_sq <- rowSums(sample_matrix ^ 2) #squared row norms for samples
       b_sq <- rowSums(codebook_matrix ^ 2) #squared row norms for codebook vectors
       cross <- tcrossprod(sample_matrix, codebook_matrix) #cross-product matrix: n_samples x n_units
       d_sq <- outer(a_sq, b_sq, "+") - 2 * cross #squared Euclidean distances via expansion
-      distance_matrix <- sqrt(pmax(d_sq, 0)) #take square root and guard against floating point negatives
+      distance_matrix <- if (distance_function == "sumofsquares") pmax(d_sq, 0) else sqrt(pmax(d_sq, 0)) #calculate requested distance and guard against floating point negatives
       rownames(distance_matrix) <- rownames(sample_matrix) #restore rownames after matrix operations
     } else { #fallback path for data with missing values
       for (unit_index in seq_len(n_units)) {
@@ -1517,7 +1517,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
         diffs <- sample_matrix - matrix(current_codebook_vector, n_samples, n_vars, byrow = TRUE) #element-wise differences
         diffs[!valid_values] <- 0 #zero out missing positions before summing
         has_valid <- rowSums(valid_values) > 0L #samples with at least one valid value
-        current_distance_vector <- sqrt(rowSums(diffs ^ 2)) #Euclidean distance over valid positions
+        current_distance_vector <- if (distance_function == "sumofsquares") rowSums(diffs ^ 2) else sqrt(rowSums(diffs ^ 2)) #calculate requested distance over valid positions
         current_distance_vector[!has_valid] <- NA_real_ #set fully missing samples to NA
         distance_matrix[, unit_index] <- current_distance_vector #store distances
       }
@@ -1552,7 +1552,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   }
   
   # Stop if unsupported distance function is specified
-  if (!distance_function %in% c("sumofsquares", "manhattan", "tanimoto")) stop("Soft assignment calculation aborted: unsupported distance function in compute.layer.sample.to.unit.distance.SOM")
+  if (!distance_function %in% c("sumofsquares", "euclidean", "manhattan", "tanimoto")) stop("Soft assignment calculation aborted: unsupported distance function in compute.layer.sample.to.unit.distance.SOM")
 
   # Return results
   return(distance_matrix) #return distance matrix
@@ -1666,7 +1666,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     }
     
     # Convert distances to soft unit weights
-    unit_weight_matrix <- exp(-(sample_to_unit_distance_matrix ^ 2) / (2 * temperature ^ 2))
+    unit_weight_matrix <- exp(-sample_to_unit_distance_matrix / temperature) #convert arbitrary non-negative SOM dissimilarities to soft unit weights
     unit_weight_row_sums <- rowSums(unit_weight_matrix, na.rm = TRUE)
     valid_rows <- is.finite(unit_weight_row_sums) & unit_weight_row_sums > 0
     if (!any(valid_rows)) stop("Replicate ancestry calculation aborted: all unit weight row sums are invalid")
@@ -1858,7 +1858,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       if (!is.null(set.k)) return(set.k) #if user-specified number of clusters is given, return it
       if (length(BIC_vec) < 2) return(1) #if there is only one or no BIC value, set default to k = 1
       if (all(is.na(BIC_vec))) stop("All BIC values are NA - cannot determine optimal number of clusters")
-      if (is.na(BIC_vec[1]) || is.na(BIC_vec[2])) stop("The first or second BIC value is NA - cannot evaluate k = 1 vs k = 2")
+      if (is.na(BIC_vec[1]) || is.na(BIC_vec[2])) return(which.min(replace(BIC_vec, !is.finite(BIC_vec) | is.na(BIC_vec), Inf))) #fallback when only k = 1 is estimable
       som_N_clusters <- NA #store optimal k
       for (k in 2:length(BIC_vec)) {
         if (!is.na(BIC_vec[k]) && !is.na(BIC_vec[k - 1]) && ((BIC_vec[k - 1] - BIC_vec[k]) < BIC.thresh)) { #if improvement is not at least as large as threshold, select previous k
@@ -2125,10 +2125,10 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     # Clustering method: HDBSCAN
     if (clustering.method == "HDBSCAN") {
       dist_som_codes <- stats::dist(som_codes) #compute pairwise Euclidean distances
-      max_minPts <- max(2L, floor(nrow(som_codes) / 1.5)) #set max minPts
+      max_minPts <- max(2L, min(15L, nrow(som_codes) - 1L, floor(nrow(som_codes) / 2))) #set bounded max minPts
       minPts_min <- max(3L, floor(0.05 * nrow(som_codes))) #at least 3, or 5% of units
       minPts_min <- min(minPts_min, max_minPts) #ensure valid range
-            minPts_vals <- unique(round(seq(minPts_min, max_minPts, length.out = min(15, max_minPts - minPts_min + 1L)))) #grid of minPts values
+      minPts_vals <- unique(round(seq(minPts_min, max_minPts, length.out = min(15L, max_minPts - minPts_min + 1L)))) #grid of minPts values
       hdbscan_model_results <- data.frame(minPts = integer(), n_clusters = integer(), mean_mem = numeric()) #initialize result table
       for (m in minPts_vals) { #for each minPts value ...
         hdbscan_model <- dbscan::hdbscan(som_codes, minPts = m) #run HDBSCAN
@@ -2156,11 +2156,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             BIC_vec <- rep(NA_real_, max.k)
           } else {
             valid_HDBSCAN_k <- which(hdbscan_model_results$n_clusters == som_N_clusters & !is.na(hdbscan_model_results$mean_mem)) #filter valid runs matching set.k
-            if (length(valid_HDBSCAN_k) == 0) { #if no valid runs match requested k
-              som_cluster <- rep(1L, nrow(som_codes)) #assign all points to one cluster
-              som_N_clusters <- 1L
-              BIC_vec <- rep(NA_real_, max.k)
-            } else {
+            if (length(valid_HDBSCAN_k) == 0) stop(sprintf("Aborted SOM clustering: HDBSCAN did not produce set.k = %d for any tested minPts value", som_N_clusters)) else { #do not silently replace a requested fixed k with k = 1
               best_minPts_row <- valid_HDBSCAN_k[which.max(hdbscan_model_results$mean_mem[valid_HDBSCAN_k])] #select best minPts among matching-k runs
               best_minPts <- hdbscan_model_results$minPts[best_minPts_row]
               best_hdbscan_model <- dbscan::hdbscan(som_codes, minPts = best_minPts) #run HDBSCAN with selected minPts
@@ -2222,13 +2218,9 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               clusters_singleton <- as.integer(factor(clusters_singleton)) #relabel clusters sequentially
               k_singleton <- length(unique(clusters_singleton)) #extract number of clusters
               silhouette_singleton <- NA_real_
-              if (k_singleton >= 2) silhouette_singleton <- tryCatch({mean(cluster::silhouette(clusters_singleton, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
-              if (is.na(silhouette_singleton) && is.na(silhouette_nearest)) { #compare both strategies and select best based on silhouette score (or cluster count fallback)
-                if (k_singleton > k_nearest) {
-                  som_cluster <- clusters_singleton
-                } else {
+              if (k_singleton >= 2 && k_singleton <= max.k) silhouette_singleton <- tryCatch({mean(cluster::silhouette(clusters_singleton, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
+              if (is.na(silhouette_singleton) && is.na(silhouette_nearest)) { #if singleton reassignment is invalid or unsupported, keep nearest-core reassignment
                   som_cluster <- clusters_nearest
-                }
               } else if (is.na(silhouette_singleton) || silhouette_nearest >= silhouette_singleton) {
                 som_cluster <- clusters_nearest
               } else {
@@ -2300,20 +2292,11 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               optics_cluster_solutions[[result_counter]] <- cluster_assignments_relabelled #store cluster solution
             }
           }
-          if (nrow(optics_model_results) == 0) { #no parameter combination produced requested k
-            som_N_clusters <- 1L #set number of clusters to 1
-            som_cluster <- rep(1L, nrow(som_codes)) #assign all units to single cluster
-          } else {
-            best_row <- which.max(optics_model_results$mean_silhouette) #select best silhouette
-            best_silhouette <- optics_model_results$mean_silhouette[best_row] #extract best silhouette
-            best_cluster_solution <- optics_cluster_solutions[[optics_model_results$result_index[best_row]]] #extract best clustering
-            if (is.na(best_silhouette) || best_silhouette <= 0.25) { #collapse weak structure to k = 1
-              som_N_clusters <- 1L
-              som_cluster <- rep(1L, nrow(som_codes))
-            } else {
-              som_cluster <- best_cluster_solution #assign best clustering
-            }
-          }
+          if (nrow(optics_model_results) == 0) stop(sprintf("Aborted SOM clustering: OPTICS did not produce set.k = %d for any tested minPts/xi combination", som_N_clusters)) #do not silently replace a requested fixed k with k = 1
+          best_row <- which.max(optics_model_results$mean_silhouette) #select best silhouette
+          best_cluster_solution <- optics_cluster_solutions[[optics_model_results$result_index[best_row]]] #extract best clustering
+          som_cluster <- best_cluster_solution #assign best clustering for user-specified k without collapsing fixed-k requests
+          som_N_clusters <- length(unique(som_cluster)) #store actual selected cluster count
           BIC_vec <- rep(NA_real_, max.k) #initialize BIC vector as NA
         }
       } else {
@@ -2421,7 +2404,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     # Store generic support values for plotting
     if (exists("BIC_vec", inherits = FALSE) && any(is.finite(BIC_vec))) {
       support_vec <- BIC_vec
-      support_label <- "BIC"
+      support_label <- if (clustering.method == "GMM+BICthreshold") "Negative mclust BIC" else "BIC"
       support_higher_is_better <- FALSE
     }
     if (exists("davies_bouldin_values", inherits = FALSE) && any(is.finite(davies_bouldin_values))) {
@@ -2530,13 +2513,16 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   mean_normalized_assignment_entropy <- vapply(replicate_ancestry_matrices, calculate.mean.normalized.assignment.entropy.SOM, numeric(1))
   names(mean_normalized_assignment_entropy) <- paste0("R", seq_along(mean_normalized_assignment_entropy))
   
-  # Replace NA values with 0.5 for labeling
-  processed_input_data <- results[[1]]$som_model$data[[1]]
+  # Build multi-layer reference data for Hungarian label synchronization
+  processed_input_data <- results[[1]]$som_model$data
+  if (!is.list(processed_input_data)) processed_input_data <- list(processed_input_data)
+  processed_input_data <- lapply(processed_input_data, as.matrix)
+  processed_input_data <- do.call(cbind, processed_input_data)
   processed_input_data[is.na(processed_input_data)] <- 0.5
   
   # Preprocess input data and generate cluster labels
   base::set.seed(set.seed.N) #set seed for reproducibility
-  max_reference_k <- min(max.k, max(as.numeric(optim_k_vals), na.rm = TRUE), nrow(processed_input_data)) #maximum valid reference k
+  max_reference_k <- as.integer(min(max.k, max(as.numeric(optim_k_vals), na.rm = TRUE), nrow(unique(processed_input_data)))) #maximum valid reference k
   if (!is.finite(max_reference_k) || max_reference_k < 1L) stop("Aborted SOM clustering: no valid reference k available for Hungarian relabeling")
   cluster_labels <- do.call(cbind, lapply(seq_len(max_reference_k), function(number_of_clusters) stats::kmeans(processed_input_data, centers = number_of_clusters, nstart = 30, iter.max = 1e5)$cluster)) #generate reference cluster labels for Hungarian relabeling
   rownames(cluster_labels) <- rownames(processed_input_data) #set row names for cluster labels
@@ -2545,12 +2531,18 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   # Extract SOM cluster assignments and filter replicates based on maximum K
   all_k <- apply(cluster_assignment, 2, max, na.rm = TRUE) #calculate maximum K for each replicate (column)
   if (length(which(optim_k_vals <= max_reference_k)) == 0) stop("Aborted SOM clustering: no replicates have k ≤ max_reference_k - increase max.k or check input data")
-  assignment_matrix <- cluster_assignment[, which(optim_k_vals <= max_reference_k), drop = FALSE] #filter to keep replicates with K <= max_reference_k
+  assignment_replicate_indices <- which(optim_k_vals <= max_reference_k) #replicates retained for relabeling and ancestry summaries
+  assignment_matrix <- cluster_assignment[, assignment_replicate_indices, drop = FALSE] #filter to keep replicates with K <= max_reference_k
+  replicate_label_maps <- vector("list", ncol(assignment_matrix)) #store replicate-label -> reference-label maps
   
   # Relabel across replicates with Hungarian algorithm
   for (replicate_index in seq_len(ncol(assignment_matrix))) {
     replicate_k <- max(assignment_matrix[, replicate_index], na.rm = TRUE)
-    if (is.na(replicate_k) || replicate_k < 2) next
+    if (is.na(replicate_k)) next
+    if (replicate_k < 2) {
+    replicate_label_maps[[replicate_index]] <- seq_len(replicate_k)
+    next
+    }
     reference_sample_cluster_labels <- cluster_labels[, replicate_k] #reference labels for this K
     replicate_sample_cluster_labels <- assignment_matrix[, replicate_index] #labels from this replicate
     cluster_overlap_count_matrix <- table(factor(reference_sample_cluster_labels, levels = 1:replicate_k), base::factor(replicate_sample_cluster_labels, levels = 1:replicate_k)) #create table (rows: ref clusters, cols: replicate clusters; with levels 1:replicate_k)
@@ -2564,6 +2556,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     reference_cluster_to_replicate_cluster_map <- as.integer(clue::solve_LSAP(assignment_cost_matrix)) #returns replicate cluster (col) chosen for each reference cluster (row)
     replicate_cluster_to_reference_cluster_map <- integer(replicate_k) #invert mapping so we can relabel replicate -> reference
     replicate_cluster_to_reference_cluster_map[reference_cluster_to_replicate_cluster_map] <- seq_len(replicate_k) #replicate_cluster_to_reference_cluster_map[replicate_cluster] = reference_cluster
+    replicate_label_maps[[replicate_index]] <- replicate_cluster_to_reference_cluster_map #store map for optional soft-ancestry relabeling
     assignment_matrix[, replicate_index] <- as.integer(replicate_cluster_to_reference_cluster_map[replicate_sample_cluster_labels]) #assign new cluster labels to samples
   }
   
