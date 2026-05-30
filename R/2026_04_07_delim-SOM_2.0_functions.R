@@ -1361,7 +1361,7 @@ calculate.topographic.error <- function(som_model) {
 ## Function to cluster SOM codebook vectors
 clustering.SOM <- function(SOM.output,
                            max.k = 10, #maximum of considered clusters K + 1
-                           set.k = NULL, #set to test one fixed value of K; NULL = evaluate K from 2 to max.k
+                           set.k = NULL, #set to test one fixed value of K; NULL = evaluate K from 1 to max.k
                            clustering.method, #set clustering method
                            parallel = TRUE, #whether to run clustering of SOM replicates in parallel
                            N.cores = 3, #number of cores for clustering SOM replicates in parallel (if parallel = TRUE)
@@ -1387,7 +1387,7 @@ clustering.SOM <- function(SOM.output,
   missing_SOM_fields <- required_SOM_fields[!(required_SOM_fields %in% names(SOM.output))]
   if (length(missing_SOM_fields) > 0) stop("Aborted SOM clustering: SOM.output is missing required field(s): ", paste(missing_SOM_fields, collapse = ", "))
   if (!is.numeric(max.k) || length(max.k) != 1 || is.na(max.k) || max.k < 2 || (max.k %% 1 != 0)) stop("Aborted SOM clustering: max.k must be a single integer >= 2")
-  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 2 || (set.k %% 1 != 0))) stop("Aborted SOM clustering: set.k must be NULL or single integer >= 2")
+  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || !is.finite(set.k) || set.k < 1 || (set.k %% 1 != 0))) stop("Aborted SOM clustering: set.k must be NULL or single integer >= 1")
   if (!is.null(set.k) && set.k > max.k) max.k <- set.k
   valid.methods <- c("kmeans+BICelbow",
     "kmeans+BICthreshold",
@@ -1582,7 +1582,9 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     
     # Set layer weights
     if (is.null(layer.weights)) {
-      if (!is.null(som_model$distance.weights)) {
+      if (!is.null(som_model$user.weights) && !is.null(som_model$distance.weights) && length(som_model$user.weights) == length(sample_data_list) && length(som_model$distance.weights) == length(sample_data_list)) {
+        layer.weights <- as.numeric(som_model$user.weights) * as.numeric(som_model$distance.weights)
+      } else if (!is.null(som_model$distance.weights)) {
         layer.weights <- as.numeric(som_model$distance.weights)
       } else {
         layer.weights <- rep(1, length(sample_data_list))
@@ -1807,6 +1809,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     
     # Ensure max.k is equal to or smaller than number of available codebook vectors (rows of som_codes)
     n_codes <- nrow(som_codes)
+    n_distinct_codes <- nrow(unique(som_codes))
+    if (!is.null(set.k) && set.k > n_distinct_codes) stop(sprintf("Aborted SOM clustering: set.k = %d exceeds distinct codebook rows of %d - reduce set.k to ≤ %d", set.k, n_distinct_codes, n_distinct_codes))
     if (!is.null(set.k) && set.k >= n_codes) stop(sprintf("Aborted SOM clustering: set.k = %d exceeds available codebook rows of %d - reduce set.k to ≤ %d", set.k, n_codes, n_codes - 1))
     if (is.null(set.k) && max.k >= n_codes) stop(sprintf("Aborted SOM clustering: max.k = %d exceeds available codebook rows of %d - reduce max.k to ≤ %d", max.k, n_codes, n_codes - 1))
     if (!is.null(set.k) && max.k < set.k) max.k <- set.k
@@ -1815,17 +1819,19 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     calculate.wss <- function(som_codes, max.k, set.k = NULL) {
       wss <- rep(NA_real_, max.k) #wss vector for k = 1 ... max.k
       fits <- vector("list", max.k) #store kmeans fits
+      max_fit_k <- min(max.k, nrow(unique(som_codes))) #maximum k supported by distinct codebook rows
       wss[1] <- (nrow(som_codes) - 1) * sum(apply(som_codes, 2, stats::var)) #calculate wss for k = 1 (= total sum of squared distances to overall mean)
       if (!is.null(set.k)) { #if user specified k, only fit that k
         if (set.k >= 2) {
+          if (set.k > max_fit_k) stop(sprintf("Aborted SOM clustering: set.k = %d exceeds distinct codebook rows of %d", set.k, max_fit_k))
           km <- stats::kmeans(som_codes, centers = set.k, nstart = 30, iter.max = 1e5) #fit kmeans at user-specified k
           fits[[set.k]] <- km #store fit
           wss[set.k] <- sum(km$withinss) #store wss
         }
         return(list(wss = wss, fits = fits)) #return early
       }
-      if (max.k >= 2) { #calculate wss for k = 2 ... max.k via kmeans
-        wss[2:max.k] <- sapply(2:max.k, function(i) {
+      if (max_fit_k >= 2) { #calculate wss for k = 2 ... max_fit_k via kmeans
+        wss[2:max_fit_k] <- sapply(2:max_fit_k, function(i) {
           km <- stats::kmeans(som_codes, centers = i, nstart = 30, iter.max = 1e5) #fit kmeans
           fits[[i]] <<- km #store fit
           sum(km$withinss) #return wss
@@ -1967,7 +1973,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       rownames(mclust_BIC_matrix) <- as.character(seq_len(max.k)) #set k rownames
       colnames(mclust_BIC_matrix) <- modelNames_all #set covariance model names
       BIC_vec <- rep(NA_real_, max.k) #initialize vector to store best BIC value per k
-      available_k_values <- if (!is.null(set.k)) as.integer(set.k) else seq_len(max.k) #available k values
+      available_k_values <- if (!is.null(set.k)) as.integer(set.k) else seq_len(min(max.k, n_distinct_codes)) #available k values
       for (k_value in available_k_values) { #extract best BIC values per k
         found_finite_BIC_for_k <- FALSE #track whether any finite BIC was obtained for this k
         best_BIC_value_for_k <- NA_real_ #store best BIC for this k (maximized)
@@ -2029,7 +2035,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             }
             mclust_BIC_set <- mclust_BIC_set[1, , drop = FALSE] #force 1-row matrix
             mclust_BIC_set[!is.finite(mclust_BIC_set) | is.na(mclust_BIC_set)] <- NA_real_ #replace non-finite BIC with NA
-            for (mn in colnames(mclust_BIC_set)) mlust_BIC_matrix[as.character(k_value), mn] <- as.numeric(mclust_BIC_set[1, mn]) #store BIC values in the full matrix
+            for (mn in colnames(mclust_BIC_set)) mclust_BIC_matrix[as.character(k_value), mn] <- as.numeric(mclust_BIC_set[1, mn]) #store BIC values in the full matrix
             row_vals <- as.numeric(mclust_BIC_set[1, ]) #extract BIC values for this k across covariance models
             names(row_vals) <- colnames(mclust_BIC_set)
             row_vals <- row_vals[is.finite(row_vals) & !is.na(row_vals)] #keep only finite values
@@ -2135,7 +2141,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                                                   n_clusters = hdbscan_N_clusters,
                                                   mean_mem = hdbscan_membership_prob))
       }
-      valid_HDBSCAN <- which(hdbscan_model_results$n_clusters > 0 & !is.na(hdbscan_model_results$mean_mem)) #filter valid results
+      valid_HDBSCAN <- which(hdbscan_model_results$n_clusters > 0 & hdbscan_model_results$n_clusters <= max.k & !is.na(hdbscan_model_results$mean_mem)) #filter valid results and respect max.k
       if (length(valid_HDBSCAN) == 0) { #if no valid runs
         som_cluster <- rep(1L, nrow(som_codes)) #assign all points to one cluster
         som_N_clusters <- 1L
@@ -2341,7 +2347,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             }
             cluster_assignments_relabelled <- as.integer(factor(cluster_assignments)) #relabel clusters sequentially
             number_of_clusters <- length(unique(cluster_assignments_relabelled)) #number of clusters
-            if (number_of_clusters < 2) next #require at least two clusters
+            if (number_of_clusters < 2 || number_of_clusters > max.k) next #require at least two clusters and respect max.k
             silhouette_value <- tryCatch({mean(cluster::silhouette(cluster_assignments_relabelled, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
             if (is.na(silhouette_value)) next
             result_counter <- result_counter + 1L #increment result counter
@@ -2403,7 +2409,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
         sample_to_unit_distance_matrix <- compute.sample.to.unit.distance.matrix.SOM( #calculate sample-to-unit distances across layers
           som_model = som_model,
           layer.distance.functions = SOM.output$layer.distance.functions,
-          layer.weights = som_model$distance.weights
+          layer.weights = NULL
         )
         replicate_ancestry_matrix <- compute.replicate.ancestry.matrix.SOM( #calculate soft cluster assignment probabilities
           sample_to_unit_distance_matrix = sample_to_unit_distance_matrix,
