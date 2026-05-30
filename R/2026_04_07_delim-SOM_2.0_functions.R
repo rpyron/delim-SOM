@@ -1081,7 +1081,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     tuning_values <- tuning_values[tuning_values$learning_rate_final < tuning_values$learning_rate_initial, , drop = FALSE] #keep only valid combinations: final learning rate < initial learning rate
     tuning_values$qe_mean <- NA_real_
     tuning_values$qe_sd <- NA_real_
-    learning_rate_tuning_seeds <- set.seed.N + seq_len(learning_rate_N_replicates)
+    learning_rate_tuning_seeds <- set.seed.N + seq_len(learning_rate_N_replicates) - 1
     
     # Run learning_rate_N_replicates replicates and record mean quantization error QE (average distance from each data point to its closest SOM node) each time
     for (i in seq_len(nrow(tuning_values))) {
@@ -1128,7 +1128,7 @@ calculate.topographic.error <- function(som_model) {
     if (length(combined_weights) == 0 || any(!is.finite(combined_weights)) || sum(combined_weights) <= 0) return(NA_real_)
     combined_weights <- combined_weights / sum(combined_weights)
     unit_distance_matrix <- kohonen::unit.distances(som_model$grid)
-    adjacency_matrix <- unit_distance_matrix <= 1
+    adjacency_matrix <- unit_distance_matrix <= 1 + sqrt(.Machine$double.eps)
     diag(adjacency_matrix) <- FALSE
     distance_matrix <- matrix(0, nrow = nrow(data_layers[[1]]), ncol = nrow(codes[[1]]))
     calculate.layer.distance <- function(sample_values, code_matrix, distance_function) {
@@ -1153,11 +1153,8 @@ calculate.topographic.error <- function(som_model) {
       layer_distance_matrix <- t(apply(as.matrix(data_layers[[i]]), 1, calculate.layer.distance, code_matrix = as.matrix(codes[[i]]), distance_function = dist_fcts[[i]]))
       distance_matrix <- distance_matrix + combined_weights[i] * layer_distance_matrix
     }
-    best_units <- vapply(seq_len(nrow(distance_matrix)), function(i) {
-      distances <- distance_matrix[i, ]
-      if (sum(is.finite(distances)) < 2) return(NA_integer_)
-      which.min(distances)
-    }, integer(1))
+    best_units <- as.integer(som_model$unit.classif)
+    if (length(best_units) != nrow(distance_matrix)) return(NA_real_)
     second_best_units <- vapply(seq_along(best_units), function(i) {
       distances <- distance_matrix[i, ]
       if (!is.finite(best_units[i]) || best_units[i] < 1 || best_units[i] > length(distances)) return(NA_integer_)
@@ -1174,7 +1171,7 @@ calculate.topographic.error <- function(som_model) {
   # Create function to run SOM
   messager("")
   messager("TRAINING SOM ...")
-  replicate_seeds <- set.seed.N + seq_len(N.replicates)
+  replicate_seeds <- set.seed.N + seq_len(N.replicates) - 1  
   replicate_som <- function(j) {
     base::set.seed(replicate_seeds[j])
     
