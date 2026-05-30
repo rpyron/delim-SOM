@@ -2482,13 +2482,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   cluster_assignment <- do.call(cbind, lapply(results, `[[`, "cluster_assignment"))
   sample_names <- rownames(results[[1]]$cluster_assignment)
   rownames(cluster_assignment) <- sample_names
-  colnames(cluster_assignment) <- paste0("R", seq_len(ncol(cluster_assignment)))
+  colnames(cluster_assignment) <- retained_replicates
   BIC_values <- do.call(cbind, lapply(results, `[[`, "BIC_vec"))
   rownames(BIC_values) <- paste0("k", seq_len(max.k))
-  colnames(BIC_values) <- paste0("R", seq_len(ncol(BIC_values)))
+  colnames(BIC_values) <- retained_replicates
   support_values <- do.call(cbind, lapply(results, `[[`, "support_vec"))
   rownames(support_values) <- paste0("k", seq_len(max.k))
-  colnames(support_values) <- paste0("R", seq_len(ncol(support_values)))
+  colnames(support_values) <- retained_replicates
   support_labels <- unique(unlist(lapply(results, function(x) x$support_label)))
   support_labels <- support_labels[!is.na(support_labels) & nzchar(support_labels)]
   support_label <- if (length(support_labels) == 0) NULL else support_labels[1]
@@ -2498,7 +2498,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   optim_k_vals <- sapply(results, `[[`, "som_N_clusters")
   optim_k_vals <- t(as.matrix(optim_k_vals))
   rownames(optim_k_vals) <- "optim_k_vals"
-  colnames(optim_k_vals) <- paste0("R", seq_len(N.replicates))
+    colnames(optim_k_vals) <- retained_replicates
   optim_k_mean <- mean(optim_k_vals, na.rm = TRUE)
   if (all(is.na(optim_k_vals))) stop("Aborted SOM clustering: all optimal K values are NA - check input data") 
   optim_k_vector <- as.numeric(optim_k_vals)
@@ -2509,13 +2509,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   optim_k_summary <- cbind(Count = optim_k_vals_counts, Proportion = round(optim_k_vals_props, 2))
   rownames(optim_k_summary) <- paste0("k", k_levels)
   som_models <- lapply(results, `[[`, "som_model")
+  names(som_models) <- retained_replicates
   som_clusters <- lapply(results, `[[`, "som_cluster")
+  names(som_clusters) <- retained_replicates
   cluster_gridcell_assignments <- lapply(results, `[[`, "cluster_gridcell_assignments")
+  names(cluster_gridcell_assignments) <- retained_replicates
   replicate_ancestry_matrices <- lapply(results, `[[`, "replicate_ancestry_matrix")
-  mean_assignment_margin <- vapply(replicate_ancestry_matrices, calculate.mean.assignment.margin.SOM, numeric(1))
-  names(mean_assignment_margin) <- paste0("R", seq_along(mean_assignment_margin))
-  mean_normalized_assignment_entropy <- vapply(replicate_ancestry_matrices, calculate.mean.normalized.assignment.entropy.SOM, numeric(1))
-  names(mean_normalized_assignment_entropy) <- paste0("R", seq_along(mean_normalized_assignment_entropy))
+  names(replicate_ancestry_matrices) <- retained_replicates
   
   # Build multi-layer reference data for Hungarian label synchronization
   processed_input_data <- results[[1]]$som_model$data
@@ -2598,7 +2598,11 @@ prop_list <- lapply(seq_len(nrow(assignment_matrix)), function(i) {prop.table(ta
   ancestry_matrix <- do.call(rbind, prop_list)
   colnames(ancestry_matrix) <- paste0("Cluster_", seq_len(ncol(ancestry_matrix)))
   rownames(ancestry_matrix) <- rownames(assignment_matrix)
-  
+  mean_assignment_margin <- vapply(replicate_ancestry_matrices, calculate.mean.assignment.margin.SOM, numeric(1))
+names(mean_assignment_margin) <- names(replicate_ancestry_matrices)
+mean_normalized_assignment_entropy <- vapply(replicate_ancestry_matrices, calculate.mean.normalized.assignment.entropy.SOM, numeric(1))
+names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
+                                          
   # Calculate median map variance (neuron-weighted) and median eta squared (cluster separation effect size) for each variable in each layer
   if (isTRUE(calculate.variable.importance)) {
   codebook_list_1 <- kohonen::getCodes(som_models[[1]]) #extract codebook list to get number of layers
@@ -2705,8 +2709,22 @@ prop_list <- lapply(seq_len(nrow(assignment_matrix)), function(i) {prop.table(ta
   }
   
   # Save results
+  retained_codebook_vectors_0 <- kohonen::getCodes(som_models[[1]]) #extract retained codebook structure
+  if (!is.list(retained_codebook_vectors_0)) retained_codebook_vectors_0 <- list(retained_codebook_vectors_0)
+  retained_codebook_vectors <- vector("list", length(retained_codebook_vectors_0))
+  for (layer_index in seq_along(retained_codebook_vectors)) {
+    retained_codebook_vectors[[layer_index]] <- do.call(rbind, lapply(som_models, function(current_som_model) {
+      current_codes <- kohonen::getCodes(current_som_model)
+      if (!is.list(current_codes)) return(current_codes)
+      current_codes[[layer_index]]
+    }))
+  }
+  if (!is.null(SOM.output$input_data_names) && length(SOM.output$input_data_names) >= length(retained_codebook_vectors)) names(retained_codebook_vectors) <- SOM.output$input_data_names[seq_along(retained_codebook_vectors)]
   SOM_results <- SOM.output
-  SOM_results$cluster_assignment <- cluster_assignment
+  SOM_results$codebook_vectors <- retained_codebook_vectors
+  SOM_results$N_replicates <- N.replicates
+  SOM_results$replicate_ids <- retained_replicates
+  SOM_results$cluster_assignment <- assignment_matrix
   SOM_results$BIC_values <- BIC_values
   SOM_results$support_values <- support_values
   SOM_results$support_label <- support_label
