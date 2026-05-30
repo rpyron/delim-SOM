@@ -1398,7 +1398,7 @@ clustering.SOM <- function(SOM.output,
   if (!is.character(clustering.method) || length(clustering.method) != 1 || is.na(clustering.method) || !(clustering.method %in% valid.methods)) stop("Aborted SOM clustering: clustering.method must be one of ", paste(valid.methods, collapse = ", "))
   if (!is.logical(parallel) || length(parallel) != 1 || is.na(parallel)) stop("Aborted SOM clustering: parallel must be TRUE or FALSE")
   if (parallel) {
-    if (!is.numeric(N.cores) || length(N.cores) != 1 || is.na(N.cores) || N.cores < 1 || (N.cores %% 1 != 0)) stop("Aborted SOM clustering: N.cores must be a single positive integer (>= 1)")
+    if (!is.numeric(N.cores) || length(N.cores) != 1 || is.na(N.cores) || !is.finite(N.cores) || N.cores < 1 || (N.cores %% 1 != 0)) stop("Aborted SOM clustering: N.cores must be a single positive integer (>= 1)")
     max_cores <- parallel::detectCores(logical = FALSE)
     if (is.na(max_cores) || max_cores < 1) max_cores <- parallel::detectCores(logical = TRUE)
     if (is.na(max_cores) || max_cores < 1) max_cores <- 1
@@ -1407,7 +1407,7 @@ clustering.SOM <- function(SOM.output,
       N.cores <- max_cores
     }
   }
-  if (!is.numeric(BIC.thresh) || length(BIC.thresh) != 1 || is.na(BIC.thresh) || BIC.thresh <= 0) stop("Aborted SOM clustering: BIC.thresh must be a single positive numeric value (e.g., 2, 6, or 10 for low, moderate or strong support, respectively)")
+  if (!is.numeric(BIC.thresh) || length(BIC.thresh) != 1 || is.na(BIC.thresh) || !is.finite(BIC.thresh) || BIC.thresh <= 0) stop("Aborted SOM clustering: BIC.thresh must be a single positive numeric value (e.g., 2, 6, or 10 for low, moderate or strong support, respectively)")
   if (!is.null(quantization.error.quantile)) {
     if (!is.numeric(quantization.error.quantile) || length(quantization.error.quantile) != 1 || is.na(quantization.error.quantile) || quantization.error.quantile <= 0 || quantization.error.quantile >= 1) stop("Aborted SOM clustering: quantization.error.quantile must be NULL or a single numeric value in (0, 1)")
   }
@@ -1417,7 +1417,7 @@ clustering.SOM <- function(SOM.output,
   if (!is.logical(calculate.soft.ancestry) || length(calculate.soft.ancestry) != 1 || is.na(calculate.soft.ancestry)) stop("Aborted SOM clustering: calculate.soft.ancestry must be TRUE or FALSE")
   if (!is.logical(calculate.variable.importance) || length(calculate.variable.importance) != 1 || is.na(calculate.variable.importance)) stop("Aborted SOM clustering: calculate.variable.importance must be TRUE or FALSE")
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Aborted SOM clustering: verbose must be TRUE or FALSE")
-  if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Aborted SOM clustering: message.N.replicates must be a single positive integer (>= 1)")
+  if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || !is.finite(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Aborted SOM clustering: message.N.replicates must be a single positive integer (>= 1)")
   if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Aborted SOM clustering: save.SOM.results must be TRUE or FALSE")
   if (save.SOM.results && !is.null(save.SOM.results.name)) {
     if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") stop("Aborted SOM clustering: save.SOM.results.name must be non-empty character string (file path) if provided")
@@ -1425,7 +1425,7 @@ clustering.SOM <- function(SOM.output,
     if (valid_ext != "rdata") stop("Aborted SOM clustering: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
   }
   if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) stop("Aborted SOM clustering: overwrite.SOM.results must be TRUE or FALSE")
-  if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Aborted SOM clustering: set.seed.N must be a single positive integer (>= 1)")
+  if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || !is.finite(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Aborted SOM clustering: set.seed.N must be a single positive integer (>= 1)")
 
     # Set default save file name
   if (is.null(save.SOM.results.name)) {
@@ -1539,15 +1539,17 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Calculate distances using Tanimoto distance
   if (distance_function == "tanimoto") {
-    sample_bin <- sample_finite & (sample_matrix > 0.5) #binarize samples: TRUE where allele is present
+    sample_bin <- sample_finite & (sample_matrix > 0.5) #binarize samples using kohonen's 0.5 boundary
     for (unit_index in seq_len(n_units)) {
       current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
       codebook_finite <- is.finite(current_codebook_vector) #finite positions in codebook vector
-      code_bin <- matrix(codebook_finite & (current_codebook_vector > 0.5), n_samples, n_vars, byrow = TRUE) #binarize codebook vector
-      valid_values <- sample_finite & matrix(codebook_finite, n_samples, n_vars, byrow = TRUE) #valid (non-missing) positions
-      shared_one <- rowSums(sample_bin & code_bin & valid_values) #positions where both sample and code have allele present
-      any_one <- rowSums((sample_bin | code_bin) & valid_values) #positions where either sample or code has allele present
-      distance_matrix[, unit_index] <- ifelse(any_one == 0, 0, 1 - (shared_one / any_one)) #Tanimoto distance (0 if no shared or present alleles)
+      code_bin <- matrix(codebook_finite & (current_codebook_vector > 0.5), n_samples, n_vars, byrow = TRUE) #binarize codebook vector using kohonen's 0.5 boundary
+      valid_values <- sample_finite & matrix(codebook_finite, n_samples, n_vars, byrow = TRUE) #valid non-missing positions
+      mismatch_values <- xor(sample_bin, code_bin) & valid_values #positions where binarized sample and codebook states differ
+      n_valid_values <- rowSums(valid_values) #number of valid positions per sample
+      current_distance_vector <- rowSums(mismatch_values) / n_valid_values #normalized Hamming distance matching kohonen's tanimoto behavior
+      current_distance_vector[n_valid_values == 0L] <- NA_real_ #fully missing comparisons are unavailable
+      distance_matrix[, unit_index] <- current_distance_vector #store distances
     }
   }
   
@@ -1643,7 +1645,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     
     # Validate specified unit_cluster_labels
     if (is.null(unit_cluster_labels) || length(unit_cluster_labels) != ncol(sample_to_unit_distance_matrix)) stop("Replicate ancestry calculation aborted: unit_cluster_labels must have one label per SOM unit")
-    unit_cluster_labels <- as.character(unit_cluster_labels)
+    unit_cluster_labels <- as.integer(unit_cluster_labels)
+    if (any(is.na(unit_cluster_labels))) stop("Replicate ancestry calculation aborted: unit_cluster_labels must be coercible to integer cluster labels")
     unique_cluster_labels <- sort(unique(unit_cluster_labels))
     
     # Return one-column ancestry matrix if only one cluster is present
@@ -1875,7 +1878,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       if (!is.null(set.k)) return(set.k) #user-specified k
       if (length(BIC_vec) < 2) return(1) # if there is only one or no BIC value, return k = 1
       if (all(is.na(BIC_vec))) stop("All BIC values are NA - cannot determine optimal number of clusters")
-      if (is.na(BIC_vec[1]) || is.na(BIC_vec[2])) stop("The first or second BIC value is NA - cannot evaluate k = 1 vs k = 2")
+      if (is.na(BIC_vec[1]) || is.na(BIC_vec[2])) return(which.min(replace(BIC_vec, !is.finite(BIC_vec) | is.na(BIC_vec), Inf))) #fallback when only k = 1 is estimable
       if (((BIC_vec[1] - BIC_vec[2]) < BIC.thresh)) { #computes ΔBIC between k = 1 and k = 2 and if that drop is smaller than BIC threshold, there is no real improvement from adding second cluster, so pick k = 1
         som_N_clusters <- 1 #k = 1
       } else {
@@ -2143,10 +2146,11 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       }
       valid_HDBSCAN <- which(hdbscan_model_results$n_clusters > 0 & hdbscan_model_results$n_clusters <= max.k & !is.na(hdbscan_model_results$mean_mem)) #filter valid results and respect max.k
       if (length(valid_HDBSCAN) == 0) { #if no valid runs
+        if (!is.null(set.k) && set.k > 1L) stop(sprintf("Aborted SOM clustering: HDBSCAN did not produce set.k = %d for any tested minPts value", as.integer(set.k)))
         som_cluster <- rep(1L, nrow(som_codes)) #assign all points to one cluster
         som_N_clusters <- 1L
         BIC_vec <- rep(NA_real_, max.k)
-      } else { #run best model and evaluate reassignment strategies
+} else { #run best model and evaluate reassignment strategies
         hdbscan_model_results <- hdbscan_model_results[valid_HDBSCAN, , drop = FALSE] #subset to valid runs
         if (!is.null(set.k)) { #check if user specified k
           som_N_clusters <- as.integer(set.k) #set number of clusters to user-specified k
@@ -2495,7 +2499,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   optim_k_vals <- t(as.matrix(optim_k_vals))
   rownames(optim_k_vals) <- "optim_k_vals"
   colnames(optim_k_vals) <- paste0("R", seq_len(N.replicates))
-  optim_k_mean <- mean(optim_k_vals, na.rm = T)
+  optim_k_mean <- mean(optim_k_vals, na.rm = TRUE)
   if (all(is.na(optim_k_vals))) stop("Aborted SOM clustering: all optimal K values are NA - check input data") 
   optim_k_vector <- as.numeric(optim_k_vals)
   optim_k_vector <- optim_k_vector[is.finite(optim_k_vector)]
@@ -2518,7 +2522,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   if (!is.list(processed_input_data)) processed_input_data <- list(processed_input_data)
   processed_input_data <- lapply(processed_input_data, as.matrix)
   processed_input_data <- do.call(cbind, processed_input_data)
-  processed_input_data[is.na(processed_input_data)] <- 0.5
+  processed_input_data[!is.finite(processed_input_data) | is.na(processed_input_data)] <- 0.5
   
   # Preprocess input data and generate cluster labels
   base::set.seed(set.seed.N) #set seed for reproducibility
@@ -2560,9 +2564,37 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     assignment_matrix[, replicate_index] <- as.integer(replicate_cluster_to_reference_cluster_map[replicate_sample_cluster_labels]) #assign new cluster labels to samples
   }
   
-  # Build ancestry from the re-labelled matrix
-  k.max <- max(assignment_matrix, na.rm = TRUE)
-  prop_list <- lapply(seq_len(nrow(assignment_matrix)), function(i) {prop.table(table(factor(assignment_matrix[i, ], levels = seq_len(k.max))))})
+# Build ancestry from the re-labelled matrix
+k.max <- max(assignment_matrix, na.rm = TRUE)
+if (isTRUE(calculate.soft.ancestry)) {
+  relabelled_replicate_ancestry_matrices <- lapply(seq_along(assignment_replicate_indices), function(replicate_position) {
+    current_soft_ancestry_matrix <- replicate_ancestry_matrices[[assignment_replicate_indices[replicate_position]]]
+    current_label_map <- replicate_label_maps[[replicate_position]]
+    if (is.null(current_soft_ancestry_matrix) || is.null(current_label_map)) return(NULL)
+    current_soft_ancestry_matrix <- as.matrix(current_soft_ancestry_matrix)
+    current_soft_ancestry_matrix <- current_soft_ancestry_matrix[rownames(assignment_matrix), , drop = FALSE]
+    current_old_labels <- suppressWarnings(as.integer(colnames(current_soft_ancestry_matrix)))
+    if (any(is.na(current_old_labels)) || length(current_old_labels) != ncol(current_soft_ancestry_matrix)) current_old_labels <- seq_len(ncol(current_soft_ancestry_matrix))
+    current_relabelled_soft_ancestry_matrix <- matrix(0,
+                                                      nrow = nrow(current_soft_ancestry_matrix),
+                                                      ncol = k.max,
+                                                      dimnames = list(rownames(current_soft_ancestry_matrix), paste0("Cluster_", seq_len(k.max))))
+    for (old_cluster_index in seq_len(ncol(current_soft_ancestry_matrix))) {
+      old_cluster_label <- current_old_labels[old_cluster_index]
+      if (!is.finite(old_cluster_label) || is.na(old_cluster_label) || old_cluster_label < 1L || old_cluster_label > length(current_label_map)) next
+      new_cluster_label <- current_label_map[old_cluster_label]
+      if (is.finite(new_cluster_label) && !is.na(new_cluster_label) && new_cluster_label >= 1L && new_cluster_label <= k.max) current_relabelled_soft_ancestry_matrix[, new_cluster_label] <- current_relabelled_soft_ancestry_matrix[, new_cluster_label] + current_soft_ancestry_matrix[, old_cluster_index]
+    }
+    current_row_sums <- rowSums(current_relabelled_soft_ancestry_matrix, na.rm = TRUE)
+    valid_rows <- is.finite(current_row_sums) & current_row_sums > 0
+    current_relabelled_soft_ancestry_matrix[valid_rows, ] <- current_relabelled_soft_ancestry_matrix[valid_rows, , drop = FALSE] / current_row_sums[valid_rows]
+    current_relabelled_soft_ancestry_matrix
+  })
+  names(relabelled_replicate_ancestry_matrices) <- colnames(assignment_matrix)
+  relabelled_replicate_ancestry_matrices <- Filter(Negate(is.null), relabelled_replicate_ancestry_matrices)
+  replicate_ancestry_matrices <- relabelled_replicate_ancestry_matrices
+}
+prop_list <- lapply(seq_len(nrow(assignment_matrix)), function(i) {prop.table(table(factor(assignment_matrix[i, ], levels = seq_len(k.max))))})
   ancestry_matrix <- do.call(rbind, prop_list)
   colnames(ancestry_matrix) <- paste0("Cluster_", seq_len(ncol(ancestry_matrix)))
   rownames(ancestry_matrix) <- rownames(assignment_matrix)
@@ -2733,7 +2765,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   if (save.SOM.results) {
     dir_path <- dirname(save.SOM.results.name) #extract directory path
     if (!dir.exists(dir_path)) {
-      dir.create(dir_path, recursive = T) #create directory if it does not exist
+      dir.create(dir_path, recursive = TRUE) #create directory if it does not exist
       messager(paste("Specified directory", dir_path, "did not exist and was created"))
     }
     save(SOM_results, file = save.SOM.results.name)
