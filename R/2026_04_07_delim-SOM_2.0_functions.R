@@ -1910,28 +1910,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       som_N_clusters
     }
     
-    # Create function to determine optimal number of clusters using DB elbow rule (for k >= 2 only)
-    select.k.DBelbow <- function(DB_vec, set.k = NULL) {
-      if (!is.null(set.k)) return(set.k) #return user-specified k
-      if (length(DB_vec) < 3) return(2) #return k = 2 if fewer than k = 2..3 exist
-      DB_vec_k2plus <- DB_vec[2:length(DB_vec)] #extract DB values for k >= 2
-      if (all(is.na(DB_vec_k2plus))) stop("All DB values for k >= 2 are NA - cannot determine optimal number of clusters")
-      if (length(DB_vec_k2plus) <= 1) return(2) #return k = 2 if only one k >= 2 value exists
-      if (length(DB_vec_k2plus) <= 2) return(which.min(replace(DB_vec_k2plus, is.na(DB_vec_k2plus), Inf)) + 1) #select k with minimum DB if only k = 2..3 exist
-      delta_DB_vec <- (DB_vec_k2plus[-length(DB_vec_k2plus)] - DB_vec_k2plus[-1]) / abs(DB_vec_k2plus[-length(DB_vec_k2plus)]) #calculate relative DB improvement from k-1 -> k for k >= 3
-      deltaDB_clusters <- stats::cutree(stats::hclust(stats::dist(delta_DB_vec), method = "ward.D2"), k = 2) #cluster relative ΔDB values into two groups using hierarchical clustering
-      best_group <- unname(which.max(tapply(delta_DB_vec, deltaDB_clusters, mean, na.rm = TRUE))) #identify group with largest mean relative ΔDB ("real improvements", large drops)
-      best_group_indices <- which(deltaDB_clusters == best_group) #extract indices in relative ΔDB vector that are "large drops"
-      if (length(best_group_indices) > 0) { #select k within best group if group exists
-        k_best_group <- best_group_indices + 1 #map ΔDB index i to k index within DB_vec_k2plus
-        som_N_clusters <- (k_best_group[which.min(replace(DB_vec_k2plus[k_best_group], is.na(DB_vec_k2plus[k_best_group]), Inf))] + 1) #convert back to original k by adding 1
-      } else {
-        som_N_clusters <- which.min(replace(DB_vec_k2plus, is.na(DB_vec_k2plus), Inf)) + 1 #select k with global minimum DB among k >= 2
-        messager("Warning: No large-drop group (i.e., the elbow) was detected - picking k corresponding to global minimum DB")
-      }
-      som_N_clusters
-    }
-    
     # Perform clustering of SOM codebook vectors based on specified method
     
     # Clustering method: kmeans + BICelbow
@@ -2061,7 +2039,10 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       if (som_N_clusters == 1) { #if optimal k = 1
         som_cluster <- rep(1L, nrow(som_codes)) #assign all units to a single cluster
       } else {
-        som_cluster <- mclust::Mclust(som_codes, G = som_N_clusters, verbose = FALSE, modelNames = best_model_name)$classification #refit GMM at selected k and best covariance model to obtain cluster assignments
+        gmm_refit <- tryCatch(mclust::Mclust(som_codes, G = som_N_clusters, verbose = FALSE, modelNames = best_model_name), error = function(e) NULL) #refit GMM at selected k and best covariance model
+        if (is.null(gmm_refit) || is.null(gmm_refit$classification) || length(gmm_refit$classification) != nrow(som_codes) || any(is.na(gmm_refit$classification))) stop(sprintf("GMM refit failed for selected k = %d and model = %s - check SOM codebook degeneracy or reduce max.k", som_N_clusters, best_model_name))
+        som_cluster <- as.integer(factor(gmm_refit$classification)) #extract and relabel GMM classifications sequentially
+          if (length(unique(som_cluster)) != som_N_clusters) stop(sprintf("GMM refit returned %d realized clusters, but selected k = %d and model = %s - check SOM codebook degeneracy or reduce max.k", length(unique(som_cluster)), som_N_clusters, best_model_name))
       }
     }
     
@@ -2336,7 +2317,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             number_of_clusters <- length(unique(cluster_assignments_relabelled)) #number of clusters
             if (number_of_clusters < 2 || number_of_clusters > max.k) next #require at least two clusters and respect max.k
             silhouette_value <- tryCatch({mean(cluster::silhouette(cluster_assignments_relabelled, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
-            if (is.na(silhouette_value)) next
+            if (is.na(silhouette_value) || !is.finite(silhouette_value)) next
+            if (is.na(silhouette_values[number_of_clusters]) || silhouette_value > silhouette_values[number_of_clusters]) silhouette_values[number_of_clusters] <- silhouette_value #track best silhouette per k for support plot
             result_counter <- result_counter + 1L #increment result counter
             optics_model_results <- rbind(optics_model_results,
                                           data.frame(minPts = minPts_value,
