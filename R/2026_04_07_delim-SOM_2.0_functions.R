@@ -2127,11 +2127,12 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       }
       valid_HDBSCAN <- which(hdbscan_model_results$n_clusters > 0 & hdbscan_model_results$n_clusters <= max.k & !is.na(hdbscan_model_results$mean_mem)) #filter valid results and respect max.k
       if (length(valid_HDBSCAN) == 0) { #if no valid runs
-        if (!is.null(set.k) && set.k > 1L) stop(sprintf("Aborted SOM clustering: HDBSCAN did not produce set.k = %d for any tested minPts value", as.integer(set.k)))
+        if (!is.null(set.k) && set.k > 1L) stop(sprintf("Aborted SOM clustering: HDBSCAN with set.k = %d could not find any minPts value that produced exactly this number of non-noise clusters - use clustering.method = 'kmeans+BICelbow', 'kmeans+BICthreshold', 'hierarchical+DB', or 'GMM+BICthreshold', or run HDBSCAN without set.k.", as.integer(set.k))) #explain fixed-k HDBSCAN failure
         som_cluster <- rep(1L, nrow(som_codes)) #assign all points to one cluster
         som_N_clusters <- 1L
         BIC_vec <- rep(NA_real_, max.k)
-} else { #run best model and evaluate reassignment strategies
+      }
+        if (length(valid_HDBSCAN) > 0) { #run best model and evaluate reassignment strategies
         hdbscan_model_results <- hdbscan_model_results[valid_HDBSCAN, , drop = FALSE] #subset to valid runs
         if (!is.null(set.k)) { #check if user specified k
           som_N_clusters <- as.integer(set.k) #set number of clusters to user-specified k
@@ -2141,7 +2142,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             BIC_vec <- rep(NA_real_, max.k)
           } else {
             valid_HDBSCAN_k <- which(hdbscan_model_results$n_clusters == som_N_clusters & !is.na(hdbscan_model_results$mean_mem)) #filter valid runs matching set.k
-            if (length(valid_HDBSCAN_k) == 0) stop(sprintf("Aborted SOM clustering: HDBSCAN did not produce set.k = %d for any tested minPts value", som_N_clusters)) else { #do not silently replace a requested fixed k with k = 1
+            if (length(valid_HDBSCAN_k) == 0) stop(sprintf("Aborted SOM clustering: HDBSCAN with set.k = %d could not find any minPts value that produced exactly this number of non-noise clusters - use clustering.method = 'kmeans+BICelbow', 'kmeans+BICthreshold', 'hierarchical+DB', or 'GMM+BICthreshold', or run HDBSCAN without set.k.", som_N_clusters)) #explain fixed-k HDBSCAN failure
               best_minPts_row <- valid_HDBSCAN_k[which.max(hdbscan_model_results$mean_mem[valid_HDBSCAN_k])] #select best minPts among matching-k runs
               best_minPts <- hdbscan_model_results$minPts[best_minPts_row]
               best_hdbscan_model <- dbscan::hdbscan(som_codes, minPts = best_minPts) #run HDBSCAN with selected minPts
@@ -2277,7 +2278,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               optics_cluster_solutions[[result_counter]] <- cluster_assignments_relabelled #store cluster solution
             }
           }
-          if (nrow(optics_model_results) == 0) stop(sprintf("Aborted SOM clustering: OPTICS did not produce set.k = %d for any tested minPts/xi combination", som_N_clusters)) #do not silently replace a requested fixed k with k = 1
+          if (nrow(optics_model_results) == 0) stop(sprintf("Aborted SOM clustering: OPTICS+Silhouette with set.k = %d could not find any OPTICS minPts/xi combination that produced exactly %d clusters - use clustering.method = 'kmeans+BICelbow' or 'GMM+BICthreshold' if you need fixed-k clustering, or run OPTICS+Silhouette without set.k", som_N_clusters, som_N_clusters)) #explain fixed-k OPTICS failuree
           best_row <- which.max(optics_model_results$mean_silhouette) #select best silhouette
           best_cluster_solution <- optics_cluster_solutions[[optics_model_results$result_index[best_row]]] #extract best clustering
           som_cluster <- best_cluster_solution #assign best clustering for user-specified k without collapsing fixed-k requests
