@@ -99,7 +99,6 @@ Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples
                                 save.SOM.results.name = "Monticola71_SOM_tr.Rdata",
                                 max.NA.row = 0.6,
                                 max.NA.col = 0.2,
-                                message.N.replicates = 10,
                                 N.cores = 5)
 
 Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #takes ca 3min!
