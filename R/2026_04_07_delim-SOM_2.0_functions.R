@@ -1244,7 +1244,6 @@ calculate.topographic.error <- function(som_model) {
                   "layer.distance.functions",
                   "manual.layer.weights",
                   "radius.schedule",
-                  "N.replicates",
                   "message.N.replicates",
                   "replicate_seeds"),
       envir = environment())
