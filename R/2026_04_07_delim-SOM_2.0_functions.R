@@ -1358,7 +1358,413 @@ calculate.topographic.error <- function(som_model) {
 }
 
 
-## Function to cluster SOM codebook vectors
+## Function to cluster SOM codebook vectors and summarize delimitation assignments
+#' Cluster SOM codebook vectors and infer delimitation assignments
+#'
+#' Cluster the codebook vectors from retained replicate Self-Organizing Maps
+#' (SOMs) or Super-SOMs and summarize individual-level delimitation assignments
+#' across replicate maps. The function performs optional replicate filtering by
+#' SOM quality diagnostics, extracts and clusters codebook vectors, assigns
+#' samples to inferred neuron clusters, harmonizes arbitrary cluster labels
+#' across replicates using the Hungarian algorithm, constructs a replicate-
+#' consensus ancestry matrix, optionally calculates replicate-specific soft
+#' ancestry matrices, and optionally computes variable-importance summaries.
+#'
+#' @param SOM.output A list returned by `train.SOM`. The object must contain
+#'   trained SOM replicate models and the associated processed input data,
+#'   replicate identifiers, codebook vectors, quantization-error diagnostics, and
+#'   topographic-error diagnostics.
+#' @param max.k A single integer giving the maximum number of clusters to test
+#'   or retain during clustering. Candidate values of k are evaluated from 1 to
+#'   `max.k` for BIC-like methods, from 2 to `max.k` for Davies-Bouldin and
+#'   silhouette-based multi-cluster evaluations, or are constrained by
+#'   density-based parameter searches where applicable.
+#' @param set.k Optional single integer specifying a fixed number of clusters.
+#'   If supplied for k-means, hierarchical clustering, or Gaussian mixture
+#'   models, the requested number of clusters is used directly where valid. If
+#'   supplied for HDBSCAN or OPTICS, `set.k` is used as a filter over
+#'   density-based solutions rather than as a forced partitioning step; if no
+#'   tested parameterization yields exactly the requested number of clusters, the
+#'   replicate stops with an informative error.
+#' @param clustering.method A single character string specifying the clustering
+#'   method used for SOM codebook vectors. Supported values are
+#'   `"kmeans+BICelbow"`, `"kmeans+BICthreshold"`, `"GMM+BICthreshold"`,
+#'   `"hierarchical+DB"`, `"HDBSCAN"`, and `"OPTICS+Silhouette"`.
+#' @param BIC.thresh A single positive numeric value giving the BIC-like support
+#'   threshold used by the BIC-threshold and BIC-elbow methods. Default values
+#'   should usually be interpreted using standard BIC-support conventions, where
+#'   values around 6 indicate strong support and values around 10 indicate very
+#'   strong support for the more complex solution.
+#' @param quantization.error.quantile Optional numeric value between 0 and 1
+#'   giving the upper quantile cutoff used to remove SOM replicates with high
+#'   quantization error before clustering. If `NULL`, no filtering is applied by
+#'   quantization error.
+#' @param topographic.error.quantile Optional numeric value between 0 and 1
+#'   giving the upper quantile cutoff used to remove SOM replicates with high
+#'   topographic error before clustering. If `NULL`, no filtering is applied by
+#'   topographic error.
+#' @param calculate.soft.ancestry Logical; if `TRUE`, replicate-specific soft
+#'   sample-to-cluster ancestry matrices are calculated from temperature-scaled
+#'   sample-to-unit distances and then relabeled to the same Hungarian-aligned
+#'   cluster-label space as the hard assignments. If `FALSE`, replicate-specific
+#'   soft ancestry matrices are not calculated.
+#' @param calculate.variable.importance Logical; if `TRUE`, variable-importance
+#'   summaries are calculated for each SOM input layer after clustering. These
+#'   include weighted map-variance importance and, when multi-cluster solutions
+#'   are available, weighted eta-squared cluster-separation importance.
+#' @param parallel Logical; if `TRUE`, replicate-level codebook clustering is
+#'   performed in parallel. Default: `TRUE`.
+#' @param N.cores A single positive integer giving the number of cores to use
+#'   when `parallel = TRUE`. If `N.cores` exceeds the number of detected physical
+#'   cores, the detected maximum is used.
+#' @param save.SOM.results Logical; if `TRUE`, the clustered SOM result object is
+#'   saved as an `.Rdata` file. Default: `FALSE`.
+#' @param save.SOM.results.name Optional character string giving the output file
+#'   name used when saving or loading clustered SOM results. If `NULL`, a default
+#'   name is generated. File names supplied by the user must end in `.Rdata`.
+#' @param overwrite.SOM.results Logical; if `FALSE` and a file named
+#'   `save.SOM.results.name` already exists, the function loads the existing
+#'   `SOM_results` object and skips clustering. If `TRUE`, clustering is run and
+#'   saved results are overwritten when `save.SOM.results = TRUE`. Default:
+#'   `FALSE`.
+#' @param verbose Logical; if `TRUE`, progress messages and warnings are printed.
+#'   Default: `TRUE`.
+#' @param message.N.replicates A single positive integer giving the frequency of
+#'   progress messages during replicate clustering. A message is printed whenever
+#'   the replicate index is divisible by this value. Default: `20`.
+#' @param set.seed.N A single positive integer used as the base seed for
+#'   reproducible replicate clustering, reference-label generation, and
+#'   permutation-based internal tests. Default: `1`.
+#'
+#' @details
+#' `clustering.SOM` implements the clustering and assignment stage of the
+#' delim-SOM workflow. The function takes trained replicate SOMs or Super-SOMs
+#' from `train.SOM` and converts their learned codebook representations into
+#' replicate-level species-delimitation hypotheses. Unlike workflows that cluster
+#' raw samples directly, this function clusters SOM codebook vectors. Codebook
+#' vectors are local prototype vectors learned by the SOM, so clustering them
+#' follows the standard two-level SOM strategy in which the SOM first regularizes
+#' the data into topology-preserving prototypes and the second-stage clustering
+#' then partitions those prototypes into larger-scale groups (Vesanto &
+#' Alhoniemi, 2000).
+#'
+#' Before clustering, replicate SOMs can be filtered by quantization error and/or
+#' topographic error. Quantization error measures how closely the codebook
+#' vectors represent the input observations, whereas topographic error measures
+#' how well local neighborhood relationships are preserved by the map. When
+#' `quantization.error.quantile` and/or `topographic.error.quantile` are supplied,
+#' the function removes replicate maps with values above the specified upper
+#' quantile. This prevents unusually poorly fitted or topologically distorted
+#' maps from disproportionately influencing downstream delimitation summaries.
+#' Replicate filtering is applied consistently across the stored SOM models,
+#' learning trajectories, distance-weight matrix, error diagnostics, and codebook
+#' vectors so that all downstream outputs remain aligned to the same retained
+#' replicate set.
+#'
+#' For each retained replicate, codebook vectors are extracted with
+#' `kohonen::getCodes`. For multi-layer Super-SOMs, layer-specific codebook
+#' matrices are concatenated column-wise before clustering. This preserves the
+#' Pyron-style post-SOM clustering behavior in which the learned layer-specific
+#' prototypes are combined into a single codebook-vector matrix for secondary
+#' clustering. The resulting neuron-level cluster labels are then mapped back to
+#' samples through each sample's best-matching SOM unit.
+#'
+#' The `"kmeans+BICelbow"` method clusters codebook vectors with
+#' `stats::kmeans` across candidate values of k, converts the within-cluster sum
+#' of squares into a BIC-like support curve, and selects k using an elbow-style
+#' rule. The one-cluster case is evaluated explicitly as the total sum of squares
+#' around the global mean. If the initial improvement from k = 1 to k = 2 is
+#' smaller than `BIC.thresh`, the replicate is collapsed to k = 1. Otherwise,
+#' successive BIC-like improvements are grouped with Ward clustering to identify
+#' the main region of meaningful improvement, and the lowest-BIC solution within
+#' that region is selected. If no clear elbow group can be identified, the method
+#' falls back to the global minimum-BIC solution.
+#'
+#' The `"kmeans+BICthreshold"` method also clusters codebook vectors with
+#' k-means and uses the same BIC-like support curve, but selects k using a direct
+#' threshold rule. The function identifies the first k at which the improvement
+#' relative to the previous k falls below `BIC.thresh` and selects the previous
+#' k. If the first improvement from k = 1 to k = 2 is below the threshold, the
+#' replicate is collapsed to k = 1.
+#'
+#' The `"GMM+BICthreshold"` method fits Gaussian mixture models to the codebook
+#' vectors using `mclust`. Candidate covariance parameterizations are evaluated
+#' in a staged manner with `mclust::mclustBIC`, retaining the best finite BIC
+#' value for each k. Because `mclust` treats larger BIC values as better whereas
+#' the internal threshold selector assumes lower values are better, the sign of
+#' the BIC vector is inverted before applying the threshold rule. The final
+#' selected model is refit with `mclust::Mclust`, and the returned classification
+#' is checked before being used as the codebook-vector cluster assignment.
+#'
+#' The `"hierarchical+DB"` method performs agglomerative hierarchical clustering
+#' of codebook vectors using Euclidean distances and `stats::hclust` with
+#' `method = "ward.D2"`. If `set.k` is supplied, the dendrogram is cut at the
+#' requested number of clusters. If `set.k` is not supplied, the function first
+#' tests whether the k = 2 partition has lower Davies-Bouldin index than expected
+#' under a column-wise permutation null distribution. If k = 2 is not supported,
+#' the replicate is collapsed to k = 1. Otherwise, Davies-Bouldin values are
+#' calculated for candidate values of k, and the partition with the lowest valid
+#' Davies-Bouldin value is selected.
+#'
+#' The `"HDBSCAN"` method applies hierarchical density-based clustering to the
+#' codebook vectors with `dbscan::hdbscan` across an adaptive range of `minPts`
+#' values. For each candidate `minPts`, the number of non-noise clusters and the
+#' mean membership probability among non-noise points are recorded. If `set.k` is
+#' supplied, only parameterizations yielding exactly the requested number of
+#' non-noise clusters are considered. If no tested `minPts` value produces the
+#' requested number of clusters, the replicate stops with an informative error.
+#' If `set.k` is not supplied, the best valid parameterization is selected by
+#' mean membership probability. Noise points are then handled explicitly because
+#' downstream sample assignment requires every SOM unit to have a cluster label.
+#' With fixed k, noise points are reassigned to the nearest non-noise core
+#' cluster. Without fixed k, nearest-core reassignment is compared to a singleton
+#' strategy for distant noise points, and the better post-processed solution is
+#' selected by silhouette support when possible.
+#'
+#' The `"OPTICS+Silhouette"` method applies `dbscan::optics` to the codebook
+#' vectors and extracts candidate partitions using `dbscan::extractXi` across
+#' combinations of `minPts` and `xi`. Noise points are reassigned to the nearest
+#' non-noise core cluster before candidate solutions are evaluated. If `set.k` is
+#' supplied, only partitions yielding exactly the requested number of clusters
+#' are considered, and failure to find such a partition is treated as an error
+#' because OPTICS uses fixed k as a filter rather than as a forced partitioning
+#' step. If `set.k` is not supplied, all valid solutions with at least two
+#' clusters and no more than `max.k` clusters are evaluated, the solution with
+#' the highest mean silhouette width is retained, and the replicate is collapsed
+#' to k = 1 if no valid solution is found or if the best silhouette support is
+#' undefined or too weak.
+#'
+#' Because cluster labels are arbitrary across replicate clustering runs, the
+#' function harmonizes replicate labels before constructing the final assignment
+#' summary. It first generates reference labels for candidate values of k by
+#' applying k-means to the concatenated processed SOM input layers after replacing
+#' remaining non-finite or missing values with 0.5. For each retained replicate
+#' with k >= 2, an overlap table is constructed between the replicate-specific
+#' sample assignments and the corresponding reference labels. The overlap table
+#' is padded if needed and submitted to `clue::solve_LSAP`, which solves the
+#' Hungarian assignment problem and returns the label mapping that maximizes
+#' agreement with the reference partition. The replicate assignments are then
+#' relabeled into this common label space.
+#'
+#' After label harmonization, the final `ancestry_matrix` is constructed by
+#' tabulating, for each individual, how often that individual is assigned to each
+#' relabeled cluster across retained SOM replicates. Rows of the resulting matrix
+#' sum to one. These ancestry coefficients are therefore not posterior admixture
+#' estimates from a parametric mixture model; they are replicate-consensus
+#' assignment proportions summarizing how consistently each individual is
+#' assigned to each inferred cluster across retained SOM solutions.
+#'
+#' When `calculate.soft.ancestry = TRUE`, the function also computes
+#' replicate-specific soft sample-to-cluster matrices. It calculates sample-to-
+#' unit distances within each SOM layer using the distance function used during
+#' SOM training, integrates those distances across layers, converts them into
+#' temperature-scaled unit weights, and aggregates those unit weights by neuron
+#' cluster. The resulting replicate-specific soft matrices are relabeled with the
+#' same Hungarian label maps used for hard assignments and returned as
+#' `replicate_ancestry_matrices`. These matrices capture within-replicate
+#' assignment uncertainty, whereas the final `ancestry_matrix` captures
+#' replicate-consensus hard-assignment stability.
+#'
+#' When `calculate.variable.importance = TRUE`, the function calculates two
+#' variable-importance summaries for each SOM layer. Weighted map-variance
+#' importance measures how strongly each variable varies across the trained SOM
+#' topology, weighting neurons by the number of mapped samples plus a baseline
+#' value of one. Weighted eta-squared importance measures how strongly each
+#' variable separates the inferred neuron clusters within each replicate. Map
+#' variance can be interpreted as a measure of broad topological structuring,
+#' whereas eta-squared importance can be interpreted as a measure of
+#' cluster-separation signal. Replicate-specific importance values are summarized
+#' by their median across retained replicates.
+#'
+#' @return A list named `SOM_results`, extending the input `SOM.output` object
+#' with clustering and assignment results. Added or updated elements include:
+#' \describe{
+#'   \item{retained_replicates}{Character vector giving the replicate identifiers
+#'   retained after optional quantization-error and topographic-error filtering.}
+#'   \item{removed_replicates}{Character vector giving the replicate identifiers
+#'   removed by optional replicate filtering.}
+#'   \item{N_replicates}{Number of retained SOM replicates stored in the returned
+#'   object.}
+#'   \item{replicate_ids}{Character vector of retained replicate identifiers.}
+#'   \item{N_replicates_retained}{Number of SOM replicates retained for
+#'   clustering after optional replicate filtering.}
+#'   \item{quantization_error_retained}{Named numeric vector of quantization-error
+#'   values for retained replicates, when available.}
+#'   \item{topographic_error_retained}{Named numeric vector of topographic-error
+#'   values for retained replicates, when available.}
+#'   \item{quantization.error.quantile}{Quantile cutoff used for quantization-
+#'   error filtering.}
+#'   \item{topographic.error.quantile}{Quantile cutoff used for topographic-error
+#'   filtering.}
+#'   \item{codebook_vectors}{List of retained codebook-vector matrices, one per
+#'   SOM layer, with codebook vectors from retained replicate SOMs row-bound.}
+#'   \item{som_models}{Named list of retained `kohonen` SOM or Super-SOM model
+#'   objects.}
+#'   \item{som_clusters}{Named list containing replicate-specific cluster labels
+#'   for SOM codebook vectors.}
+#'   \item{cluster_gridcell_assignments}{Named list containing replicate-specific
+#'   grid-cell-level cluster assignments.}
+#'   \item{cluster_assignment}{Relabeled sample-by-replicate hard assignment
+#'   matrix after Hungarian label harmonization.}
+#'   \item{ancestry_matrix}{Relabeled replicate-consensus assignment matrix with
+#'   one row per sample and one column per inferred cluster. Rows sum to one.}
+#'   \item{replicate_ancestry_matrices}{Named list of relabeled replicate-
+#'   specific soft ancestry matrices when `calculate.soft.ancestry = TRUE`;
+#'   otherwise an empty or missing soft-assignment result depending on settings.}
+#'   \item{optim_k_vals}{One-row matrix or named vector-like matrix giving the
+#'   inferred optimal number of clusters for each retained replicate.}
+#'   \item{optim_k_mean}{Mean inferred number of clusters across retained
+#'   replicates.}
+#'   \item{optim_k_summary}{Summary table of inferred k support across retained
+#'   replicates.}
+#'   \item{BIC_values}{Replicate-by-k matrix of BIC-like or related support
+#'   values where relevant to the selected clustering method.}
+#'   \item{support_values}{Replicate-by-k matrix of method-specific support
+#'   values, including BIC-like, Davies-Bouldin, or silhouette support where
+#'   relevant.}
+#'   \item{support_label}{Character string describing the support metric stored
+#'   for the selected clustering method.}
+#'   \item{mean_assignment_margin}{Named numeric vector giving the mean difference
+#'   between the highest and second-highest soft assignment probabilities for
+#'   each retained replicate, when soft ancestry is calculated.}
+#'   \item{mean_normalized_assignment_entropy}{Named numeric vector giving the
+#'   mean normalized assignment entropy for each retained replicate, when soft
+#'   ancestry is calculated.}
+#'   \item{median_map_variance_variable_importance}{List of median map-variance
+#'   variable-importance vectors, one per SOM input layer, when calculated.}
+#'   \item{median_etasquared_variable_importance}{List of median eta-squared
+#'   variable-importance vectors, one per SOM input layer, when calculated and
+#'   multi-cluster replicate solutions are available.}
+#'   \item{mapvar_across_replicates}{List of replicate-by-variable map-variance
+#'   importance matrices, one per SOM input layer, when calculated.}
+#'   \item{etasquared_across_replicates}{List of replicate-by-variable eta-
+#'   squared importance matrices, one per SOM input layer, when calculated.}
+#'   \item{clustering.SOM.args}{List storing the main arguments used for
+#'   clustering.}
+#' }
+#'
+#' @references
+#' Ankerst, M., Breunig, M. M., Kriegel, H.-P., & Sander, J. (1999). OPTICS:
+#'   Ordering points to identify the clustering structure. \emph{ACM SIGMOD
+#'   Record}, 28(2), 49-60. https://doi.org/10.1145/304181.304187
+#'
+#' Campello, R. J. G. B., Moulavi, D., & Sander, J. (2013). Density-based
+#'   clustering based on hierarchical density estimates. \emph{Advances in
+#'   Knowledge Discovery and Data Mining}, 160-172.
+#'   https://doi.org/10.1007/978-3-642-37456-2_14
+#'
+#' Davies, D. L., & Bouldin, D. W. (1979). A cluster separation measure.
+#'   \emph{IEEE Transactions on Pattern Analysis and Machine Intelligence},
+#'   PAMI-1(2), 224-227. https://doi.org/10.1109/TPAMI.1979.4766909
+#'
+#' Fraley, C., & Raftery, A. E. (1998). How many clusters? Which clustering
+#'   method? Answers via model-based cluster analysis. \emph{The Computer
+#'   Journal}, 41(8), 578-588. https://doi.org/10.1093/comjnl/41.8.578
+#'
+#' Fraley, C., & Raftery, A. E. (2002). Model-based clustering, discriminant
+#'   analysis, and density estimation. \emph{Journal of the American Statistical
+#'   Association}, 97(458), 611-631.
+#'   https://doi.org/10.1198/016214502760047131
+#'
+#' Hahsler, M., & Piekenbrock, M. (2025). dbscan: Density-Based Spatial
+#'   Clustering of Applications with Noise (DBSCAN) and related algorithms.
+#'
+#' Hornik, K. (2005). A CLUE for CLUster Ensembles. \emph{Journal of Statistical
+#'   Software}, 14(12). https://doi.org/10.18637/jss.v014.i12
+#'
+#' Jain, A. K. (2010). Data clustering: 50 years beyond K-means. \emph{Pattern
+#'   Recognition Letters}, 31(8), 651-666.
+#'   https://doi.org/10.1016/j.patrec.2009.09.011
+#'
+#' Kass, R. E., & Raftery, A. E. (1995). Bayes factors. \emph{Journal of the
+#'   American Statistical Association}, 90(430), 773-795.
+#'   https://doi.org/10.1080/01621459.1995.10476572
+#'
+#' Kohonen, T. (1995). \emph{Self-organizing maps}. Springer Berlin Heidelberg.
+#'
+#' Kuhn, H. W. (1955). The Hungarian method for the assignment problem.
+#'   \emph{Naval Research Logistics Quarterly}, 2(1-2), 83-97.
+#'   https://doi.org/10.1002/nav.3800020109
+#'
+#' Lloyd, S. (1982). Least squares quantization in PCM. \emph{IEEE Transactions
+#'   on Information Theory}, 28(2), 129-137.
+#'   https://doi.org/10.1109/TIT.1982.1056489
+#'
+#' MacQueen, J. (1967). Some methods for classification and analysis of
+#'   multivariate observations. \emph{Proceedings of the Fifth Berkeley
+#'   Symposium on Mathematical Statistics and Probability}, 281-297.
+#'
+#' Munkres, J. (1957). Algorithms for the assignment and transportation
+#'   problems. \emph{Journal of the Society for Industrial and Applied
+#'   Mathematics}, 5(1), 32-38. https://doi.org/10.1137/0105003
+#'
+#' Rousseeuw, P. J. (1987). Silhouettes: A graphical aid to the interpretation
+#'   and validation of cluster analysis. \emph{Journal of Computational and
+#'   Applied Mathematics}, 20, 53-65.
+#'   https://doi.org/10.1016/0377-0427(87)90125-7
+#'
+#' Scrucca, L., Fraley, C., Murphy, T. B., & Raftery, A. E. (2023). mclust 6:
+#'   Gaussian mixture modelling, classification, and density estimation using R.
+#'   \emph{The R Journal}, 15(1), 352-376.
+#'
+#' Vesanto, J., & Alhoniemi, E. (2000). Clustering of the self-organizing map.
+#'   \emph{IEEE Transactions on Neural Networks}, 11(3), 586-600.
+#'   https://doi.org/10.1109/72.846731
+#'
+#' @importFrom stats dist hclust cutree kmeans quantile median sd var
+#' @importFrom kohonen getCodes unit.distances
+#' @importFrom cluster silhouette
+#' @importFrom clusterCrit intCriteria
+#' @importFrom dbscan hdbscan optics extractXi
+#' @importFrom mclust mclustBIC Mclust
+#' @importFrom clue solve_LSAP
+#' @importFrom foreach foreach %dopar%
+#' @importFrom doParallel registerDoParallel
+#' @importFrom doRNG registerDoRNG
+#' @importFrom parallel makeCluster stopCluster detectCores
+#' @importFrom tools file_ext
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' # Train a SOM from one continuous matrix
+#' continuous_data <- matrix(rnorm(80 * 8), nrow = 80, ncol = 8)
+#' rownames(continuous_data) <- paste0("sample_", seq_len(nrow(continuous_data)))
+#' colnames(continuous_data) <- paste0("trait_", seq_len(ncol(continuous_data)))
+#'
+#' som_single <- train.SOM(continuous_data, N.steps = 100, N.replicates = 50)
+#'
+#' # Cluster trained SOM codebook vectors with the default k-means BIC-elbow method
+#' som_single_clustered <- clustering.SOM(som_single, max.k = 6)
+#'
+#' # Force a fixed three-cluster solution with k-means
+#' som_single_k3 <- clustering.SOM(som_single, max.k = 6, set.k = 3,
+#'                                 clustering.method = "kmeans+BICelbow")
+#'
+#' # Train and cluster a multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 80 * 30, replace = TRUE), nrow = 80, ncol = 30)
+#' morphology_data <- matrix(rnorm(80 * 5), nrow = 80, ncol = 5)
+#' environment_data <- matrix(rnorm(80 * 4), nrow = 80, ncol = 4)
+#'
+#' rownames(snp_data) <- rownames(continuous_data)
+#' rownames(morphology_data) <- rownames(continuous_data)
+#' rownames(environment_data) <- rownames(continuous_data)
+#'
+#' som_multi <- train.SOM(list(SNPs = snp_data,
+#'                            Morphology = morphology_data,
+#'                            Environment = environment_data),
+#'                        N.steps = 100,
+#'                        N.replicates = 50)
+#'
+#' som_multi_clustered <- clustering.SOM(som_multi,
+#'                                       max.k = 6,
+#'                                       clustering.method = "kmeans+BICelbow",
+#'                                       calculate.soft.ancestry = TRUE,
+#'                                       calculate.variable.importance = TRUE)
+#' }
+#'
+#' @export
 clustering.SOM <- function(SOM.output,
                            max.k = 10, #maximum of considered clusters K + 1
                            set.k = NULL, #set to test one fixed value of K; NULL = evaluate K from 1 to max.k
@@ -2163,7 +2569,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               }
               BIC_vec <- rep(NA_real_, max.k) #fill BIC with NA (not used for HDBSCAN)
             }
-          }
         } else {
           best_minPts_row <- which.max(hdbscan_model_results$mean_mem) #select best minPts by mean membership probability
           best_minPts <- hdbscan_model_results$minPts[best_minPts_row]
