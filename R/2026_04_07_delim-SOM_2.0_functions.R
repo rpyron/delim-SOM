@@ -2180,7 +2180,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   # Report clustering setup
   messager("")
   messager("CLUSTERING SOM CODEBOOK VECTORS ...")
-  messager(sprintf("Using %d SOM replicate(s) for clustering", N.replicates))
+  messager(sprintf("Using %d SOM replicates for clustering", N.replicates))
   
   # Create function to cluster SOM models
   replicate_clust <- function(j) {
