@@ -1,11 +1,8 @@
-################################################################################
-#### Set environment
-################################################################################
+#### Set environment ###########################################################
 
 ## Install packages
 rm(list = ls()) #clear environment
-CRAN_packages <- c("tibble", "dplyr",
-                   "vcfR") #CRAN packages
+CRAN_packages <- c("tibble", "dplyr", "vcfR") #CRAN packages
 Bioconductor_packages <- "SeqArray" #Bioconductor package
 for(p in CRAN_packages) if(!requireNamespace(p, quietly = TRUE)) install.packages(p) #install missing CRAN packages
 if(!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager") #install BiocManager
@@ -16,9 +13,9 @@ source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2
 
 # setwd("C:/Users/danie/Desktop/PhD research/SOM package")
 
-################################################################################
-#### Desmognathus dusky salamanders in Eastern US (Pyron 2023)
-################################################################################
+
+
+#### Desmognathus dusky salamanders in Eastern US (Pyron 2023) #################
 
 ## https://doi.org/10.1016/j.ympev.2023.107939
 ## "Monticola71"
