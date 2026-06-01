@@ -1,6 +1,4 @@
-################################################################################
-#### Set environment
-################################################################################
+#### Set environment ###########################################################
 
 rm(list = ls()) #clear environment
 #setwd("C:/Users/danie/Desktop/PhD research/SOM package")
@@ -9,9 +7,8 @@ source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2
 
 
 
-###############################################################################
-#### Test SOM functions and arguments with simple simulated datasets
-################################################################################
+
+#### Test SOM functions and arguments with simple simulated datasets ###########
 
 ## Specify parameters for all datasets
 set.seed(1) #set seed for reproducibility
@@ -26,6 +23,14 @@ Alleles <- data.frame(lapply(1:n_Alleles, function(x) sample(names(allele_freque
                       row.names = paste0(rownames_datasets, 1:n_individuals)) #generate Alleles based on these frequencies
 Alleles[] <- lapply(Alleles, function(x) as.numeric(as.character(x))) #convert character values to numeric (0, 0.5, 1)
 colnames(Alleles) <- paste("Allele", 1:n_Alleles) #rename columns as "Allele 1", "Allele 2", ..., "Allele n"
+
+
+## Strict binary data for Tanimoto tests
+Binary_traits <- matrix(sample(c(0, 1, NA), n_individuals * 40, replace = TRUE, prob = c(0.45, 0.45, 0.10)),
+                        nrow = n_individuals,
+                        ncol = 40)
+rownames(Binary_traits) <- paste0(rownames_datasets, 1:n_individuals)
+colnames(Binary_traits) <- paste0("Binary_", 1:40)
 
 
 ## Environmental data (ENV)
@@ -53,7 +58,7 @@ colnames(MORPH) <- c(paste("Trait", 1:n_morph), "Trait_constant")
 
 ## Simulate k3 data for each cluster (simulating k = 3)
 n_clusters <- 3 #number of clusters
-n_k3_test <- 50  #number of traits
+n_k3_test <- 50 #number of traits
 clusters <- sample(1:n_clusters, n_individuals, replace = T) #assign each individual to cluster
 k3_test <- matrix(NA, nrow = n_individuals, ncol = n_k3_test)
 colnames(k3_test) <- paste("Trait", 1:n_k3_test)
@@ -70,17 +75,14 @@ for (i in 1:n_clusters) { #assign data for each cluster with some random variati
                                              mean = k3_test_means[[paste0("cluster_", i)]],
                                              sd = 3),
                                        nrow = length(cluster_indices),
-                                       ncol = n_k3_test)}
+                                       ncol = n_k3_test)
+}
 na_indices_k3_test <- sample(1:(n_individuals * n_k3_test), #introduce some missing values
                              size = round(n_k3_test * n_individuals * 0.2),
                              replace = F)
 k3_test[na_indices_k3_test] <- NA
 k3_test <- as.data.frame(k3_test)
-par(mfrow = c(3, 1))
-hist(k3_test$`Trait 1`, breaks = 30, main = "Histogram of Trait 1") #plot histograms for trait 1
-hist(k3_test$`Trait 2`, breaks = 30, main = "Histogram of Trait 2") #plot histograms for trait 2
-hist(k3_test$`Trait 3`, breaks = 30, main = "Histogram of Trait 3") #plot histograms for trait 3
-par(mfrow = c(1, 1))
+
 
 ## Test_D dataset
 n <- 100
@@ -110,11 +112,12 @@ rownames(US_Coordinates) <- rownames(MORPH)
 
 
 ## Test train SOM function
-SOM_single_Alleles <- train.SOM(Alleles, max.NA.row = 0.3, N.steps = 20, N.replicates = 3)
+SOM_single_Alleles <- train.SOM(Alleles, max.NA.row = 0.3, N.steps = 20, N.replicates = 10)
+SOM_single_Binary <- train.SOM(Binary_traits, layer.distance.functions = "tanimoto", max.NA.row = 0.3, max.NA.col = 0.3, N.steps = 60, N.replicates = 20)
 try(SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.05, max.NA.row = 0.4)) #will fail with error
 try(SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.15, max.NA.row = 0.4)) #will fail with error
 try(SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.3, max.NA.row = 0.2)) #will fail with error
-SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.3, max.NA.row = 0.2, grid.multiplier = 3)
+SOM_single_ENV <- train.SOM(ENV, max.NA.col = 0.3, max.NA.row = 0.4, grid.multiplier = 2)
 SOM_single_k3 <- train.SOM(k3_test, parallel = F, N.cores = 4, N.steps = 200, N.replicates = 50)
 try(SOM_single_k3_2 <- train.SOM(k3_test, max.NA.col = 0.1, max.NA.row = 0.1)) #will fail with message
 SOM_single_k3_2 <- train.SOM(k3_test, max.NA.col = 0.1, max.NA.row = 0.2)
@@ -130,6 +133,18 @@ try(SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), max.NA.row 
 SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), N.replicates = 10,
                                       message.N.replicates = 5, grid.size = c(2, 2))
 SOM_multi_ENV_k3_Alleles_2 <- train.SOM(list(ENV, MORPH, Alleles), save.SOM.results = T, message.N.replicates = 5, grid.multiplier = 2)
+
+
+## Preserve unclustered SOM objects for alternative clustering regression tests
+SOM_single_Alleles_unclustered <- SOM_single_Alleles
+SOM_single_Binary_unclustered <- SOM_single_Binary
+SOM_single_ENV_unclustered <- SOM_single_ENV
+SOM_single_k3_unclustered <- SOM_single_k3
+SOM_single_k3_2_unclustered <- SOM_single_k3_2
+SOM_single_TestD_unclustered <- SOM_single_TestD
+SOM_multi_ENV_k3_Alleles_unclustered <- SOM_multi_ENV_k3_Alleles
+SOM_multi_ENV_k3_Alleles_2_unclustered <- SOM_multi_ENV_k3_Alleles_2
+SOM_multi_MORPH_ENV_unclustered <- SOM_multi_MORPH_ENV
 
 
 ## Evaluate SOM object structures for one dataset after SOM training
@@ -152,16 +167,79 @@ head(SOM_multi_MORPH_ENV$train.SOM.args)
 
 
 ## Test cluster SOM function
-SOM_single_Alleles <- clustering.SOM(SOM_single_Alleles, max.k = 5, clustering.method = "kmeans+BICelbow")
-try(SOM_single_ENV <- clustering.SOM(SOM_single_ENV, max.k = 20, clustering.method = "kmeans+BICelbow")) #will fail with error
-SOM_single_ENV <- clustering.SOM(SOM_single_ENV, max.k = 2, clustering.method = "kmeans+BICelbow")
-SOM_single_k3 <- clustering.SOM(SOM_single_k3, clustering.method = "kmeans+BICelbow", set.k = 3)
-SOM_single_k3_2 <- clustering.SOM(SOM_single_k3_2, clustering.method = "HDBSCAN", max.k = 20)
-SOM_single_TestD <- clustering.SOM(SOM_single_TestD, clustering.method = "kmeans+BICelbow", set.k = 2)
-try(SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles, clustering.method = "kmeans+BICelbow")) #will fail with error
-SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles, clustering.method = "hierarchical+DB", max.k = 3)
-SOM_multi_MORPH_ENV <- clustering.SOM(SOM_multi_MORPH_ENV, clustering.method = "GMM+BICthreshold", set.k = 3)
-SOM_multi_ENV_k3_Alleles_2 <- clustering.SOM(SOM_multi_ENV_k3_Alleles_2, clustering.method = "OPTICS+Silhouette", max.k = 3)
+SOM_single_Alleles <- clustering.SOM(SOM_single_Alleles_unclustered, max.k = 5, clustering.method = "kmeans+BICelbow")
+SOM_single_Binary <- clustering.SOM(SOM_single_Binary_unclustered, clustering.method = "kmeans+BICelbow", max.k = 5, calculate.soft.ancestry = TRUE)
+try(SOM_single_ENV <- clustering.SOM(SOM_single_ENV_unclustered, max.k = 20, clustering.method = "kmeans+BICelbow")) #will fail with error
+SOM_single_ENV <- clustering.SOM(SOM_single_ENV_unclustered, max.k = 2, clustering.method = "kmeans+BICelbow")
+SOM_single_k3 <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "kmeans+BICelbow", set.k = 3)
+SOM_single_k3_2 <- clustering.SOM(SOM_single_k3_2_unclustered, clustering.method = "HDBSCAN", max.k = 20)
+SOM_single_TestD <- clustering.SOM(SOM_single_TestD_unclustered, clustering.method = "kmeans+BICelbow", set.k = 2)
+try(SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles_unclustered, clustering.method = "kmeans+BICelbow")) #will fail with error
+SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles_unclustered, clustering.method = "hierarchical+DB", max.k = 3)
+SOM_multi_MORPH_ENV <- clustering.SOM(SOM_multi_MORPH_ENV_unclustered, clustering.method = "GMM+BICthreshold", set.k = 3)
+SOM_multi_ENV_k3_Alleles_2 <- clustering.SOM(SOM_multi_ENV_k3_Alleles_2_unclustered, clustering.method = "OPTICS+Silhouette", max.k = 3)
+
+
+## Additional clustering branch regression tests
+SOM_single_k3_OPTICS_auto <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "OPTICS+Silhouette", max.k = 5)
+SOM_single_k3_GMM_auto <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "GMM+BICthreshold", max.k = 5)
+try(SOM_single_k3_HDBSCAN_setk <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "HDBSCAN", max.k = 5, set.k = 3))
+SOM_single_k3_soft <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "kmeans+BICelbow", set.k = 3, calculate.soft.ancestry = TRUE)
+
+
+## Check clustered SOM output consistency
+check.clustered.SOM <- function(SOM.output) {
+  stopifnot(!is.null(SOM.output$cluster_assignment))
+  stopifnot(!is.null(SOM.output$ancestry_matrix))
+  stopifnot(!is.null(SOM.output$optim_k_vals))
+  stopifnot(!is.null(SOM.output$replicate_ids))
+  stopifnot(!is.null(SOM.output$som_models))
+  stopifnot(SOM.output$N_replicates == length(SOM.output$replicate_ids))
+  stopifnot(length(SOM.output$som_models) == length(SOM.output$replicate_ids))
+  stopifnot(ncol(SOM.output$cluster_assignment) == length(SOM.output$replicate_ids))
+  stopifnot(identical(colnames(SOM.output$cluster_assignment), SOM.output$replicate_ids))
+  stopifnot(identical(colnames(SOM.output$optim_k_vals), SOM.output$replicate_ids))
+  stopifnot(identical(rownames(SOM.output$cluster_assignment), rownames(SOM.output$ancestry_matrix)))
+  stopifnot(all(abs(rowSums(SOM.output$ancestry_matrix) - 1) < 1e-8))
+  stopifnot(all(SOM.output$cluster_assignment >= 1, na.rm = TRUE))
+  stopifnot(all(SOM.output$optim_k_vals >= 1, na.rm = TRUE))
+  invisible(TRUE)
+}
+
+check.clustered.SOM(SOM_single_Alleles)
+check.clustered.SOM(SOM_single_Binary)
+check.clustered.SOM(SOM_single_ENV)
+check.clustered.SOM(SOM_single_k3)
+check.clustered.SOM(SOM_single_k3_2)
+check.clustered.SOM(SOM_single_TestD)
+check.clustered.SOM(SOM_multi_ENV_k3_Alleles)
+check.clustered.SOM(SOM_multi_ENV_k3_Alleles_2)
+check.clustered.SOM(SOM_multi_MORPH_ENV)
+check.clustered.SOM(SOM_single_k3_OPTICS_auto)
+check.clustered.SOM(SOM_single_k3_GMM_auto)
+check.clustered.SOM(SOM_single_k3_soft)
+
+
+## Check OPTICS support values are populated
+stopifnot(any(is.finite(SOM_multi_ENV_k3_Alleles_2$optim_k_vals)))
+if (any(SOM_multi_ENV_k3_Alleles_2$optim_k_vals > 1, na.rm = TRUE)) stopifnot(any(is.finite(SOM_multi_ENV_k3_Alleles_2$support_values)))
+stopifnot(any(is.finite(SOM_single_k3_OPTICS_auto$optim_k_vals)))
+stopifnot(any(is.finite(SOM_single_k3_OPTICS_auto$support_values)))
+
+
+## Check GMM auto-k support values are populated
+stopifnot(any(is.finite(SOM_single_k3_GMM_auto$support_values)))
+
+
+## Check binary Tanimoto path
+stopifnot(SOM_single_Binary$layer.distance.functions[[1]] == "tanimoto")
+
+
+## Check soft ancestry matrices after Hungarian relabeling
+stopifnot(!is.null(SOM_single_k3_soft$replicate_ancestry_matrices))
+stopifnot(length(SOM_single_k3_soft$replicate_ancestry_matrices) == length(SOM_single_k3_soft$replicate_ids))
+stopifnot(identical(names(SOM_single_k3_soft$replicate_ancestry_matrices), SOM_single_k3_soft$replicate_ids))
+stopifnot(all(vapply(SOM_single_k3_soft$replicate_ancestry_matrices, function(x) all(abs(rowSums(x) - 1) < 1e-8), logical(1))))
 
 
 ## Evaluate clustering result objects
@@ -204,6 +282,8 @@ plot.K.SOM(SOM_single_TestD)
 plot.K.SOM(SOM_multi_ENV_k3_Alleles, N.axis.labels.BIC.plot = 3) #DB example
 plot.K.SOM(SOM_multi_ENV_k3_Alleles_2) #OPTICS+Silhouette example
 plot.K.SOM(SOM_multi_MORPH_ENV, col.pal = viridisLite::cividis, round.axis.labels.BIC.plot = 1)
+plot.K.SOM(SOM_single_k3_OPTICS_auto)
+plot.K.SOM(SOM_single_k3_GMM_auto)
 
 
 ## Test model plot
@@ -278,9 +358,10 @@ plot.layer.importance.varimp.SOM(SOM_multi_ENV_k3_Alleles, col.pal = viridis::ro
 plot.layer.importance.varimp.SOM(SOM_multi_MORPH_ENV)
 
 
-## Test layer importance layer plot
+## Test layer importance leave-one-out plot
 try(plot.layer.importance.leaveoneout.SOM(SOM_single_Alleles)) #will fail because of single layer
 plot.layer.importance.leaveoneout.SOM(SOM_single_TestD)
 plot.layer.importance.leaveoneout.SOM(SOM_multi_ENV_k3_Alleles, 
                                       add.points = F, col.pal = viridis::rocket, save = T)
 plot.layer.importance.leaveoneout.SOM(SOM_multi_MORPH_ENV)
+
