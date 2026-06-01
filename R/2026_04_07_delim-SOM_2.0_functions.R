@@ -8,7 +8,6 @@ CRAN_packages <- c(
   "clusterCrit", #Davies-Bouldin index
   "dbscan",      #HDBSCAN clustering
   "doRNG",       #reproducible RNG
-  "doParallel",  #parallel backend
   "doSNOW",      #parallel progress bar backend
   "FactoMineR",  #multiple factor analysis
   "foreach",     #parallel processing
@@ -394,7 +393,7 @@ for (pkg in CRAN_packages) {
 #' @importFrom kohonen supersom somgrid unit.distances getCodes
 #' @importFrom FactoMineR MFA
 #' @importFrom foreach foreach %dopar%
-#' @importFrom doParallel registerDoParallel
+#' @importFrom doSNOW registerDoSNOW
 #' @importFrom doRNG registerDoRNG
 #' @importFrom parallel makeCluster stopCluster clusterExport detectCores
 #' @importFrom stats complete.cases cov na.omit quantile sd var
@@ -1728,7 +1727,7 @@ calculate.topographic.error <- function(som_model) {
 #' @importFrom mclust mclustBIC Mclust
 #' @importFrom clue solve_LSAP
 #' @importFrom foreach foreach %dopar%
-#' @importFrom doParallel registerDoParallel
+#' @importFrom doSNOW registerDoSNOW
 #' @importFrom doRNG registerDoRNG
 #' @importFrom parallel makeCluster stopCluster detectCores
 #' @importFrom tools file_ext
@@ -2196,9 +2195,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     
     # Set seed
     base::set.seed(j + set.seed.N)
-
-    # Print message every N replicates (N specified by message.N.replicates)
-    if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) messager(paste("Running clustering replicate:", j, "of", N.replicates))
     
     # Extract SOM models
     som_model <- SOM.output$som_models[[j]] 
@@ -2843,12 +2839,20 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       "mclust",
       "clue",
       "foreach",
-      "doParallel",
+      "doSNOW",
       "doRNG"
     )
     messager(sprintf("Running SOM clustering in parallel with %d cores", N.cores))
     parallel_cluster <- parallel::makeCluster(N.cores) #start PSOCK cluster
     on.exit(parallel::stopCluster(parallel_cluster), add = TRUE)
+        progress_bar <- NULL
+    if (isTRUE(verbose)) {
+      progress_bar <- utils::txtProgressBar(min = 0, max = N.replicates, style = 3)
+      on.exit(close(progress_bar), add = TRUE)
+      progress_options <- list(progress = function(n) utils::setTxtProgressBar(progress_bar, n))
+    } else {
+      progress_options <- list(progress = function(n) NULL)
+    }
     parallel::clusterExport( #export helper functions and all needed variables to each worker
       parallel_cluster,
       varlist = c("replicate_clust",
@@ -2867,9 +2871,9 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                   "messager",
                   "message.N.replicates"),
       envir = environment())
-    doParallel::registerDoParallel(parallel_cluster) #register cluster for foreach
+    doSNOW::registerDoSNOW(parallel_cluster) #register cluster for foreach with progress support
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
-    results <- foreach::`%dopar%`(foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel), replicate_clust(j))
+    results <- foreach::`%dopar%`(foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel, .options.snow = progress_options), replicate_clust(j))
   } else {
     messager("Running SOM clustering sequentially")
     results <- lapply(seq_len(N.replicates), replicate_clust) #run clustering sequentially
