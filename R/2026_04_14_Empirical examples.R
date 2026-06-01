@@ -11,7 +11,7 @@ if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
 remotes::install_github("Daniel-1232/NicheDiv") #import (NicheDiv::transform.skewed.variables function from my other package (under development)
 source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
 
-# setwd("C:/Users/danie/Desktop/PhD research/SOM package")
+# setwd("C:/Users/danie/Desktop/PhD research/SOM package/Manuscripts")
 
 
 
@@ -65,7 +65,7 @@ Monticola71_environmental <- (NicheDiv::transform.skewed.variables(Monticola71_e
 Monticola71_environmental <- remove.lowCV.multicollinearity.SOM(Monticola71_environmental, #remove highly correlated and low-variance variables
                                                                 CV.threshold = 0.05,
                                                                 cor.threshold = 0.9)
-ncol(Monticola71_environmental) #number of variables: 50
+ncol(Monticola71_environmental) #number of variables: 71
 nrow(Monticola71_environmental) #number of samples: 71
 ncol(Monticola71_watershed) #number of variables: 197
 nrow(Monticola71_watershed) #number of samples: 71
