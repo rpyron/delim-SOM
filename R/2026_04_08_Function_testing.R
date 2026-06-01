@@ -171,7 +171,7 @@ SOM_single_ENV <- clustering.SOM(SOM_single_ENV_unclustered, max.k = 2, clusteri
 SOM_single_k3 <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "kmeans+BICelbow", set.k = 3)
 SOM_single_k3_2 <- clustering.SOM(SOM_single_k3_2_unclustered, clustering.method = "HDBSCAN", max.k = 20)
 SOM_single_TestD <- clustering.SOM(SOM_single_TestD_unclustered, clustering.method = "kmeans+BICelbow", set.k = 2)
-try(SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles_unclustered, clustering.method = "kmeans+BICelbow")) #will fail with error
+SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles_unclustered, clustering.method = "kmeans+BICelbow")
 SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles_unclustered, clustering.method = "hierarchical+DB", max.k = 3)
 SOM_multi_MORPH_ENV <- clustering.SOM(SOM_multi_MORPH_ENV_unclustered, clustering.method = "GMM+BICthreshold", set.k = 3)
 SOM_multi_ENV_k3_Alleles_2 <- clustering.SOM(SOM_multi_ENV_k3_Alleles_2_unclustered, clustering.method = "OPTICS+Silhouette", max.k = 3)
@@ -361,4 +361,3 @@ plot.layer.importance.leaveoneout.SOM(SOM_single_TestD)
 plot.layer.importance.leaveoneout.SOM(SOM_multi_ENV_k3_Alleles, 
                                       add.points = F, col.pal = viridis::rocket, save = T)
 plot.layer.importance.leaveoneout.SOM(SOM_multi_MORPH_ENV)
-
