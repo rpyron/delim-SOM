@@ -2278,7 +2278,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               optics_cluster_solutions[[result_counter]] <- cluster_assignments_relabelled #store cluster solution
             }
           }
-          if (nrow(optics_model_results) == 0) stop(sprintf("Aborted SOM clustering: OPTICS+Silhouette with set.k = %d could not find any OPTICS minPts/xi combination that produced exactly %d clusters - use clustering.method = 'kmeans+BICelbow' or 'GMM+BICthreshold' if you need fixed-k clustering, or run OPTICS+Silhouette without set.k", som_N_clusters, som_N_clusters)) #explain fixed-k OPTICS failuree
+          if (nrow(optics_model_results) == 0) stop(sprintf("Aborted SOM clustering: OPTICS+Silhouette with set.k = %d could not find any OPTICS minPts/xi combination that produced exactly this number of clusters - use clustering.method = 'kmeans+BICelbow', 'kmeans+BICthreshold', 'hierarchical+DB', or 'GMM+BICthreshold', or run OPTICS+Silhouette without set.k.", som_N_clusters)) #explain fixed-k OPTICS failure
           best_row <- which.max(optics_model_results$mean_silhouette) #select best silhouette
           best_cluster_solution <- optics_cluster_solutions[[optics_model_results$result_index[best_row]]] #extract best clustering
           som_cluster <- best_cluster_solution #assign best clustering for user-specified k without collapsing fixed-k requests
