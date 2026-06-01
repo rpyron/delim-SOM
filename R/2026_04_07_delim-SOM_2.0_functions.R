@@ -6998,7 +6998,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
 make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
                                  make.binary.cols, #make.binary.cols - character vector of categorical column names to convert
                                  remove.original.cols = TRUE, #remove.original.cols - if TRUE, remove original categorical columns after processing
-                                 append.to.original = FALSE #append.to.original - if TRUE, append to input; if FALSE, return only binary indicators
+                                 append.to.original = FALSE, #append.to.original - if TRUE, append to input; if FALSE, return only binary indicators
+                                 verbose = TRUE #whether to show messages
 ) {
   messager <- function(...) if (isTRUE(verbose)) message(...)
   if (!is.data.frame(dataframe)) stop("dataframe must be a data frame") #ensure input is a data frame
