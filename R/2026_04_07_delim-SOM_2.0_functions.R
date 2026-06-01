@@ -1245,7 +1245,6 @@ calculate.topographic.error <- function(som_model) {
                   "manual.layer.weights",
                   "radius.schedule",
                   "N.replicates",
-                  "messager",
                   "message.N.replicates",
                   "replicate_seeds"),
       envir = environment())
@@ -2871,7 +2870,15 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       envir = environment())
     doSNOW::registerDoSNOW(parallel_cluster) #register cluster for foreach with progress support
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
-    results <- foreach::`%dopar%`(foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel, .options.snow = progress_options), replicate_clust(j))
+    results <- tryCatch(
+      foreach::`%dopar%`(
+        foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel, .options.snow = progress_options),
+        replicate_clust(j)
+      ),
+      error = function(e) {
+        stop(sprintf("SOM clustering aborted: %s", conditionMessage(e)), call. = FALSE)
+      }
+    )
   } else {
     messager("Running SOM clustering sequentially")
         results <- lapply(seq_len(N.replicates), function(j) {
