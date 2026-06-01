@@ -9,6 +9,7 @@ CRAN_packages <- c(
   "dbscan",      #HDBSCAN clustering
   "doRNG",       #reproducible RNG
   "doParallel",  #parallel backend
+  "doSNOW",      #parallel progress bar backend
   "FactoMineR",  #multiple factor analysis
   "foreach",     #parallel processing
   "kohonen",     #SOM / supersom
@@ -1221,9 +1222,17 @@ calculate.topographic.error <- function(som_model) {
   # Run in parallel
   if (parallel) { 
     messager(sprintf("Running SOM in parallel with %d cores", N.cores))
-    required_packages_parallel <- c("kohonen", "foreach", "doParallel", "doRNG")
+    required_packages_parallel <- c("kohonen", "foreach", "doSNOW", "doRNG")
     parallel_cluster <- parallel::makeCluster(N.cores) #start PSOCK cluster
     on.exit(parallel::stopCluster(parallel_cluster), add = TRUE)
+    progress_bar <- NULL
+    if (isTRUE(verbose)) {
+      progress_bar <- utils::txtProgressBar(min = 0, max = N.replicates, style = 3)
+      on.exit(close(progress_bar), add = TRUE)
+      progress_options <- list(progress = function(n) utils::setTxtProgressBar(progress_bar, n))
+    } else {
+      progress_options <- list(progress = function(n) NULL)
+    }
     parallel::clusterExport( #export helper and all needed globals to each worker
       parallel_cluster,
       varlist = c("messager",
@@ -1244,10 +1253,10 @@ calculate.topographic.error <- function(som_model) {
                   "message.N.replicates",
                   "replicate_seeds"),
       envir = environment())
-    doParallel::registerDoParallel(parallel_cluster) #register cluster for foreach
+    doSNOW::registerDoSNOW(parallel_cluster) #register cluster for foreach with progress support
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
-    results <- tryCatch(foreach::`%dopar%`(foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel), {replicate_som(j)}), error = function(e) {stop("SOM training aborted: try reducing grid.size or increasing max.NA.col and max.NA.row or check input data")})
-  } else {
+    results <- tryCatch(foreach::`%dopar%`(foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel, .options.snow = progress_options), {replicate_som(j)}), error = function(e) {stop("SOM training aborted: try reducing grid.size or increasing max.NA.col and max.NA.row or check input data")})
+    } else {
     
     # Run SOM normally (non-parallel)
     results <- tryCatch(lapply(seq_len(N.replicates), function(j) {replicate_som(j)}), error = function(e) {stop("SOM training aborted: try reducing grid.size or increasing max.NA.col and max.NA.row or check input data")})
