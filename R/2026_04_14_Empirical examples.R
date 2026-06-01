@@ -222,7 +222,7 @@ Pascagoula_environmental <- (NicheDiv::transform.skewed.variables(Pascagoula_env
 Pascagoula_environmental <- remove.lowCV.multicollinearity.SOM(Pascagoula_environmental, #remove highly correlated and low-variance variables
                                                                CV.threshold = 0.05,
                                                                cor.threshold = 0.9)
-ncol(Pascagoula_environmental) #number of variables: 40
+ncol(Pascagoula_environmental) #number of variables: 47
 nrow(Pascagoula_environmental) #number of samples: 22
 ncol(Pascagoula_watershed) #number of variables: 42
 nrow(Pascagoula_watershed) #number of samples: 22
@@ -242,7 +242,7 @@ Pascagoula_residuals_mat <- sapply(colnames(Pascagoula_filtered_log_traits)[coln
 rownames(Pascagoula_filtered_log_traits) <- Pascagoula_data$Sample #set rownames for log-transformed traits
 rownames(Pascagoula_residuals_mat) <- Pascagoula_data$Sample #set rownames for residualized traits
 Pascagoula_morphology <- as.data.frame(cbind(SVL = Pascagoula_SVL, Pascagoula_residuals_mat)) #combine log(SVL) and residuals
-ncol(Pascagoula_morphology) #number of traits: 9
+ncol(Pascagoula_morphology) #number of traits: 11
 nrow(Pascagoula_morphology) #number of samples: 22
 
 
@@ -253,12 +253,12 @@ Pascagoula_SOM_data <- list(Alleles = Pascagoula_SNP,
                             Watershed = Pascagoula_watershed,
                             Morphology = Pascagoula_morphology)
 Pascagoula_SOM_tr <- train.SOM(input_data = Pascagoula_SOM_data, #22 samples
-                               max.NA.row = 0.55,
-                               max.NA.col = 0.25,
+                               max.NA.row = 0.5,
+                               max.NA.col = 0.5,
                                save.SOM.results = T,
-                               overwrite.SOM.results = T,
+                               overwrite.SOM.results = F,
                                save.SOM.results.name = "Pascagoula_SOM_tr.Rdata",
-                               grid.multiplier = 4)
+                              grid.multiplier = 4)
 
 Pascagoula_SOM_kmeansBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 3min!
                                                     clustering.method = "kmeans+BICthreshold")
