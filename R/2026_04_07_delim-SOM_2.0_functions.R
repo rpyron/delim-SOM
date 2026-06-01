@@ -466,7 +466,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (N.steps < 60) messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 60–200)")
   if (N.steps > 200) messager("Warning: N.steps is high (", N.steps, ") - computation will be slow (recommended: 60–200)")
   if (!is.numeric(N.replicates) || length(N.replicates) != 1 || is.na(N.replicates) || !is.finite(N.replicates) || N.replicates < 1 || (N.replicates %% 1 != 0)) stop("Data processing aborted: N.replicates must be a single positive integer (>= 1)")
-  if (N.replicates < 30) messager("Warning: N.replicates is low (", N.replicates, ") - results may be unreliable (recommended: 30–100)")
+  if (N.replicates < 50) messager("Warning: N.replicates is low (", N.replicates, ") - results may be unreliable (recommended: 50–150)")
   if (N.replicates > 200) messager("Warning: N.replicates is high (", N.replicates, ") - computation will be slow (recommended: 50–150)")
   if (!is.logical(parallel) || length(parallel) != 1 || is.na(parallel)) stop("Data processing aborted: parallel must be TRUE or FALSE")
   if (parallel) {
