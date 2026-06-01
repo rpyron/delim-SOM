@@ -1178,9 +1178,6 @@ calculate.topographic.error <- function(som_model) {
     # Initialize results for replicate
     d_vec <- numeric(length(input_data))
     
-    # Print message every N replicates (N specified by message.N.replicates)
-    if (j %% message.N.replicates == 0) messager(paste("Running replicate:", j, "of", N.replicates))
-    
     # Run SOM model
     som_model <- kohonen::supersom(data = input_data, 
                                    grid = SOM_output_grid, 
@@ -1258,7 +1255,10 @@ calculate.topographic.error <- function(som_model) {
     } else {
     
     # Run SOM normally (non-parallel)
-    results <- tryCatch(lapply(seq_len(N.replicates), function(j) {replicate_som(j)}), error = function(e) {stop("SOM training aborted: try reducing grid.size or increasing max.NA.col and max.NA.row or check input data")})
+    results <- tryCatch(lapply(seq_len(N.replicates), function(j) {
+      if (j %% message.N.replicates == 0) messager(paste("Running replicate:", j, "of", N.replicates))
+      replicate_som(j)
+    }), error = function(e) {stop("SOM training aborted: try reducing grid.size or increasing max.NA.col and max.NA.row or check input data")})
   }
   
   # Set replicate IDs
