@@ -2867,16 +2867,17 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                   "BIC.thresh",
                   "set.seed.N",
                   "N.replicates",
-                 "calculate.soft.ancestry",
-                  "messager",
-                  "message.N.replicates"),
+                 "calculate.soft.ancestry"),
       envir = environment())
     doSNOW::registerDoSNOW(parallel_cluster) #register cluster for foreach with progress support
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
     results <- foreach::`%dopar%`(foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel, .options.snow = progress_options), replicate_clust(j))
   } else {
     messager("Running SOM clustering sequentially")
-    results <- lapply(seq_len(N.replicates), replicate_clust) #run clustering sequentially
+        results <- lapply(seq_len(N.replicates), function(j) {
+      if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) messager(paste("Running clustering replicate:", j, "of", N.replicates))
+      replicate_clust(j)
+    }) #run clustering sequentially
   }
   
   # Combine results from all replicates
