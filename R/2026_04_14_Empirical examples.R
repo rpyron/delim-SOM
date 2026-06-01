@@ -106,16 +106,16 @@ Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #takes 
 Monticola71_SOM_kmeansBICthreshold$optim_k_summary #100% k2
 Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #takes ca 5min!
                                           clustering.method = "HDBSCAN")
-Monticola71_SOM_HDBSCAN$optim_k_summary #62% k2, 35% k3
+Monticola71_SOM_HDBSCAN$optim_k_summary #88% k2, 9% k1
 Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #takes ca 30min!
                                                  clustering.method = "hierarchical+DB")
-Monticola71_SOM_hierarchicalDB$optim_k_summary #65% k2, 17% k10 , 10% k3
+Monticola71_SOM_hierarchicalDB$optim_k_summary #79% k2, 11% k3, 8% k10
 Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #ca. 15min
                                                   clustering.method = "GMM+BICthreshold")
-Monticola71_SOM_GMMBICthreshold$optim_k_summary #62% k2, 38% k3
+Monticola71_SOM_GMMBICthreshold$optim_k_summary #88% k2, 12% k3
 Monticola71_SOM_OPTICSSilhouette <- clustering.SOM(Monticola71_SOM_tr, #ca 5min
                                                    clustering.method = "OPTICS+Silhouette")
-Monticola71_SOM_OPTICSSilhouette$optim_k_summary #88% k1, 12% k2
+Monticola71_SOM_OPTICSSilhouette$optim_k_summary #59% k1, 40% k2
 Monticola71_SOM_kmeansBICelbow <- clustering.SOM(Monticola71_SOM_tr, #ca 3min
                                                  clustering.method = "kmeans+BICelbow")
 Monticola71_SOM_kmeansBICelbow$optim_k_summary #100% k2
@@ -152,26 +152,27 @@ Monticola71_cluster_samples <- split(rownames(Monticola71_SOM$ancestry_matrix), 
 Monticola71_cluster1_data <- lapply(Monticola71_SOM$input_data, function(x) x[Monticola71_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
 Monticola71_cluster2_data <- lapply(Monticola71_SOM$input_data, function(x) x[Monticola71_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 
-Monticola71_SOM_tr_cluster1 <- train.SOM(Monticola71_cluster1_data,  grid.multiplier = 3,
+Monticola71_SOM_tr_cluster1 <- train.SOM(Monticola71_cluster1_data,  
+                                         grid.multiplier = 4,
                                          max.NA.row = 0.5,
-                                         max.NA.col = 0.2)
+                                         max.NA.col = 0.5)
 Monticola71_SOM_cluster1 <- clustering.SOM(Monticola71_SOM_tr_cluster1,
-                                           clustering.method = "kmeans+BICthreshold",
+                                           clustering.method = "kmeans+BICelbow",
                                            max.k = 5)
 Monticola71_SOM_cluster1$optim_k_summary #k1 100% support
 Monticola71_SOM_tr_cluster2 <- train.SOM(Monticola71_cluster2_data,
+                                         grid.multiplier = 4,
                                          max.NA.row = 0.5,
-                                         max.NA.col = 0.2)
+                                         max.NA.col = 0.5)
 Monticola71_SOM_cluster2 <- clustering.SOM(Monticola71_SOM_tr_cluster2,
-                                           clustering.method = "kmeans+BICthreshold",
+                                           clustering.method = "kmeans+BICelbow",
                                            max.k = 5)
 Monticola71_SOM_cluster2$optim_k_summary #k1 100% support
 
 
 
-################################################################################
-#### Desmognathus dusky salamanders in Alabama/Mississippi (Pyron et al. 2022)
-################################################################################
+                                    
+#### Desmognathus salamanders in Alabama/Mississippi (Pyron et al. 2022) #######
 
 ## https://doi.org/10.11646/zootaxa.5133.1.3
 ## "Pascagoula"
@@ -182,12 +183,13 @@ Monticola71_SOM_cluster2$optim_k_summary #k1 100% support
 ## Read in sample data
 Pascagoula_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2022/pascagoula22.csv",
                             row.names = 1,
-                            header = T, colClasses = c(huc2 = "character",
-                                                       huc4 = "character",
-                                                       huc6 = "character",
-                                                       huc8 = "character",
-                                                       huc10 = "character",
-                                                       huc12 = "character"))
+                            header = T, 
+                            colClasses = c(huc2 = "character",
+                                           huc4 = "character",
+                                           huc6 = "character",
+                                           huc8 = "character",
+                                           huc10 = "character",
+                                           huc12 = "character"))
 
 
 ## Import and process genetic SNP data
