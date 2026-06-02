@@ -1423,7 +1423,7 @@ calculate.topographic.error <- function(som_model) {
 #'   when `parallel = TRUE`. If `N.cores` exceeds the number of detected physical
 #'   cores, the detected maximum is used.
 #' @param save.SOM.results Logical; if `TRUE`, the clustered SOM result object is
-#'   saved as an `.Rdata` file. Default: `FALSE`.
+#'   saved as an `.Rdata` file. Default: `TRUE`.
 #' @param save.SOM.results.name Optional character string giving the output file
 #'   name used when saving or loading clustered SOM results. If `NULL`, a default
 #'   name is generated. File names supplied by the user must end in `.Rdata`.
@@ -1783,7 +1783,7 @@ clustering.SOM <- function(SOM.output,
                            calculate.variable.importance = TRUE, #whether to calculate map variance and eta-squared variable-importance summaries
                            verbose = TRUE, #whether to show messages
                            message.N.replicates = 20, #frequency of progress messages during clustering (message is printed every message.N.replicates iterations)
-                           save.SOM.results = FALSE, #whether to save clustered SOM results to file
+                           save.SOM.results = TRUE, #whether to save clustered SOM results to file
                            save.SOM.results.name = NULL, #file name for saving clustered SOM results (if NULL, default name is generated; if save.SOM.results = TRUE)
                            overwrite.SOM.results = FALSE, #if FALSE, existing clustering results are loaded instead of re-running clustering
                            set.seed.N = 1 #set seed for reproducibility
