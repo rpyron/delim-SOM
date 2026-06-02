@@ -1838,25 +1838,18 @@ nrow(Microcebus_metadata) #number of samples: 73
 
 
 ## Import and process environmental dataset (variables extracted and processed by separate R script based on coordinates)
-Microcebus_environmental <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE) %>%
-  tibble::rownames_to_column("ID")
-Microcebus_Bio_variables <- Microcebus_multiple_data_combined %>% #extract Bio variables
-  tibble::rownames_to_column("ID") %>%
-  dplyr::select(ID, bio01:bio19)
-Microcebus_environmental <- Microcebus_environmental %>% #add Bio variables to environmental dataset
-  dplyr::left_join(Microcebus_Bio_variables, by = "ID") %>%
-  tibble::column_to_rownames("ID")
-Microcebus_environmental_rownames <- rownames(Microcebus_environmental) #save rownames for later
+Microcebus_environmental <- utils::read.csv("Test data/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
+Microcebus_environmental_rownames <- Microcebus_environmental$Individual.ID #save IDs for later
 Microcebus_environmental <- Microcebus_environmental %>% 
-  dplyr::select(-Latitude, -Longitude, -Elevation)
+  dplyr::select(-Latitude, -Longitude, -Elevation, -Individual.ID)
 Microcebus_environmental <- as.data.frame(lapply(Microcebus_environmental, as.numeric)) #ensure all columns are numeric
 rownames(Microcebus_environmental) <- Microcebus_environmental_rownames #keep rownames
 Microcebus_environmental <- (NicheDiv::transform.skewed.variables(Microcebus_environmental))$transformed #transform skewed variables
 Microcebus_environmental <- remove.lowCV.multicollinearity.SOM(Microcebus_environmental, #remove highly correlated and low-variance variables
                                                                CV.threshold = 0.05,
                                                                cor.threshold = 0.9)
-ncol(Microcebus_environmental) #number of variables: 33
-nrow(Microcebus_environmental) #number of samples: 75
+ncol(Microcebus_environmental) #number of variables: 56
+nrow(Microcebus_environmental) #number of samples: 73
 
 
 ## Create spatial dataset with Latitude, Longitude and Elevation
