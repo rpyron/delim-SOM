@@ -104,23 +104,29 @@ Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples
                                 N.cores = 5)
 
 Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #takes ca 3min!
-                                                     clustering.method = "kmeans+BICthreshold")
-Monticola71_SOM_kmeansBICthreshold$optim_k_summary #100% k2
+                                                     clustering.method = "kmeans+BICthreshold", 
+                                                     save.SOM.results.name = "Monticola71_SOM_kmeansBICthreshold.Rdata")
+Monticola71_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
 Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #takes ca 5min!
-                                          clustering.method = "HDBSCAN")
-Monticola71_SOM_HDBSCAN$optim_k_summary #81% k2, 17% k1
+                                          clustering.method = "HDBSCAN",
+                                          save.SOM.results.name = "Monticola71_SOM_HDBSCAN.Rdata")
+Monticola71_SOM_HDBSCAN$optim_k_summary #k2 81%, k1 17%
 Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #takes ca 30min!
-                                                 clustering.method = "hierarchical+DB")
-Monticola71_SOM_hierarchicalDB$optim_k_summary #69% k2, 30% k3
+                                                 clustering.method = "hierarchical+DB",
+                                                 save.SOM.results.name = "Monticola71_SOM_hierarchicalDB.Rdata")
+Monticola71_SOM_hierarchicalDB$optim_k_summary #k2 69%, k3 30%
 Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #ca. 15min
-                                                  clustering.method = "GMM+BICthreshold")
-Monticola71_SOM_GMMBICthreshold$optim_k_summary #53% k3, 46% k2
+                                                  clustering.method = "GMM+BICthreshold",
+                                                  save.SOM.results.name = "Monticola71_SOM_GMMBICthreshold.Rdata")
+Monticola71_SOM_GMMBICthreshold$optim_k_summary #k3 53%, k2 46%
 Monticola71_SOM_OPTICSSilhouette <- clustering.SOM(Monticola71_SOM_tr, #ca 5min
-                                                   clustering.method = "OPTICS+Silhouette")
-Monticola71_SOM_OPTICSSilhouette$optim_k_summary #54% k1, 44% k2
+                                                   clustering.method = "OPTICS+Silhouette",
+                                                   save.SOM.results.name = "Monticola71_SOM_OPTICSSilhouette.Rdata")
+Monticola71_SOM_OPTICSSilhouette$optim_k_summary #k1 54%, k2 44%
 Monticola71_SOM_kmeansBICelbow <- clustering.SOM(Monticola71_SOM_tr, #ca 3min
-                                                 clustering.method = "kmeans+BICelbow")
-Monticola71_SOM_kmeansBICelbow$optim_k_summary #100% k2
+                                                 clustering.method = "kmeans+BICelbow",
+                                                 save.SOM.results.name = "Monticola71_SOM_kmeansBICelbow.Rdata")
+Monticola71_SOM_kmeansBICelbow$optim_k_summary #k2 100%
 
 
 ## Evaluate and plot results
@@ -263,23 +269,29 @@ Pascagoula_SOM_tr <- train.SOM(input_data = Pascagoula_SOM_data, #22 samples
                               grid.multiplier = 4)
 
 Pascagoula_SOM_kmeansBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 3min!
-                                                    clustering.method = "kmeans+BICthreshold")
-Pascagoula_SOM_kmeansBICthreshold$optim_k_summary #100% k2
+                                                    clustering.method = "kmeans+BICthreshold",
+                                                    save.SOM.results.name = "Pascagoula_SOM_kmeansBICthreshold.Rdata")
+Pascagoula_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
 Pascagoula_SOM_HDBSCAN <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 5min!
-                                         clustering.method = "HDBSCAN")
-Pascagoula_SOM_HDBSCAN$optim_k_summary #85% k2, 12% k3 
+                                         clustering.method = "HDBSCAN",
+                                         save.SOM.results.name = "Pascagoula_SOM_HDBSCAN.Rdata")
+Pascagoula_SOM_HDBSCAN$optim_k_summary #k2 85%, k3 12%
 Pascagoula_SOM_hierarchicalDB <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 20min!
-                                                clustering.method = "hierarchical+DB")
-Pascagoula_SOM_hierarchicalDB$optim_k_summary #95% k10, 5% k9%
+                                                clustering.method = "hierarchical+DB",
+                                                save.SOM.results.name = "Pascagoula_SOM_hierarchicalDB.Rdata")
+Pascagoula_SOM_hierarchicalDB$optim_k_summary #k10 95%, k9 5%
 Pascagoula_SOM_GMMBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #ca. 15min
-                                                 clustering.method = "GMM+BICthreshold")
-Pascagoula_SOM_GMMBICthreshold$optim_k_summary #42% k2, 40% k3, 18% k4
+                                                 clustering.method = "GMM+BICthreshold",
+                                                 save.SOM.results.name = "Pascagoula_SOM_GMMBICthreshold.Rdata")
+Pascagoula_SOM_GMMBICthreshold$optim_k_summary #k2 42%, k3 40%, k4 18%
 Pascagoula_SOM_OPTICSSilhouette <- clustering.SOM(Pascagoula_SOM_tr, #ca 5min
-                                                  clustering.method = "OPTICS+Silhouette")
-Pascagoula_SOM_OPTICSSilhouette$optim_k_summary #57% k1, 42% k2
+                                                  clustering.method = "OPTICS+Silhouette",
+                                                  save.SOM.results.name = "Pascagoula_SOM_OPTICSSilhouette.Rdata")
+Pascagoula_SOM_OPTICSSilhouette$optim_k_summary #k1 57%, k2 42%
 Pascagoula_SOM_kmeansBICelbow <- clustering.SOM(Pascagoula_SOM_tr, #ca 3min
-                                                clustering.method = "kmeans+BICelbow")
-Pascagoula_SOM_kmeansBICelbow$optim_k_summary #100% k2
+                                                clustering.method = "kmeans+BICelbow",
+                                                save.SOM.results.name = "Pascagoula_SOM_kmeansBICelbow.Rdata")
+Pascagoula_SOM_kmeansBICelbow$optim_k_summary #k2 100%
 
 
 ## Evaluate and plot results
@@ -418,22 +430,28 @@ Aeneus_SOM_tr <- train.SOM(input_data = Aeneus_SOM_data, #40 samples
                            max.NA.col = 0.5)
 
 Aeneus_SOM_kmeansBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #takes ca 3min!
-                                                clustering.method = "kmeans+BICthreshold")
-Aeneus_SOM_kmeansBICthreshold$optim_k_summary #100% k1
+                                                clustering.method = "kmeans+BICthreshold",
+                                                save.SOM.results.name = "Aeneus_SOM_kmeansBICthreshold.Rdata")
+Aeneus_SOM_kmeansBICthreshold$optim_k_summary #k1 100%
 Aeneus_SOM_HDBSCAN <- clustering.SOM(Aeneus_SOM_tr, #takes ca 5min!
-                                     clustering.method = "HDBSCAN")
-Aeneus_SOM_HDBSCAN$optim_k_summary #68% k2, 16% k1, 15% k3
+                                     clustering.method = "HDBSCAN",
+                                     save.SOM.results.name = "Aeneus_SOM_HDBSCAN.Rdata")
+Aeneus_SOM_HDBSCAN$optim_k_summary #k2 68%, k1 16%, k3 15%
 Aeneus_SOM_hierarchicalDB <- clustering.SOM(Aeneus_SOM_tr, #takes ca 25min!
-                                            clustering.method = "hierarchical+DB")
-Aeneus_SOM_hierarchicalDB$optim_k_summary #95% k10, 4% k9
+                                            clustering.method = "hierarchical+DB",
+                                            save.SOM.results.name = "Aeneus_SOM_hierarchicalDB.Rdata")
+Aeneus_SOM_hierarchicalDB$optim_k_summary #k10 95%, k9 4%
 Aeneus_SOM_GMMBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #ca. 15min
-                                             clustering.method = "GMM+BICthreshold")
+                                             clustering.method = "GMM+BICthreshold",
+                                             save.SOM.results.name = "Aeneus_SOM_GMMBICthreshold.Rdata")
 Aeneus_SOM_GMMBICthreshold$optim_k_summary #k3 37%, k2 32%, k4 17%, k5 7%, k6 5%
 Aeneus_SOM_OPTICSSilhouette <- clustering.SOM(Aeneus_SOM_tr, #ca 5min
-                                              clustering.method = "OPTICS+Silhouette")
+                                              clustering.method = "OPTICS+Silhouette",
+                                              save.SOM.results.name = "Aeneus_SOM_OPTICSSilhouette.Rdata")
 Aeneus_SOM_OPTICSSilhouette$optim_k_summary #k1 86%, k2 14%
 Aeneus_SOM_kmeansBICelbow <- clustering.SOM(Aeneus_SOM_tr, #ca 3min
-                                            clustering.method = "kmeans+BICelbow")
+                                            clustering.method = "kmeans+BICelbow",
+                                            save.SOM.results.name = "Aeneus_SOM_kmeansBICelbow.Rdata")
 Aeneus_SOM_kmeansBICelbow$optim_k_summary #k1 100%
 
 
@@ -691,27 +709,33 @@ Pocillopora_SOM_tr <- train.SOM(input_data = Pocillopora_SOM_data, #76 samples
 
 Pocillopora_SOM_kmeansBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, #ca 12min
                                                      max.k = 35,
-                                                     clustering.method = "kmeans+BICthreshold")
+                                                     clustering.method = "kmeans+BICthreshold",
+                                                     save.SOM.results.name = "Pocillopora_SOM_kmeansBICthreshold.Rdata")
 Pocillopora_SOM_kmeansBICthreshold$optim_k_summary #k3 88%, k4 7%
 Pocillopora_SOM_HDBSCAN <- clustering.SOM(Pocillopora_SOM_tr, #ca 13 min
                                           max.k = 35,
-                                          clustering.method = "HDBSCAN")
+                                          clustering.method = "HDBSCAN",
+                                          save.SOM.results.name = "Pocillopora_SOM_HDBSCAN.Rdata")
 Pocillopora_SOM_HDBSCAN$optim_k_summary #k2 35%, k3 27%, k4 15%, k5 13%, k6 9%
 Pocillopora_SOM_kmeansBICelbow <- clustering.SOM(Pocillopora_SOM_tr, #ca. 20min
                                                  max.k = 35,
-                                                 clustering.method = "kmeans+BICelbow")
+                                                 clustering.method = "kmeans+BICelbow",
+                                                 save.SOM.results.name = "Pocillopora_SOM_kmeansBICelbow.Rdata")
 Pocillopora_SOM_kmeansBICelbow$optim_k_summary #k3 51%, k35 31%, k34 7%
 Pocillopora_SOM_OPTICSSilhouette <- clustering.SOM(Pocillopora_SOM_tr, # ca. 52min
                                                    max.k = 35,
-                                                   clustering.method = "OPTICS+Silhouette")
+                                                   clustering.method = "OPTICS+Silhouette",
+                                                   save.SOM.results.name = "Pocillopora_SOM_OPTICSSilhouette.Rdata")
 Pocillopora_SOM_OPTICSSilhouette$optim_k_summary #k2 50%, k1 32%, k3 18%
 Pocillopora_SOM_GMMBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, # ca. 15min
                                                   max.k = 35,
-                                                  clustering.method = "GMM+BICthreshold")
-Pocillopora_SOM_GMMBICthreshold$optim_k_summary #k9 17%, k10 16%, k8 13%, k11 10%, k7 9% k2 7%, k6 7% etc
+                                                  clustering.method = "GMM+BICthreshold",
+                                                  save.SOM.results.name = "Pocillopora_SOM_GMMBICthreshold.Rdata")
+Pocillopora_SOM_GMMBICthreshold$optim_k_summary #k9 17%, k10 16%, k8 13%, k11 10%, k7 9%, k2 7%, k6 7% etc
 Pocillopora_SOM_hierarchicalDB <- clustering.SOM(Pocillopora_SOM_tr, # ca. 25min
                                                  max.k = 35,
-                                                 clustering.method = "hierarchical+DB")
+                                                 clustering.method = "hierarchical+DB",
+                                                 save.SOM.results.name = "Pocillopora_SOM_hierarchicalDB.Rdata")
 Pocillopora_SOM_hierarchicalDB$optim_k_summary #k35 99%
 
 
@@ -1018,22 +1042,28 @@ Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data, #186 samples
                               max.NA.col = 0.5)
 
 Polygonia_SOM_kmeansBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #takes ca 8min!
-                                                   clustering.method = "kmeans+BICthreshold")
+                                                   clustering.method = "kmeans+BICthreshold",
+                                                   save.SOM.results.name = "Polygonia_SOM_kmeansBICthreshold.Rdata")
 Polygonia_SOM_kmeansBICthreshold$optim_k_summary #k5 46%, k6 36%, k7 15%
 Polygonia_SOM_HDBSCAN <- clustering.SOM(Polygonia_SOM_tr, #takes ca 10min!
-                                        clustering.method = "HDBSCAN")
+                                        clustering.method = "HDBSCAN",
+                                        save.SOM.results.name = "Polygonia_SOM_HDBSCAN.Rdata")
 Polygonia_SOM_HDBSCAN$optim_k_summary #k3 82%, k4 10%, k2 8%
 Polygonia_SOM_hierarchicalDB <- clustering.SOM(Polygonia_SOM_tr, #takes ca 45min!
-                                               clustering.method = "hierarchical+DB")
+                                               clustering.method = "hierarchical+DB",
+                                               save.SOM.results.name = "Polygonia_SOM_hierarchicalDB.Rdata")
 Polygonia_SOM_hierarchicalDB$optim_k_summary #k3 76%, k4 10%, k5 6%
 Polygonia_SOM_GMMBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #ca. 15min
-                                                clustering.method = "GMM+BICthreshold")
-Polygonia_SOM_GMMBICthreshold$optim_k_summary #k4 32%, k2 28%, k5 21%, k6 10
+                                                clustering.method = "GMM+BICthreshold",
+                                                save.SOM.results.name = "Polygonia_SOM_GMMBICthreshold.Rdata")
+Polygonia_SOM_GMMBICthreshold$optim_k_summary #k4 32%, k2 28%, k5 21%, k6 10%
 Polygonia_SOM_OPTICSSilhouette <- clustering.SOM(Polygonia_SOM_tr, #ca 5min
-                                                 clustering.method = "OPTICS+Silhouette")
+                                                 clustering.method = "OPTICS+Silhouette",
+                                                 save.SOM.results.name = "Polygonia_SOM_OPTICSSilhouette.Rdata")
 Polygonia_SOM_OPTICSSilhouette$optim_k_summary #k3 94%, k4 6%
 Polygonia_SOM_kmeansBICelbow <- clustering.SOM(Polygonia_SOM_tr, #ca 3min
-                                               clustering.method = "kmeans+BICelbow")
+                                               clustering.method = "kmeans+BICelbow",
+                                               save.SOM.results.name = "Polygonia_SOM_kmeansBICelbow.Rdata")
 Polygonia_SOM_kmeansBICelbow$optim_k_summary #k3 83%, k4 16%
 
 
@@ -1397,22 +1427,28 @@ Viburnum_SOM_tr <- train.SOM(Viburnum_SOM_data, #46 samples
                              save.SOM.results = T)
 
 Viburnum_SOM_kmeansBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #takes ca 2min!
-                                                  clustering.method = "kmeans+BICthreshold")
+                                                  clustering.method = "kmeans+BICthreshold",
+                                                  save.SOM.results.name = "Viburnum_SOM_kmeansBICthreshold.Rdata")
 Viburnum_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
 Viburnum_SOM_HDBSCAN <- clustering.SOM(Viburnum_SOM_tr, #takes ca 2min!
-                                       clustering.method = "HDBSCAN")
+                                       clustering.method = "HDBSCAN",
+                                       save.SOM.results.name = "Viburnum_SOM_HDBSCAN.Rdata")
 Viburnum_SOM_HDBSCAN$optim_k_summary #k2 97%
 Viburnum_SOM_hierarchicalDB <- clustering.SOM(Viburnum_SOM_tr, #takes ca 45min!
-                                              clustering.method = "hierarchical+DB")
+                                              clustering.method = "hierarchical+DB",
+                                              save.SOM.results.name = "Viburnum_SOM_hierarchicalDB.Rdata")
 Viburnum_SOM_hierarchicalDB$optim_k_summary #k2 100%
 Viburnum_SOM_GMMBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #ca. 15min
-                                               clustering.method = "GMM+BICthreshold")
+                                               clustering.method = "GMM+BICthreshold",
+                                               save.SOM.results.name = "Viburnum_SOM_GMMBICthreshold.Rdata")
 Viburnum_SOM_GMMBICthreshold$optim_k_summary #k2 52%, k3 44%
 Viburnum_SOM_OPTICSSilhouette <- clustering.SOM(Viburnum_SOM_tr, #ca 5min
-                                                clustering.method = "OPTICS+Silhouette")
+                                                clustering.method = "OPTICS+Silhouette",
+                                                save.SOM.results.name = "Viburnum_SOM_OPTICSSilhouette.Rdata")
 Viburnum_SOM_OPTICSSilhouette$optim_k_summary #k2 100%
 Viburnum_SOM_kmeansBICelbow <- clustering.SOM(Viburnum_SOM_tr, #ca 3min
-                                              clustering.method = "kmeans+BICelbow")
+                                              clustering.method = "kmeans+BICelbow",
+                                              save.SOM.results.name = "Viburnum_SOM_kmeansBICelbow.Rdata")
 Viburnum_SOM_kmeansBICelbow$optim_k_summary #k2 100%
 
 
@@ -1881,23 +1917,30 @@ Microcebus_SOM_tr <- train.SOM(Microcebus_SOM_full_data, #?? samples
                                max.NA.col = 0.5,
                                save.SOM.results.name = "Microcebus_SOM_tr.Rdata",
                                save.SOM.results = T)
-Microcebus_SOM_kmeansBICelbow <- clustering.SOM(Microcebus_SOM_tr, max.k = 20,
-                                                clustering.method = "kmeans+BICelbow")
+
+ Microcebus_SOM_kmeansBICelbow <- clustering.SOM(Microcebus_SOM_tr, max.k = 20,
+                                                clustering.method = "kmeans+BICelbow",
+                                                save.SOM.results.name = "Microcebus_SOM_kmeansBICelbow.Rdata")
 Microcebus_SOM_kmeansBICelbow$optim_k_summary #k3 93%
 Microcebus_SOM_kmeansBICthreshold <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #takes ca 2min!
-                                                    clustering.method = "kmeans+BICthreshold")
+                                                    clustering.method = "kmeans+BICthreshold",
+                                                    save.SOM.results.name = "Microcebus_SOM_kmeansBICthreshold.Rdata")
 Microcebus_SOM_kmeansBICthreshold$optim_k_summary #k3 99%
 Microcebus_SOM_HDBSCAN <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #takes ca 2min!
-                                         clustering.method = "HDBSCAN")
+                                         clustering.method = "HDBSCAN",
+                                         save.SOM.results.name = "Microcebus_SOM_HDBSCAN.Rdata")
 Microcebus_SOM_HDBSCAN$optim_k_summary #k3 31%, k2 29%, k4 22%, k5 10%
 Microcebus_SOM_hierarchicalDB <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #takes ca 45min!
-                                                clustering.method = "hierarchical+DB")
-Microcebus_SOM_hierarchicalDB$optim_k_summary #k20 81, k19 10%  
+                                                clustering.method = "hierarchical+DB",
+                                                save.SOM.results.name = "Microcebus_SOM_hierarchicalDB.Rdata")
+Microcebus_SOM_hierarchicalDB$optim_k_summary #k20 81%, k19 10%
 Microcebus_SOM_GMMBICthreshold <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #ca. 20min
-                                                 clustering.method = "GMM+BICthreshold")
-Microcebus_SOM_GMMBICthreshold$optim_k_summary #k2 22%, k7 14%, k10 10%, k3 9%, k5 8%, k8 8% k12 7%
+                                                 clustering.method = "GMM+BICthreshold",
+                                                 save.SOM.results.name = "Microcebus_SOM_GMMBICthreshold.Rdata")
+Microcebus_SOM_GMMBICthreshold$optim_k_summary #k2 22%, k7 14%, k10 10%, k3 9%, k5 8%, k8 8%, k12 7%
 Microcebus_SOM_OPTICSSilhouette <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #ca 5min
-                                                  clustering.method = "OPTICS+Silhouette")
+                                                  clustering.method = "OPTICS+Silhouette",
+                                                  save.SOM.results.name = "Microcebus_SOM_OPTICSSilhouette.Rdata")
 Microcebus_SOM_OPTICSSilhouette$optim_k_summary #k3 49%, k2 38%, k4 7%
 
 
@@ -2159,24 +2202,30 @@ Elysia_SOM_tr <- train.SOM(input_data = Elysia_all_data, #?? samples
                            save.SOM.results.name = "Elysia_SOM_tr.Rdata")
 
 Elysia_SOM_kmeansBICelbow <- clustering.SOM(Elysia_SOM_tr, max.k = 10,
-                                            clustering.method = "kmeans+BICelbow")
+                                            clustering.method = "kmeans+BICelbow",
+                                            save.SOM.results.name = "Elysia_SOM_kmeansBICelbow.Rdata")
 Elysia_SOM_kmeansBICelbow$optim_k_summary #k4 96%
 Elysia_SOM_kmeansBICthreshold <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #takes ca 2min!
-                                                clustering.method = "kmeans+BICthreshold")
+                                                clustering.method = "kmeans+BICthreshold",
+                                                save.SOM.results.name = "Elysia_SOM_kmeansBICthreshold.Rdata")
 Elysia_SOM_kmeansBICthreshold$optim_k_summary #k8 43%, k7 34%, k9 10%, k6 8%
 Elysia_SOM_HDBSCAN <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #takes ca 2min!
-                                     clustering.method = "HDBSCAN")
+                                     clustering.method = "HDBSCAN",
+                                     save.SOM.results.name = "Elysia_SOM_HDBSCAN.Rdata")
 Elysia_SOM_HDBSCAN$optim_k_summary #k3 39%, k4 39%, k5 12%, k6 7%
 Elysia_SOM_hierarchicalDB <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #takes ca 45min!
-                                            clustering.method = "hierarchical+DB")
+                                            clustering.method = "hierarchical+DB",
+                                            save.SOM.results.name = "Elysia_SOM_hierarchicalDB.Rdata")
 Elysia_SOM_hierarchicalDB$optim_k_summary #k5 39%, k4 38%, k6 8%, k15 8%
 Elysia_SOM_GMMBICthreshold <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #ca. 15min
-                                             clustering.method = "GMM+BICthreshold")
+                                             clustering.method = "GMM+BICthreshold",
+                                             save.SOM.results.name = "Elysia_SOM_GMMBICthreshold.Rdata")
 Elysia_SOM_GMMBICthreshold$optim_k_summary #k7 23%, k9 21%, k8 16%, k6 7%
 Elysia_SOM_OPTICSSilhouette <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #ca 5min
-                                              clustering.method = "OPTICS+Silhouette")
+                                              clustering.method = "OPTICS+Silhouette",
+                                              save.SOM.results.name = "Elysia_SOM_OPTICSSilhouette.Rdata")
 Elysia_SOM_OPTICSSilhouette$optim_k_summary #k4 84%, k3 10%
-
+                                   
 Elysia_SOM <- Elysia_SOM_kmeansBICelbow
 plot.structure.SOM(Elysia_SOM, bottom.margin = 7, Individual.labels.font.size = 0.2)
 plot.learning.SOM(Elysia_SOM)
