@@ -1221,11 +1221,10 @@ calculate.topographic.error <- function(som_model) {
     required_packages_parallel <- c("kohonen", "foreach", "doSNOW", "doRNG")
     parallel_cluster <- parallel::makeCluster(N.cores) #start PSOCK cluster
     on.exit(parallel::stopCluster(parallel_cluster), add = TRUE)
-    progress_bar <- NULL
     if (isTRUE(verbose)) {
-      progress_bar <- utils::txtProgressBar(min = 0, max = N.replicates, style = 3)
-      on.exit(close(progress_bar), add = TRUE)
-      progress_options <- list(progress = function(n) utils::setTxtProgressBar(progress_bar, n))
+      progress_options <- list(progress = function(n) {
+        if (n %% message.N.replicates == 0 || n == 1 || n == N.replicates) message(paste("Completed replicate:", n, "of", N.replicates))
+      })
     } else {
       progress_options <- list(progress = function(n) NULL)
     }
@@ -2843,11 +2842,10 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     messager(sprintf("Running SOM clustering in parallel with %d cores", N.cores))
     parallel_cluster <- parallel::makeCluster(N.cores) #start PSOCK cluster
     on.exit(parallel::stopCluster(parallel_cluster), add = TRUE)
-        progress_bar <- NULL
     if (isTRUE(verbose)) {
-      progress_bar <- utils::txtProgressBar(min = 0, max = N.replicates, style = 3)
-      on.exit(close(progress_bar), add = TRUE)
-      progress_options <- list(progress = function(n) utils::setTxtProgressBar(progress_bar, n))
+      progress_options <- list(progress = function(n) {
+        if (n %% message.N.replicates == 0 || n == 1 || n == N.replicates) message(paste("Completed clustering replicate:", n, "of", N.replicates))
+      })
     } else {
       progress_options <- list(progress = function(n) NULL)
     }
