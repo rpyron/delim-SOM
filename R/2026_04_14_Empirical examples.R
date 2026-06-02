@@ -11,7 +11,8 @@ if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
 remotes::install_github("Daniel-1232/NicheDiv") #import (NicheDiv::transform.skewed.variables function from my other package (under development)
 source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
 
-# setwd("C:/Users/danie/Desktop/PhD research/SOM package/Manuscripts")
+#setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
+
 
 
 
@@ -328,9 +329,7 @@ Pascagoula_SOM_cluster2$optim_k_summary #k1 100%
 
 
 
-################################################################################
-#### Desmognathus seepage salamanders in southestern US (Pyron et al. 2024)
-################################################################################
+#### Desmognathus seepage salamanders in southestern US (Pyron et al. 2024) ####
 
 ## www.https://doi.org/10.1111/mec.17219
 ## "Aeneus56"
@@ -341,12 +340,12 @@ Pascagoula_SOM_cluster2$optim_k_summary #k1 100%
 ## Read in sample data
 Aeneus_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2024/aeneus56.csv",
                         row.names = 1,
-                        header = T, colClasses = c(huc2 = "character",
-                                                   huc4 = "character",
-                                                   huc6 = "character",
-                                                   huc8 = "character",
-                                                   huc10 = "character",
-                                                   huc12 = "character"))
+                        header = T, 
+                        colClasses = c(huc2 = "character",
+                                       huc4 = "character",
+                                       huc8 = "character",
+                                       huc10 = "character",
+                                       huc12 = "character"))
 
 
 ## Import and process genetic SNP data
@@ -356,7 +355,7 @@ Aeneus_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_et_al
                                    missing.individuals.cutoff = 0.3)
 rownames(Aeneus_SNP) <- Aeneus_data$Sample[match(rownames(Aeneus_SNP), rownames(Aeneus_data))] #rename alleles
 ncol(Aeneus_SNP) #number of loci: 7667 
-nrow(Aeneus_SNP) #number of samples: 47
+nrow(Aeneus_SNP) #number of samples: 51
 
 
 ## Create spatial dataset with coordinates and elevation
@@ -379,7 +378,7 @@ Aeneus_environmental <- (NicheDiv::transform.skewed.variables(Aeneus_environment
 Aeneus_environmental <- remove.lowCV.multicollinearity.SOM(Aeneus_environmental, #remove highly correlated and low-variance variables
                                                            CV.threshold = 0.05,
                                                            cor.threshold = 0.9)
-ncol(Aeneus_environmental) #number of variables: 31
+ncol(Aeneus_environmental) #number of variables: 48
 nrow(Aeneus_environmental) #number of samples: 56
 ncol(Aeneus_watershed) #number of variables: 98
 nrow(Aeneus_watershed) #number of samples: 56
@@ -403,7 +402,7 @@ Aeneus_residuals_mat <- sapply(colnames(Aeneus_filtered_log_traits)[colnames(Aen
 rownames(Aeneus_residuals_mat) <- rownames(Aeneus_filtered_log_traits) #assign rownames to residual matrix
 Aeneus_morphology <- as.data.frame(cbind(SVL = Aeneus_SVL, Aeneus_residuals_mat)) #combine log(SVL) and residuals
 Aeneus_morphology <- Aeneus_morphology[rownames(Aeneus_trait_data), ] #keep only samples with trait data
-ncol(Aeneus_morphology) #number of traits: 11
+ncol(Aeneus_morphology) #number of traits: 13  
 nrow(Aeneus_morphology) #number of samples: 45
 
 
@@ -413,21 +412,21 @@ Aeneus_SOM_data <- list(Alleles = Aeneus_SNP,
                         Environmental = Aeneus_environmental,
                         Watershed = Aeneus_watershed,
                         Morphology = Aeneus_morphology)
-Aeneus_SOM_tr <- train.SOM(input_data = Aeneus_SOM_data, #36 samples
+Aeneus_SOM_tr <- train.SOM(input_data = Aeneus_SOM_data, #40 samples
                            save.SOM.results = T,
                            save.SOM.results.name = "Aeneus_SOM_tr.Rdata",
                            max.NA.row = 0.5,
-                           max.NA.col = 0.2)
+                           max.NA.col = 0.5)
 
 Aeneus_SOM_kmeansBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #takes ca 3min!
                                                 clustering.method = "kmeans+BICthreshold")
-Aeneus_SOM_kmeansBICthreshold$optim_k_summary #k1 100%
+Aeneus_SOM_kmeansBICthreshold$optim_k_summary #100% k1
 Aeneus_SOM_HDBSCAN <- clustering.SOM(Aeneus_SOM_tr, #takes ca 5min!
                                      clustering.method = "HDBSCAN")
-Aeneus_SOM_HDBSCAN$optim_k_summary #k2 62%, k1 26%, k3 12%
+Aeneus_SOM_HDBSCAN$optim_k_summary #68% k2, 16% k1, 15% k3
 Aeneus_SOM_hierarchicalDB <- clustering.SOM(Aeneus_SOM_tr, #takes ca 25min!
                                             clustering.method = "hierarchical+DB")
-Aeneus_SOM_hierarchicalDB$optim_k_summary #k10 88%, k9 10%
+Aeneus_SOM_hierarchicalDB$optim_k_summary #95% k10, 4% k9
 Aeneus_SOM_GMMBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #ca. 15min
                                              clustering.method = "GMM+BICthreshold")
 Aeneus_SOM_GMMBICthreshold$optim_k_summary #k3 37%, k2 32%, k4 17%, k5 7%, k6 5%
@@ -472,16 +471,15 @@ plot.layer.importance.leaveoneout.SOM(Aeneus_SOM, #this will take 10-20min (runn
 
 
 
-################################################################################
-#### Pocillopora corals in Indo-Pacific (Oury et al 2023)
-################################################################################
+
+#### Pocillopora corals in Indo-Pacific (Oury et al 2023) ######################
 
 ## https://doi.org/10.1016/j.ympev.2023.107803
 ## 364 colonies
 ## Target enrichment of 1,248 UCE and 1,385 exon loci
 ## Morphological data: 14 traits
-##	Four biogeographic region as binary (somewhat equivalent to spatial data)
-##	Two haplotype markers for symbiosis: 31 columns as binary
+## Four biogeographic region as binary (somewhat equivalent to spatial data)
+## Two haplotype markers for symbiosis: 31 columns as binary
 ## 21 species hypotheses inferred by genomics
 ## 13 species strongly supported by all approaches (while six could represent either undescribed or nominal species that have been synonymised incorrectly)
 
@@ -573,7 +571,7 @@ Pocillopora_species_names[Pocillopora_species_names == "-"] <- NA
 Pocillopora_species_names[Pocillopora_species_names == "?"] <- NA
 
 
-## Microsatellite genotypes
+## Extract and process microsatellite genotypes
 Pocillopora_microsat_cols <- grep("\\.(1|2)$", names(Pocillopora_multiple_traits), value = TRUE)
 Pocillopora_microsatellites <- dplyr::select(Pocillopora_multiple_traits, Sample_Name, dplyr::all_of(Pocillopora_microsat_cols))
 Pocillopora_microsatellites <- dplyr::mutate(Pocillopora_microsatellites, dplyr::across(-Sample_Name, ~ dplyr::na_if(., "-")))
@@ -591,7 +589,7 @@ ncol(Pocillopora_microsatellites) #number of variables: 26
 nrow(Pocillopora_microsatellites) #number of samples: 367
 
 
-## Haplotype markers (ORF and PocHistone) for symbiosis as binary
+##Extract and process haplotype markers (ORF and PocHistone) for symbiosis as binary
 Pocillopora_symbiosis_haplotypes <- Pocillopora_multiple_traits #copy original
 Pocillopora_symbiosis_haplotypes <- dplyr::mutate(Pocillopora_symbiosis_haplotypes, dplyr::across(c(ORF, PocHistone), function(marker_values) dplyr::na_if(marker_values, "-"))) #replace "-" with NA
 Pocillopora_symbiosis_haplotypes <- dplyr::mutate(Pocillopora_symbiosis_haplotypes, dplyr::across(c(ORF, PocHistone), function(marker_values) dplyr::na_if(marker_values, "?"))) #replace "?" with NA
@@ -623,7 +621,7 @@ ncol(Pocillopora_symbiosis_haplotypes) #number of variables: 31
 nrow(Pocillopora_symbiosis_haplotypes) #number of samples: 367
 
 
-## Biogeographic region as binary
+## Extract and process biogeographic region as binary
 Pocillopora_biogeography <- dplyr::select(Pocillopora_multiple_traits, Sample_Name, Province)
 Pocillopora_biogeography <- dplyr::mutate(Pocillopora_biogeography, Province = dplyr::na_if(Province, "-"))
 Pocillopora_biogeography$na_count <- is.na(Pocillopora_biogeography$Province)
@@ -687,8 +685,8 @@ Pocillopora_SOM_data <- list(SNP = Pocillopora_SNP,
                              Biogeography = Pocillopora_biogeography,
                              Symbiosis_haplotypes = Pocillopora_symbiosis_haplotypes)
 Pocillopora_SOM_tr <- train.SOM(input_data = Pocillopora_SOM_data, #76 samples
-                                max.NA.row = 0.4,
-                                max.NA.col = 0.25,
+                                max.NA.row = 0.5,
+                                max.NA.col = 0.5,
                                 save.SOM.results = T,
                                 save.SOM.results.name = "Pocillopora_SOM_tr.Rdata")
 
