@@ -99,8 +99,8 @@ Monticola71_SOM_data <- list(SNP = Monticola71_SNP,
 Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples
                                 save.SOM.results = T,
                                 save.SOM.results.name = "Monticola71_SOM_tr.Rdata",
-                                max.NA.row = 0.6,
-                                max.NA.col = 0.2,
+                                max.NA.row = 0.5,
+                                max.NA.col = 0.5,
                                 N.cores = 5)
 
 Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #takes ca 3min!
@@ -259,7 +259,6 @@ Pascagoula_SOM_tr <- train.SOM(input_data = Pascagoula_SOM_data, #22 samples
                                max.NA.row = 0.5,
                                max.NA.col = 0.5,
                                save.SOM.results = T,
-                               overwrite.SOM.results = F,
                                save.SOM.results.name = "Pascagoula_SOM_tr.Rdata",
                               grid.multiplier = 4)
 
@@ -329,7 +328,7 @@ Pascagoula_SOM_cluster2$optim_k_summary #k1 100%
 
 
 
-#### Desmognathus seepage salamanders in southestern US (Pyron et al. 2024) ####
+#### Desmognathus seepage salamanders in southeastern US (Pyron et al. 2024) ####
 
 ## www.https://doi.org/10.1111/mec.17219
 ## "Aeneus56"
@@ -350,9 +349,9 @@ Aeneus_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2024/aeneus56.
 
 ## Import and process genetic SNP data
 Aeneus_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_et_al_2024/aeneus56.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
-                                   missing.loci.cutoff.lenient = 0.4,
-                                   missing.loci.cutoff.final = 0.2,
-                                   missing.individuals.cutoff = 0.3)
+                                   missing.loci.cutoff.lenient = 0.7,
+                                   missing.loci.cutoff.final = 0.5,
+                                   missing.individuals.cutoff = 0.5)
 rownames(Aeneus_SNP) <- Aeneus_data$Sample[match(rownames(Aeneus_SNP), rownames(Aeneus_data))] #rename alleles
 ncol(Aeneus_SNP) #number of loci: 7667 
 nrow(Aeneus_SNP) #number of samples: 51
@@ -472,7 +471,7 @@ plot.layer.importance.leaveoneout.SOM(Aeneus_SOM, #this will take 10-20min (runn
 
 
 
-#### Pocillopora corals in Indo-Pacific (Oury et al 2023) ######################
+#### Pocillopora corals in Indo-Pacific (Oury et al. 2023) ######################
 
 ## https://doi.org/10.1016/j.ympev.2023.107803
 ## 364 colonies
@@ -484,8 +483,8 @@ plot.layer.importance.leaveoneout.SOM(Aeneus_SOM, #this will take 10-20min (runn
 ## 13 species strongly supported by all approaches (while six could represent either undescribed or nominal species that have been synonymised incorrectly)
 
 ## Import and process genetic data
-Pocillopora_vcf_file <- "../Empirical_examples/Oury et al 2023/Pocillopora_361ADN_1559SNP.vcf" #VCF file path
-Pocillopora_gds_file <- "../Empirical_examples/Oury et al 2023/Pocillopora.gds" #GDS file path
+Pocillopora_vcf_file <- "../Empirical_examples/Oury_et_al_2023/Pocillopora_361ADN_1559SNP.vcf" #VCF file path
+Pocillopora_gds_file <- "../Empirical_examples/Oury_et_al_2023/Pocillopora.gds" #GDS file path
 SeqArray::seqVCF2GDS(Pocillopora_vcf_file, Pocillopora_gds_file, storage.option = "LZ4_RA.max", verbose = FALSE) #convert VCF to GDS
 Pocillopora_gds <- SeqArray::seqOpen(Pocillopora_gds_file) #open GDS file
 Pocillopora_geno <- SeqArray::seqGetData(Pocillopora_gds, "genotype") #get genotype array
@@ -505,7 +504,7 @@ ncol(Pocillopora_SNP) #number of loci: 1559
 
 
 ## Import and process morphology dataset
-Pocillopora_morphology <- readr::read_delim(file = "../Empirical_examples/Oury et al 2023/Micromorphometry_Pocillopora_170ind.csv", #import csv
+Pocillopora_morphology <- readr::read_delim(file = "../Empirical_examples/Oury_et_al_2023/Micromorphometry_Pocillopora_170ind.csv", #import csv
                                             delim = ";",
                                             quote = "\"",
                                             escape_double = TRUE,
@@ -553,7 +552,7 @@ nrow(Pocillopora_morphology) #number of samples: 175
 
 
 ## Import csv file with multiple traits and meta data
-Pocillopora_multiple_traits <- readr::read_delim(file = "../Empirical_examples/Oury et al 2023/DB_Pocillopora_genomic_364ind.csv",
+Pocillopora_multiple_traits <- readr::read_delim(file = "../Empirical_examples/Oury_et_al_2023/DB_Pocillopora_genomic_364ind.csv",
                                                  delim = ";",
                                                  quote = "\"",
                                                  escape_double = TRUE,
@@ -815,15 +814,15 @@ Pocillopora_cluster1_data_k3 <- lapply(Pocillopora_SOM_kmeansBICelbow_k3$input_d
 Pocillopora_cluster2_data_k3 <- lapply(Pocillopora_SOM_kmeansBICelbow_k3$input_data, function(x) x[Pocillopora_cluster_samples_k3$Cluster_2, , drop = FALSE]) #cluster 2 subset
 Pocillopora_cluster3_data_k3 <- lapply(Pocillopora_SOM_kmeansBICelbow_k3$input_data, function(x) x[Pocillopora_cluster_samples_k3$Cluster_3, , drop = FALSE]) #cluster 3 subset
 SOM_Pocillopora_cluster1_k3 <- train.SOM(Pocillopora_cluster1_data_k3, 
-                                         max.NA.row = 0.4, max.NA.col = 0.25, grid.multiplier = 4) #25 samples
+                                         max.NA.row = 0.5, max.NA.col = 0.5, grid.multiplier = 4) #25 samples
 SOM_Pocillopora_cluster1_k3 <- clustering.SOM(SOM_Pocillopora_cluster1_k3, clustering.method = "kmeans+BICelbow", max.k = 15)
 SOM_Pocillopora_cluster1_k3$optim_k_summary #k1 100%
 SOM_Pocillopora_cluster2_k3 <- train.SOM(Pocillopora_cluster2_data_k3, 
-                                         max.NA.row = 0.4, max.NA.col = 0.25, grid.multiplier = 4) #26 samples
+                                         max.NA.row = 0.5, max.NA.col = 0.5, grid.multiplier = 4) #26 samples
 SOM_Pocillopora_cluster2_k3 <- clustering.SOM(SOM_Pocillopora_cluster2_k3, clustering.method = "kmeans+BICelbow", max.k = 15)
 SOM_Pocillopora_cluster2_k3$optim_k_summary #k1 48%, k5 20%, k15 17%
 SOM_Pocillopora_cluster3_k3 <- train.SOM(Pocillopora_cluster3_data_k3, 
-                                         max.NA.row = 0.4, max.NA.col = 0.25, grid.multiplier = 4) #25 samples
+                                         max.NA.row = 0.5, max.NA.col = 0.55, grid.multiplier = 4) #25 samples
 SOM_Pocillopora_cluster3_k3 <- clustering.SOM(SOM_Pocillopora_cluster3_k3, clustering.method = "kmeans+BICelbow", max.k = 15)
 SOM_Pocillopora_cluster3_k3$optim_k_summary #k1 99%
 
@@ -835,9 +834,8 @@ plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3_updated, bottom.margin = 8.
 
 
 
-################################################################################
-#### Polygonia anglewing butterflies in Western Canada (Dupuis et al 2018)
-################################################################################
+                                       
+#### Polygonia anglewing butterflies in Western Canada (Dupuis et al. 2018) ####
 
 ## https://doi.org/10.1093/zoolinnean/zlx081
 ## 4 inferred species
@@ -848,7 +846,7 @@ plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3_updated, bottom.margin = 8.
 ## Categorical/binary and continuous morphological data (wing color, categorical color scores and morphotype)
 
 ## Import and process genetic SNP data
-Polygonia_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Dupuis et al 2018/Polygonia_961SNPs.vcf", #filter loci and individuals and create SNP matrix dataframe
+Polygonia_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Dupuis_et_al_2018/Polygonia_961SNPs.vcf", #filter loci and individuals and create SNP matrix dataframe
                                       missing.loci.cutoff.lenient = 0.7,
                                       missing.loci.cutoff.final = 0.5,
                                       missing.individuals.cutoff = 0.5)
@@ -858,7 +856,7 @@ nrow(Polygonia_SNP) #number of samples: 237
 
 
 ## Import and filter COI data
-Polygonia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Dupuis et al 2018/Polygonia_COI.nex",
+Polygonia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Dupuis_et_al_2018/Polygonia_COI.nex",
                                       make.biallelic = F,
                                       missing.loci.cutoff.lenient = 0.7, 
                                       missing.loci.cutoff.final = 0.5,
@@ -871,13 +869,13 @@ nrow(Polygonia_COI) #number of samples: 315
 
 
 ## Import and process RGB values
-Polygonia_RGB <- read.delim("../Empirical_examples/Dupuis et al 2018/Polygonia_RGB_characters.txt", stringsAsFactors = FALSE)
+Polygonia_RGB <- read.delim("../Empirical_examples/Dupuis_et_al_2018/Polygonia_RGB_characters.txt", stringsAsFactors = FALSE)
 rownames(Polygonia_RGB) <- Polygonia_RGB$Species
 Polygonia_RGB <- magrittr::`%>%`(Polygonia_RGB, dplyr::select(-Name, -Species)) #remove columns
 
 
 ## Import and process wing character scores
-Polygonia_wing_scores <- read.delim("../Empirical_examples/Dupuis et al 2018/Polygonia_visually_scored.txt", stringsAsFactors = FALSE)
+Polygonia_wing_scores <- read.delim("../Empirical_examples/Dupuis_et_al_2018/Polygonia_visually_scored.txt", stringsAsFactors = FALSE)
 rownames(Polygonia_wing_scores) <- Polygonia_wing_scores$Name
 Polygonia_wing_scores <- Polygonia_wing_scores |>
   dplyr::select(-Name, -Species) |> #remove columns
@@ -899,7 +897,7 @@ Polygonia_wing_scores$Wing_character_8 <- NULL
 
 
 ## Import and process meta data with spatial data, species names and morphotype
-Polygonia_metadata <- read.csv("../Empirical_examples/Dupuis et al 2018/Polygonia_metadata.csv",header = T, sep = ";")
+Polygonia_metadata <- read.csv("../Empirical_examples/Dupuis_et_al_2018/Polygonia_metadata.csv",header = T, sep = ";")
 rownames(Polygonia_metadata) <- Polygonia_metadata$ID
 nrow(Polygonia_metadata) #number of samples: 265
 
@@ -947,7 +945,7 @@ nrow(Polygonia_morphology_categorical) #number of samples: 217
 
 
 ## Import and process environmental dataset (variables extracted and processed by separate R script based on coordinates)
-Polygonia_environmental <- read.csv("../Empirical_examples/Dupuis et al 2018/Polygonia_environmental.csv",
+Polygonia_environmental <- read.csv("../Empirical_examples/Dupuis_et_al_2018/Polygonia_environmental.csv",
                                     row.names = 1, header = TRUE)
 Polygonia_environmental <- dplyr::select(Polygonia_environmental, -Latitude, -Longitude, -Elevation)
 Polygonia_environmental_rownames <- rownames(Polygonia_environmental) #save rownames
@@ -1286,9 +1284,7 @@ Polygonia_pairwise_Fst$Fst_table
 
 
 
-################################################################################
-#### Viburnum woody shrubs in Eastern North America (Spriggs et al 2018)
-################################################################################
+#### Viburnum woody shrubs in Eastern North America (Spriggs et al. 2018) ######
 
 ## https://doi.org/10.1093/sysbio/syy084
 ## SNP data based on RAD seq: 2-3k SNPs
@@ -1299,7 +1295,7 @@ Polygonia_pairwise_Fst$Fst_table
 
 
 ## Import and process genetic SNP data
-Viburnum_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Spriggs et al 2018/nudum-c88-d6-min50.vcf.gz",
+Viburnum_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Spriggs_et_al_2018/nudum-c88-d6-min50.vcf.gz",
                                      missing.loci.cutoff.lenient = 0.7,
                                      missing.loci.cutoff.final = 0.5,
                                      missing.individuals.cutoff = 0.5)
@@ -1309,7 +1305,7 @@ nrow(Viburnum_SNP) #number of samples: 65
 
 
 ## Import and process morphological dataset
-Viburnum_morphology <- read.delim("../Empirical_examples/Spriggs et al 2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
+Viburnum_morphology <- read.delim("../Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
 Viburnum_morphology <- Viburnum_morphology[!duplicated(Viburnum_morphology$Individual), ] #remove duplicate IDs
 rownames(Viburnum_morphology) <- Viburnum_morphology$Individual #add rownames
 Viburnum_morphology$Individual <- NULL
@@ -1353,7 +1349,7 @@ nrow(Viburnum_morphology) #number of samples: 145
 
 
 ## Import and process metadata
-Viburnum_metadata <- read.delim("../Empirical_examples/Spriggs et al 2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
+Viburnum_metadata <- read.delim("../Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
 Viburnum_metadata <- Viburnum_metadata[!duplicated(Viburnum_metadata$Individual), ] #remove duplicate IDs
 rownames(Viburnum_metadata) <- Viburnum_metadata$Individual #add rownames
 Viburnum_metadata <- Viburnum_metadata[, c("State", "County"), drop = FALSE] #only keep State and County columns
@@ -1395,8 +1391,8 @@ nrow(Viburnum_metadata) #shared number of samples: 52
 Viburnum_SOM_data <- list(Morphology = Viburnum_morphology, 
                           SNP = Viburnum_SNP)
 Viburnum_SOM_tr <- train.SOM(Viburnum_SOM_data, #46 samples
-                             max.NA.row = 0.4,
-                             max.NA.col = 0.53,
+                             max.NA.row = 0.5,
+                             max.NA.col = 0.5,
                              save.SOM.results.name = "Viburnum_SOM_tr.Rdata",
                              save.SOM.results = T)
 
@@ -1505,30 +1501,29 @@ Viburnum_cluster2_data <- lapply(Viburnum_SOM$input_data, function(x) x[Viburnum
 
 Viburnum_SOM_tr_cluster1 <- train.SOM(Viburnum_cluster1_data, #25 samples
                                       grid.multiplier = 4,
-                                      max.NA.row = 0.4,
-                                      max.NA.col = 0.53)
+                                      max.NA.row = 0.5,
+                                      max.NA.col = 0.5)
 Viburnum_SOM_cluster1 <- clustering.SOM(Viburnum_SOM_tr_cluster1,
                                         clustering.method = "kmeans+BICelbow")
 Viburnum_SOM_cluster1$optim_k_summary #k1 100%
 
 Viburnum_SOM_tr_cluster2 <- train.SOM(Viburnum_cluster2_data, #21 samples
                                       grid.multiplier = 4,
-                                      max.NA.row = 0.4,
-                                      max.NA.col = 0.53)
+                                      max.NA.row = 0.5,
+                                      max.NA.col = 0.5)
 Viburnum_SOM_cluster2 <- clustering.SOM(Viburnum_SOM_tr_cluster2,
                                         clustering.method = "kmeans+BICelbow")
 Viburnum_SOM_cluster2$optim_k_summary #k1 100%
 
 
 
-################################################################################
-#### Empirical example: Microcebus lemurs dataset - Madagaskar (van Elst et al 2024)
-################################################################################
+                                 
+#### Microcebus lemurs dataset - Madagaskar (van Elst et al 2024) #######
 library(dplyr)
 
 ## Import and process genetic SNP data
 Microcebus_SNP <- process.SNP.data.SOM(
-  vcf.path = "../Empirical_examples/van Elst et al 2024/allScaffolds.annot.SNP.minInd.DP.mac.GATKfilt-hard.maxmiss0.05.thinned.vcf.gz", #VCF file path
+  vcf.path = "../Empirical_examples/van_Elst_et_al_2024/allScaffolds.annot.SNP.minInd.DP.mac.GATKfilt-hard.maxmiss0.05.thinned.vcf.gz", #VCF file path
   missing.loci.cutoff.lenient = 0.7,
   missing.loci.cutoff.final = 0.5,
   missing.individuals.cutoff = 0.5)
@@ -1539,7 +1534,7 @@ nrow(Microcebus_SNP) #number of samples: 213
 
 
 ## Import and process multiple data dataset 2 containing range of data types
-Microcebus_multiple_data2 <- utils::read.csv("../Empirical_examples/van Elst et al 2024/01_Microcebus_morphological_data.csv", 
+Microcebus_multiple_data2 <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/01_Microcebus_morphological_data.csv", 
                                              stringsAsFactors = FALSE, header = T, sep = ";")
 Microcebus_multiple_data2 <- Microcebus_multiple_data2 %>% #only keep individuals that are Rad sequenced (have SNP data)
   dplyr::filter(RADSeq.available != "no" & !is.na(RADSeq.available))
@@ -1547,7 +1542,7 @@ rownames(Microcebus_multiple_data2) <- Microcebus_multiple_data2$Individual.ID
 
 
 ## Import and process multiple data dataset containing range of data types
-Microcebus_multiple_data <- utils::read.csv("../Empirical_examples/van Elst et al 2024/data.csv", 
+Microcebus_multiple_data <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/data.csv", 
                                             stringsAsFactors = FALSE, header = T, sep = ";")
 Microcebus_multiple_data <- Microcebus_multiple_data[!duplicated(Microcebus_multiple_data$Individual.ID), ] #remove duplicate IDs
 Microcebus_multiple_data <- Microcebus_multiple_data[!is.na(Microcebus_multiple_data$Individual.ID) & Microcebus_multiple_data$Individual.ID != "", ] # drop rows where Individual.ID is NA or empty-string
@@ -1843,7 +1838,7 @@ nrow(Microcebus_metadata) #number of samples: 73
 
 
 ## Import and process environmental dataset (variables extracted and processed by separate R script based on coordinates)
-Microcebus_environmental <- utils::read.csv("../Empirical_examples/van Elst et al 2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE) %>%
+Microcebus_environmental <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE) %>%
   tibble::rownames_to_column("ID")
 Microcebus_Bio_variables <- Microcebus_multiple_data_combined %>% #extract Bio variables
   tibble::rownames_to_column("ID") %>%
@@ -1868,14 +1863,14 @@ nrow(Microcebus_environmental) #number of samples: 75
 Microcebus_spatial <- Microcebus_multiple_data_combined %>% 
   dplyr::select(latitude, longitude) %>% #add Latitude and Longitude
   dplyr::rename(Latitude = latitude, Longitude = longitude)
-Microcebus_environmental_spatial <- utils::read.csv("../Empirical_examples/van Elst et al 2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
+Microcebus_environmental_spatial <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
 Microcebus_environmental_spatial <- Microcebus_environmental_spatial %>% dplyr::select(Elevation)
 Microcebus_spatial$Elevation <- Microcebus_environmental_spatial[rownames(Microcebus_spatial), "Elevation"]
 Microcebus_spatial$Elevation <- Microcebus_environmental_spatial[rownames(Microcebus_spatial), "Elevation"]
 nrow(Microcebus_spatial) #number of samples: 73
 
 
-#### Match all datasets to rownames in morphology dataset
+## Match all datasets to rownames in morphology dataset
 shared_ids <- rownames(Microcebus_morphology) #define target set
 Microcebus_SNP <- Microcebus_SNP[shared_ids, , drop = FALSE] #match to morphology
 Microcebus_environmental <- Microcebus_environmental[shared_ids, , drop = FALSE]
@@ -2054,12 +2049,11 @@ table(Microcebus_ancestry_SOM_cluster3$Species_revised)
 
 
 
-################################################################################
-#### Elysia sea slugs from the Western Atlantic (Krug et al 2026)
-################################################################################
+                                   
+#### Elysia sea slugs from the Western Atlantic (Krug et al. 2026) #############
 
 ## Import and filter mitochondrial DNA data
-Elysia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Krug et al 2026/Elysia_mtDNA_expanded.nex",
+Elysia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Krug_et_al_2026/Elysia_mtDNA_expanded.nex",
                                    missing.loci.cutoff.lenient = 0.7,
                                    missing.loci.cutoff.final = 0.5,
                                    missing.individuals.cutoff = 0.5)
@@ -2068,7 +2062,7 @@ nrow(Elysia_COI) #number of samples: 282
 
 
 ## Import meta data
-Elysia_metadata <- read.csv("../Empirical_examples/Krug et al 2026/Elysia_metadata_updated.csv",
+Elysia_metadata <- read.csv("../Empirical_examples/Krug_et_al_2026/Elysia_metadata_updated.csv",
                             header = TRUE,
                             stringsAsFactors = FALSE,
                             check.names = FALSE)
@@ -2083,7 +2077,7 @@ nrow(Elysia_spatial) #number of samples: 282
 
 
 ## Import environmental data (obtained via geodata::bio_oracle)
-Elysia_environmental <- read.csv("../Empirical_examples/Krug et al 2026/Elysia_environmental.csv",
+Elysia_environmental <- read.csv("../Empirical_examples/Krug_et_al_2026/Elysia_environmental.csv",
                                  header = TRUE,
                                  stringsAsFactors = FALSE,
                                  row.names = 1)
