@@ -53,10 +53,11 @@ nrow(Monticola71_spatial) #number of samples: 71
 
 
 ## Create environmental dataset and binary watershed variables (other variables extracted and processed by separate R script based on coordinates)
-Monticola71_environmental <- read.csv("../Empirical_examples/Pyron_2023/Monticola71_environmental.csv", row.names = 1, header = TRUE) #read CSV with rownames
+Monticola71_environmental <- read.csv("Test data/Pyron_2023/Monticola71_environmental.csv", header = TRUE) #read CSV
+rownames(Monticola71_environmental) <- Monticola71_environmental$Sample
+Monticola71_environmental <- Monticola71_environmental[, !names(Monticola71_environmental) %in% c("Sample", "ID")] #remove ID columns
 Monticola71_environmental <- Monticola71_environmental[, !names(Monticola71_environmental) %in% c("Latitude", "Longitude", "Elevation")] #remove spatial variables
-Monticola71_environmental <- as.data.frame(lapply(Monticola71_environmental, as.numeric)) #ensure numeric
-rownames(Monticola71_environmental) <- Monticola71_data$Sample #assign rownames
+Monticola71_environmental[] <- lapply(Monticola71_environmental, as.numeric) #ensure numeric
 rownames(Monticola71_data) <- Monticola71_data$Sample #assign rownames
 Monticola71_watershed <- make.cols.binary.SOM(dataframe = Monticola71_data,
                                               make.binary.cols = c("lvl4", "huc2", "huc4", "huc6", "huc8", "huc10", "huc12"))
@@ -106,16 +107,16 @@ Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #takes 
 Monticola71_SOM_kmeansBICthreshold$optim_k_summary #100% k2
 Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #takes ca 5min!
                                           clustering.method = "HDBSCAN")
-Monticola71_SOM_HDBSCAN$optim_k_summary #88% k2, 9% k1
+Monticola71_SOM_HDBSCAN$optim_k_summary #81% k2, 17% k1
 Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #takes ca 30min!
                                                  clustering.method = "hierarchical+DB")
-Monticola71_SOM_hierarchicalDB$optim_k_summary #79% k2, 11% k3, 8% k10
+Monticola71_SOM_hierarchicalDB$optim_k_summary #69% k2, 30% k3
 Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #ca. 15min
                                                   clustering.method = "GMM+BICthreshold")
-Monticola71_SOM_GMMBICthreshold$optim_k_summary #88% k2, 12% k3
+Monticola71_SOM_GMMBICthreshold$optim_k_summary #53% k3, 46% k2
 Monticola71_SOM_OPTICSSilhouette <- clustering.SOM(Monticola71_SOM_tr, #ca 5min
                                                    clustering.method = "OPTICS+Silhouette")
-Monticola71_SOM_OPTICSSilhouette$optim_k_summary #59% k1, 40% k2
+Monticola71_SOM_OPTICSSilhouette$optim_k_summary #54% k1, 44% k2
 Monticola71_SOM_kmeansBICelbow <- clustering.SOM(Monticola71_SOM_tr, #ca 3min
                                                  clustering.method = "kmeans+BICelbow")
 Monticola71_SOM_kmeansBICelbow$optim_k_summary #100% k2
@@ -152,7 +153,7 @@ Monticola71_cluster_samples <- split(rownames(Monticola71_SOM$ancestry_matrix), 
 Monticola71_cluster1_data <- lapply(Monticola71_SOM$input_data, function(x) x[Monticola71_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
 Monticola71_cluster2_data <- lapply(Monticola71_SOM$input_data, function(x) x[Monticola71_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 
-Monticola71_SOM_tr_cluster1 <- train.SOM(Monticola71_cluster1_data,  
+Monticola71_SOM_tr_cluster1 <- train.SOM(Monticola71_cluster1_data, #49 samples
                                          grid.multiplier = 4,
                                          max.NA.row = 0.5,
                                          max.NA.col = 0.5)
@@ -160,7 +161,7 @@ Monticola71_SOM_cluster1 <- clustering.SOM(Monticola71_SOM_tr_cluster1,
                                            clustering.method = "kmeans+BICelbow",
                                            max.k = 5)
 Monticola71_SOM_cluster1$optim_k_summary #k1 100% support
-Monticola71_SOM_tr_cluster2 <- train.SOM(Monticola71_cluster2_data,
+Monticola71_SOM_tr_cluster2 <- train.SOM(Monticola71_cluster2_data, #22 samples
                                          grid.multiplier = 4,
                                          max.NA.row = 0.5,
                                          max.NA.col = 0.5)
@@ -210,10 +211,11 @@ nrow(Pascagoula_spatial) #number of samples: 22
 
 
 ## Create environmental dataset and binary watershed variables (other variables extracted and processed by separate R script based on coordinates)
-Pascagoula_environmental <- read.csv("../Empirical_examples/Pyron_et_al_2022/Pascagoula_environmental.csv", row.names = 1, header = TRUE) #read CSV with rownames
+Pascagoula_environmental <- read.csv("Test data/Pyron_et_al_2022/Pascagoula22_environmental.csv", header = TRUE) #read CSV
+rownames(Pascagoula_environmental) <- Pascagoula_environmental$Sample
+Pascagoula_environmental <- Pascagoula_environmental[, !names(Pascagoula_environmental) %in% c("Sample", "ID")] #remove ID columns
 Pascagoula_environmental <- Pascagoula_environmental[, !names(Pascagoula_environmental) %in% c("Latitude", "Longitude", "Elevation")] #remove spatial variables
-Pascagoula_environmental <- as.data.frame(lapply(Pascagoula_environmental, as.numeric)) #ensure numeric
-rownames(Pascagoula_environmental) <- Pascagoula_data$Sample #assign rownames
+Pascagoula_environmental[] <- lapply(Pascagoula_environmental, as.numeric) #ensure numeric
 rownames(Pascagoula_data) <- Pascagoula_data$Sample #assign rownames
 Pascagoula_watershed <- make.cols.binary.SOM(dataframe = Pascagoula_data,
                                              make.binary.cols = c("lvl4", "huc2", "huc4", "huc6", "huc8", "huc10", "huc12"))
@@ -222,7 +224,7 @@ Pascagoula_environmental <- (NicheDiv::transform.skewed.variables(Pascagoula_env
 Pascagoula_environmental <- remove.lowCV.multicollinearity.SOM(Pascagoula_environmental, #remove highly correlated and low-variance variables
                                                                CV.threshold = 0.05,
                                                                cor.threshold = 0.9)
-ncol(Pascagoula_environmental) #number of variables: 47
+ncol(Pascagoula_environmental) #number of variables: 56
 nrow(Pascagoula_environmental) #number of samples: 22
 ncol(Pascagoula_watershed) #number of variables: 42
 nrow(Pascagoula_watershed) #number of samples: 22
@@ -262,22 +264,22 @@ Pascagoula_SOM_tr <- train.SOM(input_data = Pascagoula_SOM_data, #22 samples
 
 Pascagoula_SOM_kmeansBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 3min!
                                                     clustering.method = "kmeans+BICthreshold")
-Pascagoula_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
+Pascagoula_SOM_kmeansBICthreshold$optim_k_summary #100% k2
 Pascagoula_SOM_HDBSCAN <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 5min!
                                          clustering.method = "HDBSCAN")
-Pascagoula_SOM_HDBSCAN$optim_k_summary #k2 86%, k1 9%, k3 6%
+Pascagoula_SOM_HDBSCAN$optim_k_summary #85% k2, 12% k3 
 Pascagoula_SOM_hierarchicalDB <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 20min!
                                                 clustering.method = "hierarchical+DB")
-Pascagoula_SOM_hierarchicalDB$optim_k_summary #k10 75%, k2 18%, k9 7%
+Pascagoula_SOM_hierarchicalDB$optim_k_summary #95% k10, 5% k9%
 Pascagoula_SOM_GMMBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #ca. 15min
                                                  clustering.method = "GMM+BICthreshold")
-Pascagoula_SOM_GMMBICthreshold$optim_k_summary #k2 76%, k3 18%
+Pascagoula_SOM_GMMBICthreshold$optim_k_summary #42% k2, 40% k3, 18% k4
 Pascagoula_SOM_OPTICSSilhouette <- clustering.SOM(Pascagoula_SOM_tr, #ca 5min
                                                   clustering.method = "OPTICS+Silhouette")
-Pascagoula_SOM_OPTICSSilhouette$optim_k_summary #k2 70%, k1 29%
+Pascagoula_SOM_OPTICSSilhouette$optim_k_summary #57% k1, 42% k2
 Pascagoula_SOM_kmeansBICelbow <- clustering.SOM(Pascagoula_SOM_tr, #ca 3min
                                                 clustering.method = "kmeans+BICelbow")
-Pascagoula_SOM_kmeansBICelbow$optim_k_summary #k2 100%
+Pascagoula_SOM_kmeansBICelbow$optim_k_summary #100% k2
 
 
 ## Evaluate and plot results
