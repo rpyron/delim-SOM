@@ -106,15 +106,15 @@ Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples
 Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #takes ca 3min!
                                                      clustering.method = "kmeans+BICthreshold", 
                                                      save.SOM.results.name = "Monticola71_SOM_kmeansBICthreshold.Rdata")
-Monticola71_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
+Monticola71_SOM_kmeansBICthreshold$optim_k_summary #k2 99%
 Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #takes ca 5min!
                                           clustering.method = "HDBSCAN",
                                           save.SOM.results.name = "Monticola71_SOM_HDBSCAN.Rdata")
-Monticola71_SOM_HDBSCAN$optim_k_summary #k2 81%, k1 17%
+Monticola71_SOM_HDBSCAN$optim_k_summary #k2 88%, k3 7%
 Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #takes ca 30min!
                                                  clustering.method = "hierarchical+DB",
                                                  save.SOM.results.name = "Monticola71_SOM_hierarchicalDB.Rdata")
-Monticola71_SOM_hierarchicalDB$optim_k_summary #k2 69%, k3 30%
+Monticola71_SOM_hierarchicalDB$optim_k_summary #k2 49%, k10 47%
 Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #ca. 15min
                                                   clustering.method = "GMM+BICthreshold",
                                                   save.SOM.results.name = "Monticola71_SOM_GMMBICthreshold.Rdata")
@@ -122,7 +122,7 @@ Monticola71_SOM_GMMBICthreshold$optim_k_summary #k3 53%, k2 46%
 Monticola71_SOM_OPTICSSilhouette <- clustering.SOM(Monticola71_SOM_tr, #ca 5min
                                                    clustering.method = "OPTICS+Silhouette",
                                                    save.SOM.results.name = "Monticola71_SOM_OPTICSSilhouette.Rdata")
-Monticola71_SOM_OPTICSSilhouette$optim_k_summary #k1 54%, k2 44%
+Monticola71_SOM_OPTICSSilhouette$optim_k_summary #k1 95%, k2 5%
 Monticola71_SOM_kmeansBICelbow <- clustering.SOM(Monticola71_SOM_tr, #ca 3min
                                                  clustering.method = "kmeans+BICelbow",
                                                  save.SOM.results.name = "Monticola71_SOM_kmeansBICelbow.Rdata")
