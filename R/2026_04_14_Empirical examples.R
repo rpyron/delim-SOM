@@ -39,7 +39,7 @@ Monticola71_data <- read.csv(file = "../Empirical_examples/Pyron_2023/monticola7
 Monticola71_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_2023/Monticola71.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
                                         missing.loci.cutoff.lenient = 0.7,
                                         missing.loci.cutoff.final = 0.5,
-                                        missing.individuals.cutoff = 0.5)
+                                        missing.individuals.cutoff = 0.6)
 Monticola71_snp_to_sample <- Monticola71_data$Sample[match(rownames(Monticola71_SNP), rownames(Monticola71_data))] #returns RAP**** names
 rownames(Monticola71_SNP) <- Monticola71_snp_to_sample #rename SNP matrix to RAP codes
 ncol(Monticola71_SNP) #number of loci: 13031
@@ -99,7 +99,7 @@ Monticola71_SOM_data <- list(SNP = Monticola71_SNP,
 Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples
                                 save.SOM.results = T,
                                 save.SOM.results.name = "Monticola71_SOM_tr.Rdata",
-                                max.NA.row = 0.5,
+                                max.NA.row = 0.6,
                                 max.NA.col = 0.5,
                                 N.cores = 5)
 
