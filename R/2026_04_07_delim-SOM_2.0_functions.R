@@ -1167,6 +1167,9 @@ calculate.topographic.error <- function(som_model) {
     if (!any(valid_units)) return(NA_real_)
     mean(!adjacency_matrix[cbind(best_units[valid_units], second_best_units[valid_units])], na.rm = TRUE)
   }
+
+  # Free memory
+  invisible(gc())
   
   # Create function to run SOM
   messager("")
@@ -1857,6 +1860,9 @@ clustering.SOM <- function(SOM.output,
     if (!exists("SOM_results") || !all(required_fields %in% names(SOM_results))) stop("Aborted SOM clustering: could not load SOM clustering results (results do not contain expected clustering objects) - check saved file or rerun clustering")
     return(SOM_results)
   }
+
+  # Free memory
+  invisible(gc())
   
   # Create function to find nearest neighbors (following FNN get.knnx function)
   get.knnx.custom <- function(reference_data, query_data, k = 1) {
@@ -1883,7 +1889,7 @@ clustering.SOM <- function(SOM.output,
     ))
   }
 
-## Function to calculate layer-wise sample-to-unit distances
+# Function to calculate layer-wise sample-to-unit distances
 compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                                                       codebook_matrix,
                                                       distance_function = "sumofsquares"
@@ -2181,6 +2187,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Update number of replicates after optional filtering
   N.replicates <- length(SOM.output$som_models)
+  som_models_for_clustering <- SOM.output$som_models
+  layer.distance.functions <- SOM.output$layer.distance.functions
 
   # Report clustering setup
   messager("")
@@ -2188,13 +2196,10 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   messager(sprintf("Using %d SOM replicates for clustering", N.replicates))
   
   # Create function to cluster SOM models
-  replicate_clust <- function(j) {
+  replicate_clust <- function(j, som_model) {
     
     # Set seed
     base::set.seed(j + set.seed.N)
-    
-    # Extract SOM models
-    som_model <- SOM.output$som_models[[j]] 
     
     # Extract  SOM codebook vectors
     codes <- kohonen::getCodes(som_model)
@@ -2785,7 +2790,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       } else {
         sample_to_unit_distance_matrix <- compute.sample.to.unit.distance.matrix.SOM( #calculate sample-to-unit distances across layers
           som_model = som_model,
-          layer.distance.functions = SOM.output$layer.distance.functions,
+           layer.distance.functions = layer.distance.functions,
           layer.weights = NULL
         )
         replicate_ancestry_matrix <- compute.replicate.ancestry.matrix.SOM( #calculate soft cluster assignment probabilities
@@ -2818,7 +2823,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                 support_vec = support_vec,
                 support_label = support_label,
                 support_higher_is_better = support_higher_is_better,
-                som_model = som_model,
                 som_cluster = som_cluster,
                 som_N_clusters = som_N_clusters,
                 cluster_gridcell_assignments = cluster_gridcell_assignments,
@@ -2856,7 +2860,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                   "compute.layer.sample.to.unit.distance.SOM",
                   "compute.sample.to.unit.distance.matrix.SOM",
                   "compute.replicate.ancestry.matrix.SOM",
-                  "SOM.output",
+                  "layer.distance.functions",
                   "max.k",
                   "set.k",
                   "clustering.method",
@@ -2869,8 +2873,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
     results <- tryCatch(
       foreach::`%dopar%`(
-        foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel, .options.snow = progress_options),
-        replicate_clust(j)
+        foreach::foreach(j = seq_len(N.replicates), som_model = som_models_for_clustering, .packages = required_packages_parallel, .options.snow = progress_options),
+        replicate_clust(j, som_model)
       ),
       error = function(e) {
         stop(sprintf("SOM clustering aborted: %s", conditionMessage(e)), call. = FALSE)
@@ -2878,9 +2882,9 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     )
   } else {
     messager("Running SOM clustering sequentially")
-        results <- lapply(seq_len(N.replicates), function(j) {
+    results <- lapply(seq_len(N.replicates), function(j) {
       if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) messager(paste("Running clustering replicate:", j, "of", N.replicates))
-      replicate_clust(j)
+      replicate_clust(j, som_models_for_clustering[[j]])
     }) #run clustering sequentially
   }
   
@@ -2915,7 +2919,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   optim_k_summary <- cbind(Count = optim_k_vals_counts, Proportion = round(optim_k_vals_props, 2))
   rownames(optim_k_summary) <- paste0("k", k_levels)
   som_models <- lapply(results, `[[`, "som_model")
-  names(som_models) <- retained_replicates
   som_clusters <- lapply(results, `[[`, "som_cluster")
   names(som_clusters) <- retained_replicates
   cluster_gridcell_assignments <- lapply(results, `[[`, "cluster_gridcell_assignments")
@@ -2924,7 +2927,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   names(replicate_ancestry_matrices) <- retained_replicates
   
   # Build multi-layer reference data for Hungarian label synchronization
-  processed_input_data <- results[[1]]$som_model$data
+  processed_input_data <- som_models[[1]]$data
   if (!is.list(processed_input_data)) processed_input_data <- list(processed_input_data)
   processed_input_data <- lapply(processed_input_data, as.matrix)
   processed_input_data <- do.call(cbind, processed_input_data)
