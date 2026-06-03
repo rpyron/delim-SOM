@@ -2196,7 +2196,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   messager(sprintf("Using %d SOM replicates for clustering", N.replicates))
   
   # Create function to cluster SOM models
-  replicate_clust <- function(j, som_model) {
+    replicate_clust <- function(j, som_model) {
+      on.exit(invisible(gc()), add = TRUE)
     
     # Set seed
     base::set.seed(j + set.seed.N)
@@ -2880,6 +2881,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
         stop(sprintf("SOM clustering aborted: %s", conditionMessage(e)), call. = FALSE)
       }
     )
+    invisible(gc())
   } else {
     messager("Running SOM clustering sequentially")
     results <- lapply(seq_len(N.replicates), function(j) {
@@ -2918,7 +2920,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   optim_k_vals_props <- optim_k_vals_counts / sum(optim_k_vals_counts)
   optim_k_summary <- cbind(Count = optim_k_vals_counts, Proportion = round(optim_k_vals_props, 2))
   rownames(optim_k_summary) <- paste0("k", k_levels)
-  som_models <- lapply(results, `[[`, "som_model")
+   som_models <- som_models_for_clustering
+  names(som_models) <- retained_replicates
   som_clusters <- lapply(results, `[[`, "som_cluster")
   names(som_clusters) <- retained_replicates
   cluster_gridcell_assignments <- lapply(results, `[[`, "cluster_gridcell_assignments")
