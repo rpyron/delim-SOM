@@ -2196,8 +2196,9 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   messager(sprintf("Using %d SOM replicates for clustering", N.replicates))
   
   # Create function to cluster SOM models
-    replicate_clust <- function(j, som_model) {
-      on.exit(invisible(gc()), add = TRUE)
+  replicate_clust <- function(j) {
+    on.exit(invisible(gc()), add = TRUE)
+    som_model <- som_models_for_clustering[[j]]
     
     # Set seed
     base::set.seed(j + set.seed.N)
@@ -2874,8 +2875,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     doRNG::registerDoRNG(seed = set.seed.N) #set seed
     results <- tryCatch(
       foreach::`%dopar%`(
-        foreach::foreach(j = seq_len(N.replicates), som_model = som_models_for_clustering, .packages = required_packages_parallel, .options.snow = progress_options),
-        replicate_clust(j, som_model)
+        foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel, .options.snow = progress_options),
+        replicate_clust(j)
       ),
       error = function(e) {
         stop(sprintf("SOM clustering aborted: %s", conditionMessage(e)), call. = FALSE)
@@ -2886,7 +2887,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     messager("Running SOM clustering sequentially")
     results <- lapply(seq_len(N.replicates), function(j) {
       if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) messager(paste("Running clustering replicate:", j, "of", N.replicates))
-      replicate_clust(j, som_models_for_clustering[[j]])
+      replicate_clust(j)
     }) #run clustering sequentially
   }
   
