@@ -3831,6 +3831,9 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   }
   if (is.null(matrix_names) || length(matrix_names) != ncol(d.mat)) matrix_names <- paste0("Layer", seq_len(ncol(d.mat)))
   
+  # Set layer colors before reordering so colors stay linked to original layers
+  layer_colors <- setNames(col.pal(length(matrix_names)), matrix_names)
+  
   # Convert distance weights back to mean pairwise distances
   mean_pairwise_distance_matrix <- 1 / d.mat
   colnames(mean_pairwise_distance_matrix) <- matrix_names
