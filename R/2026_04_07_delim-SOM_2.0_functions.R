@@ -3866,9 +3866,8 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
     }
   }
   
-  # Prepare plot
+  # Set plot layout
   par(mfrow = c(1, 1), mar = c(bottom.margin, left.margin, top.margin, right.margin))
-  layer_colors <- setNames(col.pal(length(matrix_names)), matrix_names)
   
   # Create barplot
   barplot(height = mean_pairwise_distance,
