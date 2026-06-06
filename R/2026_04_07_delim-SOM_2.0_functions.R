@@ -3834,10 +3834,10 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   # Convert distance weights back to mean pairwise distances
   mean_pairwise_distance_matrix <- 1 / d.mat
   colnames(mean_pairwise_distance_matrix) <- matrix_names
-  if (any(!is.finite(mean_pairwise_distance) | is.na(mean_pairwise_distance))) stop("Plotting aborted: calculated mean pairwise distances contain NA or non-finite values")
   
   # Calculate mean pairwise distance across replicates
   mean_pairwise_distance <- colMeans(mean_pairwise_distance_matrix, na.rm = TRUE)
+  if (any(!is.finite(mean_pairwise_distance) | is.na(mean_pairwise_distance))) stop("Plotting aborted: calculated mean pairwise distances contain NA or non-finite values")
   
   # Order layers by descending mean pairwise distance
   order_idx <- order(mean_pairwise_distance, decreasing = TRUE)
