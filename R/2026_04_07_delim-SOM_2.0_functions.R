@@ -32,8 +32,8 @@ for (pkg in CRAN_packages) {
 ## Function to train single-layer SOM (one matrix) or multi-layer Super-SOM (multiple matrices)
 #' Train a single-layer SOM or multi-layer Super-SOM
 #'
-#' Train a Self-Organizing Map (SOM) for one numeric input matrix, or a
-#' multi-layer Super-SOM for a list of aligned numeric matrices. The function
+#' Train a Self-Organizing Map (SOM) for one input matrix, or a
+#' multi-layer Super-SOM for a list of matrices. The function
 #' performs input validation, sample and variable filtering, min-max
 #' normalization, layer-type inference, distance-function assignment,
 #' layer-weight handling, automatic or user-defined SOM grid construction,
@@ -82,11 +82,11 @@ for (pkg in CRAN_packages) {
 #'   pre-normalization layer structure: binary 0/1 layers are assigned
 #'   `"tanimoto"`, integer-like 0/1/2 dosage-like layers are assigned
 #'   `"manhattan"`, and all other numeric layers are assigned `"sumofsquares"`.
-#' @param manual.layer.weights Optional numeric vector of positive finite values
-#'   giving user-defined layer weights. If `NULL`, all layers receive equal
-#'   user-defined weights before internal `kohonen` distance normalization. 
+#' @param manual.layer.weights Optional numeric vector of positive values
+#'   giving user-defined layer weights. If `NULL` (default), all layers receive
+#'   equal user-defined weights before internal distance normalization. 
 #'   User-defined weights are combined with the internal distance-normalization 
-#'   weights used by `supersom`.
+#'   weights.
 #' @param max.NA.row A single numeric value between 0 and 1 giving the maximum
 #'   allowed fraction of missing values per row/sample before that sample is
 #'   removed during preprocessing. Default: `0.5`.
@@ -120,7 +120,7 @@ for (pkg in CRAN_packages) {
 #' `train.SOM` implements the SOM-training stage of the delim-SOM workflow. A
 #' Self-Organizing Map is an unsupervised, topology-preserving representation of
 #' multivariate data in which observations are summarized by codebook vectors
-#' arranged on a low-dimensional grid (Kohonen, 1990, 1998, 2001; Wehrens &
+#' arranged on 2D grid (Kohonen, 1990, 1998, 2001; Wehrens &
 #' Buydens, 2007). This makes SOMs useful for integrative species delimitation
 #' because genetic, phenotypic, environmental, spatial, and other multivariate
 #' data can contribute to a shared representation of similarity without requiring
