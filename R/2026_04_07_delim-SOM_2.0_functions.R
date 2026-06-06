@@ -3690,7 +3690,101 @@ plot.learning.SOM <- function(SOM.output,
 }
 
 
-## Function to plot mean pairwise distance across layers
+#' Plot layer distance scale across input layers
+#'
+#' Plot the average pairwise distance scale of each input layer from a trained
+#' multi-layer SOM object returned by `train.SOM`. The function visualizes
+#' layer-level distance scales derived from `distance_weights_matrix`, with input
+#' layers on the x-axis and average pairwise distance on the y-axis.
+#'
+#' @param SOM.output A SOM result object returned by `train.SOM`. The object must
+#'   contain `distance_weights_matrix`, a numeric matrix of replicate-specific
+#'   internal distance-normalization weights with SOM replicates in rows and
+#'   input layers in columns.
+#' @param col.pal A viridis color-palette function used to assign colors to
+#'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
+#'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
+#'   `viridis::turbo`.
+#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing output file with the same
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
+#'   the output file already exists. Default: `TRUE`.
+#' @param plot.type Character string specifying the file format when
+#'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
+#'   Default: `"svg"`.
+#' @param file.name Optional character string giving the output file name when
+#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
+#'   `NULL`.
+#' @param width Numeric value giving plot width in centimeters when
+#'   `save = TRUE`. Default: `20`.
+#' @param height Numeric value giving plot height in centimeters when
+#'   `save = TRUE`. Default: `15`.
+#' @param resolution Numeric value giving plot resolution in dots per inch for
+#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
+#' @param bottom.margin Numeric value giving the bottom plot margin. Default:
+#'   `3`.
+#' @param left.margin Numeric value giving the left plot margin. Default: `5`.
+#' @param top.margin Numeric value giving the top plot margin. Default: `3.5`.
+#' @param right.margin Numeric value giving the right plot margin. Default:
+#'   `0.5`.
+#' @param title Character string giving the main plot title. Default:
+#'   `"Layer distance scale across layers"`.
+#' @param y_axis_label Character string giving the y-axis label. Default:
+#'   `"Average pairwise distance"`.
+#'
+#' @details
+#' The plot is intended as a diagnostic visualization of whole-layer distance
+#' structure and relative scale differences among layers. The function converts
+#' the replicate-specific entries in `distance_weights_matrix` back to average
+#' pairwise distances, calculates the mean across SOM replicates, orders layers
+#' from highest to lowest mean pairwise distance, and plots these values as a
+#' barplot.
+#'
+#' Relatively large values indicate layers that generate larger raw distances
+#' before internal SOM distance normalization. Such values may reflect many
+#' variables, large variance, sparsity, binary structure, SNP structure, or the
+#' selected distance metric. Relatively small values indicate layers with more
+#' compact raw distance structure. The plot should be interpreted as a distance
+#' scale diagnostic rather than as evidence that one layer is more important than
+#' another for delimitation.
+#'
+#' @return Invisibly returns `NULL`. The function is called for its plotting side
+#'   effect. If `save = TRUE`, the plot is written to the specified file.
+#'
+#' @importFrom graphics par barplot axis
+#' @importFrom grDevices dev.cur dev.off svg png jpeg
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' # Multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
+#' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
+#'
+#' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
+#' rownames(morphology_data) <- rownames(snp_data)
+#' rownames(environment_data) <- rownames(snp_data)
+#'
+#' input_data_multi <- list(
+#'   SNPs = snp_data,
+#'   Morphology = morphology_data,
+#'   Environment = environment_data
+#' )
+#'
+#' som_multi <- train.SOM(
+#'   input_data = input_data_multi,
+#'   N.steps = 100,
+#'   N.replicates = 60
+#' )
+#'
+#' plot.layer.distance.scale.SOM(som_multi)
+#' }
+#'
+#' @export
 plot.layer.distance.scale.SOM <- function(SOM.output,
                                           col.pal = viridis::turbo, #color palette
                                           save = F, #option to save plot
@@ -3722,6 +3816,9 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   # Extract replicate-wise distance weights matrix
   d.mat <- SOM.output$distance_weights_matrix
   if (!is.matrix(d.mat)) d.mat <- as.matrix(d.mat)
+  if (!is.numeric(d.mat)) stop("Plotting aborted: distance_weights_matrix must be numeric")
+  if (any(!is.finite(d.mat) | is.na(d.mat))) stop("Plotting aborted: distance_weights_matrix contains NA or non-finite values")  
+  if (any(d.mat <= 0)) stop("Plotting aborted: distance_weights_matrix must contain only positive values")
   
   # Require multilayer input
   if (ncol(d.mat) < 2) stop("Plotting aborted: at least two layers are required for plotting")
@@ -3737,6 +3834,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   # Convert distance weights back to mean pairwise distances
   mean_pairwise_distance_matrix <- 1 / d.mat
   colnames(mean_pairwise_distance_matrix) <- matrix_names
+  if (any(!is.finite(mean_pairwise_distance) | is.na(mean_pairwise_distance))) stop("Plotting aborted: calculated mean pairwise distances contain NA or non-finite values")
   
   # Calculate mean pairwise distance across replicates
   mean_pairwise_distance <- colMeans(mean_pairwise_distance_matrix, na.rm = TRUE)
@@ -3767,7 +3865,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   
   # Prepare plot
   par(mfrow = c(1, 1), mar = c(bottom.margin, left.margin, top.margin, right.margin))
-  layer_colors <- setNames(col.pal(length(SOM.output$input_data_names)), SOM.output$input_data_names)
+  layer_colors <- setNames(col.pal(length(matrix_names)), matrix_names)
   
   # Create barplot
   barplot(height = mean_pairwise_distance,
