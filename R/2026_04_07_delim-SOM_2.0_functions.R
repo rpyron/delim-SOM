@@ -3403,7 +3403,121 @@ plot.structure.SOM <- function(SOM.output,
 }
 
 
-## Function to plot learning progress for each SOM matrix
+#' Plot SOM learning trajectories across training steps
+#'
+#' Plot replicate-level learning trajectories from a trained single-layer or
+#' multi-layer SOM object returned by `train.SOM`. The function visualizes
+#' the training-change values stored in `learning_values_list`, with training
+#' steps on the x-axis and training change on the y-axis. For multi-layer
+#' Super-SOMs, one color is used per input layer, and replicate trajectories
+#' within each layer are overlaid with transparent lines.
+#'
+#' @param SOM.output A SOM result object returned by `train.SOM`. The object must
+#'   contain `learning_values_list`, a list of numeric matrices with one matrix
+#'   per input layer.
+#' @param col.pal A viridis color-palette function used to assign colors to
+#'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
+#'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
+#'   `viridis::turbo`.
+#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing output file with the same
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
+#'   the output file already exists. Default: `TRUE`.
+#' @param plot.type Character string specifying the file format when
+#'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
+#'   Default: `"svg"`.
+#' @param file.name Optional character string giving the output file name when
+#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
+#'   `NULL`.
+#' @param width Numeric value giving plot width in centimeters when
+#'   `save = TRUE`. Default: `20`.
+#' @param height Numeric value giving plot height in centimeters when
+#'   `save = TRUE`. Default: `15`.
+#' @param resolution Numeric value giving plot resolution in dots per inch for
+#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
+#' @param bottom.margin Numeric value giving the bottom plot margin. Default:
+#'   `5`.
+#' @param left.margin Numeric value giving the left plot margin. Default: `5`.
+#' @param top.margin Numeric value giving the top plot margin. Default: `3`.
+#' @param right.margin Numeric value giving the right plot margin. Default: `2`.
+#' @param lines.alpha Numeric value between 0 and 1 giving the transparency of
+#'   replicate trajectory lines. Lower values make overlapping replicate lines
+#'   less visually dominant. Default: `0.3`.
+#' @param lines.thickness Numeric value giving the line width for replicate
+#'   trajectory lines. Default: `0.9`.
+#' @param title Optional character string giving the main plot title. If `NULL`,
+#'   a default title is generated depending on whether the SOM contains one or
+#'   multiple input layers. Default: `NULL`.
+#' @param legend.position Character string or coordinate vector specifying the
+#'   legend position. Possible character positions are `"bottomright"`,
+#'   `"bottom"`, `"bottomleft"`, `"left"`, `"topleft"`, `"top"`, `"topright"`,
+#'   `"right"`, and `"center"`. Numeric coordinate vectors such as `c(x, y)`
+#'   are also supported. Default: `"topright"`.
+#' @param legend.lines.thickness Numeric value giving the line width used in the
+#'   legend. Default: `3`.
+#' @param x.axis.label Character string giving the x-axis label. Default:
+#'   `"Training steps"`.
+#' @param y.axis.label Character string giving the y-axis label. Default:
+#'   `"Mean distance to closest codebook vector"`.
+#'
+#' @details
+#' The plot is intended as a SOM convergence diagnostic. A rapid initial decline
+#' followed by a plateau in the training-change values suggests that the map has
+#' stabilized toward a coherent representation. Persistently erratic
+#' trajectories, late-stage increases, or the absence of a clear plateau may
+#' indicate insufficient training steps, problematic scaling, weak data
+#' structure, or unstable SOM training. The plot should be interpreted as a training-progress diagnostic rather than as evidence that one layer is more important than another for delimitation.
+#'
+#' @return Invisibly returns `NULL`. The function is called for its plotting side
+#'   effect. If `save = TRUE`, the plot is written to the specified file.
+#'
+#' @importFrom graphics par plot lines legend
+#' @importFrom grDevices adjustcolor dev.cur dev.off svg png jpeg
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' # Single-layer SOM
+#' continuous_data <- matrix(rnorm(50 * 6), nrow = 50, ncol = 6)
+#' rownames(continuous_data) <- paste0("sample_", seq_len(nrow(continuous_data)))
+#' colnames(continuous_data) <- paste0("trait_", seq_len(ncol(continuous_data)))
+#'
+#' som_single <- train.SOM(
+#'   input_data = continuous_data,
+#'   N.steps = 100,
+#'   N.replicates = 60
+#' )
+#'
+#' plot.learning.SOM(som_single)
+#'
+#' # Multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
+#' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
+#'
+#' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
+#' rownames(morphology_data) <- rownames(snp_data)
+#' rownames(environment_data) <- rownames(snp_data)
+#'
+#' input_data_multi <- list(
+#'   SNPs = snp_data,
+#'   Morphology = morphology_data,
+#'   Environment = environment_data
+#' )
+#'
+#' som_multi <- train.SOM(
+#'   input_data = input_data_multi,
+#'   N.steps = 100,
+#'   N.replicates = 60
+#' )
+#'
+#' plot.learning.SOM(som_multi)
+#' }
+#'
+#' @export
 plot.learning.SOM <- function(SOM.output, 
                               col.pal = viridis::turbo, #set color palette
                               save = F, #option to save plot
@@ -3423,7 +3537,7 @@ plot.learning.SOM <- function(SOM.output,
                               legend.position = "topright", #position of legend in plot
                               legend.lines.thickness = 3, #thickness for lines in legend
                               x.axis.label = "Training steps", #x axis label
-                              y.axis.label = "Learning rate change" #y axis label
+                              y.axis.label = "Mean distance to closest codebook vector" #y axis label
 ) {
   
   # Reset plotting parameters
