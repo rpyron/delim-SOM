@@ -3724,7 +3724,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   if (!is.matrix(d.mat)) d.mat <- as.matrix(d.mat)
   
   # Require multilayer input
-  if (ncol(d.mat) < 2) stop("Plotting aborted: layer plot requires at least two layers")
+  if (ncol(d.mat) < 2) stop("Plotting aborted: at least two layers are required for plotting")
   
   # Extract matrix names
   if ("input_data_names" %in% names(SOM.output)) {
