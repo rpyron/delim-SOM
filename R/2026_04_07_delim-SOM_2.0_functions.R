@@ -3416,8 +3416,8 @@ plot.learning.SOM <- function(SOM.output,
                               bottom.margin = 5, #bottom margin
                               left.margin = 5, #left margin
                               top.margin = 3, #top margin
-                              right.margin = 2.5, #right margin
-                              lines.alpha = 0.4, #transparency for plot lines
+                              right.margin = 2, #right margin
+                              lines.alpha = 0.3, #transparency for plot lines
                               lines.thickness = 0.9, #thickness for plot lines
                               title = NULL, #main title of plot (if NULL, default title name is used)
                               legend.position = "topright", #position of legend in plot
@@ -3429,7 +3429,10 @@ plot.learning.SOM <- function(SOM.output,
   # Reset plotting parameters
   old_dev <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
-  on.exit({if (dev.cur() == old_dev) par(old_plotting_parameters)}, add = TRUE)
+  on.exit({
+    if (dev.cur() == old_dev)
+    par(old_plotting_parameters)
+           }, add = TRUE)
   
   # Validate input
   if (!is.list(SOM.output$learning_values_list)) stop("Plotting aborted: learning_values_list must be list of matrices")
