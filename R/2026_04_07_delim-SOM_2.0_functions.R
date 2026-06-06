@@ -4118,7 +4118,7 @@ plot.K.SOM <- function(SOM.output,
   plot.K.frequency.panel <- function() {
     barplot_data <- table(factor(optim_k_vals, levels = seq_len(max_k))) / length(optim_k_vals)
     bar_midpoints <- barplot(barplot_data,
-                             ylab = "Sampling Frequency",
+                             ylab = "Sampling frequency",
                              ylim = c(0, 1),
                              col = k_cols,
                              axes = FALSE,
