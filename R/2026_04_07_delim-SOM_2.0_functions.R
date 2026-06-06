@@ -3885,7 +3885,107 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 }
 
 
-## Function to evaluate K-values
+#' Plot support for alternative numbers of SOM clusters
+#'
+#' Plot replicate-level support for alternative numbers of clusters from a
+#' clustered SOM object returned by `clustering.SOM`. The function can show up to
+#' three panels: replicate-level support values across candidate k values,
+#' successive delta-BIC values for BIC-based methods, and the sampling frequency
+#' with which each k value was selected across SOM replicates.
+#'
+#' @param SOM.output A SOM result object returned by `clustering.SOM`. The object
+#'   must contain `N_replicates`, `optim_k_vals`, and `max_k`. If available,
+#'   `support_values`, `support_label`, and `BIC_values` are used to create the
+#'   support-value and delta-BIC panels.
+#' @param col.pal A viridis color-palette function used to assign colors to
+#'   candidate k values. Supported palettes are `viridis::viridis`,
+#'   `viridis::magma`, `viridis::plasma`, `viridis::inferno`,
+#'   `viridis::cividis`, `viridis::rocket`, `viridis::mako`, and
+#'   `viridis::turbo`. Default: `viridis::magma`.
+#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing output file with the same
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
+#'   the output file already exists. Default: `TRUE`.
+#' @param plot.type Character string specifying the file format when
+#'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
+#'   Default: `"svg"`.
+#' @param file.name Optional character string giving the output file name when
+#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
+#'   `NULL`.
+#' @param width Numeric value giving plot width in centimeters when
+#'   `save = TRUE`. Default: `10`.
+#' @param height Numeric value giving plot height in centimeters when
+#'   `save = TRUE`. Default: `15`.
+#' @param resolution Numeric value giving plot resolution in dots per inch for
+#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
+#' @param bottom.margin Numeric value giving the bottom plot margin. Default:
+#'   `4`.
+#' @param left.margin Numeric value giving the left plot margin. Default: `5.5`.
+#' @param top.margin Numeric value giving the top plot margin. Default: `2.5`.
+#' @param right.margin Numeric value giving the right plot margin. Default:
+#'   `2.5`.
+#' @param title Character string giving the main plot title. Default:
+#'   `"Number of clusters (k)"`.
+#'
+#' @details
+#' The plot is intended as a replicate-level diagnostic for k selection in the
+#' SOM clustering workflow. The support panel shows the distribution of support
+#' values across SOM replicates for each candidate k value. The bottom panel
+#' shows the frequency with which each k value was selected as optimal across
+#' replicates.
+#'
+#' For BIC-based clustering methods, an additional delta-BIC panel is shown when
+#' `BIC_values` are available. Delta-BIC is calculated as the support value at
+#' k - 1 minus the support value at k. Therefore, positive values indicate that
+#' increasing k improved the lower-is-better BIC-like criterion used internally.
+#'
+#' For `"GMM+BICthreshold"`, Gaussian mixture models are fitted with `mclust`,
+#' where larger BIC values indicate better support. Here, these values are
+#' sign-inverted so that lower values represent better support, matching the
+#' threshold logic used for other BIC-like criteria. The plot label is kept as
+#' `"BIC"` for simplicity.
+#'
+#' @return Invisibly returns `NULL`. The function is called for its plotting side
+#'   effect. If `save = TRUE`, the plot is written to the specified file.
+#'
+#' @importFrom graphics par boxplot barplot axis title
+#' @importFrom grDevices dev.cur dev.off svg png jpeg
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' # Multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
+#' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
+#'
+#' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
+#' rownames(morphology_data) <- rownames(snp_data)
+#' rownames(environment_data) <- rownames(snp_data)
+#'
+#' input_data_multi <- list(
+#'   SNPs = snp_data,
+#'   Morphology = morphology_data,
+#'   Environment = environment_data
+#' )
+#'
+#' som_multi <- train.SOM(
+#'   input_data = input_data_multi,
+#'   N.steps = 100,
+#'   N.replicates = 60
+#' )
+#'
+#' som_clustered <- clustering.SOM(
+#'   SOM.output = som_multi,
+#'   clustering.method = "kmeans+BICthreshold"
+#' )
+#'
+#' plot.K.SOM(som_clustered)
+#' }
+#'
+#' @export
 plot.K.SOM <- function(SOM.output,
                        col.pal = viridis::magma, #set color palette (default magma)
                        save = FALSE, #set option to save plot (default: FALSE)
@@ -3899,41 +3999,174 @@ plot.K.SOM <- function(SOM.output,
                        left.margin = 5.5, #left margin
                        top.margin = 2.5, #top margin
                        right.margin = 2.5, #right margin
-                       N.axis.labels.BIC.plot = 4, #number of axis labels for support plot
-                       N.axis.labels.deltaBIC.plot = 4, #number of axis labels for delta-BIC plot
-                       round.axis.labels.BIC.plot = 0, #rounding axis labels of support plot to X digits
-                       round.axis.labels.deltaBIC.plot = 0, #rounding axis labels of delta-BIC plot to X digits
-                       title = "Number of clusters (k)") #change plot title 
-{
+                       title = "Number of clusters (k)" #change plot title
+) {
   
   # Reset plotting parameters
   old_dev <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
+  device_opened <- FALSE
   on.exit({
-    if (dev.cur() == old_dev) 
-      par(old_plotting_parameters)
-    }, add = TRUE)
+    if (isTRUE(device_opened) && dev.cur() != old_dev) dev.off()
+    if (dev.cur() == old_dev) par(old_plotting_parameters)
+  }, add = TRUE)
   
   # Validate SOM.output
-  if (is.null(SOM.output$N_replicates)) {
-    stop("Plotting aborted: N_replicates could not be found in SOM output - check if clustering.SOM was run")
-  } else if (is.null(SOM.output$optim_k_vals)) {
-    stop("Plotting aborted: optim_k_vals could not be found in SOM output - check if clustering.SOM was run")
-  } else if (is.null(SOM.output$max_k)) {
-    stop("Plotting aborted: max_k could not be found in SOM output - check if clustering.SOM was run")
-  }
+  if (is.null(SOM.output$N_replicates)) stop("Plotting aborted: N_replicates could not be found in SOM output - check if clustering.SOM was run")
+  if (is.null(SOM.output$optim_k_vals)) stop("Plotting aborted: optim_k_vals could not be found in SOM output - check if clustering.SOM was run")
+  if (is.null(SOM.output$max_k)) stop("Plotting aborted: max_k could not be found in SOM output - check if clustering.SOM was run")
+  
+  # Validate plotting arguments
+  if (!is.function(col.pal)) stop("Plotting aborted: col.pal must be a color-palette function")
+  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
+  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
+  if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
+  if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "")) stop("Plotting aborted: file.name must be NULL or a non-empty character string")
+  if (!is.numeric(width) || length(width) != 1 || is.na(width) || !is.finite(width) || width <= 0) stop("Plotting aborted: width must be a single positive numeric value")
+  if (!is.numeric(height) || length(height) != 1 || is.na(height) || !is.finite(height) || height <= 0) stop("Plotting aborted: height must be a single positive numeric value")
+  if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || !is.finite(resolution) || resolution <= 0) stop("Plotting aborted: resolution must be a single positive numeric value")
+  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || !is.finite(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative numeric value")
+  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || !is.finite(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative numeric value")
+  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || !is.finite(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative numeric value")
+  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || !is.finite(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative numeric value")
+  if (!is.character(title) || length(title) != 1 || is.na(title)) stop("Plotting aborted: title must be a single character string")
+  
+  # Extract and validate K information
+  max_k <- SOM.output$max_k
+  N_replicates <- SOM.output$N_replicates
+  optim_k_vals <- as.numeric(SOM.output$optim_k_vals)
+  if (!is.numeric(max_k) || length(max_k) != 1 || is.na(max_k) || !is.finite(max_k) || max_k < 1 || max_k %% 1 != 0) stop("Plotting aborted: max_k must be a single positive integer")
+  if (!is.numeric(N_replicates) || length(N_replicates) != 1 || is.na(N_replicates) || !is.finite(N_replicates) || N_replicates < 1 || N_replicates %% 1 != 0) stop("Plotting aborted: N_replicates must be a single positive integer")
+  if (!is.numeric(optim_k_vals) || length(optim_k_vals) < 1) stop("Plotting aborted: optim_k_vals must contain at least one numeric value")
+  if (all(!is.finite(optim_k_vals) | is.na(optim_k_vals))) stop("Plotting aborted: optim_k_vals contains no finite k values")
+  optim_k_vals <- optim_k_vals[is.finite(optim_k_vals) & !is.na(optim_k_vals)]
+  if (any(optim_k_vals < 1 | optim_k_vals > max_k | optim_k_vals %% 1 != 0)) stop("Plotting aborted: optim_k_vals must contain integer k values between 1 and max_k")
   
   # Extract clustering method
-  clustering.method <- if (!is.null(SOM.output$clustering.SOM.args$clustering.method)) {
-    SOM.output$clustering.SOM.args$clustering.method
+  if (!is.null(SOM.output$clustering.SOM.args$clustering.method)) {
+    clustering_method <- SOM.output$clustering.SOM.args$clustering.method
   } else {
-    "unknown"
+    clustering_method <- "unknown"
   }
   
   # Set default file name
   if (is.null(file.name)) file.name <- paste0("K_plot.", plot.type)
   
-  # Open graphics device if saving
+  # Extract support values
+  support_values <- NULL
+  support_label <- NULL
+  if (!is.null(SOM.output$support_values)) {
+    if (!is.matrix(SOM.output$support_values)) stop("Plotting aborted: support_values must be a matrix")
+    if (!is.numeric(SOM.output$support_values)) stop("Plotting aborted: support_values must be numeric")
+    if (nrow(SOM.output$support_values) < max_k) stop("Plotting aborted: support_values has fewer rows than max_k")
+    if (any(is.finite(SOM.output$support_values) & !is.na(SOM.output$support_values))) {
+      support_values <- SOM.output$support_values[seq_len(max_k), , drop = FALSE]
+      support_label <- SOM.output$support_label
+    }
+  } else if (!is.null(SOM.output$BIC_values)) {
+    if (!is.matrix(SOM.output$BIC_values)) stop("Plotting aborted: BIC_values must be a matrix")
+    if (!is.numeric(SOM.output$BIC_values)) stop("Plotting aborted: BIC_values must be numeric")
+    if (nrow(SOM.output$BIC_values) < max_k) stop("Plotting aborted: BIC_values has fewer rows than max_k")
+    if (any(is.finite(SOM.output$BIC_values) & !is.na(SOM.output$BIC_values))) {
+      support_values <- SOM.output$BIC_values[seq_len(max_k), , drop = FALSE]
+      support_label <- "BIC"
+    }
+  }
+  if (is.null(support_label) || length(support_label) != 1 || is.na(support_label) || support_label == "") support_label <- "Support value"
+  if (support_label %in% c("Negative mclust BIC", "Inverted mclust BIC")) support_label <- "BIC"
+  support_available <- !is.null(support_values)
+  support_is_BIC <- isTRUE(support_label == "BIC")
+  
+  # Extract BIC values for delta-BIC panel
+  BIC_values <- NULL
+  if (!is.null(SOM.output$BIC_values)) {
+    if (!is.matrix(SOM.output$BIC_values)) stop("Plotting aborted: BIC_values must be a matrix")
+    if (!is.numeric(SOM.output$BIC_values)) stop("Plotting aborted: BIC_values must be numeric")
+    if (nrow(SOM.output$BIC_values) < max_k) stop("Plotting aborted: BIC_values has fewer rows than max_k")
+    if (any(is.finite(SOM.output$BIC_values) & !is.na(SOM.output$BIC_values))) {
+      BIC_values <- SOM.output$BIC_values[seq_len(max_k), , drop = FALSE]
+    }
+  }
+  
+  # Set colors
+  k_cols <- col.pal(max_k)
+  
+  # Create support panel
+  plot.support.panel <- function(values_matrix, ylab_text) {
+    finite_k_rows <- apply(values_matrix, 1, function(x) any(is.finite(x) & !is.na(x)))
+    if (!any(finite_k_rows)) return(FALSE)
+    plotted_k <- seq_len(max_k)[finite_k_rows]
+    values_for_plot <- t(values_matrix[finite_k_rows, , drop = FALSE])
+    boxplot(values_for_plot,
+            at = plotted_k,
+            xlim = c(0.5, max_k + 0.5),
+            outline = FALSE,
+            notch = FALSE,
+            axes = FALSE,
+            ylab = ylab_text,
+            whisklty = 1,
+            staplelty = 1,
+            col = k_cols[plotted_k])
+    axis(1, at = seq_len(max_k), labels = FALSE)
+    y_axis_breaks <- seq(par("usr")[3], par("usr")[4], length.out = 4)
+    axis(2, at = y_axis_breaks, labels = round(y_axis_breaks, 1), las = 3)
+    title(title, line = 0.5)
+    return(TRUE)
+  }
+  
+  # Create K-frequency panel
+  plot.K.frequency.panel <- function() {
+    barplot_data <- table(factor(optim_k_vals, levels = seq_len(max_k))) / length(optim_k_vals)
+    bar_midpoints <- barplot(barplot_data,
+                             ylab = "Sampling Frequency",
+                             ylim = c(0, 1),
+                             col = k_cols,
+                             axes = FALSE,
+                             axisnames = FALSE)
+    axis(1, at = bar_midpoints, labels = seq_len(max_k))
+    axis(2, las = 3)
+  }
+  
+  # Create delta-BIC panel
+  plot.deltaBIC.panel <- function() {
+    if (is.null(BIC_values)) return(FALSE)
+    if (max_k <= 2) return(FALSE)
+    delta_BIC_raw <- apply(BIC_values, 2, function(x) {
+      previous_BIC <- x[-length(x)]
+      current_BIC <- x[-1]
+      delta_BIC <- previous_BIC - current_BIC
+      delta_BIC[!is.finite(previous_BIC) | !is.finite(current_BIC)] <- NA_real_
+      return(delta_BIC)
+    })
+    if (is.null(dim(delta_BIC_raw))) delta_BIC_raw <- matrix(delta_BIC_raw, ncol = 1)
+    delta_BIC_labels <- paste0("k", 2:max_k, "-k", 1:(max_k - 1))
+    rownames(delta_BIC_raw) <- delta_BIC_labels
+    finite_delta_rows <- apply(delta_BIC_raw, 1, function(x) any(is.finite(x) & !is.na(x)))
+    if (!any(finite_delta_rows)) return(FALSE)
+    plotted_delta_k <- seq.int(2, max_k)[finite_delta_rows]
+    delta_BIC_for_plot <- t(delta_BIC_raw[finite_delta_rows, , drop = FALSE])
+    boxplot(delta_BIC_for_plot,
+            at = plotted_delta_k,
+            xlim = c(0.5, max_k + 0.5),
+            outline = FALSE,
+            notch = FALSE,
+            axes = FALSE,
+            ylab = "delta BIC",
+            whisklty = 1,
+            staplelty = 1,
+            col = k_cols[plotted_delta_k])
+    axis(1, at = seq_len(max_k), labels = FALSE)
+    y_axis_breaks <- seq(par("usr")[3], par("usr")[4], length.out = 4)
+    axis(2, at = y_axis_breaks, labels = round(y_axis_breaks, 1), las = 3)
+    return(TRUE)
+  }
+  
+  # Report omitted panels
+  if (!support_available) message(paste0("No finite support values available for clustering.method = '", clustering_method, "' - support panel will be omitted"))
+  if (support_available && !support_is_BIC) message(paste0("delta-BIC panel will be omitted (clustering.method = '", clustering_method, "' is not BIC-based)"))
+  if (support_is_BIC && max_k <= 2) message("delta-BIC panel will be omitted (requires max_k >= 3)")
+  
+  # Save plot if requested
   if (save) {
     if (file.exists(file.name) && !overwrite) stop(paste("Plotting aborted: file already exists:", file.name))
     if (plot.type == "svg") {
@@ -3942,139 +4175,43 @@ plot.K.SOM <- function(SOM.output,
       png(filename = file.name, width = width, height = height, units = "cm", res = resolution)
     } else if (plot.type == "jpg") {
       jpeg(filename = file.name, width = width, height = height, units = "cm", res = resolution)
-    } else {
-      stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
     }
+    device_opened <- TRUE
   }
   
-  # Determine support values to plot
-  plot_support_values <- NULL
-  support_label <- NULL
-  support_higher_is_better <- NA
-  if (!is.null(SOM.output$support_values) && is.matrix(SOM.output$support_values) && any(is.finite(SOM.output$support_values), na.rm = TRUE)) {
-    plot_support_values <- SOM.output$support_values
-    support_label <- SOM.output$support_label
-    support_higher_is_better <- SOM.output$support_higher_is_better
-  } else if (!is.null(SOM.output$BIC_values) && is.matrix(SOM.output$BIC_values) && any(is.finite(SOM.output$BIC_values), na.rm = TRUE)) {
-    plot_support_values <- SOM.output$BIC_values
-    support_label <- "BIC"
-    support_higher_is_better <- FALSE
-  }
-  support_available <- !is.null(plot_support_values)
-  support_is_BIC <- isTRUE(identical(support_label, "BIC"))
-  
-  # Set colors
-  k.cols <- col.pal(SOM.output$max_k)
-  
-  # Create helper for support axis breaks
-  make.axis.breaks <- function(values, n.breaks = 4, digits = 0) {
-    finite_values <- values[is.finite(values) & !is.na(values)]
-    if (length(finite_values) == 0) return(NULL)
-    axis_breaks <- pretty(range(finite_values), n = n.breaks)
-    round(axis_breaks, digits)
-  }
-  
-  # Plot support values
-  plot.support.panel <- function(values_matrix, ylab_text, axis_digits = 0) {
-    support_vals <- as.numeric(values_matrix)
-    support_breaks <- make.axis.breaks(support_vals, n.breaks = N.axis.labels.BIC.plot, digits = axis_digits)
-    boxplot(t(values_matrix)[, 1:(SOM.output$max_k), drop = FALSE],
-            outline = FALSE,
-            notch = FALSE,
-            axes = FALSE,
-            ylab = ylab_text,
-            whisklty = 1,
-            staplelty = 1,
-            col = k.cols)
-    axis(1, at = 1:(SOM.output$max_k), labels = 1:(SOM.output$max_k))
-    if (!is.null(support_breaks)) axis(2, at = support_breaks, labels = support_breaks, las = 3)
-    title(title, line = 0)
-  }
-  
-  # Plot frequency panel
-  plot.frequency.panel <- function() {
-    optim_k_vector <- as.numeric(SOM.output$optim_k_vals)
-    optim_k_vector <- optim_k_vector[is.finite(optim_k_vector) & !is.na(optim_k_vector)]
-    barplot_data <- table(factor(optim_k_vector, levels = 1:(SOM.output$max_k))) / SOM.output$N_replicates
-    bar_midpoints <- barplot(barplot_data,
-                             ylab = "Frequency of selected K",
-                             ylim = c(0, 1),
-                             col = k.cols,
-                             axes = FALSE,
-                             axisnames = FALSE)
-    axis(1, at = bar_midpoints, labels = seq_len(SOM.output$max_k))
-    axis(2, las = 3)
-  }
-  
-  # Plot delta-BIC panel if available
-  plot.deltaBIC.panel <- function() {
-    d_wss_raw <- apply(SOM.output$BIC_values, 2, function(x) {
-      if (sum(is.finite(x) & !is.na(x)) < 3) {
-        rep(NA_real_, max(0, length(x) - 2))
-      } else {
-        diff(diff(x))
-      }
-    })
-    if (length(d_wss_raw) == 0 || all(is.na(d_wss_raw)) || all(!is.finite(d_wss_raw))) return(FALSE)
-    if (is.null(dim(d_wss_raw))) {
-      d_wss <- matrix(d_wss_raw, nrow = 1, dimnames = list(2:(SOM.output$max_k - 1), colnames(SOM.output$BIC_values)))
-    } else {
-      d_wss <- d_wss_raw
-      rownames(d_wss) <- 2:(SOM.output$max_k - 1)
-    }
-    delta_vals <- as.numeric(d_wss)
-    delta_breaks <- make.axis.breaks(delta_vals,
-                                     n.breaks = N.axis.labels.deltaBIC.plot,
-                                     digits = round.axis.labels.deltaBIC.plot)
-    boxplot(t(d_wss),
-            outline = FALSE,
-            notch = FALSE,
-            axes = FALSE,
-            ylab = expression(Delta*BIC),
-            whisklty = 1,
-            staplelty = 1,
-            col = k.cols[2:(SOM.output$max_k - 1)])
-    axis(1, at = 1:nrow(d_wss), labels = rownames(d_wss))
-    if (!is.null(delta_breaks)) axis(2, at = delta_breaks, labels = delta_breaks, las = 3)
-    return(TRUE)
-  }
-  
-  # Report unavailable panels via output messages
-  if (!support_available) message(paste0("No finite support values available for clustering.method = '", clustering.method,  "' - support panel will be omitted"))
-  if (support_available && !support_is_BIC) message(paste0("delta-BIC panel will be omitted (clustering.method = '", clustering.method, "' is not BIC-based)"))
-  if (support_is_BIC && SOM.output$max_k <= 2) message("delta-BIC panel will be omitted (requires max.k >= 3)")
-  
-  # Set layout and plot
-  if (support_available && support_is_BIC && SOM.output$max_k > 2) {
+  # Create plot
+  if (support_available && support_is_BIC && max_k > 2) {
     par(mfrow = c(3, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
-    plot.support.panel(plot_support_values, ylab_text = "BIC", axis_digits = round.axis.labels.BIC.plot)
-    deltaBIC_plotted <- plot.deltaBIC.panel()
-    if (!deltaBIC_plotted) {
+    support_panel_plotted <- plot.support.panel(values_matrix = support_values, ylab_text = support_label)
+    delta_BIC_panel_plotted <- plot.deltaBIC.panel()
+    if (!support_panel_plotted || !delta_BIC_panel_plotted) {
       message("Plotting support panel and K-frequency only (insufficient finite BIC values for delta-BIC panel)")
       par(mfrow = c(2, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
-      plot.support.panel(plot_support_values, ylab_text = "BIC", axis_digits = round.axis.labels.BIC.plot)
-      plot.frequency.panel()
+      plot.support.panel(values_matrix = support_values, ylab_text = support_label)
+      plot.K.frequency.panel()
     } else {
-      plot.frequency.panel()
+      plot.K.frequency.panel()
     }
   } else if (support_available) {
     par(mfrow = c(2, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
-    plot.support.panel(plot_support_values, ylab_text = support_label, axis_digits = round.axis.labels.BIC.plot)
-    plot.frequency.panel()
+    plot.support.panel(values_matrix = support_values, ylab_text = support_label)
+    plot.K.frequency.panel()
   } else {
     par(mfrow = c(1, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
-    plot.frequency.panel()
-    title(title, line = 0)
+    plot.K.frequency.panel()
+    title(title, line = 0.5)
   }
   
   # Close graphics device
   if (save) {
     dev.off()
+    device_opened <- FALSE
     message(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
+  invisible(NULL)
 }
 
-
+                               
 ## Function to plot model results as SOM grids (showing sample assignment to cells, cell distances and boundaries between cell clusters)
 plot.model.SOM <- function(SOM.output,
                            col.pal.neighbor.dist = viridis::cividis, #color palette of neighbor distance plot (top)
