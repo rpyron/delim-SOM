@@ -276,9 +276,9 @@ plot.K.SOM(SOM_single_ENV) #k1-2 only example
 plot.K.SOM(SOM_single_k3)
 plot.K.SOM(SOM_single_k3_2) #HDBSCAN example
 plot.K.SOM(SOM_single_TestD)
-plot.K.SOM(SOM_multi_ENV_k3_Alleles, N.axis.labels.BIC.plot = 3) #DB example
+plot.K.SOM(SOM_multi_ENV_k3_Alleles) #DB example
 plot.K.SOM(SOM_multi_ENV_k3_Alleles_2) #OPTICS+Silhouette example
-plot.K.SOM(SOM_multi_MORPH_ENV, col.pal = viridisLite::cividis, round.axis.labels.BIC.plot = 1)
+plot.K.SOM(SOM_multi_MORPH_ENV, col.pal = viridisLite::cividis)
 plot.K.SOM(SOM_single_k3_OPTICS_auto)
 plot.K.SOM(SOM_single_k3_GMM_auto)
 
