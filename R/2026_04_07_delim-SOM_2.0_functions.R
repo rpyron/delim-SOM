@@ -1420,11 +1420,6 @@ calculate.topographic.error <- function(som_model) {
 #'   summaries are calculated for each SOM input layer after clustering. These
 #'   include weighted map-variance importance and, when multi-cluster solutions
 #'   are available, weighted eta-squared cluster-separation importance.
-#' @param parallel Logical; if `TRUE`, replicate-level codebook clustering is
-#'   performed in parallel. Default: `TRUE`.
-#' @param N.cores A single positive integer giving the number of cores to use
-#'   when `parallel = TRUE`. If `N.cores` exceeds the number of detected physical
-#'   cores, the detected maximum is used.
 #' @param save.SOM.results Logical; if `TRUE`, the clustered SOM result object is
 #'   saved as an `.Rdata` file. Default: `TRUE`.
 #' @param save.SOM.results.name Optional character string giving the output file
@@ -1726,10 +1721,6 @@ calculate.topographic.error <- function(som_model) {
 #' @importFrom dbscan hdbscan optics extractXi
 #' @importFrom mclust mclustBIC Mclust
 #' @importFrom clue solve_LSAP
-#' @importFrom foreach foreach %dopar%
-#' @importFrom doSNOW registerDoSNOW
-#' @importFrom doRNG registerDoRNG
-#' @importFrom parallel makeCluster stopCluster detectCores
 #' @importFrom tools file_ext
 #'
 #' @examples
@@ -1777,8 +1768,6 @@ clustering.SOM <- function(SOM.output,
                            max.k = 10, #maximum of considered clusters K + 1
                            set.k = NULL, #set to test one fixed value of K; NULL = evaluate K from 1 to max.k
                            clustering.method, #set clustering method
-                           parallel = TRUE, #whether to run clustering of SOM replicates in parallel
-                           N.cores = 3, #number of cores for clustering SOM replicates in parallel (if parallel = TRUE)
                            BIC.thresh = 6, #BIC threshold for selecting K > 1 - we suggest using Raftery (1995) ranges: 2, 6, or 10 for weak, medium or strong support
                            quantization.error.quantile = 0.95, #remove mappings with QE above this quantile; NULL = no filtering
                            topographic.error.quantile = 0.95, #remove mappings with TE above this quantile; NULL = no filtering
@@ -1810,17 +1799,6 @@ clustering.SOM <- function(SOM.output,
     "HDBSCAN",
     "OPTICS+Silhouette")
   if (!is.character(clustering.method) || length(clustering.method) != 1 || is.na(clustering.method) || !(clustering.method %in% valid.methods)) stop("Aborted SOM clustering: clustering.method must be one of ", paste(valid.methods, collapse = ", "))
-  if (!is.logical(parallel) || length(parallel) != 1 || is.na(parallel)) stop("Aborted SOM clustering: parallel must be TRUE or FALSE")
-  if (parallel) {
-    if (!is.numeric(N.cores) || length(N.cores) != 1 || is.na(N.cores) || !is.finite(N.cores) || N.cores < 1 || (N.cores %% 1 != 0)) stop("Aborted SOM clustering: N.cores must be a single positive integer (>= 1)")
-    max_cores <- parallel::detectCores(logical = FALSE)
-    if (is.na(max_cores) || max_cores < 1) max_cores <- parallel::detectCores(logical = TRUE)
-    if (is.na(max_cores) || max_cores < 1) max_cores <- 1
-    if (N.cores > max_cores) {
-      messager(sprintf("Requested N.cores (%d) exceeds available cores (%d) - using %d cores", N.cores, max_cores, max_cores))
-      N.cores <- max_cores
-    }
-  }
   if (!is.numeric(BIC.thresh) || length(BIC.thresh) != 1 || is.na(BIC.thresh) || !is.finite(BIC.thresh) || BIC.thresh <= 0) stop("Aborted SOM clustering: BIC.thresh must be a single positive numeric value (e.g., 2, 6, or 10 for low, moderate or strong support, respectively)")
   if (!is.null(quantization.error.quantile)) {
     if (!is.numeric(quantization.error.quantile) || length(quantization.error.quantile) != 1 || is.na(quantization.error.quantile) || quantization.error.quantile <= 0 || quantization.error.quantile >= 1) stop("Aborted SOM clustering: quantization.error.quantile must be NULL or a single numeric value in (0, 1)")
@@ -2832,65 +2810,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     ))
   }
   
-# Collect results for all replicates
-  if (isTRUE(parallel)) {
-    required_packages_parallel <- c(
-      "kohonen",
-      "cluster",
-      "clusterCrit",
-      "dbscan",
-      "mclust",
-      "clue",
-      "foreach",
-      "doSNOW",
-      "doRNG"
-    )
-    messager(sprintf("Running SOM clustering in parallel with %d cores", N.cores))
-    parallel_cluster <- parallel::makeCluster(N.cores) #start PSOCK cluster
-    on.exit(parallel::stopCluster(parallel_cluster), add = TRUE)
-    if (isTRUE(verbose)) {
-      progress_options <- list(progress = function(n) {
-        if (n %% message.N.replicates == 0 || n == 1 || n == N.replicates) message(paste("Completed clustering replicate:", n, "of", N.replicates))
-      })
-    } else {
-      progress_options <- list(progress = function(n) NULL)
-    }
-    parallel::clusterExport( #export helper functions and all needed variables to each worker
-      parallel_cluster,
-      varlist = c("replicate_clust",
-                  "get.knnx.custom",
-                  "compute.layer.sample.to.unit.distance.SOM",
-                  "compute.sample.to.unit.distance.matrix.SOM",
-                  "compute.replicate.ancestry.matrix.SOM",
-                  "som_models_for_clustering",
-                  "layer.distance.functions",
-                  "max.k",
-                  "set.k",
-                  "clustering.method",
-                  "BIC.thresh",
-                  "set.seed.N",
-                  "N.replicates",
-                 "calculate.soft.ancestry"),
-      envir = environment())
-    doSNOW::registerDoSNOW(parallel_cluster) #register cluster for foreach with progress support
-    doRNG::registerDoRNG(seed = set.seed.N) #set seed
-    results <- tryCatch(
-      foreach::`%dopar%`(
-        foreach::foreach(j = seq_len(N.replicates), .packages = required_packages_parallel, .options.snow = progress_options),
-        replicate_clust(j)
-      ),
-      error = function(e) {
-        stop(sprintf("SOM clustering aborted: %s", conditionMessage(e)), call. = FALSE)
-      }
-    )
-    invisible(gc())
-  } else {
-    messager("Running SOM clustering sequentially")
-    results <- lapply(seq_len(N.replicates), function(j) {
-      if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) messager(paste("Running clustering replicate:", j, "of", N.replicates))
-      replicate_clust(j)
-    }) #run clustering sequentially
-  }
+  # Collect results for all replicates
+  messager("Running SOM clustering sequentially")
+  results <- lapply(seq_len(N.replicates), function(j) {
+    if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) messager(paste("Running clustering replicate:", j, "of", N.replicates))
+    replicate_clust(j)
+  }) #run clustering sequentially
+  invisible(gc())
   
   # Combine results from all replicates
   cluster_assignment <- do.call(cbind, lapply(results, `[[`, "cluster_assignment"))
@@ -3154,8 +3080,6 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
     max.k = max.k,
     set.k = set.k,
     clustering.method = clustering.method,
-    parallel = parallel,
-    N.cores = N.cores,
     BIC.thresh = BIC.thresh,
     quantization.error.quantile = quantization.error.quantile,
     topographic.error.quantile = topographic.error.quantile,
@@ -6904,8 +6828,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                            max.k = max.k.current,
                            set.k = set.k.current,
                            clustering.method = clustering.method.current,
-                           parallel = FALSE,
-                           N.cores = 1,
                            BIC.thresh = BIC.thresh.current,
                            quantization.error.quantile = NULL,
                            topographic.error.quantile = NULL,
