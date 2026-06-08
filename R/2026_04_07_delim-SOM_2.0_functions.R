@@ -7277,6 +7277,62 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
 }
                                  
 ## Function to convert specified categorical columns into binary (0/1) indicators
+#' Convert categorical columns into binary indicator variables
+#'
+#' Converts selected categorical columns of a data frame into binary 0/1
+#' indicator variables. Each level of each selected categorical column is
+#' represented by one binary column. Missing values in the original categorical
+#' column are retained as `NA` across the corresponding binary indicator
+#' columns.
+#'
+#' @param dataframe A data frame containing the variables to process.
+#' @param make.binary.cols A character vector giving the names of categorical
+#'   columns to convert to binary indicator variables. All specified columns must
+#'   exist in `dataframe` and must be character or factor columns.
+#' @param remove.original.cols Logical; if `TRUE`, the original categorical
+#'   columns listed in `make.binary.cols` are removed when the binary columns are
+#'   appended to the original data frame. Default: `TRUE`.
+#' @param append.to.original Logical; if `TRUE`, the binary indicator variables
+#'   are appended to the original data frame. If `FALSE`, only the binary
+#'   indicator variables are returned. Default: `FALSE`.
+#' @param verbose Logical; if `TRUE`, processing messages are printed. Default:
+#'   `TRUE`.
+#'
+#' @details
+#' `make.cols.binary.SOM` is intended as a preprocessing helper for SOM analyses
+#' when categorical variables should be represented as binary 0/1 layers or
+#' predictors.
+#'
+#' One binary indicator column is created for each observed factor level. Column
+#' names are constructed from the original column name and the corresponding
+#' factor level. Columns with fewer than two levels are skipped because they do
+#' not contain useful categorical variation. Columns with more than 30 levels
+#' trigger a warning because they can produce many binary variables.
+#'
+#' @return A data frame. If `append.to.original = FALSE`, the returned data frame
+#'   contains only the newly created binary indicator variables. If
+#'   `append.to.original = TRUE`, the returned data frame contains the original
+#'   data frame plus the binary indicator variables; original categorical columns
+#'   listed in `make.binary.cols` are removed when `remove.original.cols = TRUE`.
+#'
+#' @examples
+#' \dontrun{
+#' trait_data <- data.frame(
+#'   sample = paste0("sample_", 1:6),
+#'   color = c("red", "red", "blue", "blue", "black", NA),
+#'   habitat = c("forest", "grassland", "forest", "desert", "desert", "forest"),
+#'   size = c(1.2, 1.5, 1.1, 1.9, 2.0, 1.4)
+#' )
+#'
+#' rownames(trait_data) <- trait_data$sample
+#'
+#' binary_traits <- make.cols.binary.SOM(
+#'   dataframe = trait_data,
+#'   make.binary.cols = c("color", "habitat")
+#' )
+#' }
+#'
+#' @export
 make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
                                  make.binary.cols, #make.binary.cols - character vector of categorical column names to convert
                                  remove.original.cols = TRUE, #remove.original.cols - if TRUE, remove original categorical columns after processing
