@@ -4568,6 +4568,135 @@ plot.model.SOM <- function(SOM.output,
 
 
 ## Function to plot sample map with cluster assignment for each individual
+#' Plot SOM cluster assignments on a geographic map
+#'
+#' Plots sample-level SOM cluster assignment probabilities on a geographic map.
+#' Each sample is drawn as a pie chart at its longitude and latitude, with pie
+#' slices representing the cluster assignment proportions from the SOM.
+#'
+#' @param SOM.output A SOM clustering result object returned by `clustering.SOM`.
+#'   The object must contain an `ancestry_matrix`, with samples in rows and
+#'   clusters in columns.
+#' @param Coordinates A data frame or matrix containing geographic coordinates
+#'   for samples. It must contain columns named `"Latitude"` and `"Longitude"`,
+#'   and row names must correspond to the row names of
+#'   `SOM.output$ancestry_matrix`.
+#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing output file with the same
+#'   name is overwritten when `save = TRUE`. Default: `TRUE`.
+#' @param plot.type Character string giving the output file type when
+#'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
+#'   Default: `"svg"`.
+#' @param file.name Optional character string giving the output file name when
+#'   `save = TRUE`. If `NULL`, a default file name is generated from the SOM
+#'   input layer names and `plot.type`.
+#' @param width Numeric value giving plot width in cm when `save = TRUE`.
+#'   Default: `15`.
+#' @param height Numeric value giving plot height in cm when `save = TRUE`.
+#'   Default: `20`.
+#' @param resolution Numeric value giving plot resolution in dpi for `"png"` and
+#'   `"jpg"` output when `save = TRUE`. Default: `300`.
+#' @param lat.buffer.range Numeric value giving the latitude buffer added around
+#'   the minimum and maximum sample latitude values. Default: `2`.
+#' @param lon.buffer.range Numeric value giving the longitude buffer added around
+#'   the minimum and maximum sample longitude values. Default: `2`.
+#' @param pie.size Numeric value controlling the size of sample pie charts.
+#'   Default: `2`.
+#' @param pie.col.pal A viridis color-palette function used to color cluster pie
+#'   slices. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
+#'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`.
+#'   Default: `viridis::viridis`.
+#' @param USA.add.states Logical; if `TRUE`, US state borders are added to the
+#'   map. Default: `TRUE`.
+#' @param USA.add.counties Logical; if `TRUE`, US county borders are added to the
+#'   map. Default: `FALSE`.
+#' @param USA.state.lwd Numeric value giving the line width for US state borders.
+#'   Default: `0.5`.
+#' @param USA.county.lwd Numeric value giving the line width for US county
+#'   borders. Default: `0.5`.
+#' @param north.arrow.position Numeric vector of length two giving the relative
+#'   x and y position of the north arrow within the plotted map region. Values
+#'   must be between 0 and 1. Default: `c(0.03, 0.88)`.
+#' @param north.arrow.length Numeric value giving the length of the north arrow
+#'   in map units. Default: `0.7`.
+#' @param north.arrow.lwd Numeric value giving the line width of the north arrow.
+#'   Default: `2`.
+#' @param north.arrow.N.position Numeric value controlling the vertical offset of
+#'   the `"N"` label above the north arrow. Default: `0.3`.
+#' @param north.arrow.N.size Numeric value controlling the size of the `"N"`
+#'   label above the north arrow. Default: `1`.
+#' @param scale.position Numeric vector of length two giving the relative x and
+#'   y position of the map scale within the plotted map region. Values must be
+#'   between 0 and 1. Default: `c(0.03, 0.05)`.
+#' @param scale.size Numeric value controlling the relative width of the map
+#'   scale. Default: `0.16`.
+#' @param scale.font.size Numeric value controlling the font size of the map
+#'   scale text. Default: `0.54`.
+#' @param legend.position Character string giving the legend position. Supported
+#'   values are `"topright"`, `"topleft"`, `"bottomright"`, `"bottomleft"`,
+#'   `"right"`, `"left"`, `"top"`, `"bottom"`, and `"center"`.
+#'   Default: `"topright"`.
+#' @param legend.cluster.names Optional character vector giving custom cluster
+#'   names for the legend. If `NULL`, clusters are labelled `"Cluster 1"`,
+#'   `"Cluster 2"`, and so on. If supplied, its length must match the number of
+#'   columns in `SOM.output$ancestry_matrix`.
+#' @param legend.font.size Numeric value controlling the legend text size.
+#'   Default: `1`.
+#' @param legend.box Logical; if `TRUE`, a box is drawn around the legend.
+#'   Default: `TRUE`.
+#' @param legend.symbol.size Numeric value controlling the size of legend
+#'   symbols. Default: `1.5`.
+#'
+#' @details
+#' `plot.map.SOM` visualizes geographic structure in SOM clustering output. The
+#' function matches samples between `SOM.output$ancestry_matrix` and
+#' `Coordinates` by row names, reorders both objects to the shared sample order,
+#' and removes samples with missing latitude or longitude before plotting.
+#'
+#' The plotted map extent is determined from the minimum and maximum retained
+#' latitude and longitude values, with optional latitude and longitude buffers.
+#' A world map is drawn as the background, with optional US state and county
+#' borders. Each sample is plotted as a pie chart whose slice proportions are
+#' taken from the corresponding row of `SOM.output$ancestry_matrix`.
+#'
+#' The buffer-range, scale-position, north-arrow-position,
+#' north-arrow-label-position, north-arrow-size, and north-arrow-length
+#' parameters may require manual tuning to produce an aesthetically balanced
+#' plot for different map extents and sample distributions.
+#'
+#' @return Invisibly returns `NULL`. The function is called for its plotting side
+#'   effect and optionally saves the plot to file.
+#'
+#' @examples
+#' \dontrun{
+#' coordinates <- data.frame(
+#'   Latitude = c(38.0, 38.5, 39.0),
+#'   Longitude = c(-84.5, -85.0, -84.0)
+#' )
+#' rownames(coordinates) <- rownames(som_clusters$ancestry_matrix)[1:3]
+#'
+#' plot.map.SOM(
+#'   SOM.output = som_clusters,
+#'   Coordinates = coordinates
+#' )
+#'
+#' plot.map.SOM(
+#'   SOM.output = som_clusters,
+#'   Coordinates = coordinates,
+#'   legend.cluster.names = c("Cluster 1", "Cluster 2", "Cluster 3"),
+#'   save = TRUE,
+#'   plot.type = "svg"
+#' )
+#' }
+#'
+#' @importFrom caroline nv pies
+#' @importFrom graphics arrows legend par text
+#' @importFrom grDevices dev.cur dev.off jpeg png svg
+#' @importFrom maps map map.axes map.scale
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @export
 plot.map.SOM <- function(SOM.output,
                          Coordinates, #coordinates as "Latitude" and "Longitude" columns in dataframe/matrix
                          save = F, #whether to save plot or not
