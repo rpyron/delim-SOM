@@ -4880,9 +4880,6 @@ plot.map.SOM <- function(SOM.output,
   lat_min = min(Coordinates$Latitude) - lat.buffer.range
   lat_max = max(Coordinates$Latitude) + lat.buffer.range
   
-  # Create plot
-  if (grDevices::dev.cur() > 1) grDevices::dev.off() #close current device if open to avoid unwanted graphic distortions and other effects
-  
   # Set plot saving
   if (save) {
     if (is.null(file.name)) file.name <- paste0("SOM_map_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
@@ -7038,7 +7035,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                                                                       hard_cluster_labels = baseline_hard_cluster_labels,
                                                                                                       retained_replicate_position = retained_replicate_position)
       baseline_mean_assignment_margin <- calculate.mean.assignment.margin.SOM(baseline_assignment_probability_matrix)
-      baseline_mean_normalized_assignment_entropy <- calculate.mean.normalized.assignment.entropy.SOM(baseline_assignment_probability_matrix)
       
       # Loop through omitted layers
       for (layer_index in seq_along(input_data)) {
@@ -7074,24 +7070,18 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         
         # Store failed leave-one-layer-out run
         if (inherits(leave_one_layer_out.SOM.output, "error")) {
-          replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
-                                                                          retained.replicate.index = baseline_training_replicate_index,
-                                                                          layer = omitted_layer_name,
-                                                                          baseline.modal.k = baseline_modal_k,
-                                                                          leave.one.layer.out.modal.k = NA_real_,
-                                                                          signed.k.shift = NA_real_,
-                                                                          absolute.k.deviation = NA_real_,
-                                                                          assignment.accuracy.to.original = NA_real_,
-                                                                          pairwise.coassignment.change = NA_real_,
-                                                                          ARI = NA_real_,
-                                                                          baseline.mean.assignment.margin = baseline_mean_assignment_margin,
-                                                                          leave.one.layer.out.mean.assignment.margin = NA_real_,
-                                                                          delta.mean.assignment.margin = NA_real_,
-                                                                          baseline.mean.normalized.assignment.entropy = baseline_mean_normalized_assignment_entropy,
-                                                                          leave.one.layer.out.mean.normalized.assignment.entropy = NA_real_,
-                                                                          increase.mean.normalized.assignment.entropy = NA_real_,
-                                                                          error = conditionMessage(leave_one_layer_out.SOM.output),
-                                                                          stringsAsFactors = FALSE)
+        replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
+                                                                        retained.replicate.index = baseline_training_replicate_index,
+                                                                        layer = omitted_layer_name,
+                                                                        baseline.modal.k = baseline_modal_k,
+                                                                        leave.one.layer.out.modal.k = NA_real_,
+                                                                        absolute.k.deviation = NA_real_,
+                                                                        pairwise.coassignment.change = NA_real_,
+                                                                        baseline.mean.assignment.margin = baseline_mean_assignment_margin,
+                                                                        leave.one.layer.out.mean.assignment.margin = NA_real_,
+                                                                        delta.mean.assignment.margin = NA_real_,
+                                                                        error = conditionMessage(leave_one_layer_out.SOM.output),
+                                                                        stringsAsFactors = FALSE)
           results_counter <- results_counter + 1
           next
         }
@@ -7104,24 +7094,18 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         # Extract shared sample names
         shared_sample_names <- intersect(baseline_sample_names, names(leave_one_layer_out_hard_cluster_labels))
         if (length(shared_sample_names) < 2) {
-          replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
-                                                                          retained.replicate.index = baseline_training_replicate_index,
-                                                                          layer = omitted_layer_name,
-                                                                          baseline.modal.k = baseline_modal_k,
-                                                                          leave.one.layer.out.modal.k = leave_one_layer_out_modal_k,
-                                                                          signed.k.shift = leave_one_layer_out_modal_k - baseline_modal_k,
-                                                                          absolute.k.deviation = abs(leave_one_layer_out_modal_k - baseline_modal_k),
-                                                                          assignment.accuracy.to.original = NA_real_,
-                                                                          pairwise.coassignment.change = NA_real_,
-                                                                          ARI = NA_real_,
-                                                                          baseline.mean.assignment.margin = baseline_mean_assignment_margin,
-                                                                          leave.one.layer.out.mean.assignment.margin = NA_real_,
-                                                                          delta.mean.assignment.margin = NA_real_,
-                                                                          baseline.mean.normalized.assignment.entropy = baseline_mean_normalized_assignment_entropy,
-                                                                          leave.one.layer.out.mean.normalized.assignment.entropy = NA_real_,
-                                                                          increase.mean.normalized.assignment.entropy = NA_real_,
-                                                                          error = "Too few shared samples between stored baseline replicate and leave-one-layer-out output",
-                                                                          stringsAsFactors = FALSE)
+            replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
+                                                                            retained.replicate.index = baseline_training_replicate_index,
+                                                                            layer = omitted_layer_name,
+                                                                            baseline.modal.k = baseline_modal_k,
+                                                                            leave.one.layer.out.modal.k = leave_one_layer_out_modal_k,
+                                                                            absolute.k.deviation = abs(leave_one_layer_out_modal_k - baseline_modal_k),
+                                                                            pairwise.coassignment.change = NA_real_,
+                                                                            baseline.mean.assignment.margin = baseline_mean_assignment_margin,
+                                                                            leave.one.layer.out.mean.assignment.margin = NA_real_,
+                                                                            delta.mean.assignment.margin = NA_real_,
+                                                                            error = "Too few shared samples between stored baseline replicate and leave-one-layer-out output",
+                                                                            stringsAsFactors = FALSE)
           results_counter <- results_counter + 1
           next
         }
@@ -7131,20 +7115,12 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                                                                                    hard_cluster_labels = leave_one_layer_out_hard_cluster_labels,
                                                                                                                    retained_replicate_position = NULL)
         leave_one_layer_out_mean_assignment_margin <- calculate.mean.assignment.margin.SOM(leave_one_layer_out_assignment_probability_matrix)
-        leave_one_layer_out_mean_normalized_assignment_entropy <- calculate.mean.normalized.assignment.entropy.SOM(leave_one_layer_out_assignment_probability_matrix)
-        
+
         # Calculate replicate-level metrics
-        signed.k.shift <- leave_one_layer_out_modal_k - baseline_modal_k
-        absolute.k.deviation <- abs(signed.k.shift)
-        assignment.accuracy.to.original <- calculate.assignment.accuracy.to.original.SOM(baseline_cluster_labels = baseline_hard_cluster_labels,
-                                                                                         leave_one_layer_out_cluster_labels = leave_one_layer_out_hard_cluster_labels)
+        absolute.k.deviation <- abs(leave_one_layer_out_modal_k - baseline_modal_k)
         pairwise.coassignment.change <- calculate.pairwise.coassignment.change.SOM(baseline_cluster_labels = baseline_hard_cluster_labels,
                                                                                    leave_one_layer_out_cluster_labels = leave_one_layer_out_hard_cluster_labels)
-        adjusted.rand.index <- tryCatch({mclust::adjustedRandIndex(baseline_hard_cluster_labels[shared_sample_names], leave_one_layer_out_hard_cluster_labels[shared_sample_names])}, error = function(error_message) NA_real_)
-        
-        # Calculate new continuous certainty/separation metrics
         delta.mean.assignment.margin <- baseline_mean_assignment_margin - leave_one_layer_out_mean_assignment_margin
-        increase.mean.normalized.assignment.entropy <- leave_one_layer_out_mean_normalized_assignment_entropy - baseline_mean_normalized_assignment_entropy
         
         # Store results
         replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
@@ -7152,17 +7128,11 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                                         layer = omitted_layer_name,
                                                                         baseline.modal.k = baseline_modal_k,
                                                                         leave.one.layer.out.modal.k = leave_one_layer_out_modal_k,
-                                                                        signed.k.shift = signed.k.shift,
                                                                         absolute.k.deviation = absolute.k.deviation,
-                                                                        assignment.accuracy.to.original = assignment.accuracy.to.original,
                                                                         pairwise.coassignment.change = pairwise.coassignment.change,
-                                                                        ARI = adjusted.rand.index,
                                                                         baseline.mean.assignment.margin = baseline_mean_assignment_margin,
                                                                         leave.one.layer.out.mean.assignment.margin = leave_one_layer_out_mean_assignment_margin,
                                                                         delta.mean.assignment.margin = delta.mean.assignment.margin,
-                                                                        baseline.mean.normalized.assignment.entropy = baseline_mean_normalized_assignment_entropy,
-                                                                        leave.one.layer.out.mean.normalized.assignment.entropy = leave_one_layer_out_mean_normalized_assignment_entropy,
-                                                                        increase.mean.normalized.assignment.entropy = increase.mean.normalized.assignment.entropy,
                                                                         error = NA_character_,
                                                                         stringsAsFactors = FALSE)
         results_counter <- results_counter + 1
@@ -7174,43 +7144,20 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     
     # Create layer-level summary table
     layer_summary_list <- lapply(split(replicate_matched_results_table, replicate_matched_results_table$layer), function(current_layer_results_table) {
-      
+  
       # Extract successful runs
       successful_current_layer_results_table <- current_layer_results_table[is.na(current_layer_results_table$error), , drop = FALSE]
-      
-      # Calculate baseline and leave-one-layer-out k distributions
-      baseline.k.distribution <- summarize.k.distribution.SOM(successful_current_layer_results_table$baseline.modal.k)
-      leave.one.layer.out.k.distribution <- summarize.k.distribution.SOM(successful_current_layer_results_table$leave.one.layer.out.modal.k)
-      
-      # Calculate k distribution TVD
-      k.distribution.TVD <- calculate.k.distribution.TVD.SOM(baseline_k_values = successful_current_layer_results_table$baseline.modal.k,
-                                                             leave_one_layer_out_k_values = successful_current_layer_results_table$leave.one.layer.out.modal.k)
-      
+  
       # Return summary row
       data.frame(layer = current_layer_results_table$layer[1],
                  N.replicates = nrow(current_layer_results_table),
                  N.successful = nrow(successful_current_layer_results_table),
-                 mean.signed.k.shift = mean.or.NA.SOM(successful_current_layer_results_table$signed.k.shift),
-                 median.signed.k.shift = median.or.NA.SOM(successful_current_layer_results_table$signed.k.shift),
                  mean.absolute.k.deviation = mean.or.NA.SOM(successful_current_layer_results_table$absolute.k.deviation),
                  median.absolute.k.deviation = median.or.NA.SOM(successful_current_layer_results_table$absolute.k.deviation),
-                 mean.assignment.accuracy.to.original = mean.or.NA.SOM(successful_current_layer_results_table$assignment.accuracy.to.original),
-                 median.assignment.accuracy.to.original = median.or.NA.SOM(successful_current_layer_results_table$assignment.accuracy.to.original),
                  mean.pairwise.coassignment.change = mean.or.NA.SOM(successful_current_layer_results_table$pairwise.coassignment.change),
                  median.pairwise.coassignment.change = median.or.NA.SOM(successful_current_layer_results_table$pairwise.coassignment.change),
-                 mean.ARI = mean.or.NA.SOM(successful_current_layer_results_table$ARI),
-                 median.ARI = median.or.NA.SOM(successful_current_layer_results_table$ARI),
-                 mean.baseline.mean.assignment.margin = mean.or.NA.SOM(successful_current_layer_results_table$baseline.mean.assignment.margin),
-                 mean.leave.one.layer.out.mean.assignment.margin = mean.or.NA.SOM(successful_current_layer_results_table$leave.one.layer.out.mean.assignment.margin),
                  mean.delta.mean.assignment.margin = mean.or.NA.SOM(successful_current_layer_results_table$delta.mean.assignment.margin),
                  median.delta.mean.assignment.margin = median.or.NA.SOM(successful_current_layer_results_table$delta.mean.assignment.margin),
-                 mean.baseline.mean.normalized.assignment.entropy = mean.or.NA.SOM(successful_current_layer_results_table$baseline.mean.normalized.assignment.entropy),
-                 mean.leave.one.layer.out.mean.normalized.assignment.entropy = mean.or.NA.SOM(successful_current_layer_results_table$leave.one.layer.out.mean.normalized.assignment.entropy),
-                 mean.increase.mean.normalized.assignment.entropy = mean.or.NA.SOM(successful_current_layer_results_table$increase.mean.normalized.assignment.entropy),
-                 median.increase.mean.normalized.assignment.entropy = median.or.NA.SOM(successful_current_layer_results_table$increase.mean.normalized.assignment.entropy),
-                 k.distribution.TVD = k.distribution.TVD,
-                 baseline.k.distribution = baseline.k.distribution,
-                 leave.one.layer.out.k.distribution = leave.one.layer.out.k.distribution,
                  stringsAsFactors = FALSE)
     })
     layer_summary_table <- do.call(rbind, layer_summary_list)
@@ -7243,9 +7190,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     warning("Plotting skipped: no successful replicate-level results found")
     return(leave.one.layer.out.results)
   }
-  
-  # Calculate assignment inaccuracy to original
-  successful_replicate_matched_results_table$assignment.inaccuracy.to.original <- 1 - successful_replicate_matched_results_table$assignment.accuracy.to.original
   
   # Extract layer names and colors
   SOM_layer_names <- as.character(layer_summary_table$layer)
@@ -7283,24 +7227,23 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   # Reset plotting parameters
   old_plotting_parameters <- par(no.readonly = TRUE)
   on.exit(par(old_plotting_parameters), add = TRUE)
-  
-  # Determine whether certainty/separation plots can be shown
+
+  # Determine whether assignment margin change can be shown
   show.assignment.margin.plot <- any(is.finite(successful_replicate_matched_results_table$delta.mean.assignment.margin) & !is.na(successful_replicate_matched_results_table$delta.mean.assignment.margin))
-  show.assignment.entropy.plot <- any(is.finite(successful_replicate_matched_results_table$increase.mean.normalized.assignment.entropy) & !is.na(successful_replicate_matched_results_table$increase.mean.normalized.assignment.entropy))
-  
+
   # Set plotting layout
-  if (show.assignment.margin.plot || show.assignment.entropy.plot) {
-    par(mfrow = c(3, 2),
+  if (show.assignment.margin.plot) {
+    par(mfrow = c(1, 3),
         mar = c(bottom.margin, left.margin, top.margin, right.margin),
         oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
         mgp = c(distance.axis.label, 1, 0))
   } else {
-    par(mfrow = c(2, 2),
+    par(mfrow = c(1, 2),
         mar = c(bottom.margin, left.margin, top.margin, right.margin),
         oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
         mgp = c(distance.axis.label, 1, 0))
-    messager("Assignment margin and entropy plots skipped because all successful replicates had k = 1")
-  }
+    messager("Assignment margin plot skipped because all successful replicates had k = 1")
+  }                                                 
   
   # Add overall title if requested
   if (!is.null(title)) graphics::mtext(title, side = 3, outer = TRUE, line = -1.5, cex = 1.2)
@@ -7336,26 +7279,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           main = "Absolute k deviation")
   add.jittered.points.SOM("absolute.k.deviation")
   
-  # Plot k distribution TVD
-  barplot(height = layer_summary_table$k.distribution.TVD,
-          axisnames = FALSE,
-          col = layer_colors[SOM_layer_names],
-          las = 2,
-          ylab = "K distribution TVD",
-          xlab = "",
-          main = "K distribution TVD")
-  
-  # Plot assignment inaccuracy to original
-  boxplot(assignment.inaccuracy.to.original ~ layer,
-          data = successful_replicate_matched_results_table,
-          col = layer_colors[SOM_layer_names],
-          outline = FALSE,
-          las = 2,
-          ylab = "1 - assignment accuracy to original",
-          xlab = "",
-          main = "Assignment inaccuracy")
-  add.jittered.points.SOM("assignment.inaccuracy.to.original")
-  
   # Plot pairwise co-assignment change
   boxplot(pairwise.coassignment.change ~ layer,
           data = successful_replicate_matched_results_table,
@@ -7378,20 +7301,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
             xlab = "",
             main = "Assignment margin change")
     add.jittered.points.SOM("delta.mean.assignment.margin")
-    abline(h = 0, lty = 2)
-  }
-  
-  # Plot normalized assignment entropy increase
-  if (show.assignment.entropy.plot) {
-    boxplot(increase.mean.normalized.assignment.entropy ~ layer,
-            data = successful_replicate_matched_results_table,
-            col = layer_colors[SOM_layer_names],
-            outline = FALSE,
-            las = 2,
-            ylab = "Leave-one-layer-out - baseline entropy",
-            xlab = "",
-            main = "Entropy increase")
-    add.jittered.points.SOM("increase.mean.normalized.assignment.entropy")
     abline(h = 0, lty = 2)
   }
   
