@@ -1492,12 +1492,16 @@ calculate.topographic.error <- function(som_model) {
 #'
 #' The `"GMM+BICthreshold"` method fits Gaussian mixture models to the codebook
 #' vectors using `mclust`. Candidate covariance parameterizations are evaluated
-#' in a staged manner with `mclust::mclustBIC`, retaining the best finite BIC
-#' value for each k. Because `mclust` treats larger BIC values as better whereas
-#' the internal threshold selector assumes lower values are better, the sign of
-#' the BIC vector is inverted before applying the threshold rule. The final
-#' selected model is refit with `mclust::Mclust`, and the returned classification
-#' is checked before being used as the codebook-vector cluster assignment.
+#' in a staged manner with `mclust::mclustBIC` for computational efficiency.
+#' Stable covariance models are tried first, then mid-complexity models are tried
+#' only if no stable model returns a finite BIC for that k, and expanded models
+#' are tried only if both earlier tiers fail. The retained value for each k is
+#' therefore the best finite BIC within the first successful covariance-model
+#' tier. Because `mclust` treats larger BIC values as better whereas the internal
+#' threshold selector assumes lower values are better, the sign of the BIC vector
+#' is inverted before applying the threshold rule. The final selected model is
+#' refit with `mclust::Mclust`, and the returned classification is checked before
+#' being used as the codebook-vector cluster assignment.
 #'
 #' The `"hierarchical+DB"` method performs agglomerative hierarchical clustering
 #' of codebook vectors using Euclidean distances and `stats::hclust` with
@@ -1620,7 +1624,7 @@ calculate.topographic.error <- function(som_model) {
 #'   replicates.}
 #'   \item{optim_k_summary}{Summary table of inferred k support across retained
 #'   replicates.}
-#'   \item{BIC_values}{Replicate-by-k matrix of BIC-like or related support
+#'   \item{BIC_values}{k-by-replicate matrix of BIC-like or related support
 #'   values where relevant to the selected clustering method.}
 #'   \item{support_values}{Replicate-by-k matrix of method-specific support
 #'   values, including BIC-like, Davies-Bouldin, or silhouette support where
@@ -1734,11 +1738,12 @@ calculate.topographic.error <- function(som_model) {
 #'
 #' som_single <- train.SOM(continuous_data, N.steps = 100, N.replicates = 50)
 #'
-#' # Cluster trained SOM codebook vectors with the default k-means BIC-elbow method
-#' som_single_clustered <- clustering.SOM(som_single, max.k = 6)
+#' # Cluster trained SOM codebook vectors with k-means BIC-elbow method
+#' som_single_clustered <- clustering.SOM(som_single, max.k = 6,
+#'                                        clustering.method = "kmeans+BICelbow")
 #'
-#' # Force a fixed three-cluster solution with k-means
-#' som_single_k3 <- clustering.SOM(som_single, max.k = 6, set.k = 3,
+#' # Force a fixed three-cluster solution with k-means BIC-elbow method
+#' som_single_k3 <- clustering.SOM(som_single, set.k = 3,
 #'                                 clustering.method = "kmeans+BICelbow")
 #'
 #' # Train and cluster a multi-layer Super-SOM
@@ -1752,15 +1757,10 @@ calculate.topographic.error <- function(som_model) {
 #'
 #' som_multi <- train.SOM(list(SNPs = snp_data,
 #'                            Morphology = morphology_data,
-#'                            Environment = environment_data),
-#'                        N.steps = 100,
-#'                        N.replicates = 50)
+#'                            Environment = environment_data))
 #'
 #' som_multi_clustered <- clustering.SOM(som_multi,
-#'                                       max.k = 6,
-#'                                       clustering.method = "kmeans+BICelbow",
-#'                                       calculate.soft.ancestry = TRUE,
-#'                                       calculate.variable.importance = TRUE)
+#'                                       clustering.method = "kmeans+BICelbow")
 #' }
 #'
 #' @export
@@ -2811,7 +2811,6 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   }
   
   # Collect results for all replicates
-  messager("Running SOM clustering sequentially")
   results <- lapply(seq_len(N.replicates), function(j) {
     if (j %% message.N.replicates == 0 || j == 1 || j == N.replicates) messager(paste("Running clustering replicate:", j, "of", N.replicates))
     replicate_clust(j)
@@ -6117,9 +6116,9 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
                                              top.margin = 3, #top margin
                                              right.margin = 2.5, #right margin
                                              etasquared.title = "Cluster separation", #title of eta plot
-                                             mapvariance.title = "Variance across map", #title of map variance plot
+                                             mapvariance.title = "Variance across SOM map", #title of map variance plot
                                              etasquared.y.axis.label = "Eta squared effect size", #y axis label for eta plot
-                                             mapvariance.y.axis.label = "Map variance", #y axis label for map variance plot
+                                             mapvariance.y.axis.label = "Variance", #y axis label for map variance plot
                                              title.font.size = 1.2, #font size of plot titles
                                              axis.font.size = 0.9, #font size of axis labels
                                              add.boxplot.whiskers = TRUE, #whether to show boxplot whiskers
@@ -6275,7 +6274,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
       current_values <- plot_list[[layer_index]]
       current_values <- current_values[is.finite(current_values) & !is.na(current_values)]
       if (length(current_values) > 0) {
-        points(jitter(rep(layer_index, length(current_values)), amount = 0.15),
+        points(jitter(rep(layer_index, length(current_values)), amount = 0.12),
                current_values,
                pch = 16,
                cex = point.cex,
@@ -7274,7 +7273,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         current_layer_values <- successful_replicate_matched_results_table[successful_replicate_matched_results_table$layer == current_layer_name, response_variable_name]
         current_layer_values <- current_layer_values[is.finite(current_layer_values) & !is.na(current_layer_values)]
         if (length(current_layer_values) == 0) next
-        points(jitter(rep(layer_index, length(current_layer_values)), amount = 0.15),
+        points(jitter(rep(layer_index, length(current_layer_values)), amount = 0.12),
                current_layer_values,
                pch = 16,
                cex = point.cex,
