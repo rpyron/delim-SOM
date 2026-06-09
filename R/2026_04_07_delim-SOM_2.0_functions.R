@@ -6125,7 +6125,6 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
                                              add.boxplot.whiskers = TRUE, #whether to show boxplot whiskers
                                              point.cex = 0.8, #point size
                                              point.alpha = 0.65, #point transparency
-                                             verbose = TRUE #whether to print messages
                                              sort.by.median = TRUE, #whether to sort layers by median importance
                                              verbose = TRUE #whether to print messages
 ) {
@@ -6378,7 +6377,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
          cex.axis = axis.font.size)
     axis(2, cex.axis = axis.font.size)
     box()
-    add.jittered.layer.points.SOM(eta_squared_plot_list)
+    add.jittered.layer.points.SOM(map_variance_plot_list)
   }
   
   # Plot eta squared only
@@ -6458,7 +6457,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
          cex.axis = axis.font.size)
     axis(2, cex.axis = axis.font.size)
     box()
-    add.jittered.layer.points.SOM(eta_squared_plot_list)
+    add.jittered.layer.points.SOM(map_variance_plot_list)
   }
   
   # Close graphics device
@@ -6478,7 +6477,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   col.pal = viridis::turbo, #color palette
                                                   add.points = TRUE, #whether to add replicate-level jittered points
                                                   point.cex = 0.8, #point size
-                                                  point.alpha = 0.65, #point transparence
+                                                  point.alpha = 0.65, #point transparency
                                                   bottom.margin = 8, #bottom margin
                                                   left.margin = 5.5, #left margin
                                                   top.margin = 3, #top margin
@@ -6584,6 +6583,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.numeric(baseline.train.SOM.set.seed.N) || length(baseline.train.SOM.set.seed.N) != 1 || is.na(baseline.train.SOM.set.seed.N) || baseline.train.SOM.set.seed.N < 1 || baseline.train.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.train.SOM.set.seed.N must be a single positive integer")
   if (!is.numeric(baseline.clustering.SOM.set.seed.N) || length(baseline.clustering.SOM.set.seed.N) != 1 || is.na(baseline.clustering.SOM.set.seed.N) || baseline.clustering.SOM.set.seed.N < 1 || baseline.clustering.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.clustering.SOM.set.seed.N must be a single positive integer")
   if (!is.logical(add.points) || length(add.points) != 1 || is.na(add.points)) stop("Leave-one-layer-out layer importance aborted: add.points must be TRUE or FALSE")
+    if (!is.numeric(point.cex) || length(point.cex) != 1 || is.na(point.cex) || point.cex <= 0) stop("Leave-one-layer-out layer importance aborted: point.cex must be a single positive numeric value")
+  if (!is.numeric(point.alpha) || length(point.alpha) != 1 || is.na(point.alpha) || point.alpha < 0 || point.alpha > 1) stop("Leave-one-layer-out layer importance aborted: point.alpha must be a single numeric value between 0 and 1")
   if (!is.logical(save.leave.one.layer.out.results) || length(save.leave.one.layer.out.results) != 1 || is.na(save.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results must be TRUE or FALSE")
   if (save.leave.one.layer.out.results && !is.null(save.leave.one.layer.out.results.name)) {
     if (!is.character(save.leave.one.layer.out.results.name) || length(save.leave.one.layer.out.results.name) != 1 || is.na(save.leave.one.layer.out.results.name) || trimws(save.leave.one.layer.out.results.name) == "") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must be a non-empty character string if provided")
@@ -7470,29 +7471,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 #' Filters numeric variables before SOM analysis by removing rare binary variables,
 #' rare count variables, low-CV non-binary variables, and highly correlated retained
 #' variables. Columns listed in `exclude.cols` are excluded from all filtering steps
-#' and are bound back to the output in their original order. Row names are preserved.
-#'
-#' Binary variables are detected as numeric variables with exactly two finite values,
-#' `0` and `1`. Rare binary variables are removed when the less common state occurs
-#' in fewer samples than `ceiling(n_finite * prevalence.threshold)`. Count variables
-#' are detected as non-binary, non-negative, integer-like variables. Rare count
-#' variables are removed when the number of nonzero observations is below the same
-#' prevalence threshold.
-#'
-#' For non-binary variables, CV is calculated from finite values as `abs(sd / mean)`.
-#' Variables with CV less than or equal to `CV.threshold` are removed. If the mean is
-#' close to zero, CV is unstable and the function falls back to an SD/MAD-based
-#' variability ratio during the initial CV-filtering step.
-#'
-#' After prevalence and CV filtering, highly correlated variables are removed
-#' iteratively using absolute Spearman correlations with pairwise-complete
-#' observations. Retained count variables are transformed with `log1p()` only for
-#' correlation estimation; returned values remain untransformed. For each pair above
-#' `cor.threshold`, the function removes the variable with more missing values. If
-#' missingness is tied, it removes the variable with lower CV. If either mean is close
-#' to zero, CV is avoided and the variable with higher mean absolute correlation to
-#' other retained variables is removed instead. Remaining ties are resolved
-#' deterministically by removing the second variable in the pair.
+#' and are bound back to the output in original order. Row names are preserved.
 #'
 #' @param input.dataframe Data frame, or object coercible to a data frame. Rows are
 #'   samples and columns are variables. All filtered columns must be numeric.
@@ -7521,6 +7500,37 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 #' estimating prevalence, calculating CV, and estimating correlations. Non-finite
 #' correlations are set to zero before iterative correlation filtering.
 #'
+#' Binary variables are identified as variables with two observed states, `0` and
+#' `1`. Rare binary variables are removed according to `prevalence.threshold`.
+#' With the default `prevalence.threshold = 0.05`, the less common binary state
+#' must occur in at least 5% of finite observations, rounded up to the next whole
+#' sample. For example, with 100 finite observations, the less common state must
+#' occur in at least 5 samples. Count variables are identified as non-binary,
+#' non-negative, integer-like variables. Rare count variables are removed using
+#' the same threshold, based on the number of nonzero observations.
+#'
+#' For non-binary variables, low-variation variables are removed according to
+#' `CV.threshold`. With the default `CV.threshold = 0.05`, variables are removed
+#' when their coefficient of variation is less than or equal to 0.05, so that the
+#' standard deviation is 5% or less of the absolute mean. When the absolute mean
+#' is near zero (below 1e-7), CV is treated as unstable because division by a value close
+#' to zero can produce misleadingly large CV values. In that case,
+#' an alternative variability ratio is used during the initial low-variation
+#' filtering step, calculated as the standard deviation divided by the median
+#' absolute deviation plus a small constant to avoid division by zero.
+#'
+#' After prevalence and CV filtering, highly correlated variables are removed
+#' iteratively according to `cor.threshold`, using absolute Spearman correlations.
+#' With the default `cor.threshold = 0.9`, variable pairs are considered highly
+#' correlated only when their absolute Spearman correlation is greater than 0.90.
+#' Count variables are transformed only for correlation estimation, while the
+#' returned data remain on the original scale. For each highly correlated pair,
+#' the function first removes the variable with more missing values. If
+#' missingness is tied, it removes the variable with lower variability. If
+#' variability comparison is unstable, it removes the variable that is more
+#' strongly correlated with the other retained variables. Remaining ties are
+#' resolved deterministically.
+#`
 #' Integer-like non-negative variables are treated as count variables unless they are
 #' binary. Integer-coded categorical variables should therefore be excluded or recoded
 #' before using this function.
