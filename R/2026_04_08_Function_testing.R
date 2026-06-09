@@ -9,7 +9,7 @@ source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2
 
 ## Specify parameters for all datasets
 set.seed(1) #set seed for reproducibility
-n_individuals <- 90 #simulate dataset with N individuals (needs to be consistent across all datasets)
+n_individuals <- 60 #simulate dataset with N individuals (needs to be consistent across all datasets)
 rownames_datasets <- "Individual" #name rows (needs to be consistent across all datasets)
 
 
