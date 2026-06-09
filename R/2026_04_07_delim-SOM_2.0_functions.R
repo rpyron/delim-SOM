@@ -3651,10 +3651,18 @@ plot.learning.SOM <- function(SOM.output,
 #' @param top.margin Numeric value giving the top plot margin. Default: `3.5`.
 #' @param right.margin Numeric value giving the right plot margin. Default:
 #'   `0.5`.
-#' @param title Character string giving the main plot title. Default:
-#'   `"Layer distance scale across layers"`.
-#' @param y_axis_label Character string giving the y-axis label. Default:
-#'   `"Average pairwise distance"`.
+#' @param plot.title Optional character string giving the plot title. If `NULL`,
+#'   no title is shown. Default: `"Layer distance scale across layers"`.
+#' @param plot.title.font.size A single positive numeric value giving the plot
+#'   title font size in points. Default: `11.1`.
+#' @param plot.title.line A single numeric value giving the distance of the plot
+#'   title from the plot. Default: `1`.
+#' @param y.axis.label Optional character string giving the y-axis title. If
+#'   `NULL`, no y-axis title is shown. Default: `"Average pairwise distance"`.
+#' @param axis.labels.font.size A single positive numeric value giving the axis
+#'   title font size in points. Default: `9.1`.
+#' @param axis.ticks.font.size A single positive numeric value giving the axis
+#'   tick-label font size in points. Default: `7`.
 #'
 #' @details
 #' The plot is intended as a diagnostic visualization of whole-layer distance
@@ -3675,7 +3683,7 @@ plot.learning.SOM <- function(SOM.output,
 #' @return Invisibly returns `NULL`. The function is called for its plotting side
 #'   effect. If `save = TRUE`, the plot is written to the specified file.
 #'
-#' @importFrom graphics par barplot axis
+#' @importFrom graphics par barplot axis box title
 #' @importFrom grDevices dev.cur dev.off svg png jpeg
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
@@ -3721,54 +3729,102 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
                                           left.margin = 5, #left margin
                                           top.margin = 3.5, #top margin
                                           right.margin = 0.5, #right margin
-                                          title = "Layer distance scale across layers", #plot title name
-                                          y_axis_label = "Average pairwise distance" #set y axis label
+                                          plot.title = "Layer distance scale across layers", #plot title name (NULL = no title)
+                                          plot.title.font.size = 11.1, #font size of plot title in points
+                                          plot.title.line = 1, #distance of plot title from plot
+                                          y.axis.label = "Average pairwise distance", #set y-axis title (NULL = no y-axis title)
+                                          axis.labels.font.size = 9.1, #font size of axis titles in points
+                                          axis.ticks.font.size = 7 #font size of axis tick labels in points
 ) {
   
   # Reset plotting parameters
-  old_dev <- dev.cur()
+  old_device <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
+  device_opened <- FALSE
   on.exit({
-    if (dev.cur() != old_dev) dev.off()
+    if (device_opened && dev.cur() != old_device) dev.off()
     par(old_plotting_parameters)
-  })
+  }, add = TRUE)
   
   # Validate SOM.output
   if (is.null(SOM.output$distance_weights_matrix)) stop("Plotting aborted: SOM.output does not contain distance_weights_matrix")
   
   # Extract replicate-wise distance weights matrix
-  d.mat <- SOM.output$distance_weights_matrix
-  if (!is.matrix(d.mat)) d.mat <- as.matrix(d.mat)
-  if (!is.numeric(d.mat)) stop("Plotting aborted: distance_weights_matrix must be numeric")
-  if (any(!is.finite(d.mat) | is.na(d.mat))) stop("Plotting aborted: distance_weights_matrix contains NA or non-finite values")  
-  if (any(d.mat <= 0)) stop("Plotting aborted: distance_weights_matrix must contain only positive values")
+  distance_weights_matrix <- SOM.output$distance_weights_matrix
+  if (!is.matrix(distance_weights_matrix)) distance_weights_matrix <- as.matrix(distance_weights_matrix)
+  if (!is.numeric(distance_weights_matrix)) stop("Plotting aborted: distance_weights_matrix must be numeric")
+  if (any(!is.finite(distance_weights_matrix) | is.na(distance_weights_matrix))) stop("Plotting aborted: distance_weights_matrix contains NA or non-finite values")
+  if (any(distance_weights_matrix <= 0)) stop("Plotting aborted: distance_weights_matrix must contain only positive values")
   
   # Require multilayer input
-  if (ncol(d.mat) < 2) stop("Plotting aborted: at least two layers are required for plotting")
+  if (ncol(distance_weights_matrix) < 2) stop("Plotting aborted: at least two layers are required for plotting")
   
-  # Extract matrix names
-  if ("input_data_names" %in% names(SOM.output)) {
-    matrix_names <- SOM.output$input_data_names
-  } else {
-    matrix_names <- colnames(d.mat)
+  # Validate specified color palette
+  viridis_palettes <- list(viridis::viridis,
+                           viridis::magma,
+                           viridis::plasma,
+                           viridis::inferno,
+                           viridis::cividis,
+                           viridis::rocket,
+                           viridis::mako,
+                           viridis::turbo)
+  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+  
+  # Validate plot-saving arguments
+  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
+  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
+  if (save) {
+    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
   }
-  if (is.null(matrix_names) || length(matrix_names) != ncol(d.mat)) matrix_names <- paste0("Layer", seq_len(ncol(d.mat)))
+  if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
+  if (save) {
+    if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
+    if (width < 4) message("Warning: width is very small (", width, " cm) - plot may be hard to read")
+    if (width > 50) message("Warning: width is very large (", width, " cm) - plot may be unwieldy")
+    if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
+    if (height < 4) message("Warning: height is very small (", height, " cm) - plot may be hard to read")
+    if (height > 50) message("Warning: height is very large (", height, " cm) - plot may be unwieldy")
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number >= 72 (dpi)")
+    if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) - file may be huge")
+  }
+  
+  # Validate margin arguments
+  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative number")
+  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative number")
+  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative number")
+  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative number")
+  
+  # Validate label arguments
+  if (!is.null(plot.title) && (!is.character(plot.title) || length(plot.title) != 1 || is.na(plot.title))) stop("Plotting aborted: plot.title must be NULL or a single character string")
+  if (!is.numeric(plot.title.font.size) || length(plot.title.font.size) != 1 || is.na(plot.title.font.size) || plot.title.font.size <= 0) stop("Plotting aborted: plot.title.font.size must be a single positive number")
+  if (!is.numeric(plot.title.line) || length(plot.title.line) != 1 || is.na(plot.title.line)) stop("Plotting aborted: plot.title.line must be a single numeric value")
+  if (!is.null(y.axis.label) && (!is.character(y.axis.label) || length(y.axis.label) != 1 || is.na(y.axis.label))) stop("Plotting aborted: y.axis.label must be NULL or a single character string")
+  if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
+  if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive number")
+  
+  # Extract layer names
+  if ("input_data_names" %in% names(SOM.output)) {
+    layer_names <- SOM.output$input_data_names
+  } else {
+    layer_names <- colnames(distance_weights_matrix)
+  }
+  if (is.null(layer_names) || length(layer_names) != ncol(distance_weights_matrix)) layer_names <- paste0("Layer", seq_len(ncol(distance_weights_matrix)))
   
   # Set layer colors before reordering so colors stay linked to original layers
-  layer_colors <- setNames(col.pal(length(matrix_names)), matrix_names)
+  layer_colors <- setNames(col.pal(length(layer_names)), layer_names)
   
   # Convert distance weights back to mean pairwise distances
-  mean_pairwise_distance_matrix <- 1 / d.mat
-  colnames(mean_pairwise_distance_matrix) <- matrix_names
+  pairwise_distance_matrix <- 1 / distance_weights_matrix
+  colnames(pairwise_distance_matrix) <- layer_names
   
   # Calculate mean pairwise distance across replicates
-  mean_pairwise_distance <- colMeans(mean_pairwise_distance_matrix, na.rm = TRUE)
-  if (any(!is.finite(mean_pairwise_distance) | is.na(mean_pairwise_distance))) stop("Plotting aborted: calculated mean pairwise distances contain NA or non-finite values")
+  mean_pairwise_distances <- colMeans(pairwise_distance_matrix, na.rm = TRUE)
+  if (any(!is.finite(mean_pairwise_distances) | is.na(mean_pairwise_distances))) stop("Plotting aborted: calculated mean pairwise distances contain NA or non-finite values")
   
   # Order layers by descending mean pairwise distance
-  order_idx <- order(mean_pairwise_distance, decreasing = TRUE)
-  mean_pairwise_distance <- mean_pairwise_distance[order_idx]
-  matrix_names <- matrix_names[order_idx]
+  layer_order <- order(mean_pairwise_distances, decreasing = TRUE)
+  ordered_mean_pairwise_distances <- mean_pairwise_distances[layer_order]
+  ordered_layer_names <- layer_names[layer_order]
   
   # Set default file name
   if (is.null(file.name)) file.name <- paste0("plot_layer_distance_scale.", plot.type)
@@ -3787,24 +3843,67 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
     } else {
       stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
     }
+    device_opened <- TRUE
   }
   
+  # Convert point-size arguments to base R relative font sizes
+  base_font_size <- par("ps")
+  plot_title_relative_font_size <- plot.title.font.size / base_font_size
+  axis_labels_relative_font_size <- axis.labels.font.size / base_font_size
+  axis_ticks_relative_font_size <- axis.ticks.font.size / base_font_size
+  
   # Set plot layout
-  par(mfrow = c(1, 1), mar = c(bottom.margin, left.margin, top.margin, right.margin))
+  par(mfrow = c(1, 1),
+      mar = c(bottom.margin, left.margin, top.margin, right.margin))
   
   # Create barplot
-  barplot(height = mean_pairwise_distance,
-          col = layer_colors[matrix_names],
-          border = "black",
-          main = title,
-          ylab = y_axis_label,
-          names.arg = matrix_names)
+  bar_midpoints <- barplot(height = ordered_mean_pairwise_distances,
+                           col = layer_colors[ordered_layer_names],
+                           border = "black",
+                           names.arg = ordered_layer_names,
+                           axes = FALSE,
+                           axisnames = FALSE,
+                           ylab = "",
+                           main = "")
+  
+  # Add y-axis tick labels
+  axis(2,
+       cex.axis = axis_ticks_relative_font_size)
+  
+  # Add x-axis tick labels
+  axis(1,
+       at = bar_midpoints,
+       labels = ordered_layer_names,
+       tick = FALSE,
+       cex.axis = axis_ticks_relative_font_size)
+  
+  # Add plot box
+  box()
+  
+  # Add y-axis title
+  if (!is.null(y.axis.label)) {
+    title(ylab = y.axis.label,
+          font.lab = 2,
+          cex.lab = axis_labels_relative_font_size)
+  }
+  
+  # Add plot title
+  if (!is.null(plot.title)) {
+    title(main = plot.title,
+          line = plot.title.line,
+          font.main = 2,
+          cex.main = plot_title_relative_font_size)
+  }
   
   # Close graphics device
   if (save) {
     dev.off()
+    device_opened <- FALSE
     message(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
+  
+  # Return invisible NULL
+  return(invisible(NULL))
 }
 
 
