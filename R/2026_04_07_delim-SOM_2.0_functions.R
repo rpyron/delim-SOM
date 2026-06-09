@@ -4707,7 +4707,10 @@ plot.map.SOM <- function(SOM.output,
                          resolution = 300, #plot resolution in dpi (only if saving plot)
                          lat.buffer.range = 2, #add coordinates as buffer range around latitude coordinates
                          lon.buffer.range = 2, #add coordinates as buffer range around longitude coordinates
-                         pie.size = 2, #pie chart size
+                         preserve.map.aspect = TRUE, #whether to preserve geographic aspect ratio
+                         plot.title = "SOM ancestry map", #plot title (NULL = no title)
+                         plot.title.font.size = 11.1, #font size of plot title in points
+                         pie.size = 1.8, #pie chart size
                          pie.col.pal = viridis::viridis, #color palette of pie charts
                          USA.add.states = T, #option to add US states (only works if range includes USA)
                          USA.add.counties = F, #option to add US counties (only works if range includes USA)
@@ -4715,41 +4718,65 @@ plot.map.SOM <- function(SOM.output,
                          USA.county.lwd = 0.5, #linewidth of US county borders (only works if range includes USA)
                          north.arrow.position = c(0.03, 0.88), #position (x, y) of north arrow relative to map
                          north.arrow.length = 0.7, #length of north arrow
-                         north.arrow.lwd = 2, #linewidth of north arrow
+                         north.arrow.lwd = 1.7, #linewidth of north arrow
                          north.arrow.N.position = 0.3, #position of north arrow "N"
-                         north.arrow.N.size = 1, #size of north arrow "N"
+                         north.arrow.N.size = 0.8, #size of north arrow "N"
                          scale.position = c(0.03, 0.05), #relative position (x, y) of scale
-                         scale.size = 0.16, #size of scale
-                         scale.font.size = 0.54, #font size of scale text
+                         scale.size = 0.17, #size of scale
+                         scale.font.size = 7.1, #font size of scale text in points
+                         axis.labels.font.size = 9.1, #font size of axis labels in points
                          legend.position = "topright", #position of legend
+                         legend.title = "Cluster", #legend title (NULL = no legend title)
                          legend.cluster.names = NULL, #names of clusters in legend (if NULL, default is used, otherwise use vector with length of number of clusters)
-                         legend.font.size = 1, #font size of legend text
+                         legend.text.font.size = 9.1, #font size of legend text in points
+                         legend.title.font.size = 9.1, #font size of legend title in points
+                         legend.text.italics = FALSE, #whether legend entries are italicized
                          legend.box = T, #create white box around legend
-                         legend.symbol.size = 1.5 #size of legend symbols
+                         legend.symbol.size = 1.6 #size of legend symbols
 ) {
-
+  
   # Set messages
   messager <- function(...) message(...)
   
   # Reset plotting parameters
-  old_dev <- dev.cur()
-  old_plotting_parameters <- graphics::par(no.readonly = TRUE)
-  on.exit({if (dev.cur() == old_dev) graphics::par(old_plotting_parameters)}, add = TRUE)
+  old_plotting_parameters <- par(no.readonly = TRUE)
+  on.exit(par(old_plotting_parameters), add = TRUE)
   
   # Validate input
-  if (is.null(SOM.output$ancestry_matrix) || !is.matrix(SOM.output$ancestry_matrix)) stop("Plotting aborted: ancestry_matrix of SOM.output is not valid")
-  if (!all(c("Latitude", "Longitude") %in% names(Coordinates))) stop("Plotting aborted: Coordinates must contain 'Latitude' and 'Longitude' columns")
-  if (is.null(rownames(Coordinates))) stop("Plotting aborted: Coordinates must have rownames matching rownames of ancestry_matrix")
+  if (is.null(SOM.output$ancestry_matrix)) stop("Plotting aborted: SOM.output is missing ancestry_matrix")
+  if (!is.matrix(SOM.output$ancestry_matrix) && !is.data.frame(SOM.output$ancestry_matrix)) stop("Plotting aborted: ancestry_matrix of SOM.output is not valid")
   if (!is.data.frame(Coordinates) && !is.matrix(Coordinates)) stop("Plotting aborted: Coordinates must be a data frame or matrix")
+  
+  # Convert inputs
+  ancestry_matrix <- as.matrix(SOM.output$ancestry_matrix)
+  Coordinates <- as.data.frame(Coordinates, stringsAsFactors = FALSE)
+  
+  # Validate ancestry matrix
+  if (is.null(rownames(ancestry_matrix))) stop("Plotting aborted: ancestry_matrix must have rownames matching rownames of Coordinates")
+  if (!is.numeric(ancestry_matrix)) stop("Plotting aborted: ancestry_matrix must be numeric")
+  if (any(!is.finite(ancestry_matrix), na.rm = TRUE)) stop("Plotting aborted: ancestry_matrix contains non-finite values")
+  if (any(ancestry_matrix < 0, na.rm = TRUE)) stop("Plotting aborted: ancestry_matrix contains negative values")
+  if (ncol(ancestry_matrix) == 0) stop("Plotting aborted: ancestry_matrix must contain at least one cluster column")
+  
+  # Validate Coordinates
+  if (!all(c("Latitude", "Longitude") %in% colnames(Coordinates))) stop("Plotting aborted: Coordinates must contain 'Latitude' and 'Longitude' columns")
+  if (is.null(rownames(Coordinates))) stop("Plotting aborted: Coordinates must have rownames matching rownames of ancestry_matrix")
+  Coordinates$Latitude <- suppressWarnings(as.numeric(Coordinates$Latitude))
+  Coordinates$Longitude <- suppressWarnings(as.numeric(Coordinates$Longitude))
+  if (all(is.na(Coordinates$Latitude)) || all(is.na(Coordinates$Longitude))) stop("Plotting aborted: Latitude and Longitude must be numeric")
+  
+  # Validate specified color palette
   viridis_palettes <- list(viridis::viridis,
-                         viridis::magma,
-                         viridis::plasma,
-                         viridis::inferno,
-                         viridis::cividis,
-                         viridis::rocket,
-                         viridis::mako,
-                         viridis::turbo)
+                           viridis::magma,
+                           viridis::plasma,
+                           viridis::inferno,
+                           viridis::cividis,
+                           viridis::rocket,
+                           viridis::mako,
+                           viridis::turbo)
   if (!any(vapply(viridis_palettes, identical, logical(1), pie.col.pal))) stop("Plotting aborted: pie.col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+  
+  # Validate plot-saving arguments
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   if (save) {
@@ -4763,16 +4790,17 @@ plot.map.SOM <- function(SOM.output,
     if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
     if (height < 4) messager("Warning: height is very small (", height, " cm) – plot may be hard to read")
     if (height > 50) messager("Warning: height is very large (", height, " cm) – plot may be unwieldy")
-  }
-  if (save) {
     if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
     if (resolution > 1200) messager("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
   }
+  
+  # Validate map and symbol arguments
   if (!is.numeric(lat.buffer.range) || length(lat.buffer.range) != 1 || is.na(lat.buffer.range) || lat.buffer.range < 0) stop("Plotting aborted: lat.buffer.range must be a single non-negative number")
   if (!is.numeric(lon.buffer.range) || length(lon.buffer.range) != 1 || is.na(lon.buffer.range) || lon.buffer.range < 0) stop("Plotting aborted: lon.buffer.range must be a single non-negative number")
+  if (!is.logical(preserve.map.aspect) || length(preserve.map.aspect) != 1 || is.na(preserve.map.aspect)) stop("Plotting aborted: preserve.map.aspect must be TRUE or FALSE")
+  if (!is.null(plot.title) && (!is.character(plot.title) || length(plot.title) != 1 || is.na(plot.title))) stop("Plotting aborted: plot.title must be NULL or a single character string")
+  if (!is.numeric(plot.title.font.size) || length(plot.title.font.size) != 1 || is.na(plot.title.font.size) || plot.title.font.size <= 0) stop("Plotting aborted: plot.title.font.size must be a single positive number")
   if (!is.numeric(pie.size) || length(pie.size) != 1 || is.na(pie.size) || pie.size <= 0) stop("Plotting aborted: pie.size must be a single positive number")
-  viridis_palettes <- list(viridis::viridis, viridis::magma, viridis::plasma, viridis::inferno, viridis::cividis, viridis::rocket, viridis::mako, viridis::turbo)
-  if (!any(vapply(viridis_palettes, identical, logical(1), pie.col.pal))) stop("Plotting aborted: pie.col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
   if (!is.logical(USA.add.states) || length(USA.add.states) != 1 || is.na(USA.add.states)) stop("Plotting aborted: USA.add.states must be TRUE or FALSE")
   if (!is.logical(USA.add.counties) || length(USA.add.counties) != 1 || is.na(USA.add.counties)) stop("Plotting aborted: USA.add.counties must be TRUE or FALSE")
   if (!is.numeric(USA.state.lwd) || length(USA.state.lwd) != 1 || is.na(USA.state.lwd) || USA.state.lwd <= 0) stop("Plotting aborted: USA.state.lwd must be a single positive number")
@@ -4785,211 +4813,431 @@ plot.map.SOM <- function(SOM.output,
   if (!is.numeric(scale.position) || length(scale.position) != 2 || any(is.na(scale.position)) || any(scale.position < 0) || any(scale.position > 1)) stop("Plotting aborted: scale.position must be numeric vector of length 2 with values in between 0 and 1")
   if (!is.numeric(scale.size) || length(scale.size) != 1 || is.na(scale.size) || scale.size <= 0) stop("Plotting aborted: scale.size must be a single positive number")
   if (!is.numeric(scale.font.size) || length(scale.font.size) != 1 || is.na(scale.font.size) || scale.font.size <= 0) stop("Plotting aborted: scale.font.size must be a single positive number")
+  if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
+  
+  # Validate legend arguments
   allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center")
   if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) || !(legend.position %in% allowed.legend.positions)) stop(paste0("Plotting aborted: legend.position must be one of ", paste(allowed.legend.positions, collapse = ", ")))
+  if (!is.null(legend.title) && (!is.character(legend.title) || length(legend.title) != 1 || is.na(legend.title))) stop("Plotting aborted: legend.title must be NULL or a single character string")
   if (!is.null(legend.cluster.names)) {
     if (!is.character(legend.cluster.names) || any(is.na(legend.cluster.names))) stop("Plotting aborted: legend.cluster.names must be NULL or character vector (no NAs)")
-    n.clusters <- ncol(SOM.output$ancestry_matrix)
-    if (length(legend.cluster.names) != n.clusters) stop(paste0("Plotting aborted: length of legend.cluster.names (", length(legend.cluster.names), ") must match number of clusters (", n.clusters, ")"))
+    number_of_clusters <- ncol(ancestry_matrix)
+    if (length(legend.cluster.names) != number_of_clusters) stop(paste0("Plotting aborted: length of legend.cluster.names (", length(legend.cluster.names), ") must match number of clusters (", number_of_clusters, ")"))
   }
-  if (!is.numeric(legend.font.size) || length(legend.font.size) != 1 || is.na(legend.font.size) || legend.font.size <= 0) stop("Plotting aborted: legend.font.size must be a single positive number")
+  if (!is.numeric(legend.text.font.size) || length(legend.text.font.size) != 1 || is.na(legend.text.font.size) || legend.text.font.size <= 0) stop("Plotting aborted: legend.text.font.size must be a single positive number")
+  if (!is.numeric(legend.title.font.size) || length(legend.title.font.size) != 1 || is.na(legend.title.font.size) || legend.title.font.size <= 0) stop("Plotting aborted: legend.title.font.size must be a single positive number")
+  if (!is.logical(legend.text.italics) || length(legend.text.italics) != 1 || is.na(legend.text.italics)) stop("Plotting aborted: legend.text.italics must be TRUE or FALSE")
   if (!is.logical(legend.box) || length(legend.box) != 1 || is.na(legend.box)) stop("Plotting aborted: legend.box must be TRUE or FALSE")
   if (!is.numeric(legend.symbol.size) || length(legend.symbol.size) != 1 || is.na(legend.symbol.size) || legend.symbol.size <= 0) stop("Plotting aborted: legend.symbol.size must be a single positive number")
   
-  # Convert matrix to data frame if necessary
-  if (is.matrix(Coordinates)) Coordinates <- as.data.frame(Coordinates)
-  
   # Check rownames match ancestry matrix, try to reorder, remove non-matching
-  coord_names <- rownames(Coordinates)
-  sample_names <- rownames(SOM.output$ancestry_matrix)
-  not_in_coords <- setdiff(sample_names, coord_names)
-  not_in_ancestry <- setdiff(coord_names, sample_names)
-  keep_names <- intersect(sample_names, coord_names)
-  fmt_count <- function(n) if (n == 0) "No" else as.character(n)
-  fmt_label <- function(n, singular, plural) if (n == 1) singular else plural
-  n_not_in_coords <- length(not_in_coords)
-  n_not_in_ancestry <- length(not_in_ancestry)
-  n_keep <- length(keep_names)
-  if (n_not_in_coords > 0 | n_not_in_ancestry > 0) messager(sprintf("Matching samples between ancestry matrix and coordinates:\n  - %s unique %s only in ancestry_matrix\n  - %s unique %s only in Coordinates\n  - %s matching %s will be plotted", fmt_count(n_not_in_coords), fmt_label(n_not_in_coords, "sample", "samples"), fmt_count(n_not_in_ancestry), fmt_label(n_not_in_ancestry, "sample", "samples"), fmt_count(n_keep), fmt_label(n_keep, "sample", "samples")))
-  if (length(keep_names) == 0) stop("Plotting aborted: no matching rownames between Coordinates and ancestry_matrix")
-  Coordinates <- Coordinates[keep_names, , drop = FALSE]
-  ancestry <- SOM.output$ancestry_matrix[keep_names, , drop = FALSE]
+  coordinate_sample_names <- rownames(Coordinates)
+  ancestry_sample_names <- rownames(ancestry_matrix)
+  samples_only_in_ancestry_matrix <- setdiff(ancestry_sample_names, coordinate_sample_names)
+  samples_only_in_coordinates <- setdiff(coordinate_sample_names, ancestry_sample_names)
+  matched_sample_names <- intersect(ancestry_sample_names, coordinate_sample_names)
+  format_sample_count <- function(number_of_samples) if (number_of_samples == 0) "No" else as.character(number_of_samples)
+  format_sample_label <- function(number_of_samples, singular_label, plural_label) if (number_of_samples == 1) singular_label else plural_label
+  number_of_samples_only_in_ancestry_matrix <- length(samples_only_in_ancestry_matrix)
+  number_of_samples_only_in_coordinates <- length(samples_only_in_coordinates)
+  number_of_matched_samples <- length(matched_sample_names)
+  if (number_of_samples_only_in_ancestry_matrix > 0 | number_of_samples_only_in_coordinates > 0) messager(sprintf("Matching samples between ancestry matrix and coordinates:\n  - %s unique %s only in ancestry_matrix\n  - %s unique %s only in Coordinates\n  - %s matching %s will be plotted", format_sample_count(number_of_samples_only_in_ancestry_matrix), format_sample_label(number_of_samples_only_in_ancestry_matrix, "sample", "samples"), format_sample_count(number_of_samples_only_in_coordinates), format_sample_label(number_of_samples_only_in_coordinates, "sample", "samples"), format_sample_count(number_of_matched_samples), format_sample_label(number_of_matched_samples, "sample", "samples")))
+  if (length(matched_sample_names) == 0) stop("Plotting aborted: no matching rownames between Coordinates and ancestry_matrix")
+  Coordinates <- Coordinates[matched_sample_names, , drop = FALSE]
+  ancestry_matrix <- ancestry_matrix[matched_sample_names, , drop = FALSE]
   
-  # Remove rows with NA in Coordinates
-  na_rows <- which(is.na(Coordinates$Latitude) | is.na(Coordinates$Longitude))
-  if (length(na_rows) > 0) {
-    messager(sprintf("Dropped %d of %d rows due to NA in Coordinates", length(na_rows), nrow(Coordinates)))
-    Coordinates <- Coordinates[-na_rows, , drop = FALSE]
-    ancestry <- ancestry[-na_rows, , drop = FALSE]
+  # Remove rows with missing or non-finite coordinates
+  rows_with_missing_coordinates <- which(!is.finite(Coordinates$Latitude) | !is.finite(Coordinates$Longitude))
+  if (length(rows_with_missing_coordinates) > 0) {
+    messager(sprintf("Dropped %d of %d rows due to missing or non-finite Coordinates", length(rows_with_missing_coordinates), nrow(Coordinates)))
+    Coordinates <- Coordinates[-rows_with_missing_coordinates, , drop = FALSE]
+    ancestry_matrix <- ancestry_matrix[-rows_with_missing_coordinates, , drop = FALSE]
+  }
+  if (nrow(Coordinates) == 0) stop("Plotting aborted: no samples remain after removing rows with missing or non-finite Coordinates")
+  
+  # Normalize ancestry rows if needed
+  ancestry_row_sums <- rowSums(ancestry_matrix, na.rm = TRUE)
+  if (any(!is.finite(ancestry_row_sums)) || any(ancestry_row_sums <= 0)) stop("Plotting aborted: each ancestry_matrix row must have a positive finite sum")
+  if (any(abs(ancestry_row_sums - 1) > 1e-6)) {
+    messager("Warning: ancestry_matrix rows do not all sum to 1 - rows are normalized for plotting")
+    ancestry_matrix <- ancestry_matrix / ancestry_row_sums
   }
   
-  # Prepare ancestry matrix
-  q_matrix = as.data.frame(ancestry) #convert ancestry_matrix to dataframe
+  # Prepare ancestry proportions
+  ancestry_proportions <- as.data.frame(ancestry_matrix) #convert ancestry_matrix to dataframe
   
   # Check if number of rows (samples) in ancestry matrix matches number of Coordinates
-  if (nrow(q_matrix) != nrow(Coordinates)) stop("Plotting aborted: number of samples in ancestry_matrix does not match number of samples in Coordinates")
+  if (nrow(ancestry_proportions) != nrow(Coordinates)) stop("Plotting aborted: number of samples in ancestry_matrix does not match number of samples in Coordinates")
   
   # Define color palette for pie charts
-  k.cols = pie.col.pal(ncol(ancestry))
-  
-  # Set pie plot function based on make.admix.pie.plot function
-  plot.admixture.pies <- function (admix.proportions, 
-                                   coords, 
-                                   layer.colors = NULL, 
-                                   radii = 2.7, add = FALSE, 
-                                   x.lim = NULL, 
-                                   y.lim = NULL, 
-                                   mar = c(2, 2, 2, 2)) 
-  {
-    K <- ncol(admix.proportions)
-    N <- nrow(admix.proportions)
-    layer.names <- paste0("layer_", 1:K)
-    sample.names <- paste0("sample_", 1:N)
-    color.tab <- caroline::nv(c(layer.colors[1:K]), layer.names)
-    pie.list <- lapply(1:N, function(i) {
-      caroline::nv(admix.proportions[i, ], layer.names)
-    })
-    names(pie.list) <- sample.names
-    if (add) {
-      graphics::par(new = TRUE)
-    } else {
-      graphics::par(mar = mar)
-    }
-    if (is.null(x.lim)) x.lim <- c(min(coords[, 1]) - 1, max(coords[, 1]) + 1)
-    if (is.null(y.lim)) y.lim <- c(min(coords[, 2]) - 1, max(coords[, 2]) + 1)
-    suppressWarnings(caroline::pies(pie.list, 
-                                    x0 = coords[, 1], 
-                                    y0 = coords[, 2], 
-                                    color.table = color.tab, 
-                                    border = "black", 
-                                    radii = radii, 
-                                    xlab = "", 
-                                    ylab = "", 
-                                    main = "", 
-                                    lty = 1, 
-                                    density = NULL, 
-                                    xlim = x.lim, 
-                                    ylim = y.lim))
-    return(invisible(0))
-  }
+  cluster_colors <- pie.col.pal(ncol(ancestry_matrix))
   
   # Define map boundaries
-  lon_min = min(Coordinates$Longitude) - lon.buffer.range
-  lon_max = max(Coordinates$Longitude) + lon.buffer.range
-  lat_min = min(Coordinates$Latitude) - lat.buffer.range
-  lat_max = max(Coordinates$Latitude) + lat.buffer.range
+  longitude_minimum <- min(Coordinates$Longitude) - lon.buffer.range
+  longitude_maximum <- max(Coordinates$Longitude) + lon.buffer.range
+  latitude_minimum <- min(Coordinates$Latitude) - lat.buffer.range
+  latitude_maximum <- max(Coordinates$Latitude) + lat.buffer.range
+  
+  # Check map boundaries
+  if (!is.finite(longitude_minimum) || !is.finite(longitude_maximum) || !is.finite(latitude_minimum) || !is.finite(latitude_maximum)) stop("Plotting aborted: map boundaries are not finite")
+  if (longitude_minimum >= longitude_maximum) stop("Plotting aborted: longitude range is zero - increase lon.buffer.range")
+  if (latitude_minimum >= latitude_maximum) stop("Plotting aborted: latitude range is zero - increase lat.buffer.range")
+  
+  # Set pie radius in map units
+  pie_radius <- pie.size * 0.01 * max(longitude_maximum - longitude_minimum, latitude_maximum - latitude_minimum)
+  
+  # Function to add one admixture pie to an existing plot
+  add.admixture.pie.SOM <- function(longitude,
+                                    latitude,
+                                    ancestry_proportions,
+                                    cluster_colors,
+                                    x.radius,
+                                    y.radius,
+                                    border.color = "black",
+                                    line.width = 0.8,
+                                    number.of.points = 80) {
+    
+    # Prepare ancestry proportions
+    ancestry_proportions <- as.numeric(ancestry_proportions)
+    ancestry_proportions[is.na(ancestry_proportions) | !is.finite(ancestry_proportions) | ancestry_proportions < 0] <- 0
+    if (sum(ancestry_proportions) <= 0) return(invisible(NULL))
+    ancestry_proportions <- ancestry_proportions / sum(ancestry_proportions)
+    
+    # Draw pie slices
+    slice_start_angles <- c(0, cumsum(ancestry_proportions)[-length(ancestry_proportions)]) * 2 * pi
+    slice_end_angles <- cumsum(ancestry_proportions) * 2 * pi
+    
+    for (slice_index in seq_along(ancestry_proportions)) {
+      if (ancestry_proportions[slice_index] <= 0) next
+      slice_angles <- seq(slice_start_angles[slice_index], slice_end_angles[slice_index], length.out = max(3, ceiling(number.of.points * ancestry_proportions[slice_index])))
+      polygon(x = c(longitude, longitude + x.radius * cos(slice_angles), longitude),
+              y = c(latitude, latitude + y.radius * sin(slice_angles), latitude),
+              col = cluster_colors[slice_index],
+              border = border.color,
+              lwd = line.width)
+    }
+    
+    # Draw outer circle
+    circle_angles <- seq(0, 2 * pi, length.out = number.of.points)
+    lines(longitude + x.radius * cos(circle_angles),
+          latitude + y.radius * sin(circle_angles),
+          col = border.color,
+          lwd = line.width)
+    
+    # Return invisible NULL
+    return(invisible(NULL))
+  }
   
   # Set plot saving
+  device_opened <- FALSE
   if (save) {
     if (is.null(file.name)) file.name <- paste0("SOM_map_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
     if (file.exists(file.name) && !overwrite) stop(paste(file.name, "already exists - set overwrite = T to overwrite"))
     if (plot.type == "svg") {
-      svg(file.name, width = width / 2.54, height = height / 2.54)
+      grDevices::svg(file.name, width = width / 2.54, height = height / 2.54)
     } else if (plot.type == "png") {
-      png(file.name, width = width, height = height, res = resolution, units = "cm")
+      grDevices::png(file.name, width = width, height = height, res = resolution, units = "cm")
     } else if (plot.type == "jpg") {
-      jpeg(file.name, width = width, height = height, res = resolution, units = "cm")
+      grDevices::jpeg(file.name, width = width, height = height, res = resolution, units = "cm")
     } else {
       stop("Plotting aborted: unsupported plot file plot.type - choose from 'svg', 'png', or 'jpg'")
     }
+    device_opened <- TRUE
+    on.exit(if (device_opened) grDevices::dev.off(), add = TRUE)
   }
   
-  # Set layout and margins
-  graphics::par(mfrow = c(1, 1), 
-                oma = c(0, 0, 0, 0),
-                mar = c(1, 1, 1, 1))
+  # Convert point-size arguments to base R relative font sizes
+  base_font_size <- par("ps")
+  plot_title_relative_font_size <- plot.title.font.size / base_font_size
+  scale_text_relative_font_size <- scale.font.size / base_font_size
+  axis_labels_relative_font_size <- axis.labels.font.size / base_font_size
+  legend_text_relative_font_size <- legend.text.font.size / base_font_size
+  legend_title_relative_font_size <- legend.title.font.size / base_font_size
   
-  # Create map
-  maps::map("world", 
-            fill = T, 
-            col = "lightgrey", 
-            xlim = c(lon_min, lon_max), 
-            ylim = c(lat_min, lat_max))
-  maps::map.axes()
+  # Set layout and margins
+  par(mfrow = c(1, 1),
+      oma = c(2, 2, ifelse(is.null(plot.title), 1, 2), 1),
+      mar = c(1, 1, 1, 1))
+  
+  # Preserve geographic aspect ratio by resizing plot region
+  if (preserve.map.aspect) {
+    current_plot_region_size_inches <- par("pin")
+    longitude_range <- longitude_maximum - longitude_minimum
+    latitude_range <- latitude_maximum - latitude_minimum
+    mean_map_latitude <- mean(c(latitude_minimum, latitude_maximum))
+    longitude_latitude_correction <- cos(mean_map_latitude * pi / 180)
+    if (!is.finite(longitude_latitude_correction) || longitude_latitude_correction <= 0) longitude_latitude_correction <- 1
+    target_height_width_ratio <- latitude_range / (longitude_range * longitude_latitude_correction)
+    adjusted_plot_width_inches <- current_plot_region_size_inches[1]
+    adjusted_plot_height_inches <- adjusted_plot_width_inches * target_height_width_ratio
+    if (adjusted_plot_height_inches > current_plot_region_size_inches[2]) {
+      adjusted_plot_height_inches <- current_plot_region_size_inches[2]
+      adjusted_plot_width_inches <- adjusted_plot_height_inches / target_height_width_ratio
+    }
+    par(pin = c(adjusted_plot_width_inches, adjusted_plot_height_inches))
+  }
+  
+  # Create empty map plotting window
+  plot.new()
+  plot.window(xlim = c(longitude_minimum, longitude_maximum),
+              ylim = c(latitude_minimum, latitude_maximum),
+              xaxs = "i",
+              yaxs = "i")
+  
+  # Calculate pie radii so pies remain visually circular
+  plot_coordinate_limits <- par("usr")
+  plot_region_size_inches <- par("pin")
+  x_units_per_inch <- plot_region_size_inches[1] / diff(plot_coordinate_limits[1:2])
+  y_units_per_inch <- plot_region_size_inches[2] / diff(plot_coordinate_limits[3:4])
+  if (!is.finite(x_units_per_inch) || !is.finite(y_units_per_inch) || x_units_per_inch <= 0 || y_units_per_inch <= 0) {
+    pie_radius_x <- pie_radius
+    pie_radius_y <- pie_radius
+  } else {
+    pie_radius_x <- pie_radius * y_units_per_inch / x_units_per_inch
+    pie_radius_y <- pie_radius
+  }
+  
+  # Add map background
+  maps::map("world",
+            fill = TRUE,
+            col = "lightgrey",
+            border = "black",
+            xlim = c(longitude_minimum, longitude_maximum),
+            ylim = c(latitude_minimum, latitude_maximum),
+            add = TRUE)
   
   # Add US counties if requested
   if (USA.add.counties) {
-    maps::map("county", 
-              add = T, 
-              col = "grey", 
-              lwd = USA.county.lwd)
+    try(maps::map("county",
+                  add = TRUE,
+                  xlim = c(longitude_minimum, longitude_maximum),
+                  ylim = c(latitude_minimum, latitude_maximum),
+                  col = "grey",
+                  lwd = USA.county.lwd),
+        silent = TRUE)
   }
   
   # Add US states if requested
   if (USA.add.states) {
-    maps::map("state", 
-              add = T, 
-              col = "black", 
-              lwd = USA.state.lwd)
+    try(maps::map("state",
+                  add = TRUE,
+                  xlim = c(longitude_minimum, longitude_maximum),
+                  ylim = c(latitude_minimum, latitude_maximum),
+                  col = "black",
+                  lwd = USA.state.lwd),
+        silent = TRUE)
+  }
+  
+  # Allow axis labels outside the map panel
+  longitude_clip_buffer <- 0.2 * (longitude_maximum - longitude_minimum)
+  latitude_clip_buffer <- 0.2 * (latitude_maximum - latitude_minimum)
+  clip(longitude_minimum - longitude_clip_buffer,
+       longitude_maximum + longitude_clip_buffer,
+       latitude_minimum - latitude_clip_buffer,
+       latitude_maximum + latitude_clip_buffer)
+  
+  # Add map axes and box
+  axis(1, cex.axis = axis_labels_relative_font_size)
+  axis(2, las = 2, cex.axis = axis_labels_relative_font_size)
+  box()
+  
+  # Add plot title
+  if (!is.null(plot.title)) {
+    mtext(plot.title,
+          side = 3,
+          outer = TRUE,
+          line = 0,
+          font = 2,
+          cex = plot_title_relative_font_size)
   }
   
   # Add pie charts to map
-  for (i in 1:nrow(q_matrix)) {
-    coords = matrix(c(Coordinates$Longitude[i], Coordinates$Latitude[i]), ncol = 2, byrow = TRUE)
-    plot.admixture.pies(
-      admix.proportions = matrix(as.numeric(q_matrix[i, ]), nrow = 1),
-      coords = coords,
-      layer.colors = k.cols,
-      radii = pie.size,
-      add = TRUE
-    )
+  for (sample_index in seq_len(nrow(ancestry_proportions))) {
+    add.admixture.pie.SOM(longitude = Coordinates$Longitude[sample_index],
+                          latitude = Coordinates$Latitude[sample_index],
+                          ancestry_proportions = as.numeric(ancestry_proportions[sample_index, ]),
+                          cluster_colors = cluster_colors,
+                          x.radius = pie_radius_x,
+                          y.radius = pie_radius_y)
   }
   
   # Define legend labels
   if (is.null(legend.cluster.names)) {
-    legend.labels <- paste("Cluster", 1:length(k.cols)) # set default labels
+    legend_labels <- paste("Cluster", seq_along(cluster_colors)) #set default labels
   } else {
-    legend.labels <- legend.cluster.names # use validated custom labels
+    legend_labels <- legend.cluster.names #use validated custom labels
   }
   
-  # Set legend box
-  if (legend.box) {
-    legend_box <- "o"
+  # Set legend text font
+  if (legend.text.italics) {
+    legend_text_font <- 3
   } else {
-    legend_box <- "n"  
+    legend_text_font <- 1
+  }
+  
+  # Add custom legend
+  add.map.legend.SOM <- function(legend.position,
+                                 legend.title,
+                                 legend.labels,
+                                 legend.colors,
+                                 legend.text.relative.font.size,
+                                 legend.title.relative.font.size,
+                                 legend.text.font,
+                                 legend.symbol.size,
+                                 legend.box) {
+    
+    # Extract plot range
+    plot_coordinate_limits <- par("usr")
+    plot_longitude_range <- plot_coordinate_limits[2] - plot_coordinate_limits[1]
+    plot_latitude_range <- plot_coordinate_limits[4] - plot_coordinate_limits[3]
+    
+    # Calculate legend dimensions
+    legend_text_width <- max(strwidth(legend.labels, units = "user", cex = legend.text.relative.font.size, font = legend.text.font))
+    legend_text_height <- strheight("M", units = "user", cex = legend.text.relative.font.size, font = legend.text.font)
+    legend_title_width <- 0
+    legend_title_height <- 0
+    legend_title_gap <- 0
+    if (!is.null(legend.title)) {
+      legend_title_width <- strwidth(legend.title, units = "user", cex = legend.title.relative.font.size, font = 2)
+      legend_title_height <- strheight("M", units = "user", cex = legend.title.relative.font.size, font = 2)
+      legend_title_gap <- 0.5 * legend_text_height
+    }
+    legend_symbol_width <- strwidth("M", units = "user", cex = legend.text.relative.font.size) * legend.symbol.size
+    legend_symbol_gap <- 0.7 * strwidth("M", units = "user", cex = legend.text.relative.font.size)
+    legend_padding_x <- 0.9 * strwidth("M", units = "user", cex = legend.text.relative.font.size)
+    legend_padding_y <- 0.7 * legend_text_height
+    legend_line_gap <- 0.35 * legend_text_height
+    legend_width <- max(legend_title_width, legend_symbol_width + legend_symbol_gap + legend_text_width) + 2 * legend_padding_x
+    legend_height <- 2 * legend_padding_y + legend_title_height + legend_title_gap + length(legend.labels) * legend_text_height + (length(legend.labels) - 1) * legend_line_gap
+    
+    # Set legend position
+    legend_inset_x <- 0.00 * plot_longitude_range
+    legend_inset_y <- 0.00 * plot_latitude_range
+    if (legend.position == "topright") {
+      legend_left <- plot_coordinate_limits[2] - legend_inset_x - legend_width
+      legend_bottom <- plot_coordinate_limits[4] - legend_inset_y - legend_height
+    } else if (legend.position == "topleft") {
+      legend_left <- plot_coordinate_limits[1] + legend_inset_x
+      legend_bottom <- plot_coordinate_limits[4] - legend_inset_y - legend_height
+    } else if (legend.position == "bottomright") {
+      legend_left <- plot_coordinate_limits[2] - legend_inset_x - legend_width
+      legend_bottom <- plot_coordinate_limits[3] + legend_inset_y
+    } else if (legend.position == "bottomleft") {
+      legend_left <- plot_coordinate_limits[1] + legend_inset_x
+      legend_bottom <- plot_coordinate_limits[3] + legend_inset_y
+    } else if (legend.position == "right") {
+      legend_left <- plot_coordinate_limits[2] - legend_inset_x - legend_width
+      legend_bottom <- plot_coordinate_limits[3] + 0.5 * plot_latitude_range - 0.5 * legend_height
+    } else if (legend.position == "left") {
+      legend_left <- plot_coordinate_limits[1] + legend_inset_x
+      legend_bottom <- plot_coordinate_limits[3] + 0.5 * plot_latitude_range - 0.5 * legend_height
+    } else if (legend.position == "top") {
+      legend_left <- plot_coordinate_limits[1] + 0.5 * plot_longitude_range - 0.5 * legend_width
+      legend_bottom <- plot_coordinate_limits[4] - legend_inset_y - legend_height
+    } else if (legend.position == "bottom") {
+      legend_left <- plot_coordinate_limits[1] + 0.5 * plot_longitude_range - 0.5 * legend_width
+      legend_bottom <- plot_coordinate_limits[3] + legend_inset_y
+    } else {
+      legend_left <- plot_coordinate_limits[1] + 0.5 * plot_longitude_range - 0.5 * legend_width
+      legend_bottom <- plot_coordinate_limits[3] + 0.5 * plot_latitude_range - 0.5 * legend_height
+    }
+    
+    # Set legend coordinates
+    legend_right <- legend_left + legend_width
+    legend_top <- legend_bottom + legend_height
+    
+    # Draw legend box
+    if (legend.box) {
+      rect(legend_left,
+           legend_bottom,
+           legend_right,
+           legend_top,
+           col = "white",
+           border = "black")
+    }
+    
+    # Draw legend title
+    current_legend_y_position <- legend_top - legend_padding_y
+    if (!is.null(legend.title)) {
+      text(x = legend_left + legend_padding_x,
+           y = current_legend_y_position - 0.5 * legend_title_height,
+           labels = legend.title,
+           adj = c(0, 0.5),
+           font = 2,
+           cex = legend.title.relative.font.size)
+      current_legend_y_position <- current_legend_y_position - legend_title_height - legend_title_gap
+    }
+    
+    # Draw legend entries
+    legend_symbol_x_position <- legend_left + legend_padding_x + 0.5 * legend_symbol_width
+    legend_text_x_position <- legend_left + legend_padding_x + legend_symbol_width + legend_symbol_gap
+    for (legend_index in seq_along(legend.labels)) {
+      legend_entry_y_position <- current_legend_y_position - 0.5 * legend_text_height - (legend_index - 1) * (legend_text_height + legend_line_gap)
+      points(x = legend_symbol_x_position,
+             y = legend_entry_y_position,
+             pch = 21,
+             cex = legend.symbol.size,
+             bg = legend.colors[legend_index],
+             col = "black")
+      text(x = legend_text_x_position,
+           y = legend_entry_y_position,
+           labels = legend.labels[legend_index],
+           adj = c(0, 0.5),
+           cex = legend.text.relative.font.size,
+           font = legend.text.font)
+    }
+    
+    # Return invisible NULL
+    return(invisible(NULL))
   }
   
   # Add legend
-  graphics::legend(legend.position, 
-                   legend = legend.labels,
-                   pch = 21,
-                   cex = legend.font.size,
-                   pt.cex = legend.symbol.size,
-                   pt.bg = k.cols,
-                   bty = legend_box)
+  add.map.legend.SOM(legend.position = legend.position,
+                     legend.title = legend.title,
+                     legend.labels = legend_labels,
+                     legend.colors = cluster_colors,
+                     legend.text.relative.font.size = legend_text_relative_font_size,
+                     legend.title.relative.font.size = legend_title_relative_font_size,
+                     legend.text.font = legend_text_font,
+                     legend.symbol.size = legend.symbol.size,
+                     legend.box = legend.box)
   
   # Add scale
-  scale_position_x = scale.position[1] * (lon_max - lon_min) + lon_min
-  scale_position_y = scale.position[2] * (lat_max - lat_min) + lat_min
-  maps::map.scale(x = scale_position_x,
-                  y = scale_position_y,
-                  cex = scale.font.size,
+  scale_position_longitude <- scale.position[1] * (longitude_maximum - longitude_minimum) + longitude_minimum
+  scale_position_latitude <- scale.position[2] * (latitude_maximum - latitude_minimum) + latitude_minimum
+  maps::map.scale(x = scale_position_longitude,
+                  y = scale_position_latitude,
+                  cex = scale_text_relative_font_size,
                   relwidth = scale.size,
-                  ratio = F)
+                  ratio = FALSE)
   
   # Add north arrow
-  north_arrow_x = north.arrow.position[1] * (lon_max - lon_min) + lon_min
-  north_arrow_y = north.arrow.position[2] * (lat_max - lat_min) + lat_min
-  graphics::arrows(x0 = north_arrow_x, 
-                   y0 = north_arrow_y, 
-                   x1 = north_arrow_x, 
-                   y1 = north_arrow_y + north.arrow.length, 
-                   length = 0.13, 
-                   col = "black", 
-                   lwd = north.arrow.lwd)
+  north_arrow_longitude <- north.arrow.position[1] * (longitude_maximum - longitude_minimum) + longitude_minimum
+  north_arrow_latitude <- north.arrow.position[2] * (latitude_maximum - latitude_minimum) + latitude_minimum
+  arrows(x0 = north_arrow_longitude,
+         y0 = north_arrow_latitude,
+         x1 = north_arrow_longitude,
+         y1 = north_arrow_latitude + north.arrow.length,
+         length = 0.13,
+         col = "black",
+         lwd = north.arrow.lwd)
   
   # Add North "N" above north arrow
-  graphics::text(x = north_arrow_x, 
-                 y = north_arrow_y + north.arrow.length + north.arrow.N.position, #adjust position for "N"
-                 labels = "N", 
-                 cex = north.arrow.N.size, 
-                 col = "black")
+  text(x = north_arrow_longitude,
+       y = north_arrow_latitude + north.arrow.length + north.arrow.N.position, #adjust position for "N"
+       labels = "N",
+       cex = north.arrow.N.size,
+       col = "black")
   
   # Close graphics device
   if (save) {
-    dev.off()
+    grDevices::dev.off()
+    device_opened <- FALSE
     messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
+  
+  # Return invisible NULL
+  return(invisible(NULL))
 }
 
 
