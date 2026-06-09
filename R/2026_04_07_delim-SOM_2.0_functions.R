@@ -3595,7 +3595,7 @@ plot.learning.SOM <- function(SOM.output,
     mat <- SOM.output$learning_values_list[[i]]
     current_layer_name <- matrix_names[i]
     for (j in 1:ncol(mat)) 
-      lines(mat[, j], col = grDevices::adjustcolor(layer_colors[current_layer_name], alpha.f = lines.alpha), lwd = lines.thickness)
+      lines(mat[, j], col = adjustcolor(layer_colors[current_layer_name], alpha.f = lines.alpha), lwd = lines.thickness)
   }
   
   # Add legend
@@ -4733,9 +4733,9 @@ plot.map.SOM <- function(SOM.output,
   messager <- function(...) message(...)
   
   # Reset plotting parameters
-  old_dev <- grDevices::dev.cur()
+  old_dev <- dev.cur()
   old_plotting_parameters <- graphics::par(no.readonly = TRUE)
-  on.exit({if (grDevices::dev.cur() == old_dev) graphics::par(old_plotting_parameters)}, add = TRUE)
+  on.exit({if (dev.cur() == old_dev) graphics::par(old_plotting_parameters)}, add = TRUE)
   
   # Validate input
   if (is.null(SOM.output$ancestry_matrix) || !is.matrix(SOM.output$ancestry_matrix)) stop("Plotting aborted: ancestry_matrix of SOM.output is not valid")
@@ -4885,11 +4885,11 @@ plot.map.SOM <- function(SOM.output,
     if (is.null(file.name)) file.name <- paste0("SOM_map_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
     if (file.exists(file.name) && !overwrite) stop(paste(file.name, "already exists - set overwrite = T to overwrite"))
     if (plot.type == "svg") {
-      grDevices::svg(file.name, width = width / 2.54, height = height / 2.54)
+      svg(file.name, width = width / 2.54, height = height / 2.54)
     } else if (plot.type == "png") {
-      grDevices::png(file.name, width = width, height = height, res = resolution, units = "cm")
+      png(file.name, width = width, height = height, res = resolution, units = "cm")
     } else if (plot.type == "jpg") {
-      grDevices::jpeg(file.name, width = width, height = height, res = resolution, units = "cm")
+      jpeg(file.name, width = width, height = height, res = resolution, units = "cm")
     } else {
       stop("Plotting aborted: unsupported plot file plot.type - choose from 'svg', 'png', or 'jpg'")
     }
@@ -4988,7 +4988,7 @@ plot.map.SOM <- function(SOM.output,
   
   # Close graphics device
   if (save) {
-    grDevices::dev.off()
+    dev.off()
     messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
 }
@@ -6102,7 +6102,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   return(multiallelic.snp.matrix) #return multiallelic SNP matrix
 }
 
-# Function to summarize and plot eta squared and/or map variance across SOM layers
+# Function to summarize and plot eta squared and/or map variance of variable importance across SOM layers
 plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output from clustering.SOM
                                              col.pal = viridis::turbo, #color palette as in plot.layers.SOM
                                              save = FALSE, #option to save plot
@@ -6123,6 +6123,9 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
                                              title.font.size = 1.2, #font size of plot titles
                                              axis.font.size = 0.9, #font size of axis labels
                                              add.boxplot.whiskers = TRUE, #whether to show boxplot whiskers
+                                             point.cex = 0.8, #point size
+                                             point.alpha = 0.65, #point transparency
+                                             verbose = TRUE #whether to print messages
                                              sort.by.median = TRUE, #whether to sort layers by median importance
                                              verbose = TRUE #whether to print messages
 ) {
@@ -6135,31 +6138,17 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   old_plotting_parameters <- par(no.readonly = TRUE)
   on.exit({if (dev.cur() == old_graphics_device) par(old_plotting_parameters)}, add = TRUE)
   
-  # Validate specified SOM.output
+  # Validate input
   if (is.null(SOM.output) || !is.list(SOM.output)) stop("Plotting aborted: SOM.output must be a non-NULL list")
-  
-  # Validate specified save
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
-  
-  # Validate specified overwrite
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  
-  # Validate specified plot.type
   if (!is.character(plot.type) || length(plot.type) != 1 || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
-  
-  # Validate specified title.font.size
   if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Plotting aborted: title.font.size must be a single positive numeric value")
-  
-  # Validate specified axis.font.size
   if (!is.numeric(axis.font.size) || length(axis.font.size) != 1 || is.na(axis.font.size) || axis.font.size <= 0) stop("Plotting aborted: axis.font.size must be a single positive numeric value")
-  
-  # Validate specified add.boxplot.whiskers
   if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
-  
-  # Validate specified sort.by.median
+  if (!is.numeric(point.cex) || length(point.cex) != 1 || is.na(point.cex) || point.cex <= 0) stop("Plotting aborted: point.cex must be a single positive numeric value")
+  if (!is.numeric(point.alpha) || length(point.alpha) != 1 || is.na(point.alpha) || point.alpha < 0 || point.alpha > 1) stop("Plotting aborted: point.alpha must be a single numeric value between 0 and 1")
   if (!is.logical(sort.by.median) || length(sort.by.median) != 1 || is.na(sort.by.median)) stop("Plotting aborted: sort.by.median must be TRUE or FALSE")
-  
-  # Validate specified verbose
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Plotting aborted: verbose must be TRUE or FALSE")
   
   # Extract layer names
@@ -6279,6 +6268,22 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   
   # Define color palette for layers
   layer_colors <- setNames(col.pal(length(SOM_layer_names)), SOM_layer_names)
+
+                                             
+  # Add jittered replicate-level points
+  add.jittered.layer.points.SOM <- function(plot_list) {
+    for (layer_index in seq_along(plot_list)) {
+      current_values <- plot_list[[layer_index]]
+      current_values <- current_values[is.finite(current_values) & !is.na(current_values)]
+      if (length(current_values) > 0) {
+        points(jitter(rep(layer_index, length(current_values)), amount = 0.15),
+               current_values,
+               pch = 16,
+               cex = point.cex,
+               col = adjustcolor(layer_colors[names(plot_list)[layer_index]], alpha.f = point.alpha))
+      }
+    }
+  }
   
   # Save plot if requested
   if (save) {
@@ -6348,6 +6353,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
          cex.axis = axis.font.size)
     axis(2, cex.axis = axis.font.size)
     box()
+    add.jittered.layer.points.SOM(eta_squared_plot_list)
     
     # Plot map variance boxplots
     boxplot(map_variance_plot_list,
@@ -6372,6 +6378,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
          cex.axis = axis.font.size)
     axis(2, cex.axis = axis.font.size)
     box()
+    add.jittered.layer.points.SOM(eta_squared_plot_list)
   }
   
   # Plot eta squared only
@@ -6411,6 +6418,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
          cex.axis = axis.font.size)
     axis(2, cex.axis = axis.font.size)
     box()
+    add.jittered.layer.points.SOM(eta_squared_plot_list)
   }
   
   # Plot map variance only
@@ -6450,6 +6458,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
          cex.axis = axis.font.size)
     axis(2, cex.axis = axis.font.size)
     box()
+    add.jittered.layer.points.SOM(eta_squared_plot_list)
   }
   
   # Close graphics device
@@ -6469,7 +6478,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   col.pal = viridis::turbo, #color palette
                                                   add.points = TRUE, #whether to add replicate-level jittered points
                                                   point.cex = 0.8, #point size
-                                                  point.alpha = 065, #point transparency
+                                                  point.alpha = 0.65, #point transparence
                                                   bottom.margin = 8, #bottom margin
                                                   left.margin = 5.5, #left margin
                                                   top.margin = 3, #top margin
@@ -6485,7 +6494,10 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   height = 15, #plot height in cm
                                                   resolution = 300, #plot resolution in dpi
                                                   title = "Layer importance", #plot title
-                                                  message.N.replicates = 10, #frequency of progress messages during leave-one-layer-out SOM reruns
+                                                  title.font.size = 1.2, #font size of plot titles
+                                                  axis.font.size = 0.9, #font size of axis labels
+                                                  add.boxplot.whiskers = TRUE, #whether to show boxplot whiskers
+                                                  message.N.replicates = 20, #frequency of progress messages during leave-one-layer-out SOM reruns
                                                   verbose = TRUE #whether to print messages
 ) {
   
@@ -6591,6 +6603,9 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.null(title)) {
     if (!is.character(title) || length(title) != 1 || is.na(title)) stop("Leave-one-layer-out layer importance aborted: title must be NULL or a character string of length 1")
   }
+  if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Leave-one-layer-out layer importance aborted: title.font.size must be a single positive numeric value")
+  if (!is.numeric(axis.font.size) || length(axis.font.size) != 1 || is.na(axis.font.size) || axis.font.size <= 0) stop("Leave-one-layer-out layer importance aborted: axis.font.size must be a single positive numeric value")
+  if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Leave-one-layer-out layer importance aborted: add.boxplot.whiskers must be TRUE or FALSE")
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   
   # Create function to return mean or NA
@@ -7221,7 +7236,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     if (plot.type == "jpg") {
       jpeg(filename = file.name, width = width, height = height, units = "cm",res = resolution)
     }
-    on.exit(grDevices::dev.off(), add = TRUE)
+    on.exit(dev.off(), add = TRUE)
   }
   
   # Reset plotting parameters
@@ -7246,7 +7261,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   }                                                
   
   # Add overall title
-  if (!is.null(title)) graphics::mtext(title, side = 3, outer = TRUE, line = -1.5, cex = 1.2)
+    if (!is.null(title)) mtext(title, side = 3, outer = TRUE, line = -1.5, cex = title.font.size)
   
   # Create function to add jittered points
   add.jittered.points.SOM <- function(response_variable_name) {
@@ -7262,7 +7277,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                current_layer_values,
                pch = 16,
                cex = point.cex,
-               col = grDevices::adjustcolor(layer_colors[current_layer_name], alpha.f = point.alpha))
+               col = adjustcolor(layer_colors[current_layer_name], alpha.f = point.alpha))
       }
     }
   }
@@ -7272,10 +7287,17 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           data = successful_replicate_matched_results_table,
           col = layer_colors[SOM_layer_names],
           outline = FALSE,
+          axes = FALSE,
           las = 2,
           ylab = "Absolute k deviation",
           xlab = "",
-          main = "")
+          main = "",
+          cex.lab = axis.font.size,
+          whisklty = ifelse(add.boxplot.whiskers, 1, 0),
+          staplelty = ifelse(add.boxplot.whiskers, 1, 0))
+  axis(1, cex.axis = axis.font.size)
+  axis(2, cex.axis = axis.font.size)
+  box()
   add.jittered.points.SOM("absolute.k.deviation")
   
   # Plot pairwise co-assignment change
@@ -7283,10 +7305,17 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           data = successful_replicate_matched_results_table,
           col = layer_colors[SOM_layer_names],
           outline = FALSE,
+          axes = FALSE,
           las = 2,
           ylab = "Pairwise co-assignment change",
           xlab = "",
-          main = "")
+          main = "",
+          cex.lab = axis.font.size,
+          whisklty = ifelse(add.boxplot.whiskers, 1, 0),
+          staplelty = ifelse(add.boxplot.whiskers, 1, 0))
+  axis(1, cex.axis = axis.font.size)
+  axis(2, cex.axis = axis.font.size)
+  box()
   add.jittered.points.SOM("pairwise.coassignment.change")
   
   # Plot assignment margin change
@@ -7295,10 +7324,17 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
             data = successful_replicate_matched_results_table,
             col = layer_colors[SOM_layer_names],
             outline = FALSE,
+            axes = FALSE,
             las = 2,
             ylab = "Assignment margin change",
             xlab = "",
-            main = "")
+            main = "",
+            cex.lab = axis.font.size,
+            whisklty = ifelse(add.boxplot.whiskers, 1, 0),
+            staplelty = ifelse(add.boxplot.whiskers, 1, 0))
+    axis(1, cex.axis = axis.font.size)
+    axis(2, cex.axis = axis.font.size)
+    box()
     add.jittered.points.SOM("delta.mean.assignment.margin")
   }
   
