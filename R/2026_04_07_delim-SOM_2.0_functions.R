@@ -6116,9 +6116,9 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
                                              left.margin = 5, #left margin
                                              top.margin = 3, #top margin
                                              right.margin = 2.5, #right margin
-                                             etasquared.title = "Eta squared across layers", #title of eta plot
-                                             mapvariance.title = "Map variance across layers", #title of map variance plot
-                                             etasquared.y.axis.label = "Eta squared", #y axis label for eta plot
+                                             etasquared.title = "Cluster separation", #title of eta plot
+                                             mapvariance.title = "Variance across map", #title of map variance plot
+                                             etasquared.y.axis.label = "Eta squared effect size", #y axis label for eta plot
                                              mapvariance.y.axis.label = "Map variance", #y axis label for map variance plot
                                              title.font.size = 1.2, #font size of plot titles
                                              axis.font.size = 0.9, #font size of axis labels
