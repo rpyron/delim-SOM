@@ -3337,7 +3337,7 @@ plot.structure.SOM <- function(SOM.output,
 #'
 #' @param SOM.output A SOM result object returned by `train.SOM`. The object must
 #'   contain `learning_values_list`, a list of numeric matrices with one matrix
-#'   per input layer.
+#'   per input layer, or `learning_values`, a numeric matrix for single-layer SOMs.
 #' @param col.pal A viridis color-palette function used to assign colors to
 #'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
 #'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
@@ -3369,20 +3369,37 @@ plot.structure.SOM <- function(SOM.output,
 #'   less visually dominant. Default: `0.3`.
 #' @param lines.thickness Numeric value giving the line width for replicate
 #'   trajectory lines. Default: `0.9`.
-#' @param title Optional character string giving the main plot title. If `NULL`,
-#'   a default title is generated depending on whether the SOM contains one or
-#'   multiple input layers. Default: `NULL`.
-#' @param legend.position Character string or coordinate vector specifying the
-#'   legend position. Possible character positions are `"bottomright"`,
-#'   `"bottom"`, `"bottomleft"`, `"left"`, `"topleft"`, `"top"`, `"topright"`,
-#'   `"right"`, and `"center"`. Numeric coordinate vectors such as `c(x, y)`
-#'   are also supported. Default: `"topright"`.
+#' @param plot.title Optional character string giving the main plot title. If
+#'   `NULL`, a default title is generated depending on whether the SOM contains
+#'   one or multiple input layers. Default: `NULL`.
+#' @param plot.title.font.size A single positive numeric value giving the plot
+#'   title font size in points. Default: `11.1`.
+#' @param plot.title.line A single numeric value giving the distance of the plot
+#'   title from the plot. Default: `1`.
+#' @param legend.title Optional character string giving the legend title. If
+#'   `NULL`, a default legend title is generated depending on whether the SOM
+#'   contains one or multiple input layers. Default: `NULL`.
+#' @param legend.position Character string specifying the legend position.
+#'   Supported values are `"topright"`, `"topleft"`, `"bottomright"`,
+#'   `"bottomleft"`, `"right"`, `"left"`, `"top"`, `"bottom"`, and
+#'   `"center"`. Default: `"topright"`.
 #' @param legend.lines.thickness Numeric value giving the line width used in the
 #'   legend. Default: `3`.
-#' @param x.axis.label Character string giving the x-axis label. Default:
-#'   `"Training steps"`.
-#' @param y.axis.label Character string giving the y-axis label. Default:
+#' @param legend.text.font.size A single positive numeric value giving the
+#'   legend text font size in points. Default: `9.1`.
+#' @param legend.title.font.size A single positive numeric value giving the
+#'   legend title font size in points. Default: `9.1`.
+#' @param legend.box Logical; if `TRUE`, a white box is drawn around the legend.
+#'   Default: `TRUE`.
+#' @param x.axis.label Optional character string giving the x-axis title. If
+#'   `NULL`, no x-axis title is shown. Default: `"Training steps"`.
+#' @param y.axis.label Optional character string giving the y-axis title. If
+#'   `NULL`, no y-axis title is shown. Default:
 #'   `"Mean distance to closest codebook vector"`.
+#' @param axis.labels.font.size A single positive numeric value giving the axis
+#'   title font size in points. Default: `9.1`.
+#' @param axis.ticks.font.size A single positive numeric value giving the axis
+#'   tick-label font size in points. Default: `7`.
 #'
 #' @details
 #' The plot is intended as a SOM convergence diagnostic. A rapid initial decline
@@ -3390,12 +3407,14 @@ plot.structure.SOM <- function(SOM.output,
 #' stabilized toward a coherent representation. Persistently erratic
 #' trajectories, late-stage increases, or the absence of a clear plateau may
 #' indicate insufficient training steps, problematic scaling, weak data
-#' structure, or unstable SOM training. The plot should be interpreted as a training-progress diagnostic rather than as evidence that one layer is more important than another for delimitation.
+#' structure, or unstable SOM training. The plot should be interpreted as a
+#' training-progress diagnostic rather than as evidence that one layer is more
+#' important than another for delimitation.
 #'
 #' @return Invisibly returns `NULL`. The function is called for its plotting side
 #'   effect. If `save = TRUE`, the plot is written to the specified file.
 #'
-#' @importFrom graphics par plot lines legend
+#' @importFrom graphics par plot lines axis box title rect segments strheight strwidth text
 #' @importFrom grDevices adjustcolor dev.cur dev.off svg png jpeg
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
@@ -3456,160 +3475,370 @@ plot.learning.SOM <- function(SOM.output,
                               right.margin = 2, #right margin
                               lines.alpha = 0.3, #transparency for plot lines
                               lines.thickness = 0.9, #thickness for plot lines
-                              title = NULL, #main title of plot (if NULL, default title name is used)
+                              plot.title = NULL, #main title of plot (if NULL, default title name is used)
+                              plot.title.font.size = 11.1, #font size of plot title in points
+                              plot.title.line = 1, #distance of plot title from plot
+                              legend.title = NULL, #legend title (if NULL, default legend title is used)
                               legend.position = "topright", #position of legend in plot
                               legend.lines.thickness = 3, #thickness for lines in legend
-                              x.axis.label = "Training steps", #x axis label
-                              y.axis.label = "Mean distance to closest codebook vector" #y axis label
+                              legend.text.font.size = 9.1, #font size of legend text in points
+                              legend.title.font.size = 9.1, #font size of legend title in points
+                              legend.box = T, #create white box around legend
+                              x.axis.label = "Training steps", #x-axis title (NULL = no x-axis title)
+                              y.axis.label = "Mean distance to closest codebook vector", #y-axis title (NULL = no y-axis title)
+                              axis.labels.font.size = 9.1, #font size of axis titles in points
+                              axis.ticks.font.size = 7 #font size of axis tick labels in points
 ) {
   
   # Reset plotting parameters
-  old_dev <- dev.cur()
+  old_device <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
+  device_opened <- FALSE
   on.exit({
-    if (dev.cur() == old_dev)
+    if (device_opened && dev.cur() != old_device) dev.off()
     par(old_plotting_parameters)
-           }, add = TRUE)
+  }, add = TRUE)
   
   # Validate input
-  if (!is.list(SOM.output$learning_values_list)) stop("Plotting aborted: learning_values_list must be list of matrices")
-  viridis_palettes <- list(
-    viridis::viridis,
-    viridis::magma,
-    viridis::plasma,
-    viridis::inferno,
-    viridis::cividis,
-    viridis::rocket,
-    viridis::mako,
-    viridis::turbo
-  )
-  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
-  if (save) {
-    if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  }
-  if (save) {
-    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
-  }
-  if (save) {
-    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
-  }
-  if (save) {
-    if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
-    if (width < 4) message("Warning: width is very small (", width, " cm) – plot may be hard to read")
-    if (width > 50) message("Warning: width is very large (", width, " cm) – plot may be unwieldy")
-    if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
-    if (height < 4) message("Warning: height is very small (", height, " cm) – plot may be hard to read")
-    if (height > 50) message("Warning: height is very large (", height, " cm) – plot may be unwieldy")
-  }
-  if (save) {
-    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
-    if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
-  }
-  margin.list <- c(bottom.margin, left.margin, top.margin, right.margin)
-  margin.names <- c("bottom.margin", "left.margin", "top.margin", "right.margin")
-  for (i in seq_along(margin.list)) {
-    if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
-    if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
-    if (margin.list[i] > 10) message("Warning: ", margin.names[i], " is large (", margin.list[i], ") – plot area may shrink")
-  }
-  if (!is.numeric(lines.alpha) || length(lines.alpha) != 1 || is.na(lines.alpha) || lines.alpha < 0 || lines.alpha > 1) stop("Plotting aborted: lines.alpha must be numeric value between 0 and 1")
-  if (!is.numeric(lines.thickness) || length(lines.thickness) != 1 || is.na(lines.thickness) || lines.thickness <= 0) stop("Plotting aborted: lines.thickness must be a single positive numeric value")
-  if (!is.null(title) && (!is.character(title) || length(title) != 1 || is.na(title))) stop("Plotting aborted: title must be NULL or single character string")
-  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center")
-  if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) || !(legend.position %in% allowed.legend.positions)) stop(paste0("Plotting aborted: legend.position must be one of ", paste(allowed.legend.positions, collapse = ", ")))
-  if (!is.numeric(legend.lines.thickness) || length(legend.lines.thickness) != 1 || is.na(legend.lines.thickness) || legend.lines.thickness <= 0) stop("Plotting aborted: legend.lines.thickness must be a single positive numeric value")
-  if (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label)) stop("Plotting aborted: x.axis.label must be a single character string")
-  if (!is.character(y.axis.label) || length(y.axis.label) != 1 || is.na(y.axis.label)) stop("Plotting aborted: y.axis.label must be a single character string")
-  if ("learning_values" %in% names(SOM.output)) {
-    SOM.output$learning_values_list <- list(SOM.output$learning_values) #convert to list for single-layer case
-  } else if ("learning_values_list" %in% names(SOM.output)) { #for multi-layer case, no changes needed
-  } else {
-    stop("Plotting aborted: neither learning_values nor learning_values_list found in SOM.output - recheck or rerun run.SOM")
-  }
-  if (save) {
-    if (is.null(file.name)) file.name <- paste0("SOM_learning_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
-  }
-  if (save) {
-    if (!overwrite && file.exists(file.name)) stop(sprintf("Plotting aborted: file '%s' already exists - skipping plot saving", file.name))
-  }
+  if (!("learning_values" %in% names(SOM.output)) && !("learning_values_list" %in% names(SOM.output))) stop("Plotting aborted: neither learning_values nor learning_values_list found in SOM.output - recheck or rerun train.SOM")
   
-  # Convert data.frames to matrices if necessary
-  SOM.output$learning_values_list <- lapply(SOM.output$learning_values_list, function(x) {
-    if (is.data.frame(x)) return(as.matrix(x))
-    return(x)
+  # Prepare learning values list
+  if ("learning_values" %in% names(SOM.output)) {
+    learning_values_list <- list(SOM.output$learning_values) #convert to list for single-layer case
+  } else {
+    learning_values_list <- SOM.output$learning_values_list
+  }
+  if (!is.list(learning_values_list)) stop("Plotting aborted: learning_values_list must be list of matrices")
+  
+  # Convert data frames to matrices if necessary
+  learning_values_list <- lapply(learning_values_list, function(learning_values_matrix) {
+    if (is.data.frame(learning_values_matrix)) return(as.matrix(learning_values_matrix))
+    return(learning_values_matrix)
   })
   
-  # Extract matrix names (check for multi-layer or single-layer)
+  # Validate learning values
+  for (layer_index in seq_along(learning_values_list)) {
+    if (!is.matrix(learning_values_list[[layer_index]])) stop("Plotting aborted: each entry in learning_values_list must be a matrix or data frame")
+    if (!is.numeric(learning_values_list[[layer_index]])) stop("Plotting aborted: each learning-values matrix must be numeric")
+    if (nrow(learning_values_list[[layer_index]]) == 0 || ncol(learning_values_list[[layer_index]]) == 0) stop("Plotting aborted: each learning-values matrix must have at least one row and one column")
+  }
+  
+  # Validate training-step consistency
+  number_of_training_steps_by_layer <- vapply(learning_values_list, nrow, numeric(1))
+  if (length(unique(number_of_training_steps_by_layer)) != 1) stop("Plotting aborted: all learning-values matrices must have the same number of training steps")
+  
+  # Validate specified color palette
+  viridis_palettes <- list(viridis::viridis,
+                           viridis::magma,
+                           viridis::plasma,
+                           viridis::inferno,
+                           viridis::cividis,
+                           viridis::rocket,
+                           viridis::mako,
+                           viridis::turbo)
+  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+  
+  # Validate plot-saving arguments
+  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
+  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
+  if (save) {
+    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
+    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
+    if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
+    if (width < 4) message("Warning: width is very small (", width, " cm) - plot may be hard to read")
+    if (width > 50) message("Warning: width is very large (", width, " cm) - plot may be unwieldy")
+    if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
+    if (height < 4) message("Warning: height is very small (", height, " cm) - plot may be hard to read")
+    if (height > 50) message("Warning: height is very large (", height, " cm) - plot may be unwieldy")
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number >= 72 (dpi)")
+    if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) - file may be huge")
+  }
+  
+  # Validate margin arguments
+  margin_values <- c(bottom.margin, left.margin, top.margin, right.margin)
+  margin_names <- c("bottom.margin", "left.margin", "top.margin", "right.margin")
+  for (margin_index in seq_along(margin_values)) {
+    if (!is.numeric(margin_values[margin_index]) || length(margin_values[margin_index]) != 1 || is.na(margin_values[margin_index])) stop("Plotting aborted: ", margin_names[margin_index], " must be a single numeric value")
+    if (margin_values[margin_index] < 0) stop("Plotting aborted: ", margin_names[margin_index], " must be >= 0")
+    if (margin_values[margin_index] > 10) message("Warning: ", margin_names[margin_index], " is large (", margin_values[margin_index], ") - plot area may shrink")
+  }
+  
+  # Validate line arguments
+  if (!is.numeric(lines.alpha) || length(lines.alpha) != 1 || is.na(lines.alpha) || lines.alpha < 0 || lines.alpha > 1) stop("Plotting aborted: lines.alpha must be numeric value between 0 and 1")
+  if (!is.numeric(lines.thickness) || length(lines.thickness) != 1 || is.na(lines.thickness) || lines.thickness <= 0) stop("Plotting aborted: lines.thickness must be a single positive numeric value")
+  
+  # Validate title and axis-label arguments
+  if (!is.null(plot.title) && (!is.character(plot.title) || length(plot.title) != 1 || is.na(plot.title))) stop("Plotting aborted: plot.title must be NULL or single character string")
+  if (!is.numeric(plot.title.font.size) || length(plot.title.font.size) != 1 || is.na(plot.title.font.size) || plot.title.font.size <= 0) stop("Plotting aborted: plot.title.font.size must be a single positive numeric value")
+  if (!is.numeric(plot.title.line) || length(plot.title.line) != 1 || is.na(plot.title.line)) stop("Plotting aborted: plot.title.line must be a single numeric value")
+  if (!is.null(x.axis.label) && (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label))) stop("Plotting aborted: x.axis.label must be NULL or single character string")
+  if (!is.null(y.axis.label) && (!is.character(y.axis.label) || length(y.axis.label) != 1 || is.na(y.axis.label))) stop("Plotting aborted: y.axis.label must be NULL or single character string")
+  if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive numeric value")
+  if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive numeric value")
+  
+  # Validate legend arguments
+  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center")
+  if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) || !(legend.position %in% allowed.legend.positions)) stop(paste0("Plotting aborted: legend.position must be one of ", paste(allowed.legend.positions, collapse = ", ")))
+  if (!is.null(legend.title) && (!is.character(legend.title) || length(legend.title) != 1 || is.na(legend.title))) stop("Plotting aborted: legend.title must be NULL or single character string")
+  if (!is.numeric(legend.lines.thickness) || length(legend.lines.thickness) != 1 || is.na(legend.lines.thickness) || legend.lines.thickness <= 0) stop("Plotting aborted: legend.lines.thickness must be a single positive numeric value")
+  if (!is.numeric(legend.text.font.size) || length(legend.text.font.size) != 1 || is.na(legend.text.font.size) || legend.text.font.size <= 0) stop("Plotting aborted: legend.text.font.size must be a single positive numeric value")
+  if (!is.numeric(legend.title.font.size) || length(legend.title.font.size) != 1 || is.na(legend.title.font.size) || legend.title.font.size <= 0) stop("Plotting aborted: legend.title.font.size must be a single positive numeric value")
+  if (!is.logical(legend.box) || length(legend.box) != 1 || is.na(legend.box)) stop("Plotting aborted: legend.box must be TRUE or FALSE")
+  
+  # Extract layer names
   if ("input_data_names" %in% names(SOM.output)) {
-    matrix_names <- SOM.output$input_data_names
+    layer_names <- SOM.output$input_data_names
   } else {
     stop("Plotting aborted: matrix names (input_data_names) not found in provided SOM.output")
   }
   
-  # Check if matrix names match number of layers
-  if (length(matrix_names) != length(SOM.output$learning_values_list)) stop("Plotting aborted: number of matrix names (input_data_names) does not match number of matrices")
+  # Check if layer names match number of layers
+  if (length(layer_names) != length(learning_values_list)) stop("Plotting aborted: number of matrix names (input_data_names) does not match number of matrices")
   
-  # Determine global ylim
-  global_ylim <- range(unlist(lapply(SOM.output$learning_values_list, function(mat) 
-    range(mat, na.rm = T))), na.rm = T) * c(0.93, 1.07)
-  
-  # Set legend and main plot title based on number of layers
-  if (length(SOM.output$learning_values_list) == 1) {
-    main_title <- "Training progress across input layer"
-    legend_title <- "Layer"
+  # Determine global y-axis limits
+  finite_learning_values <- unlist(lapply(learning_values_list, function(learning_values_matrix) learning_values_matrix[is.finite(learning_values_matrix)]))
+  if (length(finite_learning_values) == 0) stop("Plotting aborted: learning-values matrices contain no finite values")
+  global_y_limits <- range(finite_learning_values, na.rm = TRUE)
+  if (diff(global_y_limits) == 0) {
+    global_y_limits <- global_y_limits + c(-0.5, 0.5)
   } else {
-    main_title <- "Training progress across input layers"
-    legend_title <- "Layers"
+    global_y_limits <- global_y_limits * c(0.93, 1.07)
+  }
+  
+  # Set default plot title and legend title based on number of layers
+  if (length(learning_values_list) == 1) {
+    default_plot_title <- "Training progress across input layer"
+    default_legend_title <- "Layer"
+  } else {
+    default_plot_title <- "Training progress across input layers"
+    default_legend_title <- "Layers"
   }
   
   # Use provided title if specified, otherwise use default
-  main_title <- ifelse(is.null(title), yes = main_title, no = title)
+  if (is.null(plot.title)) {
+    plot_title_to_plot <- default_plot_title
+  } else {
+    plot_title_to_plot <- plot.title
+  }
+  
+  # Use provided legend title if specified, otherwise use default
+  if (is.null(legend.title)) {
+    legend_title_to_plot <- default_legend_title
+  } else {
+    legend_title_to_plot <- legend.title
+  }
+  
+  # Set default file name
+  if (save && is.null(file.name)) file.name <- paste0("SOM_learning_plot_", paste(layer_names, collapse = "_"), ".", plot.type)
+  
+  # Check overwrite settings
+  if (save && !overwrite && file.exists(file.name)) stop(sprintf("Plotting aborted: file '%s' already exists - skipping plot saving", file.name))
   
   # Save plot if requested
   if (save) {
     if (plot.type == "svg") {
-      svg(file.name, width = width / 2.54,  height = height / 2.54)
+      svg(file.name, width = width / 2.54, height = height / 2.54)
     } else if (plot.type == "png") {
       png(file.name, width = width, height = height, units = "cm", res = resolution)
     } else if (plot.type == "jpg") {
       jpeg(file.name, width = width, height = height, units = "cm", res = resolution)
+    } else {
+      stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
+    }
+    device_opened <- TRUE
+  }
+  
+  # Convert point-size arguments to base R relative font sizes
+  base_font_size <- par("ps")
+  plot_title_relative_font_size <- plot.title.font.size / base_font_size
+  axis_labels_relative_font_size <- axis.labels.font.size / base_font_size
+  axis_ticks_relative_font_size <- axis.ticks.font.size / base_font_size
+  legend_text_relative_font_size <- legend.text.font.size / base_font_size
+  legend_title_relative_font_size <- legend.title.font.size / base_font_size
+  
+  # Prepare base plot
+  first_learning_values_matrix <- learning_values_list[[1]]
+  number_of_training_steps <- nrow(first_learning_values_matrix)
+  par(mfrow = c(1, 1),
+      mar = c(bottom.margin, left.margin, top.margin, right.margin))
+  plot(NULL,
+       xlim = c(1, number_of_training_steps),
+       ylim = global_y_limits,
+       xlab = "",
+       ylab = "",
+       main = "",
+       axes = FALSE)
+  
+  # Add axes
+  axis(1,
+       cex.axis = axis_ticks_relative_font_size)
+  axis(2,
+       cex.axis = axis_ticks_relative_font_size)
+  box()
+  
+  # Add axis titles
+  if (!is.null(x.axis.label) || !is.null(y.axis.label)) {
+    title(xlab = ifelse(is.null(x.axis.label), "", x.axis.label),
+          ylab = ifelse(is.null(y.axis.label), "", y.axis.label),
+          cex.lab = axis_labels_relative_font_size,
+          font.lab = 2)
+  }
+  
+  # Add plot title
+  if (!is.null(plot_title_to_plot)) {
+    title(main = plot_title_to_plot,
+          line = plot.title.line,
+          font.main = 2,
+          cex.main = plot_title_relative_font_size)
+  }
+  
+  # Plot each layer
+  layer_colors <- setNames(col.pal(length(layer_names)), layer_names)
+  for (layer_index in seq_along(learning_values_list)) {
+    current_learning_values_matrix <- learning_values_list[[layer_index]]
+    current_layer_name <- layer_names[layer_index]
+    for (replicate_index in seq_len(ncol(current_learning_values_matrix))) {
+      lines(seq_len(nrow(current_learning_values_matrix)),
+            current_learning_values_matrix[, replicate_index],
+            col = adjustcolor(layer_colors[current_layer_name], alpha.f = lines.alpha),
+            lwd = lines.thickness)
     }
   }
   
-  # Prepare base plot
-  first_matrix <- SOM.output$learning_values_list[[1]]
-  par(mfrow = c(1, 1), mar = c(bottom.margin, left.margin, top.margin, right.margin))
-  plot(NULL, 
-       xlim = c(1, nrow(first_matrix)), 
-       ylim = global_ylim, 
-       xlab = x.axis.label, 
-       ylab = y.axis.label, 
-       main = main_title,
-       axes = T)
-  
-  # Plot each matrix
-  layer_colors <- setNames(col.pal(length(matrix_names)), matrix_names)
-  for (i in seq_along(SOM.output$learning_values_list)) {
-    mat <- SOM.output$learning_values_list[[i]]
-    current_layer_name <- matrix_names[i]
-    for (j in 1:ncol(mat)) 
-      lines(mat[, j], col = adjustcolor(layer_colors[current_layer_name], alpha.f = lines.alpha), lwd = lines.thickness)
+  # Add custom line legend
+  add.learning.legend.SOM <- function(legend.position,
+                                      legend.title,
+                                      legend.labels,
+                                      legend.colors,
+                                      legend.text.relative.font.size,
+                                      legend.title.relative.font.size,
+                                      legend.lines.thickness,
+                                      legend.box) {
+    
+    # Extract plot range
+    plot_coordinate_limits <- par("usr")
+    plot_x_range <- plot_coordinate_limits[2] - plot_coordinate_limits[1]
+    plot_y_range <- plot_coordinate_limits[4] - plot_coordinate_limits[3]
+    
+    # Calculate legend dimensions
+    legend_text_width <- max(strwidth(legend.labels, units = "user", cex = legend.text.relative.font.size))
+    legend_text_height <- strheight("M", units = "user", cex = legend.text.relative.font.size)
+    legend_title_width <- 0
+    legend_title_height <- 0
+    legend_title_gap <- 0
+    if (!is.null(legend.title) && legend.title != "") {
+      legend_title_width <- strwidth(legend.title, units = "user", cex = legend.title.relative.font.size, font = 2)
+      legend_title_height <- strheight("M", units = "user", cex = legend.title.relative.font.size, font = 2)
+      legend_title_gap <- 0.5 * legend_text_height
+    }
+    legend_line_width <- 2.5 * strwidth("M", units = "user", cex = legend.text.relative.font.size)
+    legend_line_gap <- 0.7 * strwidth("M", units = "user", cex = legend.text.relative.font.size)
+    legend_padding_x <- 0.9 * strwidth("M", units = "user", cex = legend.text.relative.font.size)
+    legend_padding_y <- 0.7 * legend_text_height
+    legend_entry_gap <- 0.35 * legend_text_height
+    legend_width <- max(legend_title_width, legend_line_width + legend_line_gap + legend_text_width) + 2 * legend_padding_x
+    legend_height <- 2 * legend_padding_y + legend_title_height + legend_title_gap + length(legend.labels) * legend_text_height + (length(legend.labels) - 1) * legend_entry_gap
+    
+    # Set legend position
+    legend_inset_x <- 0.02 * plot_x_range
+    legend_inset_y <- 0.02 * plot_y_range
+    if (legend.position == "topright") {
+      legend_left <- plot_coordinate_limits[2] - legend_inset_x - legend_width
+      legend_bottom <- plot_coordinate_limits[4] - legend_inset_y - legend_height
+    } else if (legend.position == "topleft") {
+      legend_left <- plot_coordinate_limits[1] + legend_inset_x
+      legend_bottom <- plot_coordinate_limits[4] - legend_inset_y - legend_height
+    } else if (legend.position == "bottomright") {
+      legend_left <- plot_coordinate_limits[2] - legend_inset_x - legend_width
+      legend_bottom <- plot_coordinate_limits[3] + legend_inset_y
+    } else if (legend.position == "bottomleft") {
+      legend_left <- plot_coordinate_limits[1] + legend_inset_x
+      legend_bottom <- plot_coordinate_limits[3] + legend_inset_y
+    } else if (legend.position == "right") {
+      legend_left <- plot_coordinate_limits[2] - legend_inset_x - legend_width
+      legend_bottom <- plot_coordinate_limits[3] + 0.5 * plot_y_range - 0.5 * legend_height
+    } else if (legend.position == "left") {
+      legend_left <- plot_coordinate_limits[1] + legend_inset_x
+      legend_bottom <- plot_coordinate_limits[3] + 0.5 * plot_y_range - 0.5 * legend_height
+    } else if (legend.position == "top") {
+      legend_left <- plot_coordinate_limits[1] + 0.5 * plot_x_range - 0.5 * legend_width
+      legend_bottom <- plot_coordinate_limits[4] - legend_inset_y - legend_height
+    } else if (legend.position == "bottom") {
+      legend_left <- plot_coordinate_limits[1] + 0.5 * plot_x_range - 0.5 * legend_width
+      legend_bottom <- plot_coordinate_limits[3] + legend_inset_y
+    } else {
+      legend_left <- plot_coordinate_limits[1] + 0.5 * plot_x_range - 0.5 * legend_width
+      legend_bottom <- plot_coordinate_limits[3] + 0.5 * plot_y_range - 0.5 * legend_height
+    }
+    
+    # Set legend coordinates
+    legend_right <- legend_left + legend_width
+    legend_top <- legend_bottom + legend_height
+    
+    # Draw legend box
+    if (legend.box) {
+      rect(legend_left,
+           legend_bottom,
+           legend_right,
+           legend_top,
+           col = "white",
+           border = "black")
+    }
+    
+    # Draw legend title
+    current_legend_y_position <- legend_top - legend_padding_y
+    if (!is.null(legend.title) && legend.title != "") {
+      text(x = legend_left + legend_padding_x,
+           y = current_legend_y_position - 0.5 * legend_title_height,
+           labels = legend.title,
+           adj = c(0, 0.5),
+           font = 2,
+           cex = legend.title.relative.font.size)
+      current_legend_y_position <- current_legend_y_position - legend_title_height - legend_title_gap
+    }
+    
+    # Draw legend entries
+    legend_line_x_start <- legend_left + legend_padding_x
+    legend_line_x_end <- legend_line_x_start + legend_line_width
+    legend_text_x_position <- legend_line_x_end + legend_line_gap
+    for (legend_index in seq_along(legend.labels)) {
+      legend_entry_y_position <- current_legend_y_position - 0.5 * legend_text_height - (legend_index - 1) * (legend_text_height + legend_entry_gap)
+      segments(x0 = legend_line_x_start,
+               y0 = legend_entry_y_position,
+               x1 = legend_line_x_end,
+               y1 = legend_entry_y_position,
+               col = legend.colors[legend_index],
+               lwd = legend.lines.thickness)
+      text(x = legend_text_x_position,
+           y = legend_entry_y_position,
+           labels = legend.labels[legend_index],
+           adj = c(0, 0.5),
+           cex = legend.text.relative.font.size)
+    }
+    
+    # Return invisible NULL
+    return(invisible(NULL))
   }
   
   # Add legend
-  legend(legend.position, 
-         legend = matrix_names, 
-         col = layer_colors[matrix_names], 
-         lty = 1, 
-         lwd = legend.lines.thickness,
-         title = legend_title)
+  add.learning.legend.SOM(legend.position = legend.position,
+                          legend.title = legend_title_to_plot,
+                          legend.labels = layer_names,
+                          legend.colors = layer_colors[layer_names],
+                          legend.text.relative.font.size = legend_text_relative_font_size,
+                          legend.title.relative.font.size = legend_title_relative_font_size,
+                          legend.lines.thickness = legend.lines.thickness,
+                          legend.box = legend.box)
   
   # Close graphics device
   if (save) {
     dev.off()
+    device_opened <- FALSE
     message(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
+  
+  # Return invisible NULL
+  return(invisible(NULL))
 }
 
 
