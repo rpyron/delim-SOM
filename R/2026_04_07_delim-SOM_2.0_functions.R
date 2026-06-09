@@ -6468,14 +6468,13 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM output from full multilayer input
                                                   col.pal = viridis::turbo, #color palette
                                                   add.points = TRUE, #whether to add replicate-level jittered points
-                                                  point.cex = 0.7, #point size
-                                                  point.alpha = 0.5, #point transparency
+                                                  point.cex = 0.8, #point size
+                                                  point.alpha = 065, #point transparency
                                                   bottom.margin = 8, #bottom margin
                                                   left.margin = 5.5, #left margin
                                                   top.margin = 3, #top margin
                                                   right.margin = 2, #right margin
-                                                  distance.axis.label = 4, #distance of axis title from axis labels in par(mgp = c(...))
-                                                  save.leave.one.layer.out.results = FALSE, #whether to save leave-one-layer-out results to file
+                                                  save.leave.one.layer.out.results = TRUE, #whether to save leave-one-layer-out results to file
                                                   save.leave.one.layer.out.results.name = NULL, #file name for saving leave-one-layer-out results; if NULL, default name is generated
                                                   overwrite.leave.one.layer.out.results = FALSE, #if FALSE, existing results are loaded instead of re-running
                                                   save = FALSE, #whether to save plot
@@ -6485,7 +6484,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   width = 20, #plot width in cm
                                                   height = 15, #plot height in cm
                                                   resolution = 300, #plot resolution in dpi
-                                                  title = NULL, #optional overall plot title
+                                                  title = "Layer importance", #plot title
                                                   message.N.replicates = 10, #frequency of progress messages during leave-one-layer-out SOM reruns
                                                   verbose = TRUE #whether to print messages
 ) {
@@ -6573,7 +6572,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.numeric(baseline.train.SOM.set.seed.N) || length(baseline.train.SOM.set.seed.N) != 1 || is.na(baseline.train.SOM.set.seed.N) || baseline.train.SOM.set.seed.N < 1 || baseline.train.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.train.SOM.set.seed.N must be a single positive integer")
   if (!is.numeric(baseline.clustering.SOM.set.seed.N) || length(baseline.clustering.SOM.set.seed.N) != 1 || is.na(baseline.clustering.SOM.set.seed.N) || baseline.clustering.SOM.set.seed.N < 1 || baseline.clustering.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.clustering.SOM.set.seed.N must be a single positive integer")
   if (!is.logical(add.points) || length(add.points) != 1 || is.na(add.points)) stop("Leave-one-layer-out layer importance aborted: add.points must be TRUE or FALSE")
-  if (!is.numeric(distance.axis.label) || length(distance.axis.label) != 1 || is.na(distance.axis.label) || distance.axis.label <= 0) stop("Leave-one-layer-out layer importance aborted: distance.axis.label must be a single positive numeric value")
   if (!is.logical(save.leave.one.layer.out.results) || length(save.leave.one.layer.out.results) != 1 || is.na(save.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results must be TRUE or FALSE")
   if (save.leave.one.layer.out.results && !is.null(save.leave.one.layer.out.results.name)) {
     if (!is.character(save.leave.one.layer.out.results.name) || length(save.leave.one.layer.out.results.name) != 1 || is.na(save.leave.one.layer.out.results.name) || trimws(save.leave.one.layer.out.results.name) == "") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must be a non-empty character string if provided")
@@ -7143,8 +7141,11 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     replicate_matched_results_table <- do.call(rbind, replicate_matched_results_list)
     
     # Create layer-level summary table
-    layer_summary_list <- lapply(split(replicate_matched_results_table, replicate_matched_results_table$layer), function(current_layer_results_table) {
-  
+    layer_summary_list <- lapply(unique(replicate_matched_results_table$layer), function(current_layer_name) {
+      
+      # Extract current layer results
+      current_layer_results_table <- replicate_matched_results_table[replicate_matched_results_table$layer == current_layer_name, , drop = FALSE]
+      
       # Extract successful runs
       successful_current_layer_results_table <- current_layer_results_table[is.na(current_layer_results_table$error), , drop = FALSE]
   
@@ -7161,7 +7162,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                  stringsAsFactors = FALSE)
     })
     layer_summary_table <- do.call(rbind, layer_summary_list)
-    layer_summary_table <- layer_summary_table[order(layer_summary_table$mean.absolute.k.deviation, decreasing = TRUE), , drop = FALSE]
     rownames(layer_summary_table) <- NULL
     
     # Create results object
@@ -7235,17 +7235,17 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (show.assignment.margin.plot) {
     par(mfrow = c(1, 3),
         mar = c(bottom.margin, left.margin, top.margin, right.margin),
-        oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
-        mgp = c(distance.axis.label, 1, 0))
+        oma = c(0, 0, 2, 0),
+        mgp = c(4, 1, 0))
   } else {
     par(mfrow = c(1, 2),
         mar = c(bottom.margin, left.margin, top.margin, right.margin),
-        oma = if (is.null(title)) c(0, 0, 0, 0) else c(0, 0, 2, 0),
-        mgp = c(distance.axis.label, 1, 0))
+        oma = c(0, 0, 2, 0),
+        mgp = c(4, 1, 0))
     messager("Assignment margin plot skipped because all successful replicates had k = 1")
-  }                                                 
+  }                                                
   
-  # Add overall title if requested
+  # Add overall title
   if (!is.null(title)) graphics::mtext(title, side = 3, outer = TRUE, line = -1.5, cex = 1.2)
   
   # Create function to add jittered points
@@ -7275,7 +7275,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           las = 2,
           ylab = "Absolute k deviation",
           xlab = "",
-          main = "Absolute k deviation")
+          main = "")
   add.jittered.points.SOM("absolute.k.deviation")
   
   # Plot pairwise co-assignment change
@@ -7286,7 +7286,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           las = 2,
           ylab = "Pairwise co-assignment change",
           xlab = "",
-          main = "Pairwise co-assignment change")
+          main = "")
   add.jittered.points.SOM("pairwise.coassignment.change")
   
   # Plot assignment margin change
@@ -7296,11 +7296,10 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
             col = layer_colors[SOM_layer_names],
             outline = FALSE,
             las = 2,
-            ylab = "Baseline - leave-one-layer-out margin",
+            ylab = "Assignment margin change",
             xlab = "",
-            main = "Assignment margin change")
+            main = "")
     add.jittered.points.SOM("delta.mean.assignment.margin")
-    abline(h = 0, lty = 2)
   }
   
   # Report saved plot if requested
@@ -7312,7 +7311,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   # Return results
   return(leave.one.layer.out.results)
 }
-                                 
+
+                                                   
 ## Function to convert specified categorical columns into binary (0/1) indicators
 #' Convert categorical columns into binary indicator variables
 #'
