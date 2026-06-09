@@ -3330,7 +3330,7 @@ plot.structure.SOM <- function(SOM.output,
 #'
 #' Plot replicate-level learning trajectories from a trained single-layer or
 #' multi-layer SOM object returned by `train.SOM`. The function visualizes
-#' the training-change values stored in `learning_values_list`, with training
+#' the learning values stored in `learning_values_list`, with training
 #' steps on the x-axis and training change on the y-axis. For multi-layer
 #' Super-SOMs, one color is used per input layer, and replicate trajectories
 #' within each layer are overlaid with transparent lines.
@@ -3370,15 +3370,11 @@ plot.structure.SOM <- function(SOM.output,
 #' @param lines.thickness Numeric value giving the line width for replicate
 #'   trajectory lines. Default: `0.9`.
 #' @param plot.title Optional character string giving the main plot title. If
-#'   `NULL`, a default title is generated depending on whether the SOM contains
-#'   one or multiple input layers. Default: `NULL`.
+#'   `NULL`, no title is shown. Default: `"SOM learning trajectories"`.
 #' @param plot.title.font.size A single positive numeric value giving the plot
-#'   title font size in points. Default: `11.1`.
-#' @param plot.title.line A single numeric value giving the distance of the plot
-#'   title from the plot. Default: `1`.
+#'   title font size in points. Default: `9.1`.
 #' @param legend.title Optional character string giving the legend title. If
-#'   `NULL`, a default legend title is generated depending on whether the SOM
-#'   contains one or multiple input layers. Default: `NULL`.
+#'   `NULL`, no legend title is shown. Default: `"Layer"`.
 #' @param legend.position Character string specifying the legend position.
 #'   Supported values are `"topright"`, `"topleft"`, `"bottomright"`,
 #'   `"bottomleft"`, `"right"`, `"left"`, `"top"`, `"bottom"`, and
@@ -3403,7 +3399,7 @@ plot.structure.SOM <- function(SOM.output,
 #'
 #' @details
 #' The plot is intended as a SOM convergence diagnostic. A rapid initial decline
-#' followed by a plateau in the training-change values suggests that the map has
+#' followed by a plateau in the learning values suggests that the map has
 #' stabilized toward a coherent representation. Persistently erratic
 #' trajectories, late-stage increases, or the absence of a clear plateau may
 #' indicate insufficient training steps, problematic scaling, weak data
@@ -3427,11 +3423,7 @@ plot.structure.SOM <- function(SOM.output,
 #' rownames(continuous_data) <- paste0("sample_", seq_len(nrow(continuous_data)))
 #' colnames(continuous_data) <- paste0("trait_", seq_len(ncol(continuous_data)))
 #'
-#' som_single <- train.SOM(
-#'   input_data = continuous_data,
-#'   N.steps = 100,
-#'   N.replicates = 60
-#' )
+#' som_single <- train.SOM(input_data = continuous_data)
 #'
 #' plot.learning.SOM(som_single)
 #'
@@ -3450,11 +3442,7 @@ plot.structure.SOM <- function(SOM.output,
 #'   Environment = environment_data
 #' )
 #'
-#' som_multi <- train.SOM(
-#'   input_data = input_data_multi,
-#'   N.steps = 100,
-#'   N.replicates = 60
-#' )
+#' som_multi <- train.SOM(input_data = input_data_multi)
 #'
 #' plot.learning.SOM(som_multi)
 #' }
@@ -3462,8 +3450,8 @@ plot.structure.SOM <- function(SOM.output,
 #' @export
 plot.learning.SOM <- function(SOM.output, 
                               col.pal = viridis::turbo, #set color palette
-                              save = F, #option to save plot
-                              overwrite = T, #option to overwrite plot if it already exists (only if saving plot)
+                              save = FALSE, #option to save plot
+                              overwrite = TRUE, #option to overwrite plot if it already exists (only if saving plot)
                               plot.type = "svg", #options: "svg", "png", "jpg" (only if saving plot)
                               file.name = NULL, #set plot file.name (if NULL, default plot file.name is used; only if saving plot)
                               width = 20, #plot width in cm (only if saving plot)
@@ -3475,15 +3463,14 @@ plot.learning.SOM <- function(SOM.output,
                               right.margin = 2, #right margin
                               lines.alpha = 0.3, #transparency for plot lines
                               lines.thickness = 0.9, #thickness for plot lines
-                              plot.title = NULL, #main title of plot (if NULL, default title name is used)
-                              plot.title.font.size = 11.1, #font size of plot title in points
-                              plot.title.line = 1, #distance of plot title from plot
-                              legend.title = NULL, #legend title (if NULL, default legend title is used)
+                              plot.title = "SOM learning trajectories", #main title of plot (if NULL, no title shown)
+                              plot.title.font.size = 9.1, #font size of plot title in points
+                              legend.title = "Layer", #legend title (if NULL, no legend title is shown)
                               legend.position = "topright", #position of legend in plot
                               legend.lines.thickness = 3, #thickness for lines in legend
                               legend.text.font.size = 9.1, #font size of legend text in points
                               legend.title.font.size = 9.1, #font size of legend title in points
-                              legend.box = T, #create white box around legend
+                              legend.box = TRUE, #create white box around legend
                               x.axis.label = "Training steps", #x-axis title (NULL = no x-axis title)
                               y.axis.label = "Mean distance to closest codebook vector", #y-axis title (NULL = no y-axis title)
                               axis.labels.font.size = 9.1, #font size of axis titles in points
@@ -3555,13 +3542,14 @@ plot.learning.SOM <- function(SOM.output,
   }
   
   # Validate margin arguments
-  margin_values <- c(bottom.margin, left.margin, top.margin, right.margin)
-  margin_names <- c("bottom.margin", "left.margin", "top.margin", "right.margin")
-  for (margin_index in seq_along(margin_values)) {
-    if (!is.numeric(margin_values[margin_index]) || length(margin_values[margin_index]) != 1 || is.na(margin_values[margin_index])) stop("Plotting aborted: ", margin_names[margin_index], " must be a single numeric value")
-    if (margin_values[margin_index] < 0) stop("Plotting aborted: ", margin_names[margin_index], " must be >= 0")
-    if (margin_values[margin_index] > 10) message("Warning: ", margin_names[margin_index], " is large (", margin_values[margin_index], ") - plot area may shrink")
-  }
+  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative numeric value")
+  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative numeric value")
+  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative numeric value")
+  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative numeric value")
+  if (bottom.margin > 10) message("Warning: bottom.margin is large (", bottom.margin, ") - plot area may shrink")
+  if (left.margin > 10) message("Warning: left.margin is large (", left.margin, ") - plot area may shrink")
+  if (top.margin > 10) message("Warning: top.margin is large (", top.margin, ") - plot area may shrink")
+  if (right.margin > 10) message("Warning: right.margin is large (", right.margin, ") - plot area may shrink")
   
   # Validate line arguments
   if (!is.numeric(lines.alpha) || length(lines.alpha) != 1 || is.na(lines.alpha) || lines.alpha < 0 || lines.alpha > 1) stop("Plotting aborted: lines.alpha must be numeric value between 0 and 1")
@@ -3570,7 +3558,6 @@ plot.learning.SOM <- function(SOM.output,
   # Validate title and axis-label arguments
   if (!is.null(plot.title) && (!is.character(plot.title) || length(plot.title) != 1 || is.na(plot.title))) stop("Plotting aborted: plot.title must be NULL or single character string")
   if (!is.numeric(plot.title.font.size) || length(plot.title.font.size) != 1 || is.na(plot.title.font.size) || plot.title.font.size <= 0) stop("Plotting aborted: plot.title.font.size must be a single positive numeric value")
-  if (!is.numeric(plot.title.line) || length(plot.title.line) != 1 || is.na(plot.title.line)) stop("Plotting aborted: plot.title.line must be a single numeric value")
   if (!is.null(x.axis.label) && (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label))) stop("Plotting aborted: x.axis.label must be NULL or single character string")
   if (!is.null(y.axis.label) && (!is.character(y.axis.label) || length(y.axis.label) != 1 || is.na(y.axis.label))) stop("Plotting aborted: y.axis.label must be NULL or single character string")
   if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive numeric value")
@@ -3602,31 +3589,14 @@ plot.learning.SOM <- function(SOM.output,
   if (diff(global_y_limits) == 0) {
     global_y_limits <- global_y_limits + c(-0.5, 0.5)
   } else {
-    global_y_limits <- global_y_limits * c(0.93, 1.07)
+    y_axis_padding <- 0.07 * diff(global_y_limits)
+    global_y_limits <- c(global_y_limits[1] - y_axis_padding,
+                         global_y_limits[2] + y_axis_padding)
   }
   
-  # Set default plot title and legend title based on number of layers
-  if (length(learning_values_list) == 1) {
-    default_plot_title <- "Training progress across input layer"
-    default_legend_title <- "Layer"
-  } else {
-    default_plot_title <- "Training progress across input layers"
-    default_legend_title <- "Layers"
-  }
-  
-  # Use provided title if specified, otherwise use default
-  if (is.null(plot.title)) {
-    plot_title_to_plot <- default_plot_title
-  } else {
-    plot_title_to_plot <- plot.title
-  }
-  
-  # Use provided legend title if specified, otherwise use default
-  if (is.null(legend.title)) {
-    legend_title_to_plot <- default_legend_title
-  } else {
-    legend_title_to_plot <- legend.title
-  }
+  # Set plot title and legend title
+  plot_title_to_plot <- plot.title
+  legend_title_to_plot <- legend.title
   
   # Set default file name
   if (save && is.null(file.name)) file.name <- paste0("SOM_learning_plot_", paste(layer_names, collapse = "_"), ".", plot.type)
@@ -3634,10 +3604,14 @@ plot.learning.SOM <- function(SOM.output,
   # Check overwrite settings
   if (save && !overwrite && file.exists(file.name)) stop(sprintf("Plotting aborted: file '%s' already exists - skipping plot saving", file.name))
   
+  # Set SVG scaling correction
+  svg_scaling_factor <- 1
+  if (save && plot.type == "svg") svg_scaling_factor <- 96 / 72
+  
   # Save plot if requested
   if (save) {
     if (plot.type == "svg") {
-      svg(file.name, width = width / 2.54, height = height / 2.54)
+      svg(file.name, width = (width / 2.54) * svg_scaling_factor, height = (height / 2.54) * svg_scaling_factor)
     } else if (plot.type == "png") {
       png(file.name, width = width, height = height, units = "cm", res = resolution)
     } else if (plot.type == "jpg") {
@@ -3650,11 +3624,11 @@ plot.learning.SOM <- function(SOM.output,
   
   # Convert point-size arguments to base R relative font sizes
   base_font_size <- par("ps")
-  plot_title_relative_font_size <- plot.title.font.size / base_font_size
-  axis_labels_relative_font_size <- axis.labels.font.size / base_font_size
-  axis_ticks_relative_font_size <- axis.ticks.font.size / base_font_size
-  legend_text_relative_font_size <- legend.text.font.size / base_font_size
-  legend_title_relative_font_size <- legend.title.font.size / base_font_size
+  plot_title_relative_font_size <- (plot.title.font.size * svg_scaling_factor) / base_font_size
+  axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
+  axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
+  legend_text_relative_font_size <- (legend.text.font.size * svg_scaling_factor) / base_font_size
+  legend_title_relative_font_size <- (legend.title.font.size * svg_scaling_factor) / base_font_size
   
   # Prepare base plot
   first_learning_values_matrix <- learning_values_list[[1]]
@@ -3670,24 +3644,24 @@ plot.learning.SOM <- function(SOM.output,
        axes = FALSE)
   
   # Add axes
-  axis(1,
-       cex.axis = axis_ticks_relative_font_size)
-  axis(2,
-       cex.axis = axis_ticks_relative_font_size)
+  axis(1, cex.axis = axis_ticks_relative_font_size)
+  axis(2, cex.axis = axis_ticks_relative_font_size)
   box()
   
   # Add axis titles
-  if (!is.null(x.axis.label) || !is.null(y.axis.label)) {
-    title(xlab = ifelse(is.null(x.axis.label), "", x.axis.label),
-          ylab = ifelse(is.null(y.axis.label), "", y.axis.label),
+  x_axis_label_to_plot <- if (is.null(x.axis.label)) "" else x.axis.label
+  y_axis_label_to_plot <- if (is.null(y.axis.label)) "" else y.axis.label
+  if (x_axis_label_to_plot != "" || y_axis_label_to_plot != "") {
+    title(xlab = x_axis_label_to_plot,
+          ylab = y_axis_label_to_plot,
           cex.lab = axis_labels_relative_font_size,
           font.lab = 2)
   }
   
   # Add plot title
-  if (!is.null(plot_title_to_plot)) {
+  if (!is.null(plot_title_to_plot) && plot_title_to_plot != "") {
     title(main = plot_title_to_plot,
-          line = plot.title.line,
+          line = 1,
           font.main = 2,
           cex.main = plot_title_relative_font_size)
   }
@@ -3740,8 +3714,8 @@ plot.learning.SOM <- function(SOM.output,
     legend_height <- 2 * legend_padding_y + legend_title_height + legend_title_gap + length(legend.labels) * legend_text_height + (length(legend.labels) - 1) * legend_entry_gap
     
     # Set legend position
-    legend_inset_x <- 0.02 * plot_x_range
-    legend_inset_y <- 0.02 * plot_y_range
+    legend_inset_x <- 0.00 * plot_x_range
+    legend_inset_y <- 0.00 * plot_y_range
     if (legend.position == "topright") {
       legend_left <- plot_coordinate_limits[2] - legend_inset_x - legend_width
       legend_bottom <- plot_coordinate_limits[4] - legend_inset_y - legend_height
@@ -3875,11 +3849,10 @@ plot.learning.SOM <- function(SOM.output,
 #' @param resolution Numeric value giving plot resolution in dots per inch for
 #'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
 #' @param bottom.margin Numeric value giving the bottom plot margin. Default:
-#'   `3`.
+#'   `3.5`.
 #' @param left.margin Numeric value giving the left plot margin. Default: `5`.
-#' @param top.margin Numeric value giving the top plot margin. Default: `3.5`.
-#' @param right.margin Numeric value giving the right plot margin. Default:
-#'   `0.5`.
+#' @param top.margin Numeric value giving the top plot margin. Default: `3`.
+#' @param right.margin Numeric value giving the right plot margin. Default: `2`.
 #' @param plot.title Optional character string giving the plot title. If `NULL`,
 #'   no title is shown. Default: `"Layer distance scale across layers"`.
 #' @param plot.title.font.size A single positive numeric value giving the plot
@@ -3888,10 +3861,10 @@ plot.learning.SOM <- function(SOM.output,
 #'   title from the plot. Default: `1`.
 #' @param y.axis.label Optional character string giving the y-axis title. If
 #'   `NULL`, no y-axis title is shown. Default: `"Average pairwise distance"`.
-#' @param axis.labels.font.size A single positive numeric value giving the axis
-#'   title font size in points. Default: `9.1`.
-#' @param axis.ticks.font.size A single positive numeric value giving the axis
-#'   tick-label font size in points. Default: `7`.
+#' @param axis.labels.font.size A single positive numeric value giving the
+#'   y-axis title and x-axis layer-label font size in points. Default: `9.1`.
+#' @param axis.ticks.font.size A single positive numeric value giving the
+#'   y-axis numeric tick-label font size in points. Default: `7`.
 #'
 #' @details
 #' The plot is intended as a diagnostic visualization of whole-layer distance
@@ -3908,6 +3881,11 @@ plot.learning.SOM <- function(SOM.output,
 #' compact raw distance structure. The plot should be interpreted as a distance
 #' scale diagnostic rather than as evidence that one layer is more important than
 #' another for delimitation.
+#'
+#' When saving SVG output, the function internally applies a `96 / 72` scaling
+#' correction to the SVG device size and point-style font sizes so that the
+#' figure is imported by common document and presentation software with the
+#' requested dimensions and font sizes.
 #'
 #' @return Invisibly returns `NULL`. The function is called for its plotting side
 #'   effect. If `save = TRUE`, the plot is written to the specified file.
@@ -3935,11 +3913,7 @@ plot.learning.SOM <- function(SOM.output,
 #'   Environment = environment_data
 #' )
 #'
-#' som_multi <- train.SOM(
-#'   input_data = input_data_multi,
-#'   N.steps = 100,
-#'   N.replicates = 60
-#' )
+#' som_multi <- train.SOM(input_data = input_data_multi)
 #'
 #' plot.layer.distance.scale.SOM(som_multi)
 #' }
@@ -3947,23 +3921,23 @@ plot.learning.SOM <- function(SOM.output,
 #' @export
 plot.layer.distance.scale.SOM <- function(SOM.output,
                                           col.pal = viridis::turbo, #color palette
-                                          save = F, #option to save plot
-                                          overwrite = T, #option to overwrite plot if it already exists (only if saving plot)
+                                          save = FALSE, #option to save plot
+                                          overwrite = TRUE, #option to overwrite plot if it already exists (only if saving plot)
                                           plot.type = "svg", #plot type options: "svg", "png", "jpg" (only if saving plot)
                                           file.name = NULL, #set file.name for saving (if NULL, default plot file.name is used; only if saving plot)
                                           width = 20, #plot width in cm (only if plot is saved)
                                           height = 15, #plot height in cm (only if plot is saved)
                                           resolution = 300, #plot resolution in dpi (only if plot is saved)
-                                          bottom.margin = 3, #bottom margin
+                                          bottom.margin = 3.5, #bottom margin
                                           left.margin = 5, #left margin
-                                          top.margin = 3.5, #top margin
-                                          right.margin = 0.5, #right margin
+                                          top.margin = 3, #top margin
+                                          right.margin = 2, #right margin
                                           plot.title = "Layer distance scale across layers", #plot title name (NULL = no title)
                                           plot.title.font.size = 11.1, #font size of plot title in points
                                           plot.title.line = 1, #distance of plot title from plot
-                                          y.axis.label = "Average pairwise distance", #set y-axis title (NULL = no y-axis title)
-                                          axis.labels.font.size = 9.1, #font size of axis titles in points
-                                          axis.ticks.font.size = 7 #font size of axis tick labels in points
+                                          y.axis.label = "Average pairwise distance", #y-axis title (NULL = no y-axis title)
+                                          axis.labels.font.size = 9.1, #font size of y-axis title and x-axis layer labels in points
+                                          axis.ticks.font.size = 7 #font size of y-axis numeric tick labels in points
 ) {
   
   # Reset plotting parameters
@@ -4004,9 +3978,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   if (save) {
     if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
-  }
-  if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
-  if (save) {
+    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
     if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
     if (width < 4) message("Warning: width is very small (", width, " cm) - plot may be hard to read")
     if (width > 50) message("Warning: width is very large (", width, " cm) - plot may be unwieldy")
@@ -4018,10 +3990,14 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   }
   
   # Validate margin arguments
-  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative number")
-  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative number")
-  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative number")
-  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative number")
+  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative numeric value")
+  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative numeric value")
+  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative numeric value")
+  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative numeric value")
+  if (bottom.margin > 10) message("Warning: bottom.margin is large (", bottom.margin, ") - plot area may shrink")
+  if (left.margin > 10) message("Warning: left.margin is large (", left.margin, ") - plot area may shrink")
+  if (top.margin > 10) message("Warning: top.margin is large (", top.margin, ") - plot area may shrink")
+  if (right.margin > 10) message("Warning: right.margin is large (", right.margin, ") - plot area may shrink")
   
   # Validate label arguments
   if (!is.null(plot.title) && (!is.character(plot.title) || length(plot.title) != 1 || is.na(plot.title))) stop("Plotting aborted: plot.title must be NULL or a single character string")
@@ -4037,7 +4013,8 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   } else {
     layer_names <- colnames(distance_weights_matrix)
   }
-  if (is.null(layer_names) || length(layer_names) != ncol(distance_weights_matrix)) layer_names <- paste0("Layer", seq_len(ncol(distance_weights_matrix)))
+  if (is.null(layer_names) || length(layer_names) != ncol(distance_weights_matrix) || any(is.na(layer_names))) layer_names <- paste0("Layer", seq_len(ncol(distance_weights_matrix)))
+  layer_names <- make.unique(as.character(layer_names))
   
   # Set layer colors before reordering so colors stay linked to original layers
   layer_colors <- setNames(col.pal(length(layer_names)), layer_names)
@@ -4056,15 +4033,19 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   ordered_layer_names <- layer_names[layer_order]
   
   # Set default file name
-  if (is.null(file.name)) file.name <- paste0("plot_layer_distance_scale.", plot.type)
+  if (save && is.null(file.name)) file.name <- paste0("plot_layer_distance_scale.", plot.type)
   
   # Check overwrite settings
   if (save && file.exists(file.name) && !overwrite) stop(paste("Plotting aborted:", file.name, "already exists and overwrite = FALSE"))
   
+  # Set SVG scaling correction
+  svg_scaling_factor <- 1
+  if (save && plot.type == "svg") svg_scaling_factor <- 96 / 72
+  
   # Save plot if requested
   if (save) {
     if (plot.type == "svg") {
-      svg(file.name, width = width / 2.54, height = height / 2.54)
+      svg(file.name, width = (width / 2.54) * svg_scaling_factor, height = (height / 2.54) * svg_scaling_factor)
     } else if (plot.type == "png") {
       png(file.name, width = width, height = height, units = "cm", res = resolution)
     } else if (plot.type == "jpg") {
@@ -4077,9 +4058,9 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   
   # Convert point-size arguments to base R relative font sizes
   base_font_size <- par("ps")
-  plot_title_relative_font_size <- plot.title.font.size / base_font_size
-  axis_labels_relative_font_size <- axis.labels.font.size / base_font_size
-  axis_ticks_relative_font_size <- axis.ticks.font.size / base_font_size
+  plot_title_relative_font_size <- (plot.title.font.size * svg_scaling_factor) / base_font_size
+  axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
+  axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
   
   # Set plot layout
   par(mfrow = c(1, 1),
@@ -4095,29 +4076,30 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
                            ylab = "",
                            main = "")
   
-  # Add y-axis tick labels
+  # Add y-axis numeric tick labels
   axis(2,
        cex.axis = axis_ticks_relative_font_size)
   
-  # Add x-axis tick labels
+  # Add x-axis layer labels
   axis(1,
        at = bar_midpoints,
        labels = ordered_layer_names,
        tick = FALSE,
-       cex.axis = axis_ticks_relative_font_size)
+       cex.axis = axis_labels_relative_font_size,
+       font.axis = 2)
   
   # Add plot box
   box()
   
   # Add y-axis title
-  if (!is.null(y.axis.label)) {
+  if (!is.null(y.axis.label) && y.axis.label != "") {
     title(ylab = y.axis.label,
-          font.lab = 2,
-          cex.lab = axis_labels_relative_font_size)
+          cex.lab = axis_labels_relative_font_size,
+          font.lab = 2)
   }
   
   # Add plot title
-  if (!is.null(plot.title)) {
+  if (!is.null(plot.title) && plot.title != "") {
     title(main = plot.title,
           line = plot.title.line,
           font.main = 2,
@@ -4169,14 +4151,24 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 #'   `save = TRUE`. Default: `15`.
 #' @param resolution Numeric value giving plot resolution in dots per inch for
 #'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
-#' @param bottom.margin Numeric value giving the bottom plot margin. Default:
-#'   `4`.
-#' @param left.margin Numeric value giving the left plot margin. Default: `5.5`.
-#' @param top.margin Numeric value giving the top plot margin. Default: `2.5`.
-#' @param right.margin Numeric value giving the right plot margin. Default:
+#' @param bottom.margin Numeric value giving the bottom outer plot margin.
+#'   Default: `0.5`.
+#' @param left.margin Numeric value giving the left outer plot margin. Default:
+#'   `0.5`.
+#' @param top.margin Numeric value giving the top outer plot margin. Default:
 #'   `2.5`.
-#' @param title Character string giving the main plot title. Default:
-#'   `"Number of clusters (k)"`.
+#' @param right.margin Numeric value giving the right outer plot margin. Default:
+#'   `0`.
+#' @param plot.title Optional character string giving the main plot title. If
+#'   `NULL`, no title is shown. Default: `"Number of clusters (k)"`.
+#' @param plot.title.font.size A single positive numeric value giving the plot
+#'   title font size in points. Default: `9.1`.
+#' @param plot.title.line A single numeric value giving the distance of the plot
+#'   title within the top outer margin. Default: `0.5`.
+#' @param axis.labels.font.size A single positive numeric value giving the
+#'   y-axis-title and bottom x-axis k-label font size in points. Default: `9.1`.
+#' @param axis.ticks.font.size A single positive numeric value giving the
+#'   y-axis numeric tick-label font size in points. Default: `7`.
 #'
 #' @details
 #' The plot is intended as a replicate-level diagnostic for k selection in the
@@ -4186,20 +4178,21 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 #' replicates.
 #'
 #' For BIC-based clustering methods, an additional delta-BIC panel is shown when
-#' `BIC_values` are available. Delta-BIC is calculated as the support value at
-#' k - 1 minus the support value at k. Therefore, positive values indicate that
-#' increasing k improved the lower-is-better BIC-like criterion used internally.
+#' `BIC_values` are available. For `"GMM+BICthreshold"`, Gaussian mixture models
+#' are fitted with `mclust`, where larger BIC values indicate better support.
+#' Here, these values are sign-inverted so that lower values represent better
+#' support, matching the threshold logic used for other BIC-like criteria. The
+#' plot label is kept as `"BIC"` for simplicity.
 #'
-#' For `"GMM+BICthreshold"`, Gaussian mixture models are fitted with `mclust`,
-#' where larger BIC values indicate better support. Here, these values are
-#' sign-inverted so that lower values represent better support, matching the
-#' threshold logic used for other BIC-like criteria. The plot label is kept as
-#' `"BIC"` for simplicity.
+#' When saving SVG output, the function internally applies a `96 / 72` scaling
+#' correction to the SVG device size and point-style font sizes so that the
+#' figure is imported by common document and presentation software with the
+#' requested dimensions and font sizes.
 #'
 #' @return Invisibly returns `NULL`. The function is called for its plotting side
 #'   effect. If `save = TRUE`, the plot is written to the specified file.
 #'
-#' @importFrom graphics par boxplot barplot axis title
+#' @importFrom graphics par boxplot barplot axis mtext
 #' @importFrom grDevices dev.cur dev.off svg png jpeg
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
@@ -4222,11 +4215,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 #'   Environment = environment_data
 #' )
 #'
-#' som_multi <- train.SOM(
-#'   input_data = input_data_multi,
-#'   N.steps = 100,
-#'   N.replicates = 60
-#' )
+#' som_multi <- train.SOM(input_data = input_data_multi)
 #'
 #' som_clustered <- clustering.SOM(
 #'   SOM.output = som_multi,
@@ -4238,28 +4227,32 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 #'
 #' @export
 plot.K.SOM <- function(SOM.output,
-                       col.pal = viridis::magma, #set color palette (default magma)
-                       save = FALSE, #set option to save plot (default: FALSE)
-                       overwrite = TRUE, #option to overwrite plot (only if saving plot)
-                       plot.type = "svg", #plot type: "svg", "png", "jpg" (only if saving plot)
-                       file.name = NULL, #custom file name (only if saving plot)
+                       col.pal = viridis::magma, #color palette
+                       save = FALSE, #option to save plot
+                       overwrite = TRUE, #option to overwrite plot if it already exists (only if saving plot)
+                       plot.type = "svg", #plot type options: "svg", "png", "jpg" (only if saving plot)
+                       file.name = NULL, #set file.name for saving (if NULL, default plot file.name is used; only if saving plot)
                        width = 10, #plot width in cm (only if saving plot)
                        height = 15, #plot height in cm (only if saving plot)
                        resolution = 300, #plot resolution in dpi (only if saving plot)
-                       bottom.margin = 4, #bottom margin
-                       left.margin = 5.5, #left margin
-                       top.margin = 2.5, #top margin
-                       right.margin = 2.5, #right margin
-                       title = "Number of clusters (k)" #change plot title
+                       bottom.margin = 0.5, #bottom outer margin
+                       left.margin = 0.5, #left outer margin
+                       top.margin = 2.5, #top outer margin
+                       right.margin = 0, #right outer margin
+                       plot.title = "Number of clusters (k)", #plot title (NULL = no title)
+                       plot.title.font.size = 9.1, #font size of plot title in points
+                       plot.title.line = 0.5, #distance of plot title within top outer margin
+                       axis.labels.font.size = 9.1, #font size of y-axis titles and bottom x-axis k labels in points
+                       axis.ticks.font.size = 7 #font size of y-axis numeric tick labels in points
 ) {
   
   # Reset plotting parameters
-  old_dev <- dev.cur()
+  old_device <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
   device_opened <- FALSE
   on.exit({
-    if (isTRUE(device_opened) && dev.cur() != old_dev) dev.off()
-    if (dev.cur() == old_dev) par(old_plotting_parameters)
+    if (device_opened && dev.cur() != old_device) dev.off()
+    par(old_plotting_parameters)
   }, add = TRUE)
   
   # Validate SOM.output
@@ -4267,41 +4260,79 @@ plot.K.SOM <- function(SOM.output,
   if (is.null(SOM.output$optim_k_vals)) stop("Plotting aborted: optim_k_vals could not be found in SOM output - check if clustering.SOM was run")
   if (is.null(SOM.output$max_k)) stop("Plotting aborted: max_k could not be found in SOM output - check if clustering.SOM was run")
   
-  # Validate plotting arguments
-  if (!is.function(col.pal)) stop("Plotting aborted: col.pal must be a color-palette function")
-  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
-  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
-  if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "")) stop("Plotting aborted: file.name must be NULL or a non-empty character string")
-  if (!is.numeric(width) || length(width) != 1 || is.na(width) || !is.finite(width) || width <= 0) stop("Plotting aborted: width must be a single positive numeric value")
-  if (!is.numeric(height) || length(height) != 1 || is.na(height) || !is.finite(height) || height <= 0) stop("Plotting aborted: height must be a single positive numeric value")
-  if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || !is.finite(resolution) || resolution <= 0) stop("Plotting aborted: resolution must be a single positive numeric value")
-  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || !is.finite(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative numeric value")
-  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || !is.finite(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative numeric value")
-  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || !is.finite(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative numeric value")
-  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || !is.finite(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative numeric value")
-  if (!is.character(title) || length(title) != 1 || is.na(title)) stop("Plotting aborted: title must be a single character string")
+  # Extract and validate k-selection values
+  number_of_replicates <- SOM.output$N_replicates
+  if (!is.numeric(number_of_replicates) || length(number_of_replicates) != 1 || is.na(number_of_replicates) || !is.finite(number_of_replicates) || number_of_replicates < 1) stop("Plotting aborted: N_replicates must be a single positive numeric value")
   
-  # Extract and validate K information
   max_k <- SOM.output$max_k
-  N_replicates <- SOM.output$N_replicates
-  optim_k_vals <- as.numeric(SOM.output$optim_k_vals)
   if (!is.numeric(max_k) || length(max_k) != 1 || is.na(max_k) || !is.finite(max_k) || max_k < 1 || max_k %% 1 != 0) stop("Plotting aborted: max_k must be a single positive integer")
-  if (!is.numeric(N_replicates) || length(N_replicates) != 1 || is.na(N_replicates) || !is.finite(N_replicates) || N_replicates < 1 || N_replicates %% 1 != 0) stop("Plotting aborted: N_replicates must be a single positive integer")
-  if (!is.numeric(optim_k_vals) || length(optim_k_vals) < 1) stop("Plotting aborted: optim_k_vals must contain at least one numeric value")
-  if (all(!is.finite(optim_k_vals) | is.na(optim_k_vals))) stop("Plotting aborted: optim_k_vals contains no finite k values")
+  
+  optim_k_vals <- as.numeric(SOM.output$optim_k_vals)
   optim_k_vals <- optim_k_vals[is.finite(optim_k_vals) & !is.na(optim_k_vals)]
+  if (length(optim_k_vals) == 0) stop("Plotting aborted: optim_k_vals contains no finite values")
   if (any(optim_k_vals < 1 | optim_k_vals > max_k | optim_k_vals %% 1 != 0)) stop("Plotting aborted: optim_k_vals must contain integer k values between 1 and max_k")
   
-  # Extract clustering method
+  # Validate specified color palette
+  viridis_palettes <- list(viridis::viridis,
+                           viridis::magma,
+                           viridis::plasma,
+                           viridis::inferno,
+                           viridis::cividis,
+                           viridis::rocket,
+                           viridis::mako,
+                           viridis::turbo)
+  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+  
+  # Validate plot-saving arguments
+  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
+  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
+  if (save) {
+    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
+    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "")) stop("Plotting aborted: file.name must be NULL or single non-empty character string")
+    if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
+    if (width < 4) message("Warning: width is very small (", width, " cm) - plot may be hard to read")
+    if (width > 50) message("Warning: width is very large (", width, " cm) - plot may be unwieldy")
+    if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
+    if (height < 4) message("Warning: height is very small (", height, " cm) - plot may be hard to read")
+    if (height > 50) message("Warning: height is very large (", height, " cm) - plot may be unwieldy")
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number >= 72 (dpi)")
+    if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) - file may be huge")
+  }
+  
+  # Validate outer margin arguments
+  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative numeric value")
+  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative numeric value")
+  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative numeric value")
+  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative numeric value")
+  if (bottom.margin > 10) message("Warning: bottom.margin is large (", bottom.margin, ") - plot area may shrink")
+  if (left.margin > 10) message("Warning: left.margin is large (", left.margin, ") - plot area may shrink")
+  if (top.margin > 10) message("Warning: top.margin is large (", top.margin, ") - plot area may shrink")
+  if (right.margin > 10) message("Warning: right.margin is large (", right.margin, ") - plot area may shrink")
+  
+  # Validate label arguments
+  if (!is.null(plot.title) && (!is.character(plot.title) || length(plot.title) != 1 || is.na(plot.title))) stop("Plotting aborted: plot.title must be NULL or a single character string")
+  if (!is.numeric(plot.title.font.size) || length(plot.title.font.size) != 1 || is.na(plot.title.font.size) || plot.title.font.size <= 0) stop("Plotting aborted: plot.title.font.size must be a single positive number")
+  if (!is.numeric(plot.title.line) || length(plot.title.line) != 1 || is.na(plot.title.line)) stop("Plotting aborted: plot.title.line must be a single numeric value")
+  if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
+  if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive number")
+  
+  # Extract clustering method name
   if (!is.null(SOM.output$clustering.SOM.args$clustering.method)) {
     clustering_method <- SOM.output$clustering.SOM.args$clustering.method
+  } else if (!is.null(SOM.output$clustering.method)) {
+    clustering_method <- SOM.output$clustering.method
+  } else if (!is.null(SOM.output$clustering_method)) {
+    clustering_method <- SOM.output$clustering_method
   } else {
     clustering_method <- "unknown"
   }
+  if (!is.character(clustering_method) || length(clustering_method) != 1 || is.na(clustering_method) || clustering_method == "") clustering_method <- "unknown"
   
   # Set default file name
-  if (is.null(file.name)) file.name <- paste0("K_plot.", plot.type)
+  if (save && is.null(file.name)) file.name <- paste0("K_plot.", plot.type)
+  
+  # Check overwrite settings
+  if (save && file.exists(file.name) && !overwrite) stop(paste("Plotting aborted:", file.name, "already exists and overwrite = FALSE"))
   
   # Extract support values
   support_values <- NULL
@@ -4339,118 +4370,255 @@ plot.K.SOM <- function(SOM.output,
     }
   }
   
+  # Report omitted panels
+  if (!support_available) message(paste0("No finite support values available for clustering.method = '", clustering_method, "' - support panel will be omitted"))
+  if (support_available && !support_is_BIC) message(paste0("delta-BIC panel will be omitted (clustering.method = '", clustering_method, "' is not BIC-based)"))
+  if (support_is_BIC && is.null(BIC_values)) message("delta-BIC panel will be omitted (BIC_values unavailable)")
+  if (support_is_BIC && max_k <= 2) message("delta-BIC panel will be omitted (requires max_k >= 3)")
+  
   # Set colors
-  k_cols <- col.pal(max_k)
+  k_colors <- col.pal(max_k)
+  
+  # Set SVG scaling correction
+  svg_scaling_factor <- 1
+  if (save && plot.type == "svg") svg_scaling_factor <- 96 / 72
+  
+  # Save plot if requested
+  if (save) {
+    if (plot.type == "svg") {
+      svg(file.name, width = (width / 2.54) * svg_scaling_factor, height = (height / 2.54) * svg_scaling_factor)
+    } else if (plot.type == "png") {
+      png(file.name, width = width, height = height, units = "cm", res = resolution)
+    } else if (plot.type == "jpg") {
+      jpeg(file.name, width = width, height = height, units = "cm", res = resolution)
+    } else {
+      stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
+    }
+    device_opened <- TRUE
+  }
+  
+  # Convert point-size arguments to base R relative font sizes
+  base_font_size <- par("ps")
+  plot_title_relative_font_size <- (plot.title.font.size * svg_scaling_factor) / base_font_size
+  axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
+  axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
+  
+  # Set fixed internal panel margins
+  between.plot.margin <- 2.5
+  half_between_plot_margin <- between.plot.margin / 2
+  inner_left_margin <- 4.5
+  inner_right_margin <- 1
+  inner_bottom_margin_with_x_labels <- 2.6
+  
+  # Set panel-specific internal margins
+  top_panel_margins <- c(half_between_plot_margin, inner_left_margin, half_between_plot_margin, inner_right_margin)
+  middle_panel_margins <- c(half_between_plot_margin, inner_left_margin, half_between_plot_margin, inner_right_margin)
+  bottom_panel_margins <- c(inner_bottom_margin_with_x_labels, inner_left_margin, half_between_plot_margin, inner_right_margin)
+  single_panel_margins <- c(inner_bottom_margin_with_x_labels, inner_left_margin, half_between_plot_margin, inner_right_margin)
+  outer_margins <- c(bottom.margin, left.margin, top.margin, right.margin)
   
   # Create support panel
-  plot.support.panel <- function(values_matrix, ylab_text) {
+  plot.support.panel <- function(values_matrix,
+                                 y.axis.label) {
+    
+    # Identify candidate k values with finite support values
     finite_k_rows <- apply(values_matrix, 1, function(x) any(is.finite(x) & !is.na(x)))
     if (!any(finite_k_rows)) return(FALSE)
-    plotted_k <- seq_len(max_k)[finite_k_rows]
+    plotted_k_values <- seq_len(max_k)[finite_k_rows]
     values_for_plot <- t(values_matrix[finite_k_rows, , drop = FALSE])
+    
+    # Create support-value boxplot
     boxplot(values_for_plot,
-            at = plotted_k,
+            at = plotted_k_values,
             xlim = c(0.5, max_k + 0.5),
             outline = FALSE,
             notch = FALSE,
             axes = FALSE,
-            ylab = ylab_text,
+            ylab = "",
+            main = "",
             whisklty = 1,
             staplelty = 1,
-            col = k_cols[plotted_k])
+            col = k_colors[plotted_k_values])
+    
+    # Add x-axis ticks without labels
     axis(1, at = seq_len(max_k), labels = FALSE)
+    
+    # Add y-axis numeric tick labels
     y_axis_breaks <- seq(par("usr")[3], par("usr")[4], length.out = 4)
-    axis(2, at = y_axis_breaks, labels = round(y_axis_breaks, 1), las = 3)
-    title(title, line = 0.5)
+    axis(2,
+         at = y_axis_breaks,
+         labels = round(y_axis_breaks, 1),
+         las = 3,
+         cex.axis = axis_ticks_relative_font_size)
+    
+    # Add y-axis title
+    mtext(y.axis.label,
+          side = 2,
+          line = 3,
+          font = 2,
+          cex = axis_labels_relative_font_size)
+    
+    # Return TRUE if panel was plotted
     return(TRUE)
-  }
-  
-  # Create K-frequency panel
-  plot.K.frequency.panel <- function() {
-    barplot_data <- table(factor(optim_k_vals, levels = seq_len(max_k))) / length(optim_k_vals)
-    bar_midpoints <- barplot(barplot_data,
-                             ylab = "Sampling frequency",
-                             ylim = c(0, 1),
-                             col = k_cols,
-                             axes = FALSE,
-                             axisnames = FALSE)
-    axis(1, at = bar_midpoints, labels = seq_len(max_k))
-    axis(2, las = 3)
   }
   
   # Create delta-BIC panel
   plot.deltaBIC.panel <- function() {
+    
+    # Check if delta-BIC can be plotted
     if (is.null(BIC_values)) return(FALSE)
     if (max_k <= 2) return(FALSE)
-    delta_BIC_raw <- apply(BIC_values, 2, function(x) {
+    
+    # Calculate successive delta-BIC values
+    delta_BIC_matrix <- apply(BIC_values, 2, function(x) {
       previous_BIC <- x[-length(x)]
       current_BIC <- x[-1]
       delta_BIC <- previous_BIC - current_BIC
       delta_BIC[!is.finite(previous_BIC) | !is.finite(current_BIC)] <- NA_real_
       return(delta_BIC)
     })
-    if (is.null(dim(delta_BIC_raw))) delta_BIC_raw <- matrix(delta_BIC_raw, ncol = 1)
-    delta_BIC_labels <- paste0("k", 2:max_k, "-k", 1:(max_k - 1))
-    rownames(delta_BIC_raw) <- delta_BIC_labels
-    finite_delta_rows <- apply(delta_BIC_raw, 1, function(x) any(is.finite(x) & !is.na(x)))
+    if (is.null(dim(delta_BIC_matrix))) delta_BIC_matrix <- matrix(delta_BIC_matrix, ncol = 1)
+    rownames(delta_BIC_matrix) <- paste0("k", 2:max_k, "-k", 1:(max_k - 1))
+    
+    # Identify finite delta-BIC rows
+    finite_delta_rows <- apply(delta_BIC_matrix, 1, function(x) any(is.finite(x) & !is.na(x)))
     if (!any(finite_delta_rows)) return(FALSE)
-    plotted_delta_k <- seq.int(2, max_k)[finite_delta_rows]
-    delta_BIC_for_plot <- t(delta_BIC_raw[finite_delta_rows, , drop = FALSE])
+    plotted_delta_k_values <- seq.int(2, max_k)[finite_delta_rows]
+    delta_BIC_for_plot <- t(delta_BIC_matrix[finite_delta_rows, , drop = FALSE])
+    
+    # Create delta-BIC boxplot
     boxplot(delta_BIC_for_plot,
-            at = plotted_delta_k,
+            at = plotted_delta_k_values,
             xlim = c(0.5, max_k + 0.5),
             outline = FALSE,
             notch = FALSE,
             axes = FALSE,
-            ylab = "delta BIC",
+            ylab = "",
+            main = "",
             whisklty = 1,
             staplelty = 1,
-            col = k_cols[plotted_delta_k])
+            col = k_colors[plotted_delta_k_values])
+    
+    # Add x-axis ticks without labels
     axis(1, at = seq_len(max_k), labels = FALSE)
+    
+    # Add y-axis numeric tick labels
     y_axis_breaks <- seq(par("usr")[3], par("usr")[4], length.out = 4)
-    axis(2, at = y_axis_breaks, labels = round(y_axis_breaks, 1), las = 3)
+    axis(2,
+         at = y_axis_breaks,
+         labels = round(y_axis_breaks, 1),
+         las = 3,
+         cex.axis = axis_ticks_relative_font_size)
+    
+    # Add y-axis title
+    mtext("delta BIC",
+          side = 2,
+          line = 3,
+          font = 2,
+          cex = axis_labels_relative_font_size)
+    
+    # Return TRUE if panel was plotted
     return(TRUE)
   }
   
-  # Report omitted panels
-  if (!support_available) message(paste0("No finite support values available for clustering.method = '", clustering_method, "' - support panel will be omitted"))
-  if (support_available && !support_is_BIC) message(paste0("delta-BIC panel will be omitted (clustering.method = '", clustering_method, "' is not BIC-based)"))
-  if (support_is_BIC && max_k <= 2) message("delta-BIC panel will be omitted (requires max_k >= 3)")
+  # Create k-frequency panel
+  plot.K.frequency.panel <- function() {
+    
+    # Calculate k-selection frequencies
+    k_frequency_values <- table(factor(optim_k_vals, levels = seq_len(max_k))) / length(optim_k_vals)
+    
+    # Create k-frequency barplot
+    bar_midpoints <- barplot(k_frequency_values,
+                             ylim = c(0, 1),
+                             col = k_colors,
+                             axes = FALSE,
+                             axisnames = FALSE,
+                             ylab = "",
+                             main = "")
+    
+    # Add x-axis tick marks
+    axis(1, at = bar_midpoints, labels = FALSE)
+    
+    # Add x-axis k labels
+    mtext(seq_len(max_k),
+          side = 1,
+          at = bar_midpoints,
+          line = 1,
+          font = 2,
+          cex = axis_labels_relative_font_size)
+    
+    # Add y-axis numeric tick labels
+    axis(2, las = 3, cex.axis = axis_ticks_relative_font_size)
+    
+    # Add y-axis title
+    mtext("Sampling frequency",
+          side = 2,
+          line = 3,
+          font = 2,
+          cex = axis_labels_relative_font_size)
+    
+    # Return invisible NULL
+    return(invisible(NULL))
+  }
   
-  # Save plot if requested
-  if (save) {
-    if (file.exists(file.name) && !overwrite) stop(paste("Plotting aborted: file already exists:", file.name))
-    if (plot.type == "svg") {
-      svg(filename = file.name, width = width / 2.54, height = height / 2.54)
-    } else if (plot.type == "png") {
-      png(filename = file.name, width = width, height = height, units = "cm", res = resolution)
-    } else if (plot.type == "jpg") {
-      jpeg(filename = file.name, width = width, height = height, units = "cm", res = resolution)
+  # Add outer plot title
+  add.outer.plot.title <- function() {
+    if (!is.null(plot.title) && plot.title != "") {
+      mtext(plot.title,
+            side = 3,
+            outer = TRUE,
+            line = plot.title.line,
+            font = 2,
+            cex = plot_title_relative_font_size)
     }
-    device_opened <- TRUE
+    return(invisible(NULL))
   }
   
   # Create plot
   if (support_available && support_is_BIC && max_k > 2) {
-    par(mfrow = c(3, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
-    support_panel_plotted <- plot.support.panel(values_matrix = support_values, ylab_text = support_label)
+    
+    # Plot support, delta-BIC, and k-frequency panels
+    par(mfrow = c(3, 1), bty = "n", oma = outer_margins)
+    par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
+    par(mar = top_panel_margins)
+    support_panel_plotted <- plot.support.panel(values_matrix = support_values, y.axis.label = support_label)
+    par(mar = middle_panel_margins)
     delta_BIC_panel_plotted <- plot.deltaBIC.panel()
+    
+    # Fallback to support and k-frequency panels if delta-BIC cannot be plotted
     if (!support_panel_plotted || !delta_BIC_panel_plotted) {
-      message("Plotting support panel and K-frequency only (insufficient finite BIC values for delta-BIC panel)")
-      par(mfrow = c(2, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
-      plot.support.panel(values_matrix = support_values, ylab_text = support_label)
+      message("Plotting support panel and k-frequency only (insufficient finite BIC values for delta-BIC panel)")
+      par(mfrow = c(2, 1), bty = "n", oma = outer_margins)
+      par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
+      par(mar = top_panel_margins)
+      plot.support.panel(values_matrix = support_values, y.axis.label = support_label)
+      par(mar = bottom_panel_margins)
       plot.K.frequency.panel()
     } else {
+      par(mar = bottom_panel_margins)
       plot.K.frequency.panel()
     }
+    add.outer.plot.title()
+    
+    # Plot support and k-frequency panels
   } else if (support_available) {
-    par(mfrow = c(2, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
-    plot.support.panel(values_matrix = support_values, ylab_text = support_label)
+    par(mfrow = c(2, 1), bty = "n", oma = outer_margins)
+    par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
+    par(mar = top_panel_margins)
+    plot.support.panel(values_matrix = support_values, y.axis.label = support_label)
+    par(mar = bottom_panel_margins)
     plot.K.frequency.panel()
+    add.outer.plot.title()
+    
+    # Plot only k-frequency panel
   } else {
-    par(mfrow = c(1, 1), bty = "n", mar = c(bottom.margin, left.margin, top.margin, right.margin))
+    par(mfrow = c(1, 1),
+        bty = "n",
+        oma = outer_margins,
+        mar = single_panel_margins)
+    par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
     plot.K.frequency.panel()
-    title(title, line = 0.5)
+    add.outer.plot.title()
   }
   
   # Close graphics device
@@ -4459,7 +4627,9 @@ plot.K.SOM <- function(SOM.output,
     device_opened <- FALSE
     message(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
-  invisible(NULL)
+  
+  # Return invisible NULL
+  return(invisible(NULL))
 }
 
                                
@@ -6677,7 +6847,123 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   return(multiallelic.snp.matrix) #return multiallelic SNP matrix
 }
 
-# Function to summarize and plot eta squared and/or map variance of variable importance across SOM layers
+#' Plot variable-importance summaries across SOM layers
+#'
+#' Plot replicate-level variable-importance summaries for each input layer from
+#' a clustered SOM object returned by `clustering.SOM`. The function can show eta
+#' squared effect sizes, map-variance summaries, or both, depending on which
+#' values are available in `SOM.output`.
+#'
+#' @param SOM.output A SOM result object returned by `clustering.SOM`. The object
+#'   must contain layer names through `input_data_names` or
+#'   `distance_weights_matrix`. If available,
+#'   `median_etasquared_variable_importance` and
+#'   `median_map_variance_variable_importance` are used for plotting.
+#' @param col.pal A viridis color-palette function used to assign colors to
+#'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
+#'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
+#'   `viridis::turbo`.
+#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing output file with the same
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
+#'   the output file already exists. Default: `TRUE`.
+#' @param plot.type Character string specifying the file format when
+#'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
+#'   Default: `"svg"`.
+#' @param file.name Optional character string giving the output file name when
+#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
+#'   `NULL`.
+#' @param width Numeric value giving plot width in centimeters when
+#'   `save = TRUE`. Default: `20`.
+#' @param height Numeric value giving plot height in centimeters when
+#'   `save = TRUE`. Default: `12`.
+#' @param resolution Numeric value giving plot resolution in dots per inch for
+#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
+#' @param bottom.margin Numeric value giving the bottom outer plot margin.
+#'   Default: `2`.
+#' @param left.margin Numeric value giving the left outer plot margin. Default:
+#'   `0.5`.
+#' @param top.margin Numeric value giving the top outer plot margin. Default:
+#'   `1.5`.
+#' @param right.margin Numeric value giving the right outer plot margin. Default:
+#'   `1.5`.
+#' @param etasquared.title Optional character string giving the eta-squared panel
+#'   title. If `NULL`, no title is shown. Default: `"Cluster separation"`.
+#' @param mapvariance.title Optional character string giving the map-variance
+#'   panel title. If `NULL`, no title is shown. Default:
+#'   `"Variance across SOM map"`.
+#' @param etasquared.y.axis.label Optional character string giving the y-axis
+#'   title for the eta-squared panel. If `NULL`, no y-axis title is shown.
+#'   Default: `"Eta squared effect size"`.
+#' @param mapvariance.y.axis.label Optional character string giving the y-axis
+#'   title for the map-variance panel. If `NULL`, no y-axis title is shown.
+#'   Default: `"Variance"`.
+#' @param plot.title.font.size A single positive numeric value giving the panel
+#'   title font size in points. Default: `9.1`.
+#' @param axis.labels.font.size A single positive numeric value giving the
+#'   y-axis-title and x-axis layer-label font size in points. Default: `9.1`.
+#' @param axis.ticks.font.size A single positive numeric value giving the
+#'   y-axis numeric tick-label font size in points. Default: `7`.
+#' @param add.boxplot.whiskers Logical; if `TRUE`, boxplot whiskers are shown.
+#'   Default: `TRUE`.
+#' @param point.cex Numeric value giving the size of jittered replicate-level
+#'   points. Default: `0.8`.
+#' @param point.alpha Numeric value between 0 and 1 giving the transparency of
+#'   jittered replicate-level points. Default: `0.65`.
+#' @param sort.by.median Logical; if `TRUE`, layers are sorted by median value
+#'   separately within each panel. Default: `TRUE`.
+#' @param verbose Logical; if `TRUE`, informative messages are printed. Default:
+#'   `TRUE`.
+#'
+#' @details
+#' The plot is intended as a diagnostic visualization of replicate-level
+#' variable-importance summaries across SOM layers. Eta squared summarizes how
+#' strongly variables in a layer differ among inferred clusters. Map variance
+#' summarizes how strongly variables vary across the SOM map. Larger values
+#' indicate stronger variable-level structure within the corresponding layer for
+#' the displayed metric, but the plot should be interpreted as a variable- and
+#' layer-level diagnostic rather than as a formal statistical test of layer
+#' importance.
+#'
+#' @return A data frame summarizing mean and standard deviation of available eta
+#'   squared and map-variance values for each layer. If `save = TRUE`, the plot
+#'   is also written to the specified file.
+#'
+#' @importFrom graphics par boxplot axis box points jitter mtext
+#' @importFrom grDevices adjustcolor dev.cur dev.off svg png jpeg
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' # Multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
+#' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
+#'
+#' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
+#' rownames(morphology_data) <- rownames(snp_data)
+#' rownames(environment_data) <- rownames(snp_data)
+#'
+#' input_data_multi <- list(
+#'   SNPs = snp_data,
+#'   Morphology = morphology_data,
+#'   Environment = environment_data
+#' )
+#'
+#' som_multi <- train.SOM(input_data = input_data_multi)
+#'
+#' som_clustered <- clustering.SOM(
+#'   SOM.output = som_multi,
+#'   clustering.method = "kmeans+BICthreshold"
+#' )
+#'
+#' plot.layer.importance.varimp.SOM(som_clustered)
+#' }
+#'
+#' @export
 plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output from clustering.SOM
                                              col.pal = viridis::turbo, #color palette as in plot.layers.SOM
                                              save = FALSE, #option to save plot
@@ -6687,16 +6973,17 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
                                              width = 20, #plot width in cm
                                              height = 12, #plot height in cm
                                              resolution = 300, #plot resolution in dpi
-                                             bottom.margin = 4, #bottom margin
-                                             left.margin = 5, #left margin
-                                             top.margin = 3, #top margin
-                                             right.margin = 2.5, #right margin
+                                             bottom.margin = 2, #bottom outer margin
+                                             left.margin = 0.5, #left outer margin
+                                             top.margin = 1.5, #top outer margin
+                                             right.margin = 1.5, #right outer margin
                                              etasquared.title = "Cluster separation", #title of eta plot
                                              mapvariance.title = "Variance across SOM map", #title of map variance plot
-                                             etasquared.y.axis.label = "Eta squared effect size", #y axis label for eta plot
-                                             mapvariance.y.axis.label = "Variance", #y axis label for map variance plot
-                                             title.font.size = 1.2, #font size of plot titles
-                                             axis.font.size = 0.9, #font size of axis labels
+                                             etasquared.y.axis.label = "Eta squared effect size", #y-axis label for eta plot
+                                             mapvariance.y.axis.label = "Variance", #y-axis label for map variance plot
+                                             plot.title.font.size = 9.1, #font size of plot titles in points
+                                             axis.labels.font.size = 9.1, #font size of y-axis titles and x-axis layer labels in points
+                                             axis.ticks.font.size = 7, #font size of y-axis numeric tick labels in points
                                              add.boxplot.whiskers = TRUE, #whether to show boxplot whiskers
                                              point.cex = 0.8, #point size
                                              point.alpha = 0.65, #point transparency
@@ -6708,34 +6995,81 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Reset plotting parameters
-  old_graphics_device <- dev.cur()
+  old_device <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
-  on.exit({if (dev.cur() == old_graphics_device) par(old_plotting_parameters)}, add = TRUE)
+  device_opened <- FALSE
+  on.exit({
+    if (device_opened && dev.cur() != old_device) dev.off()
+    par(old_plotting_parameters)
+  }, add = TRUE)
   
   # Validate input
   if (is.null(SOM.output) || !is.list(SOM.output)) stop("Plotting aborted: SOM.output must be a non-NULL list")
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  if (!is.character(plot.type) || length(plot.type) != 1 || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
-  if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Plotting aborted: title.font.size must be a single positive numeric value")
-  if (!is.numeric(axis.font.size) || length(axis.font.size) != 1 || is.na(axis.font.size) || axis.font.size <= 0) stop("Plotting aborted: axis.font.size must be a single positive numeric value")
   if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
   if (!is.numeric(point.cex) || length(point.cex) != 1 || is.na(point.cex) || point.cex <= 0) stop("Plotting aborted: point.cex must be a single positive numeric value")
   if (!is.numeric(point.alpha) || length(point.alpha) != 1 || is.na(point.alpha) || point.alpha < 0 || point.alpha > 1) stop("Plotting aborted: point.alpha must be a single numeric value between 0 and 1")
   if (!is.logical(sort.by.median) || length(sort.by.median) != 1 || is.na(sort.by.median)) stop("Plotting aborted: sort.by.median must be TRUE or FALSE")
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Plotting aborted: verbose must be TRUE or FALSE")
   
+  # Validate specified color palette
+  viridis_palettes <- list(viridis::viridis,
+                           viridis::magma,
+                           viridis::plasma,
+                           viridis::inferno,
+                           viridis::cividis,
+                           viridis::rocket,
+                           viridis::mako,
+                           viridis::turbo)
+  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+  
+  # Validate plot-saving arguments
+  if (save) {
+    if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
+    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "")) stop("Plotting aborted: file.name must be NULL or single non-empty character string")
+    if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
+    if (width < 4) message("Warning: width is very small (", width, " cm) - plot may be hard to read")
+    if (width > 50) message("Warning: width is very large (", width, " cm) - plot may be unwieldy")
+    if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
+    if (height < 4) message("Warning: height is very small (", height, " cm) - plot may be hard to read")
+    if (height > 50) message("Warning: height is very large (", height, " cm) - plot may be unwieldy")
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number >= 72 (dpi)")
+    if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) - file may be huge")
+  }
+  
+  # Validate margin arguments
+  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative numeric value")
+  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative numeric value")
+  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative numeric value")
+  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative numeric value")
+  if (bottom.margin > 10) message("Warning: bottom.margin is large (", bottom.margin, ") - plot area may shrink")
+  if (left.margin > 10) message("Warning: left.margin is large (", left.margin, ") - plot area may shrink")
+  if (top.margin > 10) message("Warning: top.margin is large (", top.margin, ") - plot area may shrink")
+  if (right.margin > 10) message("Warning: right.margin is large (", right.margin, ") - plot area may shrink")
+  
+  # Validate label arguments
+  if (!is.null(etasquared.title) && (!is.character(etasquared.title) || length(etasquared.title) != 1 || is.na(etasquared.title))) stop("Plotting aborted: etasquared.title must be NULL or a single character string")
+  if (!is.null(mapvariance.title) && (!is.character(mapvariance.title) || length(mapvariance.title) != 1 || is.na(mapvariance.title))) stop("Plotting aborted: mapvariance.title must be NULL or a single character string")
+  if (!is.null(etasquared.y.axis.label) && (!is.character(etasquared.y.axis.label) || length(etasquared.y.axis.label) != 1 || is.na(etasquared.y.axis.label))) stop("Plotting aborted: etasquared.y.axis.label must be NULL or a single character string")
+  if (!is.null(mapvariance.y.axis.label) && (!is.character(mapvariance.y.axis.label) || length(mapvariance.y.axis.label) != 1 || is.na(mapvariance.y.axis.label))) stop("Plotting aborted: mapvariance.y.axis.label must be NULL or a single character string")
+  if (!is.numeric(plot.title.font.size) || length(plot.title.font.size) != 1 || is.na(plot.title.font.size) || plot.title.font.size <= 0) stop("Plotting aborted: plot.title.font.size must be a single positive number")
+  if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
+  if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive number")
+  
   # Extract layer names
   SOM_layer_names <- NULL
   if (!is.null(SOM.output$input_data_names)) SOM_layer_names <- as.character(SOM.output$input_data_names)
   if (is.null(SOM_layer_names) && !is.null(SOM.output$distance_weights_matrix)) SOM_layer_names <- colnames(SOM.output$distance_weights_matrix)
   if (is.null(SOM_layer_names) || length(SOM_layer_names) == 0) stop("Plotting aborted: layer names could not be determined from SOM.output")
+  SOM_layer_names <- make.unique(as.character(SOM_layer_names))
   
   # Extract eta squared and map variance lists if present
   eta_squared_variable_importance_list <- NULL
   map_variance_variable_importance_list <- NULL
   if (!is.null(SOM.output$median_etasquared_variable_importance)) {
     eta_squared_variable_importance_list <- SOM.output$median_etasquared_variable_importance
+    if (!is.list(eta_squared_variable_importance_list)) stop("Plotting aborted: median_etasquared_variable_importance must be a list")
     if (is.null(names(eta_squared_variable_importance_list)) && length(eta_squared_variable_importance_list) == length(SOM_layer_names)) names(eta_squared_variable_importance_list) <- SOM_layer_names
     if (!is.null(names(eta_squared_variable_importance_list)) && all(SOM_layer_names %in% names(eta_squared_variable_importance_list))) eta_squared_variable_importance_list <- eta_squared_variable_importance_list[SOM_layer_names]
     eta_squared_variable_importance_list <- lapply(eta_squared_variable_importance_list, function(variable_importance_values) {
@@ -6746,6 +7080,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   }
   if (!is.null(SOM.output$median_map_variance_variable_importance)) {
     map_variance_variable_importance_list <- SOM.output$median_map_variance_variable_importance
+    if (!is.list(map_variance_variable_importance_list)) stop("Plotting aborted: median_map_variance_variable_importance must be a list")
     if (is.null(names(map_variance_variable_importance_list)) && length(map_variance_variable_importance_list) == length(SOM_layer_names)) names(map_variance_variable_importance_list) <- SOM_layer_names
     if (!is.null(names(map_variance_variable_importance_list)) && all(SOM_layer_names %in% names(map_variance_variable_importance_list))) map_variance_variable_importance_list <- map_variance_variable_importance_list[SOM_layer_names]
     map_variance_variable_importance_list <- lapply(map_variance_variable_importance_list, function(variable_importance_values) {
@@ -6780,6 +7115,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
                                                map.variance.sd = NA_real_,
                                                stringsAsFactors = FALSE)
   
+  # Calculate layer-level summary statistics
   for (layer_index in seq_along(SOM_layer_names)) {
     
     # Extract layer name
@@ -6817,6 +7153,8 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   # Create sorted plot lists if requested
   eta_squared_plot_list <- eta_squared_variable_importance_list
   map_variance_plot_list <- map_variance_variable_importance_list
+  if (eta_squared_available) eta_squared_plot_list <- eta_squared_plot_list[vapply(eta_squared_plot_list, length, numeric(1)) > 0]
+  if (map_variance_available) map_variance_plot_list <- map_variance_plot_list[vapply(map_variance_plot_list, length, numeric(1)) > 0]
   if (sort.by.median) {
     if (eta_squared_available) {
       eta_squared_layer_medians <- vapply(eta_squared_plot_list, function(x) stats::median(x, na.rm = TRUE), numeric(1))
@@ -6831,19 +7169,79 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   }
   
   # Set file name
-  if (is.null(file.name)) {
+  if (save && is.null(file.name)) {
     if (eta_squared_available && map_variance_available) file.name <- paste0("SOM_variable_importance_layers_both_", paste(SOM_layer_names, collapse = "_"), ".", plot.type)
     if (eta_squared_available && !map_variance_available) file.name <- paste0("SOM_variable_importance_layers_eta_squared_", paste(SOM_layer_names, collapse = "_"), ".", plot.type)
     if (!eta_squared_available && map_variance_available) file.name <- paste0("SOM_variable_importance_layers_map_variance_", paste(SOM_layer_names, collapse = "_"), ".", plot.type)
   }
   
   # Check for file existence if overwrite is FALSE
-  if (!overwrite && file.exists(file.name)) stop(file.name, " already exists - skipping plot saving")
+  if (save && !overwrite && file.exists(file.name)) stop(file.name, " already exists - skipping plot saving")
   
   # Define color palette for layers
   layer_colors <- setNames(col.pal(length(SOM_layer_names)), SOM_layer_names)
-
-                                             
+  
+  # Set SVG scaling correction
+  svg_scaling_factor <- 1
+  if (save && plot.type == "svg") svg_scaling_factor <- 96 / 72
+  
+  # Save plot if requested
+  if (save) {
+    if (eta_squared_available && map_variance_available) {
+      plot_width_to_use <- width
+    } else {
+      plot_width_to_use <- width / 2
+    }
+    if (plot.type == "svg") {
+      svg(file.name, width = (plot_width_to_use / 2.54) * svg_scaling_factor, height = (height / 2.54) * svg_scaling_factor)
+    } else if (plot.type == "png") {
+      png(file.name, width = plot_width_to_use, height = height, units = "cm", res = resolution)
+    } else if (plot.type == "jpg") {
+      jpeg(file.name, width = plot_width_to_use, height = height, units = "cm", res = resolution)
+    } else {
+      stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
+    }
+    device_opened <- TRUE
+  }
+  
+  # Convert point-size arguments to base R relative font sizes
+  base_font_size <- par("ps")
+  plot_title_relative_font_size <- (plot.title.font.size * svg_scaling_factor) / base_font_size
+  axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
+  axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
+  
+  # Set fixed internal panel margins
+  between.plot.margin <- 1.5
+  half_between_plot_margin <- between.plot.margin / 2
+  inner_bottom_margin <- 3
+  inner_left_margin <- 4.5
+  inner_top_margin <- 2
+  inner_right_margin <- 0.5
+  
+  # Set panel-specific internal margins
+  left_panel_margins <- c(inner_bottom_margin, inner_left_margin, inner_top_margin, half_between_plot_margin)
+  right_panel_margins <- c(inner_bottom_margin, inner_left_margin, inner_top_margin, inner_right_margin)
+  single_panel_margins <- c(inner_bottom_margin, inner_left_margin, inner_top_margin, inner_right_margin)
+  outer_margins <- c(bottom.margin, left.margin, top.margin, right.margin)
+  
+  # Calculate y-axis limits
+  calculate.y.axis.limits.SOM <- function(plot_list) {
+    boxplot_object <- boxplot(plot_list, plot = FALSE, outline = FALSE)
+    y_axis_limits <- range(boxplot_object$stats, na.rm = TRUE)
+    if (!all(is.finite(y_axis_limits))) {
+      all_values <- unlist(lapply(plot_list, function(x) x[is.finite(x) & !is.na(x)]), use.names = FALSE)
+      y_axis_limits <- range(all_values, na.rm = TRUE)
+    }
+    if (diff(y_axis_limits) == 0) {
+      y_axis_padding <- max(abs(y_axis_limits[1]) * 0.05, 0.01)
+      y_axis_limits <- c(y_axis_limits[1] - y_axis_padding, y_axis_limits[2] + y_axis_padding)
+    } else {
+      y_axis_padding <- diff(y_axis_limits) * 0.05
+      y_axis_limits <- c(y_axis_limits[1] - y_axis_padding, y_axis_limits[2] + y_axis_padding)
+    }
+    return(y_axis_limits)
+  }
+  
   # Add jittered replicate-level points
   add.jittered.layer.points.SOM <- function(plot_list) {
     for (layer_index in seq_along(plot_list)) {
@@ -6859,192 +7257,111 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     }
   }
   
-  # Save plot if requested
-  if (save) {
-    if (eta_squared_available && map_variance_available) {
-      plot_width_to_use <- width
-    } else {
-      plot_width_to_use <- width / 2
+  # Plot variable-importance panel
+  plot.variable.importance.panel.SOM <- function(plot_list,
+                                                 panel_title,
+                                                 y_axis_label) {
+    
+    # Calculate y-axis limits
+    y_axis_limits <- calculate.y.axis.limits.SOM(plot_list)
+    
+    # Create boxplot
+    boxplot(plot_list,
+            names = FALSE,
+            col = layer_colors[names(plot_list)],
+            axes = FALSE,
+            outline = FALSE,
+            ylab = "",
+            main = "",
+            ylim = y_axis_limits,
+            whisklty = ifelse(add.boxplot.whiskers, 1, 0),
+            staplelty = ifelse(add.boxplot.whiskers, 1, 0))
+    
+    # Add x-axis tick marks without labels
+    axis(1, at = seq_along(plot_list), labels = FALSE, tick = FALSE)
+    
+    # Add x-axis layer labels
+    mtext(names(plot_list),
+          side = 1,
+          at = seq_along(plot_list),
+          line = 1,
+          las = 2,
+          font = 2,
+          cex = axis_labels_relative_font_size)
+    
+    # Add y-axis numeric tick labels
+    axis(2, las = 3, cex.axis = axis_ticks_relative_font_size)
+    
+    # Add plot box
+    box()
+    
+    # Add y-axis title
+    if (!is.null(y_axis_label) && y_axis_label != "") {
+      mtext(y_axis_label,
+            side = 2,
+            line = 3,
+            font = 2,
+            cex = axis_labels_relative_font_size)
     }
-    if (plot.type == "svg") {
-      svg(file.name, width = plot_width_to_use / 2.54, height = height / 2.54)
-    } else if (plot.type == "png") {
-      png(file.name, width = plot_width_to_use, height = height, units = "cm", res = resolution)
-    } else if (plot.type == "jpg") {
-      jpeg(file.name, width = plot_width_to_use, height = height, units = "cm", res = resolution)
+    
+    # Add panel title
+    if (!is.null(panel_title) && panel_title != "") {
+      mtext(panel_title,
+            side = 3,
+            line = 1.2,
+            font = 2,
+            cex = plot_title_relative_font_size)
     }
+    
+    # Add jittered points
+    add.jittered.layer.points.SOM(plot_list)
+    
+    # Return invisible NULL
+    return(invisible(NULL))
   }
   
   # Plot both panels
   if (eta_squared_available && map_variance_available) {
-    par(mfrow = c(1, 2),
-        mar = c(bottom.margin, left.margin, top.margin, right.margin),
-        mgp = c(2.5, 0.8, 0),
-        xpd = FALSE)
-    
-    # Calculate eta squared boxplot object and y-axis limits
-    eta_squared_boxplot_object <- boxplot(eta_squared_plot_list, plot = FALSE, outline = FALSE)
-    eta_squared_y_axis_limits <- range(eta_squared_boxplot_object$stats, na.rm = TRUE)
-    if (diff(eta_squared_y_axis_limits) == 0) {
-      eta_squared_axis_padding <- max(abs(eta_squared_y_axis_limits[1]) * 0.05, 0.01)
-      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding, eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
-    } else {
-      eta_squared_axis_padding <- diff(eta_squared_y_axis_limits) * 0.05
-      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding, eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
-    }
-    
-    # Calculate map variance boxplot object and y-axis limits
-    map_variance_boxplot_object <- boxplot(map_variance_plot_list, plot = FALSE, outline = FALSE)
-    map_variance_y_axis_limits <- range(map_variance_boxplot_object$stats, na.rm = TRUE)
-    if (diff(map_variance_y_axis_limits) == 0) {
-      map_variance_axis_padding <- max(abs(map_variance_y_axis_limits[1]) * 0.05, 0.01)
-      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding, map_variance_y_axis_limits[2] + map_variance_axis_padding)
-    } else {
-      map_variance_axis_padding <- diff(map_variance_y_axis_limits) * 0.05
-      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding, map_variance_y_axis_limits[2] + map_variance_axis_padding)
-    }
-    
-    # Plot eta squared boxplots
-    boxplot(eta_squared_plot_list,
-            names = FALSE,
-            col = layer_colors[names(eta_squared_plot_list)],
-            las = 1,
-            axes = FALSE,
-            outline = FALSE,
-            ylab = etasquared.y.axis.label,
-            main = etasquared.title,
-            cex.main = title.font.size,
-            cex.lab = axis.font.size,
-            ylim = eta_squared_y_axis_limits,
-            whisklty = ifelse(add.boxplot.whiskers, 1, 0),
-            staplelty = ifelse(add.boxplot.whiskers, 1, 0))
-    axis(1,
-         at = seq_along(eta_squared_plot_list),
-         labels = names(eta_squared_plot_list),
-         las = 2,
-         tick = FALSE,
-         line = -0.5,
-         cex.axis = axis.font.size)
-    axis(2, cex.axis = axis.font.size)
-    box()
-    add.jittered.layer.points.SOM(eta_squared_plot_list)
-    
-    # Plot map variance boxplots
-    boxplot(map_variance_plot_list,
-            names = FALSE,
-            col = layer_colors[names(map_variance_plot_list)],
-            las = 1,
-            axes = FALSE,
-            outline = FALSE,
-            ylab = mapvariance.y.axis.label,
-            main = mapvariance.title,
-            cex.main = title.font.size,
-            cex.lab = axis.font.size,
-            ylim = map_variance_y_axis_limits,
-            whisklty = ifelse(add.boxplot.whiskers, 1, 0),
-            staplelty = ifelse(add.boxplot.whiskers, 1, 0))
-    axis(1,
-         at = seq_along(map_variance_plot_list),
-         labels = names(map_variance_plot_list),
-         las = 2,
-         tick = FALSE,
-         line = -0.5,
-         cex.axis = axis.font.size)
-    axis(2, cex.axis = axis.font.size)
-    box()
-    add.jittered.layer.points.SOM(map_variance_plot_list)
+    par(mfrow = c(1, 2), oma = outer_margins, xpd = FALSE)
+    par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
+    par(mar = left_panel_margins)
+    plot.variable.importance.panel.SOM(plot_list = eta_squared_plot_list,
+                                       panel_title = etasquared.title,
+                                       y_axis_label = etasquared.y.axis.label)
+    par(mar = right_panel_margins)
+    plot.variable.importance.panel.SOM(plot_list = map_variance_plot_list,
+                                       panel_title = mapvariance.title,
+                                       y_axis_label = mapvariance.y.axis.label)
   }
   
   # Plot eta squared only
   if (eta_squared_available && !map_variance_available) {
-    par(mfrow = c(1, 1),
-        mar = c(bottom.margin, left.margin, top.margin, right.margin),
-        mgp = c(2.5, 0.8, 0),
-        xpd = FALSE)
-    eta_squared_boxplot_object <- boxplot(eta_squared_plot_list, plot = FALSE, outline = FALSE)
-    eta_squared_y_axis_limits <- range(eta_squared_boxplot_object$stats, na.rm = TRUE)
-    if (diff(eta_squared_y_axis_limits) == 0) {
-      eta_squared_axis_padding <- max(abs(eta_squared_y_axis_limits[1]) * 0.05, 0.01)
-      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding, eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
-    } else {
-      eta_squared_axis_padding <- diff(eta_squared_y_axis_limits) * 0.05
-      eta_squared_y_axis_limits <- c(eta_squared_y_axis_limits[1] - eta_squared_axis_padding, eta_squared_y_axis_limits[2] + eta_squared_axis_padding)
-    }
-    boxplot(eta_squared_plot_list,
-            names = FALSE,
-            col = layer_colors[names(eta_squared_plot_list)],
-            las = 1,
-            axes = FALSE,
-            outline = FALSE,
-            ylab = etasquared.y.axis.label,
-            main = etasquared.title,
-            cex.main = title.font.size,
-            cex.lab = axis.font.size,
-            ylim = eta_squared_y_axis_limits,
-            whisklty = ifelse(add.boxplot.whiskers, 1, 0),
-            staplelty = ifelse(add.boxplot.whiskers, 1, 0))
-    axis(1,
-         at = seq_along(eta_squared_plot_list),
-         labels = names(eta_squared_plot_list),
-         las = 2,
-         tick = FALSE,
-         line = -0.5,
-         cex.axis = axis.font.size)
-    axis(2, cex.axis = axis.font.size)
-    box()
-    add.jittered.layer.points.SOM(eta_squared_plot_list)
+    par(mfrow = c(1, 1), oma = outer_margins, mar = single_panel_margins, xpd = FALSE)
+    par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
+    plot.variable.importance.panel.SOM(plot_list = eta_squared_plot_list,
+                                       panel_title = etasquared.title,
+                                       y_axis_label = etasquared.y.axis.label)
   }
   
   # Plot map variance only
   if (!eta_squared_available && map_variance_available) {
-    par(mfrow = c(1, 1),
-        mar = c(bottom.margin, left.margin, top.margin, right.margin),
-        mgp = c(2.5, 0.8, 0),
-        xpd = FALSE)
-    map_variance_boxplot_object <- boxplot(map_variance_plot_list, plot = FALSE, outline = FALSE)
-    map_variance_y_axis_limits <- range(map_variance_boxplot_object$stats, na.rm = TRUE)
-    if (diff(map_variance_y_axis_limits) == 0) {
-      map_variance_axis_padding <- max(abs(map_variance_y_axis_limits[1]) * 0.05, 0.01)
-      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding, map_variance_y_axis_limits[2] + map_variance_axis_padding)
-    } else {
-      map_variance_axis_padding <- diff(map_variance_y_axis_limits) * 0.05
-      map_variance_y_axis_limits <- c(map_variance_y_axis_limits[1] - map_variance_axis_padding, map_variance_y_axis_limits[2] + map_variance_axis_padding)
-    }
-    boxplot(map_variance_plot_list,
-            names = FALSE,
-            col = layer_colors[names(map_variance_plot_list)],
-            las = 1,
-            axes = FALSE,
-            outline = FALSE,
-            ylab = mapvariance.y.axis.label,
-            main = mapvariance.title,
-            cex.main = title.font.size,
-            cex.lab = axis.font.size,
-            ylim = map_variance_y_axis_limits,
-            whisklty = ifelse(add.boxplot.whiskers, 1, 0),
-            staplelty = ifelse(add.boxplot.whiskers, 1, 0))
-    axis(1,
-         at = seq_along(map_variance_plot_list),
-         labels = names(map_variance_plot_list),
-         las = 2,
-         tick = FALSE,
-         line = -0.5,
-         cex.axis = axis.font.size)
-    axis(2, cex.axis = axis.font.size)
-    box()
-    add.jittered.layer.points.SOM(map_variance_plot_list)
+    par(mfrow = c(1, 1), oma = outer_margins, mar = single_panel_margins, xpd = FALSE)
+    par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
+    plot.variable.importance.panel.SOM(plot_list = map_variance_plot_list,
+                                       panel_title = mapvariance.title,
+                                       y_axis_label = mapvariance.y.axis.label)
   }
   
   # Close graphics device
   if (save) {
     dev.off()
+    device_opened <- FALSE
     messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
-
-  # Return results                                         
+  
+  # Return results
   return(layer_importance_summary_table)
 }
-
 
 
 # Create function to estimate and plot layer importance by replicate-matched leave-one-layer-out SOM analyses
