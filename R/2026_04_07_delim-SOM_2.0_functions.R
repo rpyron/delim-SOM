@@ -7221,7 +7221,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     if (plot.type == "jpg") {
       jpeg(filename = file.name, width = width, height = height, units = "cm",res = resolution)
     }
-    on.exit(dev.off(), add = TRUE)
+    on.exit(grDevices::dev.off(), add = TRUE)
   }
   
   # Reset plotting parameters
@@ -7272,7 +7272,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           data = successful_replicate_matched_results_table,
           col = layer_colors[SOM_layer_names],
           outline = FALSE,
-          xaxt = "n",
           las = 2,
           ylab = "Absolute k deviation",
           xlab = "",
