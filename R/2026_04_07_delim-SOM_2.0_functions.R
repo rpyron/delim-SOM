@@ -6103,7 +6103,153 @@ plot.map.SOM <- function(SOM.output,
 }
 
 
-## Function to plot variable importance for each SOM layer (eta squared cluster separation) or map variance (codebook vectors/neuron weights)
+#' Plot variable importance across SOM layers
+#'
+#' Plot replicate-level variable-importance values for each input layer of a
+#' clustered SOM object returned by `clustering.SOM`. Variable importance can be
+#' quantified as eta squared cluster separation or as variance across the SOM
+#' map.
+#'
+#' @param SOM.output A SOM result object returned by `clustering.SOM`. The object
+#'   must contain `som_models` and `input_data_names`. For
+#'   `mode = "Cluster.separation"`, it must also contain `som_clusters`.
+#' @param mode Character string specifying the variable-importance metric.
+#'   Supported values are `"Cluster.separation"` and `"Map.variance"`.
+#'   Default: `"Cluster.separation"`.
+#' @param col.pal A viridis color-palette function used to assign colors to
+#'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
+#'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
+#'   `viridis::turbo`.
+#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing output file with the same
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
+#'   the output file already exists. Default: `TRUE`.
+#' @param plot.type Character string specifying the file format when
+#'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
+#'   Default: `"svg"`.
+#' @param file.name Optional character string giving the output file name when
+#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
+#'   `NULL`.
+#' @param width Numeric value giving plot width in centimeters when
+#'   `save = TRUE`. Default: `20`.
+#' @param height Numeric value giving plot height in centimeters when
+#'   `save = TRUE`. Default: `15`.
+#' @param resolution Numeric value giving plot resolution in dots per inch for
+#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
+#' @param bottom.margin.total Numeric value giving the bottom outer margin of the
+#'   complete multi-panel plot. Default: `2`.
+#' @param left.margin.total Numeric value giving the left outer margin of the
+#'   complete multi-panel plot. Default: `1`.
+#' @param top.margin.total Numeric value giving the top outer margin of the
+#'   complete multi-panel plot. Default: `2`.
+#' @param right.margin.total Numeric value giving the right outer margin of the
+#'   complete multi-panel plot. Default: `0`.
+#' @param bottom.margin Numeric value giving the bottom margin of each individual
+#'   layer panel. Default: `2.5`.
+#' @param left.margin Numeric value giving the left margin of each individual
+#'   layer panel. Default: `4`.
+#' @param top.margin Numeric value giving the top margin of each individual layer
+#'   panel. Default: `2`.
+#' @param right.margin Numeric value giving the right margin of each individual
+#'   layer panel. Default: `2`.
+#' @param bars.threshold.N A single non-negative integer giving the maximum
+#'   number of variables for which variable labels and boxplot whiskers are
+#'   shown. Default: `50`.
+#' @param title Optional character string giving the main plot title. If `NULL`,
+#'   no main plot title is shown. Default:
+#'   `"Variable importance across SOM layers"`.
+#' @param x.axis.label Optional character string giving the shared x-axis title.
+#'   If `NULL`, no shared x-axis title is shown. By default,
+#'   `"Cluster separation (eta squared effect size)"` is used for
+#'   `mode = "Cluster.separation"`, and `"Variance across SOM map"` is used for
+#'   `mode = "Map.variance"`.
+#' @param title.font.size A single positive numeric value giving the main plot
+#'   title font size in points. Default: `9.1`.
+#' @param layer.label.font.size A single positive numeric value giving the layer
+#'   title font size in points. Default: `9.1`.
+#' @param bar.label.font.size A single positive numeric value giving the variable
+#'   label font size in points. Default: `7`.
+#' @param axis.labels.font.size A single positive numeric value giving the shared
+#'   x-axis title font size in points. Default: `9.1`.
+#' @param axis.ticks.font.size A single positive numeric value giving the x-axis
+#'   numeric tick-label font size in points. Default: `7`.
+#' @param add.boxplot.whiskers Logical; if `TRUE`, boxplot whiskers are shown when
+#'   the number of plotted variables does not exceed `bars.threshold.N`.
+#'   Default: `TRUE`.
+#' @param importance.threshold A single non-negative numeric value giving the
+#'   minimum median variable-importance value required for a variable to be
+#'   plotted. Variables with median importance less than or equal to this value
+#'   are omitted. Default: `0.001`.
+#' @param set.k Optional positive integer. For
+#'   `mode = "Cluster.separation"`, only SOM replicates with this number of
+#'   clusters are included. If `NULL`, all replicates with at least two clusters
+#'   are included. This argument is ignored for `mode = "Map.variance"`.
+#'   Default: `NULL`.
+#'
+#' @details
+#' For `mode = "Cluster.separation"`, variable importance is calculated as a
+#' weighted eta squared effect size. SOM units are weighted by their number of
+#' assigned samples plus a baseline weight of one, so empty SOM units retain a
+#' small positive contribution. Larger values indicate stronger separation of
+#' codebook-vector values among inferred SOM unit clusters.
+#'
+#' For `mode = "Map.variance"`, variable importance is calculated as the weighted
+#' variance of each variable across SOM units using the same SOM-unit weights.
+#' Larger values indicate greater variation in that variable across the SOM map.
+#'
+#' Variable importance is calculated separately for each SOM replicate. The
+#' replicate-level distributions are shown as horizontal boxplots, and variables
+#' are ordered by their median importance across replicates. The plot is a
+#' descriptive diagnostic and not a formal statistical significance test.
+#'
+#' When saving SVG output, the function internally applies a `96 / 72` scaling
+#' correction to the SVG device size and point-style font sizes so that common
+#' document and presentation software imports the figure as the requested
+#' dimensions and font sizes.
+#'
+#' @return Invisibly returns `NULL`. The function is called for its plotting side
+#'   effect. If `save = TRUE`, the plot is written to the specified file.
+#'
+#' @importFrom graphics par boxplot axis mtext
+#' @importFrom grDevices dev.off svg png jpeg
+#' @importFrom stats median
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
+#' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
+#'
+#' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
+#' rownames(morphology_data) <- rownames(snp_data)
+#' rownames(environment_data) <- rownames(snp_data)
+#'
+#' input_data_multi <- list(
+#'   SNPs = snp_data,
+#'   Morphology = morphology_data,
+#'   Environment = environment_data
+#' )
+#'
+#' som_multi <- train.SOM(
+#'   input_data = input_data_multi,
+#'   N.steps = 100,
+#'   N.replicates = 60
+#' )
+#'
+#' som_clustered <- clustering.SOM(
+#'   SOM.output = som_multi,
+#'   clustering.method = "kmeans+BICthreshold"
+#' )
+#'
+#' plot.variable.importance.SOM(som_clustered)
+#' plot.variable.importance.SOM(som_clustered, mode = "Map.variance")
+#' }
+#'
+#' @export
 plot.variable.importance.SOM <- function(SOM.output, 
                                          mode = "Cluster.separation", #mode (options: "Cluster.separation", "Map.variance")
                                          col.pal = viridis::turbo, #color palette
@@ -6114,18 +6260,22 @@ plot.variable.importance.SOM <- function(SOM.output,
                                          width = 20, #plot width in cm
                                          height = 15, #plot height in cm
                                          resolution = 300, #plot resolution in dpi
-                                         bottom.margin.total = 1, #bottom margin of entire plot
+                                         bottom.margin.total = 2, #bottom margin of entire plot
                                          left.margin.total = 1, #left margin of entire plot
                                          top.margin.total = 2, #top margin of entire plot
                                          right.margin.total = 0, #right margin of entire plot
                                          bottom.margin = 2.5, #bottom margin of individual plots
-                                         left.margin = 4.5, #left margin of individual plots
+                                         left.margin = 4, #left margin of individual plots
                                          top.margin = 2, #top margin of individual plots
                                          right.margin = 2, #right margin of individual plots
                                          bars.threshold.N = 50, #threshold for leaving out bar labels
-                                         title.font.size = 1.2, #font size of title
-                                         matrix.label.font.size = 1, #font size of matrix label(s)
-                                         bar.label.font.size = 0.65, #font size of bar labels
+                                         title = "Variable importance across SOM layers", #main plot title (NULL = no title)
+                                         x.axis.label = if (mode == "Cluster.separation") "Cluster separation (eta squared effect size)" else "Variance across SOM map", #shared x-axis title (NULL = no title)
+                                         title.font.size = 9.1, #font size of title in points
+                                         layer.label.font.size = 9.1, #font size of matrix label(s) in points
+                                         bar.label.font.size = 7, #font size of bar labels in points
+                                         axis.labels.font.size = 9.1, #font size of shared x-axis title in points
+                                         axis.ticks.font.size = 7, #font size of x-axis numeric tick labels in points
                                          add.boxplot.whiskers = TRUE, #whether to plot boxplot whiskers
                                          importance.threshold = 0.001, #threshold for showing variable importance
                                          set.k = NULL #if NULL, include all replicates - if integer, include only replicates where number of clusters (K) equals set.k (only if mode = "Cluster.separation")
@@ -6133,10 +6283,10 @@ plot.variable.importance.SOM <- function(SOM.output,
   
   # Set messages
   messager <- function(...) message(...)
-	
+  
   # Reset plotting parameters
-  old_plotting_parameters <- graphics::par(no.readonly = TRUE)
-  on.exit(graphics::par(old_plotting_parameters), add = TRUE)
+  old_plotting_parameters <- par(no.readonly = TRUE)
+  on.exit(par(old_plotting_parameters), add = TRUE)
   
   # Validate input
   if (is.null(SOM.output$som_models) || length(SOM.output$som_models) < 1) stop("Plotting aborted: som_models not found in SOM.output - run train.SOM()")
@@ -6160,18 +6310,22 @@ plot.variable.importance.SOM <- function(SOM.output,
     if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
   }
   if (save) {
-    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number >= 72 (dpi)")
   }
   margin.list <- c(bottom.margin.total, left.margin.total, top.margin.total, right.margin.total, bottom.margin, left.margin, top.margin, right.margin)
   margin.names <- c("bottom.margin.total", "left.margin.total", "top.margin.total", "right.margin.total", "bottom.margin", "left.margin", "top.margin", "right.margin")
   for (i in seq_along(margin.list)) {
     if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
-    if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
+    if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be >= 0")
   }
   if (!is.numeric(bars.threshold.N) || length(bars.threshold.N) != 1 || is.na(bars.threshold.N) || bars.threshold.N < 0 || bars.threshold.N %% 1 != 0) stop("Plotting aborted: bars.threshold.N must be a single non-negative integer")
+  if (!is.null(title) && (!is.character(title) || length(title) != 1 || is.na(title))) stop("Plotting aborted: title must be NULL or a single character string")
+  if (!is.null(x.axis.label) && (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label))) stop("Plotting aborted: x.axis.label must be NULL or a single character string")
   if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Plotting aborted: title.font.size must be a single positive number")
-  if (!is.numeric(matrix.label.font.size) || length(matrix.label.font.size) != 1 || is.na(matrix.label.font.size) || matrix.label.font.size <= 0) stop("Plotting aborted: matrix.label.font.size must be a single positive number")
+  if (!is.numeric(layer.label.font.size) || length(layer.label.font.size) != 1 || is.na(layer.label.font.size) || layer.label.font.size <= 0) stop("Plotting aborted: layer.label.font.size must be a single positive number")
   if (!is.numeric(bar.label.font.size) || length(bar.label.font.size) != 1 || is.na(bar.label.font.size) || bar.label.font.size <= 0) stop("Plotting aborted: bar.label.font.size must be a single positive number")
+  if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
+  if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive number")
   if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
   if (!is.numeric(importance.threshold) || length(importance.threshold) != 1 || is.na(importance.threshold) || importance.threshold < 0) stop("Plotting aborted: importance.threshold must be a single non-negative number")
   if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || set.k %% 1 != 0)) stop("Plotting aborted: set.k must be NULL or single positive integer")
@@ -6280,6 +6434,10 @@ plot.variable.importance.SOM <- function(SOM.output,
     all_layer_metric[[i]] <- metric_matrix
   }
   
+  # Set SVG scaling correction
+  svg_scaling_factor <- 1
+  if (save && plot.type == "svg") svg_scaling_factor <- 96 / 72
+  
   # Set plot saving
   if (save) {
     
@@ -6294,7 +6452,7 @@ plot.variable.importance.SOM <- function(SOM.output,
     
     # Set plot plot.type
     if (plot.type == "svg") {
-      svg(file.name, width = width / 2.54, height = height / 2.54)
+      svg(file.name, width = (width / 2.54) * svg_scaling_factor, height = (height / 2.54) * svg_scaling_factor)
     } else if (plot.type == "png") {
       png(file.name, width = width, height = height, res = resolution, units = "cm")
     } else if (plot.type == "jpg") {
@@ -6304,10 +6462,19 @@ plot.variable.importance.SOM <- function(SOM.output,
     }
   }
   
+  # Convert point-size arguments to base R relative font sizes
+  base_font_size <- par("ps")
+  title_relative_font_size <- (title.font.size * svg_scaling_factor) / base_font_size
+  matrix_label_relative_font_size <- (layer.label.font.size * svg_scaling_factor) / base_font_size
+  bar_label_relative_font_size <- (bar.label.font.size * svg_scaling_factor) / base_font_size
+  axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
+  axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
+  
   # Set plotting area
-  graphics::par(mfrow = if (num_layers <= 3) c(1, num_layers) else if (num_layers == 4) c(2, 2) else if (num_layers <= 6) c(2, 3) else if (num_layers <= 8) c(2, 4) else if (num_layers == 9) c(3, 3) else c(ceiling(num_layers / 3), 3),
-                oma = c(bottom.margin.total, left.margin.total, top.margin.total, right.margin.total),
-                mar = c(bottom.margin, left.margin, top.margin, right.margin))
+  par(mfrow = if (num_layers <= 3) c(1, num_layers) else if (num_layers == 4) c(2, 2) else if (num_layers <= 6) c(2, 3) else if (num_layers <= 8) c(2, 4) else if (num_layers == 9) c(3, 3) else c(ceiling(num_layers / 3), 3),
+      oma = c(bottom.margin.total, left.margin.total, top.margin.total, right.margin.total),
+      mar = c(bottom.margin, left.margin, top.margin, right.margin))
+  par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
   
   # Iterate over each matrix and generate plots
   for (i in seq_along(all_layer_metric)) {
@@ -6353,7 +6520,7 @@ plot.variable.importance.SOM <- function(SOM.output,
             whisklty = if(!add.boxplot.whiskers || num_bars > bars.threshold.N) 0 else 1,
             staplelty = if(!add.boxplot.whiskers || num_bars > bars.threshold.N) 0 else 1,
             names = rep("", num_bars))
-    axis(1)
+    axis(1, cex.axis = axis_ticks_relative_font_size)
     
     # Add y-axis labels as text
     axis(2,
@@ -6361,27 +6528,47 @@ plot.variable.importance.SOM <- function(SOM.output,
          labels = if(num_bars > bars.threshold.N) rep("", num_bars) else y_labels,
          las = 1,
          tick = FALSE,
-         cex.axis = bar.label.font.size)
+         cex.axis = bar_label_relative_font_size)
     
     # Add layer title
     mtext(matrix_names[i], 
           side = 3,
           line = 0.3,
-          cex = matrix.label.font.size,
-          font = 1)
+          cex = matrix_label_relative_font_size,
+          font = 2)
+  }
+  
+  # Add shared x-axis title in outer margin
+  if (!is.null(x.axis.label) && x.axis.label != "") {
+    mtext(x.axis.label,
+          outer = TRUE,
+          side = 1,
+          line = 0,
+          cex = axis_labels_relative_font_size,
+          font = 2)
   }
   
   # Add main title in outer margin
-  if (mode == "Cluster.separation") mtext("Variable importance of SOM layers (eta squared cluster separation)", outer = TRUE, side = 3, line = 0, cex = title.font.size)
-  if (mode == "Map.variance") mtext("Variable importance across SOM map (variation in neuron weights)", outer = TRUE, side = 3, line = 0, cex = title.font.size)
+  if (!is.null(title) && title != "") {
+    mtext(title,
+          outer = TRUE,
+          side = 3,
+          line = 0,
+          cex = title_relative_font_size,
+          font = 2)
+  }
   
   # Close graphics device
   if (save) {
     dev.off()
     messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
+  
+  # Return invisible NULL
+  return(invisible(NULL))
 }
 
+			
 #' Process SNP data for SOM-based species delimitation
 #'
 #' Filters and converts SNP data into a numeric SNP dosage matrix suitable for
