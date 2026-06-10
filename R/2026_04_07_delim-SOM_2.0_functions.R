@@ -3251,8 +3251,8 @@ plot.structure.SOM <- function(SOM.output,
                                overwrite = TRUE, #overwrite plot if already present (only if saving plot)
                                plot.type = "svg", #plot file type (choose: png, jpg or svg; only if saving plot)
                                file.name = NULL, #plot file name (if NULL, default name is created; only if saving plot)
-                               width = 10, #plot width in cm (only if saving plot)
-                               height = 15, #plot height in cm (only if saving plot)
+                               width = 16, #plot width in cm (only if saving plot)
+                               height = 10, #plot height in cm (only if saving plot)
                                resolution = 300, #plot resolution in dpi (only if saving plot)
                                bottom.margin = 5, #bottom margin
                                left.margin = 5, #left margin
@@ -3542,9 +3542,9 @@ plot.structure.SOM <- function(SOM.output,
 #'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
 #'   `NULL`.
 #' @param width Numeric value giving plot width in centimeters when
-#'   `save = TRUE`. Default: `20`.
+#'   `save = TRUE`. Default: `16`.
 #' @param height Numeric value giving plot height in centimeters when
-#'   `save = TRUE`. Default: `15`.
+#'   `save = TRUE`. Default: `10`.
 #' @param resolution Numeric value giving plot resolution in dots per inch for
 #'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
 #' @param bottom.margin Numeric value giving the bottom plot margin. Default:
@@ -3574,7 +3574,7 @@ plot.structure.SOM <- function(SOM.output,
 #' @param legend.title.font.size A single positive numeric value giving the
 #'   legend title font size in points. Default: `9.1`.
 #' @param legend.box Logical; if `TRUE`, a white box is drawn around the legend.
-#'   Default: `TRUE`.
+#'   Default: `FALSE`.
 #' @param x.axis.label Optional character string giving the x-axis title. If
 #'   `NULL`, no x-axis title is shown. Default: `"Training steps"`.
 #' @param y.axis.label Optional character string giving the y-axis title. If
@@ -3642,8 +3642,8 @@ plot.learning.SOM <- function(SOM.output,
                               overwrite = TRUE, #option to overwrite plot if it already exists (only if saving plot)
                               plot.type = "svg", #options: "svg", "png", "jpg" (only if saving plot)
                               file.name = NULL, #set plot file.name (if NULL, default plot file.name is used; only if saving plot)
-                              width = 20, #plot width in cm (only if saving plot)
-                              height = 15, #plot height in cm (only if saving plot)
+                              width = 16, #plot width in cm (only if saving plot)
+                              height = 10, #plot height in cm (only if saving plot)
                               resolution = 300, #plot resolution in dpi (only if saving plot)
                               bottom.margin = 5, #bottom margin
                               left.margin = 5, #left margin
@@ -3658,7 +3658,7 @@ plot.learning.SOM <- function(SOM.output,
                               legend.lines.thickness = 3, #thickness for lines in legend
                               legend.text.font.size = 9.1, #font size of legend text in points
                               legend.title.font.size = 9.1, #font size of legend title in points
-                              legend.box = TRUE, #create white box around legend
+                              legend.box = FALSE, #create white box around legend
                               x.axis.label = "Training steps", #x-axis title (NULL = no x-axis title)
                               y.axis.label = "Mean distance to closest codebook vector", #y-axis title (NULL = no y-axis title)
                               axis.labels.font.size = 9.1, #font size of axis titles in points
@@ -4030,9 +4030,9 @@ plot.learning.SOM <- function(SOM.output,
 #'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
 #'   `NULL`.
 #' @param width Numeric value giving plot width in centimeters when
-#'   `save = TRUE`. Default: `20`.
+#'   `save = TRUE`. Default: `16`.
 #' @param height Numeric value giving plot height in centimeters when
-#'   `save = TRUE`. Default: `15`.
+#'   `save = TRUE`. Default: `10`.
 #' @param resolution Numeric value giving plot resolution in dots per inch for
 #'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
 #' @param bottom.margin Numeric value giving the bottom plot margin. Default:
@@ -4110,8 +4110,8 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
                                           overwrite = TRUE, #option to overwrite plot if it already exists (only if saving plot)
                                           plot.type = "svg", #plot type options: "svg", "png", "jpg" (only if saving plot)
                                           file.name = NULL, #set file.name for saving (if NULL, default plot file.name is used; only if saving plot)
-                                          width = 20, #plot width in cm (only if plot is saved)
-                                          height = 15, #plot height in cm (only if plot is saved)
+                                          width = 16, #plot width in cm (only if plot is saved)
+                                          height = 10, #plot height in cm (only if plot is saved)
                                           resolution = 300, #plot resolution in dpi (only if plot is saved)
                                           bottom.margin = 3, #bottom margin
                                           left.margin = 5, #left margin
@@ -6103,7 +6103,7 @@ plot.map.SOM <- function(SOM.output,
 }
 
 
-#' Plot variable importance across SOM layers
+#' Plot SOM variable importance
 #'
 #' Plot replicate-level variable-importance values for each input layer of a
 #' clustered SOM object returned by `clustering.SOM`. Variable importance can be
@@ -6156,9 +6156,6 @@ plot.map.SOM <- function(SOM.output,
 #' @param bars.threshold.N A single non-negative integer giving the maximum
 #'   number of variables for which variable labels and boxplot whiskers are
 #'   shown. Default: `50`.
-#' @param title Optional character string giving the main plot title. If `NULL`,
-#'   no main plot title is shown. Default:
-#'   `"Variable importance across SOM layers"`.
 #' @param x.axis.label Optional character string giving the shared x-axis title.
 #'   If `NULL`, no shared x-axis title is shown. By default,
 #'   `"Cluster separation (eta squared effect size)"` is used for
@@ -6269,7 +6266,6 @@ plot.variable.importance.SOM <- function(SOM.output,
                                          top.margin = 2, #top margin of individual plots
                                          right.margin = 2, #right margin of individual plots
                                          bars.threshold.N = 50, #threshold for leaving out bar labels
-                                         title = "Variable importance across SOM layers", #main plot title (NULL = no title)
                                          x.axis.label = if (mode == "Cluster.separation") "Cluster separation (eta squared effect size)" else "Variance across SOM map", #shared x-axis title (NULL = no title)
                                          title.font.size = 9.1, #font size of title in points
                                          layer.label.font.size = 9.1, #font size of matrix label(s) in points
@@ -6319,7 +6315,6 @@ plot.variable.importance.SOM <- function(SOM.output,
     if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be >= 0")
   }
   if (!is.numeric(bars.threshold.N) || length(bars.threshold.N) != 1 || is.na(bars.threshold.N) || bars.threshold.N < 0 || bars.threshold.N %% 1 != 0) stop("Plotting aborted: bars.threshold.N must be a single non-negative integer")
-  if (!is.null(title) && (!is.character(title) || length(title) != 1 || is.na(title))) stop("Plotting aborted: title must be NULL or a single character string")
   if (!is.null(x.axis.label) && (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label))) stop("Plotting aborted: x.axis.label must be NULL or a single character string")
   if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Plotting aborted: title.font.size must be a single positive number")
   if (!is.numeric(layer.label.font.size) || length(layer.label.font.size) != 1 || is.na(layer.label.font.size) || layer.label.font.size <= 0) stop("Plotting aborted: layer.label.font.size must be a single positive number")
@@ -6384,6 +6379,9 @@ plot.variable.importance.SOM <- function(SOM.output,
   if (!is.list(codes0)) codes0 <- list(codes0)
   num_layers <- length(codes0)
   if (length(matrix_names) != num_layers) matrix_names <- paste0("layer", seq_len(num_layers))
+  
+  # Set main plot title
+  plot_title <- if (num_layers == 1) "Variable importance" else "Variable importance across SOM layers"
   
   # Filter replicates by set.k (Cluster.separation) or use all replicates (Map.variance)
   if (mode == "Cluster.separation") {
@@ -6549,14 +6547,12 @@ plot.variable.importance.SOM <- function(SOM.output,
   }
   
   # Add main title in outer margin
-  if (!is.null(title) && title != "") {
-    mtext(title,
-          outer = TRUE,
-          side = 3,
-          line = 0,
-          cex = title_relative_font_size,
-          font = 2)
-  }
+  mtext(plot_title,
+        outer = TRUE,
+        side = 3,
+        line = 0,
+        cex = title_relative_font_size,
+        font = 2)
   
   # Close graphics device
   if (save) {
@@ -7878,6 +7874,9 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     
     # Add jittered points
     add.jittered.layer.points.SOM(plot_list)
+
+    # Add box around plot
+    box()
     
     # Return invisible NULL
     return(invisible(NULL))
