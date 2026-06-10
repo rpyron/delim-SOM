@@ -97,11 +97,10 @@ Monticola71_SOM_data <- list(SNP = Monticola71_SNP,
                              Watershed = Monticola71_watershed,
                              Morphology = Monticola71_morphology)
 Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples
-                                save.SOM.results = T,
+                                save.SOM.results = TRUE,
                                 save.SOM.results.name = "Monticola71_SOM_tr.Rdata",
                                 max.NA.row = 0.6,
-                                max.NA.col = 0.5,
-                                N.cores = 5)
+                                max.NA.col = 0.5)
 
 Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #takes ca 3min!
                                                      clustering.method = "kmeans+BICthreshold", 
