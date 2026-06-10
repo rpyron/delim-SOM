@@ -8455,9 +8455,9 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
 ) {
   
   # Validate input
-  if (!is.numeric(CV.threshold) || length(CV.threshold) != 1 || is.na(CV.threshold) || CV.threshold < 0) stop("CV.threshold must be a single non-negative numeric")
-  if (!is.numeric(cor.threshold) || length(cor.threshold) != 1 || is.na(cor.threshold) || cor.threshold < 0 || cor.threshold > 1) stop("cor.threshold must be a single numeric between 0 and 1")
-  if (!is.numeric(prevalence.threshold) || length(prevalence.threshold) != 1 || is.na(prevalence.threshold) || prevalence.threshold < 0 || prevalence.threshold > 0.5) stop("prevalence.threshold must be a single numeric between 0 and 0.5")
+  if (!is.numeric(CV.threshold) || length(CV.threshold) != 1 || is.na(CV.threshold) || !is.finite(CV.threshold) || CV.threshold < 0) stop("CV.threshold must be a single finite non-negative numeric")
+  if (!is.numeric(cor.threshold) || length(cor.threshold) != 1 || is.na(cor.threshold) || !is.finite(cor.threshold) || cor.threshold < 0 || cor.threshold > 1) stop("cor.threshold must be a single finite numeric between 0 and 1")
+  if (!is.numeric(prevalence.threshold) || length(prevalence.threshold) != 1 || is.na(prevalence.threshold) || !is.finite(prevalence.threshold) || prevalence.threshold < 0 || prevalence.threshold > 0.5) stop("prevalence.threshold must be a single finite numeric between 0 and 0.5")
   if (!is.data.frame(input.dataframe)) input.dataframe <- as.data.frame(input.dataframe)
   if (!is.null(exclude.cols)) {if (!all(exclude.cols %in% colnames(input.dataframe))) stop("All exclude.cols must be column names in input.dataframe")}
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("verbose must be TRUE or FALSE")
