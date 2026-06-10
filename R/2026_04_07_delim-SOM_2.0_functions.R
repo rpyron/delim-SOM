@@ -453,7 +453,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 ) {
   
   # Set messages
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("train.SOM aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Start processing input data
@@ -1784,7 +1784,7 @@ clustering.SOM <- function(SOM.output,
 ) {
 
   # Set messages
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("clustering.SOM aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Validate input arguments
@@ -1811,7 +1811,6 @@ clustering.SOM <- function(SOM.output,
   }
   if (!is.logical(calculate.soft.ancestry) || length(calculate.soft.ancestry) != 1 || is.na(calculate.soft.ancestry)) stop("Aborted SOM clustering: calculate.soft.ancestry must be TRUE or FALSE")
   if (!is.logical(calculate.variable.importance) || length(calculate.variable.importance) != 1 || is.na(calculate.variable.importance)) stop("Aborted SOM clustering: calculate.variable.importance must be TRUE or FALSE")
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Aborted SOM clustering: verbose must be TRUE or FALSE")
   if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || !is.finite(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Aborted SOM clustering: message.N.replicates must be a single positive integer (>= 1)")
   if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Aborted SOM clustering: save.SOM.results must be TRUE or FALSE")
   if (save.SOM.results && !is.null(save.SOM.results.name)) {
@@ -7010,7 +7009,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 ) {
   
   # Set messages
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Plotting aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Reset plotting parameters
@@ -7047,13 +7046,13 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
     if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "")) stop("Plotting aborted: file.name must be NULL or single non-empty character string")
     if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
-    if (width < 4) message("Warning: width is very small (", width, " cm) - plot may be hard to read")
-    if (width > 50) message("Warning: width is very large (", width, " cm) - plot may be unwieldy")
+    if (width < 4) messager("Warning: width is very small (", width, " cm) - plot may be hard to read")
+    if (width > 50) messager("Warning: width is very large (", width, " cm) - plot may be unwieldy")
     if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
-    if (height < 4) message("Warning: height is very small (", height, " cm) - plot may be hard to read")
-    if (height > 50) message("Warning: height is very large (", height, " cm) - plot may be unwieldy")
+    if (height < 4) messager("Warning: height is very small (", height, " cm) - plot may be hard to read")
+    if (height > 50) messager("Warning: height is very large (", height, " cm) - plot may be unwieldy")
     if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number >= 72 (dpi)")
-    if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) - file may be huge")
+    if (resolution > 1200) messager("Warning: resolution is very high (", resolution, " dpi) - file may be huge")
   }
   
   # Validate margin arguments
@@ -7061,10 +7060,10 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative numeric value")
   if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative numeric value")
   if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative numeric value")
-  if (bottom.margin > 10) message("Warning: bottom.margin is large (", bottom.margin, ") - plot area may shrink")
-  if (left.margin > 10) message("Warning: left.margin is large (", left.margin, ") - plot area may shrink")
-  if (top.margin > 10) message("Warning: top.margin is large (", top.margin, ") - plot area may shrink")
-  if (right.margin > 10) message("Warning: right.margin is large (", right.margin, ") - plot area may shrink")
+  if (bottom.margin > 10) messager("Warning: bottom.margin is large (", bottom.margin, ") - plot area may shrink")
+  if (left.margin > 10) messager("Warning: left.margin is large (", left.margin, ") - plot area may shrink")
+  if (top.margin > 10) messager("Warning: top.margin is large (", top.margin, ") - plot area may shrink")
+  if (right.margin > 10) messager("Warning: right.margin is large (", right.margin, ") - plot area may shrink")
   
   # Validate label arguments
   if (!is.null(etasquared.title) && (!is.character(etasquared.title) || length(etasquared.title) != 1 || is.na(etasquared.title))) stop("Plotting aborted: etasquared.title must be NULL or a single character string")
@@ -8323,7 +8322,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
                                  append.to.original = FALSE, #append.to.original - if TRUE, append to input; if FALSE, return only binary indicators
                                  verbose = TRUE #whether to show messages
 ) {
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Processing aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   if (!is.data.frame(dataframe)) stop("dataframe must be a data frame") #ensure input is a data frame
   if (!is.character(make.binary.cols)) stop("make.binary.cols must be character vector of column names") #check type
