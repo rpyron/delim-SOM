@@ -8570,6 +8570,12 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
   if (length(retained.count.variable.names) > 0) {
     for (variable.name in retained.count.variable.names) variables.for.correlation[[variable.name]] <- log1p(variables.for.correlation[[variable.name]])
   }
+
+  # Convert non-finite values to NA before pairwise correlation
+  variables.for.correlation[] <- lapply(variables.for.correlation, function(variable.values) {
+    variable.values[!is.finite(variable.values)] <- NA_real_
+    variable.values
+  })
   
   # Calculate absolute correlation matrix, ignoring NAs pairwise
   if (ncol(variables.for.correlation) > 1) {
@@ -8592,8 +8598,8 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
     variable.name.2 <- colnames(absolute.correlation.matrix)[maximum.correlation.index[2]]
     variable.values.1 <- variables.retained.for.correlation[[variable.name.1]]
     variable.values.2 <- variables.retained.for.correlation[[variable.name.2]]
-    variable.NA.count.1 <- sum(is.na(variable.values.1))
-    variable.NA.count.2 <- sum(is.na(variable.values.2))
+    variable.NA.count.1 <- sum(!is.finite(variable.values.1))
+    variable.NA.count.2 <- sum(!is.finite(variable.values.2))
     if (variable.NA.count.1 > variable.NA.count.2) {
       variable.name.to.remove <- variable.name.1
     } else if (variable.NA.count.2 > variable.NA.count.1) {
