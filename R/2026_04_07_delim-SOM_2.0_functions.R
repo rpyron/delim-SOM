@@ -3935,7 +3935,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
                                           top.margin = 3, #top margin
                                           right.margin = 2, #right margin
                                           plot.title = "Layer distance scale across layers", #plot title name (NULL = no title)
-                                          plot.title.font.size = 11.1, #font size of plot title in points
+                                          plot.title.font.size = 9.1, #font size of plot title in points
                                           plot.title.line = 1, #distance of plot title from plot
                                           y.axis.label = "Average pairwise distance", #y-axis title (NULL = no y-axis title)
                                           axis.labels.font.size = 9.1, #font size of y-axis title and x-axis layer labels in points
