@@ -3850,10 +3850,10 @@ plot.learning.SOM <- function(SOM.output,
 #' @param resolution Numeric value giving plot resolution in dots per inch for
 #'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
 #' @param bottom.margin Numeric value giving the bottom plot margin. Default:
-#'   `3.5`.
+#'   `3`.
 #' @param left.margin Numeric value giving the left plot margin. Default: `5`.
-#' @param top.margin Numeric value giving the top plot margin. Default: `3`.
-#' @param right.margin Numeric value giving the right plot margin. Default: `2`.
+#' @param top.margin Numeric value giving the top plot margin. Default: `2.5`.
+#' @param right.margin Numeric value giving the right plot margin. Default: `1`.
 #' @param plot.title Optional character string giving the plot title. If `NULL`,
 #'   no title is shown. Default: `"Layer distance scale across layers"`.
 #' @param plot.title.font.size A single positive numeric value giving the plot
@@ -3929,10 +3929,10 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
                                           width = 20, #plot width in cm (only if plot is saved)
                                           height = 15, #plot height in cm (only if plot is saved)
                                           resolution = 300, #plot resolution in dpi (only if plot is saved)
-                                          bottom.margin = 3.5, #bottom margin
+                                          bottom.margin = 3, #bottom margin
                                           left.margin = 5, #left margin
-                                          top.margin = 3, #top margin
-                                          right.margin = 2, #right margin
+                                          top.margin = 2.5, #top margin
+                                          right.margin = 1, #right margin
                                           plot.title = "Layer distance scale across layers", #plot title name (NULL = no title)
                                           plot.title.font.size = 9.1, #font size of plot title in points
                                           plot.title.line = 1, #distance of plot title from plot
