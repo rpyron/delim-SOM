@@ -102,14 +102,14 @@ Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples
                                 max.NA.row = 0.6,
                                 max.NA.col = 0.5)
 
-Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #takes ca 3min!
+Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #25.0min
                                                      clustering.method = "kmeans+BICthreshold", 
                                                      save.SOM.results.name = "Monticola71_SOM_kmeansBICthreshold.Rdata")
-Monticola71_SOM_kmeansBICthreshold$optim_k_summary #k2 99%
-Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #takes ca 5min!
+Monticola71_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
+Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #14.0min
                                           clustering.method = "HDBSCAN",
                                           save.SOM.results.name = "Monticola71_SOM_HDBSCAN.Rdata")
-Monticola71_SOM_HDBSCAN$optim_k_summary #k2 88%, k3 7%
+Monticola71_SOM_HDBSCAN$optim_k_summary #k2 85%, k3 11%
 Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #takes ca 30min!
                                                  clustering.method = "hierarchical+DB",
                                                  save.SOM.results.name = "Monticola71_SOM_hierarchicalDB.Rdata")
@@ -122,7 +122,7 @@ Monticola71_SOM_OPTICSSilhouette <- clustering.SOM(Monticola71_SOM_tr, #ca 5min
                                                    clustering.method = "OPTICS+Silhouette",
                                                    save.SOM.results.name = "Monticola71_SOM_OPTICSSilhouette.Rdata")
 Monticola71_SOM_OPTICSSilhouette$optim_k_summary #k1 95%, k2 5%
-Monticola71_SOM_kmeansBICelbow <- clustering.SOM(Monticola71_SOM_tr, #ca 3min
+Monticola71_SOM_kmeansBICelbow <- clustering.SOM(Monticola71_SOM_tr, #23.1min
                                                  clustering.method = "kmeans+BICelbow",
                                                  save.SOM.results.name = "Monticola71_SOM_kmeansBICelbow.Rdata")
 Monticola71_SOM_kmeansBICelbow$optim_k_summary #k2 100%
@@ -140,7 +140,7 @@ plot.structure.SOM(Monticola71_SOM)
 plot.map.SOM(SOM.output = Monticola71_SOM,
              Coordinates = Monticola71_spatial[, c("Latitude", "Longitude")],
              USA.add.counties = T,
-             scale.position = c(0.8, 0.05))
+             scale.position = c(0.78, 0.05))
 plot.variable.importance.SOM(Monticola71_SOM, mode = "Cluster.separation", 
                              bars.threshold.N = 100, bar.label.font.size = 0.4)
 plot.variable.importance.SOM(Monticola71_SOM, mode = "Map.variance", 
