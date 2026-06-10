@@ -1376,7 +1376,10 @@ calculate.topographic.error <- function(som_model) {
 #' across replicates using the Hungarian algorithm, constructs a replicate-
 #' consensus ancestry matrix, optionally calculates replicate-specific soft
 #' ancestry matrices, and optionally computes variable-importance summaries.
-#'
+#' These ancestry matrices produce values somewhat equivalent to individual
+#' ancestry coefficients for each specimen (e.g., Frichot et al. 2014, 
+#' Pritchard et al. 2000, Beugin et al. 2018). These “species coefficients” indicate how strongly each individual is assigned to each of the K inferred clusters (Pyron et al. 2023, Pyron 2023).
+#'                                       
 #' @param SOM.output A list returned by `train.SOM`. The object must contain
 #'   trained SOM replicate models and the associated processed input data,
 #'   replicate identifiers, codebook vectors, quantization-error diagnostics, and
@@ -1491,7 +1494,7 @@ calculate.topographic.error <- function(som_model) {
 #'
 #' The `"GMM+BICthreshold"` method fits Gaussian mixture models to the codebook
 #' vectors using `mclust`. Candidate covariance parameterizations are evaluated
-#' in a staged manner with `mclust::mclustBIC` for computational efficiency.
+#' in a staged heuristic manner with `mclust::mclustBIC` for computational efficiency.
 #' Stable covariance models are tried first, then mid-complexity models are tried
 #' only if no stable model returns a finite BIC for that k, and expanded models
 #' are tried only if both earlier tiers fail. The retained value for each k is
