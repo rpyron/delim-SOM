@@ -3715,8 +3715,8 @@ plot.learning.SOM <- function(SOM.output,
     legend_height <- 2 * legend_padding_y + legend_title_height + legend_title_gap + length(legend.labels) * legend_text_height + (length(legend.labels) - 1) * legend_entry_gap
     
     # Set legend position
-    legend_inset_x <- 0.00 * plot_x_range
-    legend_inset_y <- 0.00 * plot_y_range
+    legend_inset_x <- 0.01 * plot_x_range
+    legend_inset_y <- 0.01 * plot_y_range
     if (legend.position == "topright") {
       legend_left <- plot_coordinate_limits[2] - legend_inset_x - legend_width
       legend_bottom <- plot_coordinate_limits[4] - legend_inset_y - legend_height
@@ -5606,8 +5606,8 @@ plot.map.SOM <- function(SOM.output,
     legend_height <- 2 * legend_padding_y + legend_title_height + legend_title_gap + length(legend.labels) * legend_text_height + (length(legend.labels) - 1) * legend_line_gap
     
     # Set legend position
-    legend_inset_x <- 0.00 * plot_longitude_range
-    legend_inset_y <- 0.00 * plot_latitude_range
+    legend_inset_x <- 0.01 * plot_longitude_range
+    legend_inset_y <- 0.01 * plot_latitude_range
     if (legend.position == "topright") {
       legend_left <- plot_coordinate_limits[2] - legend_inset_x - legend_width
       legend_bottom <- plot_coordinate_limits[4] - legend_inset_y - legend_height
