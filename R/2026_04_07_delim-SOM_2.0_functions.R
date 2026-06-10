@@ -8424,12 +8424,10 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 #' variability comparison is unstable, it removes the variable that is more
 #' strongly correlated with the other retained variables. Remaining ties are
 #' resolved deterministically.
-#`
+#'
 #' Integer-like non-negative variables are treated as count variables unless they are
 #' binary. Integer-coded categorical variables should therefore be excluded or recoded
 #' before using this function.
-#'
-#' @seealso [stats::cor()], [stats::sd()], [stats::mad()]
 #'
 #' @export
 remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with numeric columns (e.g., climatic, environmental or morphological variables)
@@ -8439,9 +8437,6 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
                                                exclude.cols = NULL, #character vector of columns to exclude from filtering (e.g. Latitude, Longitude)
                                                verbose = TRUE #logical, print messages about filtering steps
 ) {
-
-  # Set messages
-  messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Validate input
   if (!is.numeric(CV.threshold) || length(CV.threshold) != 1 || is.na(CV.threshold) || CV.threshold < 0) stop("CV.threshold must be a single non-negative numeric")
@@ -8450,6 +8445,9 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
   if (!is.data.frame(input.dataframe)) input.dataframe <- as.data.frame(input.dataframe)
   if (!is.null(exclude.cols)) {if (!all(exclude.cols %in% colnames(input.dataframe))) stop("All exclude.cols must be column names in input.dataframe")}
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("verbose must be TRUE or FALSE")
+
+  # Set messages
+  messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Preserve row and column names
   original.row.names <- rownames(input.dataframe)
