@@ -565,7 +565,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     return(SOM_results)
   }
   
-  
   # Check and transform data if necessary ...
   
   # ... for multiple datasets
@@ -581,7 +580,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (length(not_shared) > 0) { #show message if samples are removed
       n_all <- length(all_samples)
       n_removed <- length(not_shared)
-      if (n_removed <= 30) {
+      if (n_removed <= 20) {
         not_shared_rows <- paste(not_shared, collapse = ", ")
         messager(sprintf(
           "Removed %d of %d rows (samples) due to non-matching rownames: %s",
@@ -604,7 +603,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       na_frac <- rowMeans(is.na(mat))
       removed <- rownames(mat)[na_frac > max.NA.row]
       if (length(removed) > 0) { #show message if samples are removed
-        if (length(removed) <= 30) {
+        if (length(removed) <= 20) {
           messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f): %s", length(removed), nrow(mat), input_data_names[i], max.NA.row * 100, max.NA.row, paste(removed, collapse = ", ")))
         } else {
           messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f)", length(removed), nrow(mat), input_data_names[i], max.NA.row * 100, max.NA.row))
@@ -639,7 +638,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       if (length(non_numeric_cols) > 0) { #print message if any columns were removed
         n_removed <- length(non_numeric_cols)
         n_total <- ncol(mat)
-        if (n_removed <= 30) {
+        if (n_removed <= 20) {
           messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type: %s", n_removed, n_total, name, paste(names(mat)[non_numeric_cols], collapse = ", ")))
         } else {
           messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type", n_removed, n_total, name))
@@ -654,7 +653,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       all_na_cols <- vapply(mat, function(x) all(is.na(x)), logical(1)) #extract columns with only NA
       if (any(all_na_cols)) { #print message if any columns were removed
         n_removed <- sum(all_na_cols)
-        if (n_removed <= 30) {
+        if (n_removed <= 20) {
           messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA: %s", n_removed, n_cols, name, paste(colnames(mat)[all_na_cols], collapse = ", ")))
         } else {
           messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA", n_removed, n_cols, name))
@@ -669,7 +668,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       if (length(dropped_cols)) { #print message if any columns were removed
         n0 <- ncol(mat)
         n_dropped <- length(dropped_cols)
-        if (n_dropped <= 30) {
+        if (n_dropped <= 20) {
           messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to more than %.0f%% NA in data (max.NA.col = %.2f): %s", n_dropped, n0, name, max.NA.col * 100, max.NA.col, paste(dropped_cols, collapse = ", ")))
         } else {
           messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to more than %.0f%% NA in data (max.NA.col = %.2f)", n_dropped, n0, name, max.NA.col * 100, max.NA.col))
@@ -688,7 +687,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         removed_cols <- names(which(zero_var_cols))
         n_removed <- length(removed_cols)
         total_cols <- ncol(mat)
-        if (n_removed <= 30) {
+        if (n_removed <= 20) {
           messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to zero variance: %s", n_removed, total_cols, name, paste(removed_cols, collapse = ", ")))
         } else {
           messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to zero variance", n_removed, total_cols, name))
@@ -704,7 +703,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         removed_names <- rownames(mat)[all_na_rows]
         n_removed <- sum(all_na_rows)
         n_rows <- nrow(mat)
-        if (n_removed <= 30) {
+        if (n_removed <= 20) {
           messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to all values being NA after column filtering: %s", n_removed, n_rows, name, paste(removed_names, collapse = ", ")))
         } else {
           messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to all values being NA after column filtering", n_removed, n_rows, name))
@@ -758,7 +757,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       if (any(all_na_cols)) { #print message if any columns were removed
         n_removed <- sum(all_na_cols)
         removed_names <- colnames(mat)[all_na_cols]
-        if (n_removed <= 30) {
+        if (n_removed <= 20) {
           messager(sprintf("Removed %d columns (variables) in dataset %s after normalization because all values are NA: %s", n_removed, processed_names[i], paste(removed_names, collapse = ", ")))
         } else {
           messager(sprintf("Removed %d columns (variables) in dataset %s after normalization because all values are NA", n_removed, processed_names[i]))
@@ -791,7 +790,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (length(non_numeric_cols) > 0) { #print message if any columns were removed
       n_removed <- length(non_numeric_cols)
       n_total <- ncol(mat) #number of columns before removal
-      if (n_removed <= 30) {
+      if (n_removed <= 20) {
         messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type: %s", n_removed, n_total, input_data_names[[1]], paste(names(mat)[non_numeric_cols], collapse = ", ")))
       } else {
         messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to non-numeric type", n_removed, n_total, input_data_names[[1]]))
@@ -805,7 +804,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     na_props <- rowMeans(is.na(mat)) #fraction of NA per row
     bad_samples <- rownames(mat)[na_props > max.NA.row] #extract rows exceeding threshold
     if (length(bad_samples) > 0) { #print message if rows (samples) are removed
-      if (length(bad_samples) <= 30) {
+      if (length(bad_samples) <= 20) {
         messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f): %s", length(bad_samples), nrow(mat), input_data_names[[1]], max.NA.row * 100, max.NA.row, paste(bad_samples, collapse = ", ")))
       } else {
         messager(sprintf("Removed %d of %d rows (samples) in dataset %s due to more than %.0f%% NA in data (max.NA.row = %.2f)", length(bad_samples), nrow(mat), input_data_names[[1]], max.NA.row * 100, max.NA.row))
@@ -821,7 +820,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       n_removed <- sum(all_na_cols)
       n_total <- ncol(mat)
       removed_names <- colnames(mat)[all_na_cols]
-      if (n_removed <= 30) {
+      if (n_removed <= 20) {
         messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA: %s", n_removed, n_total, input_data_names[[1]], paste(removed_names, collapse = ", ")))
       } else {
         messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to all NA", n_removed, n_total, input_data_names[[1]]))
@@ -836,7 +835,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     dropped_cols <- names(col_na_frac)[col_na_frac > max.NA.col] #extract columns exceeding threshold
     if (length(dropped_cols)) { #print message if columns are removed
       n_dropped <- length(dropped_cols)
-      if (n_dropped <= 30) {
+      if (n_dropped <= 20) {
       messager(sprintf("Removed %d of %d columns (variables) due to more than %.0f%% NA in data (max.NA.col = %.2f): %s", n_dropped, ncol(mat), max.NA.col * 100, max.NA.col, paste(dropped_cols, collapse = ", ")))
       } else {
         messager(sprintf(
@@ -855,7 +854,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (any(zero_var_cols)) { #print message if columns are removed
       removed_cols <- names(which(zero_var_cols))
       n_removed <- length(removed_cols)
-      if (n_removed <= 30) {
+      if (n_removed <= 20) {
         messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to zero variance: %s", n_removed, ncol(mat), input_data_names[[1]], paste(removed_cols, collapse = ", ")))
       } else {
         messager(sprintf("Removed %d of %d columns (variables) in dataset %s due to zero variance", n_removed, ncol(mat), input_data_names[[1]]))
@@ -886,7 +885,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       n_removed <- sum(all_na_cols)
       n_total <- ncol(mat)
       removed_names <- colnames(mat)[all_na_cols]
-      if (n_removed <= 30) {
+      if (n_removed <= 20) {
         messager(sprintf("Removed %d of %d columns (variables) after normalization because all values are NA: %s", n_removed, n_total, paste(removed_names, collapse = ", ")))
       } else {
         messager(sprintf("Removed %d of %d columns (variables) after normalization because all values are NA", n_removed, n_total))
@@ -902,7 +901,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       removed_names <- rownames(mat)[all_na_rows]
       n_removed <- sum(all_na_rows)
       n_total <- nrow(mat) #total number of rows before removal
-      if (n_removed <= 30) {
+      if (n_removed <= 20) {
         messager(sprintf("Removed %d of %d rows (samples) with all NA after column filtering: %s", n_removed, n_total, paste(removed_names, collapse = ", ")))
       } else {
         messager(sprintf("Removed %d of %d rows (samples) with all NA after column filtering", n_removed, n_total))
