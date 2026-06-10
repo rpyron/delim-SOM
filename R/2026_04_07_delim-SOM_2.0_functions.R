@@ -7926,16 +7926,145 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 }
 
 
-# Create function to estimate and plot layer importance by replicate-matched leave-one-layer-out SOM analyses
+#' Plot leave-one-layer-out SOM layer importance
+#'
+#' Refit replicate-matched SOMs after omitting each input layer and quantify how
+#' strongly omission changes the inferred clustering. The function compares each
+#' leave-one-layer-out replicate with its corresponding retained baseline
+#' replicate and plots layer-level distributions of absolute k deviation,
+#' pairwise co-assignment change, and assignment-margin change.
+#'
+#' @param SOM_output A clustered multi-layer SOM object returned by
+#'   `clustering.SOM`. The object must contain `som_models`,
+#'   `cluster_assignment`, `optim_k_vals`, the original `input_data`, the stored
+#'   training and clustering seeds, and preferably the stored argument lists
+#'   `train.SOM.args` and `clustering.SOM.args`.
+#' @param col.pal A viridis color-palette function used to assign colors to
+#'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
+#'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
+#'   `viridis::turbo`.
+#' @param add.points Logical; if `TRUE`, replicate-level observations are added
+#'   as jittered points over the boxplots. Default: `TRUE`.
+#' @param point.cex A single positive numeric value giving the size of jittered
+#'   replicate-level points. Default: `0.8`.
+#' @param point.alpha A single numeric value between 0 and 1 giving the
+#'   transparency of jittered replicate-level points. Default: `0.65`.
+#' @param bottom.margin Numeric value giving the bottom outer plot margin.
+#'   Default: `5`.
+#' @param left.margin Numeric value giving the left outer plot margin. Default:
+#'   `0`.
+#' @param top.margin Numeric value giving the top outer plot margin. Default:
+#'   `2.5`.
+#' @param right.margin Numeric value giving the right outer plot margin. Default:
+#'   `2`.
+#' @param between.plot.margin A single non-negative numeric value controlling the
+#'   additional internal margin between adjacent plot panels. Default: `0`.
+#' @param save.leave.one.layer.out.results Logical; if `TRUE`, the calculated
+#'   leave-one-layer-out results are saved as an `.Rdata` file. Default:
+#'   `TRUE`.
+#' @param save.leave.one.layer.out.results.name Optional character string giving
+#'   the `.Rdata` file name used for leave-one-layer-out results. If `NULL`, a
+#'   default file name is generated from the layer names. Default: `NULL`.
+#' @param overwrite.leave.one.layer.out.results Logical; if `TRUE`, existing
+#'   leave-one-layer-out results are recalculated and overwritten. If `FALSE`
+#'   and the results file exists, it is loaded and the computationally expensive
+#'   reruns are skipped. Default: `FALSE`.
+#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing plot file with the same name
+#'   is overwritten when `save = TRUE`. Default: `TRUE`.
+#' @param plot.type Character string specifying the plot file format. Supported
+#'   values are `"svg"`, `"png"`, and `"jpg"`. Default: `"svg"`.
+#' @param file.name Optional character string giving the plot file name. If
+#'   `NULL`, a default file name is generated from the layer names. Default:
+#'   `NULL`.
+#' @param width A single positive numeric value giving plot width in centimeters
+#'   when `save = TRUE`. Default: `16`.
+#' @param height A single positive numeric value giving plot height in
+#'   centimeters when `save = TRUE`. Default: `10`.
+#' @param resolution A single positive numeric value giving plot resolution in
+#'   dots per inch for `"png"` and `"jpg"` output. Default: `300`.
+#' @param title Optional character string giving the overall plot title. If
+#'   `NULL` or `""`, no title is shown. Default: `"Layer importance"`.
+#' @param absolute.k.deviation.y.axis.label Optional character string giving the
+#'   y-axis title of the absolute-k-deviation panel. If `NULL` or `""`, no
+#'   y-axis title is shown. Default: `"Absolute k deviation"`.
+#' @param pairwise.coassignment.change.y.axis.label Optional character string
+#'   giving the y-axis title of the pairwise-co-assignment-change panel. If
+#'   `NULL` or `""`, no y-axis title is shown. Default:
+#'   `"Pairwise co-assignment change"`.
+#' @param assignment.margin.change.y.axis.label Optional character string giving
+#'   the y-axis title of the assignment-margin-change panel. If `NULL` or `""`,
+#'   no y-axis title is shown. Default: `"Assignment margin change"`.
+#' @param title.font.size A single positive numeric value giving the overall plot
+#'   title font size in points. Default: `9.1`.
+#' @param axis.labels.font.size A single positive numeric value giving the
+#'   y-axis-title and x-axis layer-label font size in points. Default: `9.1`.
+#' @param axis.ticks.font.size A single positive numeric value giving the y-axis
+#'   numeric tick-label font size in points. Default: `7`.
+#' @param add.boxplot.whiskers Logical; if `TRUE`, boxplot whiskers and staples
+#'   are shown. Default: `TRUE`.
+#' @param message.N.replicates Optional positive integer giving the frequency of
+#'   progress messages during replicate-matched leave-one-layer-out reruns. If
+#'   `NULL`, the stored `train.SOM` value is used when available, otherwise 20.
+#'   Default: `20`.
+#' @param verbose Logical; if `TRUE`, progress and file-handling messages are
+#'   printed. Default: `TRUE`.
+#'
+#' @details
+#' Each retained baseline replicate is matched to a leave-one-layer-out rerun by
+#' reusing the corresponding training and clustering seeds. This reduces
+#' differences caused only by random initialization and makes the comparison
+#' focus on omission of the selected layer.
+#'
+#' Absolute k deviation is the absolute difference between the baseline and
+#' leave-one-layer-out optimal numbers of clusters. Pairwise co-assignment change
+#' is the proportion of specimen pairs whose same-cluster versus
+#' different-cluster relationship changes after omitting the layer.
+#' Assignment-margin change is the baseline mean assignment margin minus the
+#' leave-one-layer-out mean assignment margin, so positive values indicate that
+#' omitting the layer reduced assignment certainty.
+#'
+#' Replicate-level assignment probabilities are used when available. If they are
+#' unavailable, the function falls back to one-hot probabilities derived from
+#' hard cluster assignments. Assignment-margin change is not plotted when it
+#' cannot be calculated, such as when all successful comparisons have one
+#' cluster.
+#'
+#' When saving SVG output, the function internally applies a `96 / 72` scaling
+#' correction to the SVG device size and point-style font sizes so that common
+#' document and presentation software imports the figure as the requested
+#' dimensions and font sizes.
+#'
+#' @return A list with two elements: `layer.summary`, containing layer-level
+#'   summaries, and `replicate.matched.results`, containing replicate-level
+#'   baseline versus leave-one-layer-out comparisons.
+#'
+#' @importFrom graphics par boxplot axis mtext points box
+#' @importFrom grDevices dev.cur dev.off svg png jpeg adjustcolor
+#' @importFrom stats median sd jitter
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @examples
+#' \dontrun{
+#' leave_one_layer_out_results <- plot.layer.importance.leaveoneout.SOM(
+#'   SOM_output = clustered_som,
+#'   save.leave.one.layer.out.results = TRUE,
+#'   overwrite.leave.one.layer.out.results = FALSE
+#' )
+#' }
+#'
+#' @export
 plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM output from full multilayer input
                                                   col.pal = viridis::turbo, #color palette
                                                   add.points = TRUE, #whether to add replicate-level jittered points
                                                   point.cex = 0.8, #point size
                                                   point.alpha = 0.65, #point transparency
-                                                  bottom.margin = 8, #bottom margin
-                                                  left.margin = 5.5, #left margin
-                                                  top.margin = 3, #top margin
-                                                  right.margin = 2, #right margin
+                                                  bottom.margin = 5, #bottom outer margin
+                                                  left.margin = 0, #left outer margin
+                                                  top.margin = 2.5, #top outer margin
+                                                  right.margin = 2, #right outer margin
+                                                  between.plot.margin = 0, #distance between adjacent plot panels
                                                   save.leave.one.layer.out.results = TRUE, #whether to save leave-one-layer-out results to file
                                                   save.leave.one.layer.out.results.name = NULL, #file name for saving leave-one-layer-out results; if NULL, default name is generated
                                                   overwrite.leave.one.layer.out.results = FALSE, #if FALSE, existing results are loaded instead of re-running
@@ -7943,12 +8072,16 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   overwrite = TRUE, #whether to overwrite plot if it already exists
                                                   plot.type = "svg", #plot file type (options: "svg", "png", "jpg")
                                                   file.name = NULL, #plot file name (if NULL, default file name is used)
-                                                  width = 20, #plot width in cm
-                                                  height = 15, #plot height in cm
+                                                  width = 16, #plot width in cm
+                                                  height = 10, #plot height in cm
                                                   resolution = 300, #plot resolution in dpi
-                                                  title = "Layer importance", #plot title
-                                                  title.font.size = 1.2, #font size of plot titles
-                                                  axis.font.size = 0.9, #font size of axis labels
+                                                  title = "Layer importance", #plot title (NULL = no title)
+                                                  absolute.k.deviation.y.axis.label = "Absolute k deviation", #y-axis title of absolute k deviation plot (NULL = no title)
+                                                  pairwise.coassignment.change.y.axis.label = "Pairwise co-assignment change", #y-axis title of pairwise co-assignment change plot (NULL = no title)
+                                                  assignment.margin.change.y.axis.label = "Assignment margin change", #y-axis title of assignment margin change plot (NULL = no title)
+                                                  title.font.size = 9.1, #font size of plot title in points
+                                                  axis.labels.font.size = 9.1, #font size of axis titles and x-axis layer labels in points
+                                                  axis.ticks.font.size = 7, #font size of y-axis numeric tick labels in points
                                                   add.boxplot.whiskers = TRUE, #whether to show boxplot whiskers
                                                   message.N.replicates = 20, #frequency of progress messages during leave-one-layer-out SOM reruns
                                                   verbose = TRUE #whether to print messages
@@ -7957,6 +8090,15 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   # Set messages
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
+  
+  # Reset plotting parameters
+  old_device <- dev.cur()
+  old_plotting_parameters <- par(no.readonly = TRUE)
+  device_opened <- FALSE
+  on.exit({
+    if (device_opened && dev.cur() != old_device) dev.off()
+    par(old_plotting_parameters)
+  }, add = TRUE)
   
   # Validate specified SOM_output
   if (is.null(SOM_output) || !is.list(SOM_output)) stop("Leave-one-layer-out layer importance aborted: SOM_output must be a non-NULL list")
@@ -8014,14 +8156,17 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   
   # Set or validate message frequency for leave-one-layer-out progress messages
   if (is.null(message.N.replicates)) {
-    if (is.null(train.SOM.args$message.N.replicates)) train.SOM.args$message.N.replicates <- 20
-  } else {
-    if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) ||
-        message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) {
-      stop("Leave-one-layer-out layer importance aborted: message.N.replicates must be NULL or a single positive integer (>= 1)")
+    if (is.null(train.SOM.args$message.N.replicates)) {
+      message.N.replicates <- 20
+    } else {
+      message.N.replicates <- train.SOM.args$message.N.replicates
     }
-    train.SOM.args$message.N.replicates <- message.N.replicates
   }
+  if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) ||
+      message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) {
+    stop("Leave-one-layer-out layer importance aborted: message.N.replicates must be NULL or a single positive integer (>= 1)")
+  }
+  train.SOM.args$message.N.replicates <- message.N.replicates
   
   # Validate specified input_data
   if (!is.list(input_data) || length(input_data) < 2) stop("Plotting aborted: function requires at least two layers")
@@ -8038,8 +8183,13 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.numeric(baseline.train.SOM.set.seed.N) || length(baseline.train.SOM.set.seed.N) != 1 || is.na(baseline.train.SOM.set.seed.N) || baseline.train.SOM.set.seed.N < 1 || baseline.train.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.train.SOM.set.seed.N must be a single positive integer")
   if (!is.numeric(baseline.clustering.SOM.set.seed.N) || length(baseline.clustering.SOM.set.seed.N) != 1 || is.na(baseline.clustering.SOM.set.seed.N) || baseline.clustering.SOM.set.seed.N < 1 || baseline.clustering.SOM.set.seed.N %% 1 != 0) stop("Leave-one-layer-out layer importance aborted: baseline.clustering.SOM.set.seed.N must be a single positive integer")
   if (!is.logical(add.points) || length(add.points) != 1 || is.na(add.points)) stop("Leave-one-layer-out layer importance aborted: add.points must be TRUE or FALSE")
-    if (!is.numeric(point.cex) || length(point.cex) != 1 || is.na(point.cex) || point.cex <= 0) stop("Leave-one-layer-out layer importance aborted: point.cex must be a single positive numeric value")
+  if (!is.numeric(point.cex) || length(point.cex) != 1 || is.na(point.cex) || point.cex <= 0) stop("Leave-one-layer-out layer importance aborted: point.cex must be a single positive numeric value")
   if (!is.numeric(point.alpha) || length(point.alpha) != 1 || is.na(point.alpha) || point.alpha < 0 || point.alpha > 1) stop("Leave-one-layer-out layer importance aborted: point.alpha must be a single numeric value between 0 and 1")
+  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || bottom.margin < 0) stop("Leave-one-layer-out layer importance aborted: bottom.margin must be a single non-negative numeric value")
+  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Leave-one-layer-out layer importance aborted: left.margin must be a single non-negative numeric value")
+  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Leave-one-layer-out layer importance aborted: top.margin must be a single non-negative numeric value")
+  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Leave-one-layer-out layer importance aborted: right.margin must be a single non-negative numeric value")
+  if (!is.numeric(between.plot.margin) || length(between.plot.margin) != 1 || is.na(between.plot.margin) || between.plot.margin < 0) stop("Leave-one-layer-out layer importance aborted: between.plot.margin must be a single non-negative numeric value")
   if (!is.logical(save.leave.one.layer.out.results) || length(save.leave.one.layer.out.results) != 1 || is.na(save.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results must be TRUE or FALSE")
   if (save.leave.one.layer.out.results && !is.null(save.leave.one.layer.out.results.name)) {
     if (!is.character(save.leave.one.layer.out.results.name) || length(save.leave.one.layer.out.results.name) != 1 || is.na(save.leave.one.layer.out.results.name) || trimws(save.leave.one.layer.out.results.name) == "") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must be a non-empty character string if provided")
@@ -8056,13 +8206,15 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Leave-one-layer-out layer importance aborted: width must be a single positive numeric value")
   if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Leave-one-layer-out layer importance aborted: height must be a single positive numeric value")
   if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution <= 0) stop("Leave-one-layer-out layer importance aborted: resolution must be a single positive numeric value")
-  if (!is.null(title)) {
-    if (!is.character(title) || length(title) != 1 || is.na(title)) stop("Leave-one-layer-out layer importance aborted: title must be NULL or a character string of length 1")
-  }
+  if (!is.null(title) && (!is.character(title) || length(title) != 1 || is.na(title))) stop("Leave-one-layer-out layer importance aborted: title must be NULL or a single character string")
+  if (!is.null(absolute.k.deviation.y.axis.label) && (!is.character(absolute.k.deviation.y.axis.label) || length(absolute.k.deviation.y.axis.label) != 1 || is.na(absolute.k.deviation.y.axis.label))) stop("Leave-one-layer-out layer importance aborted: absolute.k.deviation.y.axis.label must be NULL or a single character string")
+  if (!is.null(pairwise.coassignment.change.y.axis.label) && (!is.character(pairwise.coassignment.change.y.axis.label) || length(pairwise.coassignment.change.y.axis.label) != 1 || is.na(pairwise.coassignment.change.y.axis.label))) stop("Leave-one-layer-out layer importance aborted: pairwise.coassignment.change.y.axis.label must be NULL or a single character string")
+  if (!is.null(assignment.margin.change.y.axis.label) && (!is.character(assignment.margin.change.y.axis.label) || length(assignment.margin.change.y.axis.label) != 1 || is.na(assignment.margin.change.y.axis.label))) stop("Leave-one-layer-out layer importance aborted: assignment.margin.change.y.axis.label must be NULL or a single character string")
   if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Leave-one-layer-out layer importance aborted: title.font.size must be a single positive numeric value")
-  if (!is.numeric(axis.font.size) || length(axis.font.size) != 1 || is.na(axis.font.size) || axis.font.size <= 0) stop("Leave-one-layer-out layer importance aborted: axis.font.size must be a single positive numeric value")
+  if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Leave-one-layer-out layer importance aborted: axis.labels.font.size must be a single positive numeric value")
+  if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Leave-one-layer-out layer importance aborted: axis.ticks.font.size must be a single positive numeric value")
   if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Leave-one-layer-out layer importance aborted: add.boxplot.whiskers must be TRUE or FALSE")
-
+  
   # Create function to return mean or NA
   mean.or.NA.SOM <- function(numeric_vector) {
     numeric_vector <- numeric_vector[is.finite(numeric_vector) & !is.na(numeric_vector)]
@@ -8156,7 +8308,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       # Renormalize after alignment
       candidate_assignment_probability_matrix <- normalize.assignment.probabilities.SOM(candidate_assignment_probability_matrix)
       if (is.null(candidate_assignment_probability_matrix)) return(NULL)
-
+      
       # Return results
       return(candidate_assignment_probability_matrix)
     }
@@ -8211,7 +8363,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     k_value_table <- table(k_values)
     k_value_proportions <- prop.table(k_value_table)
     k_distribution_summary <- paste0("k", names(k_value_proportions), "=", round(as.numeric(k_value_proportions), 3), collapse = "; ")
-
+    
     # Return results
     return(k_distribution_summary)
   }
@@ -8301,7 +8453,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     if (length(baseline_unique_cluster_labels) <= 8) {
       leave_one_layer_out_cluster_label_permutations <- generate.permutations.SOM(leave_one_layer_out_unique_cluster_labels)
       best_assignment_accuracy <- 0
-  
+      
       for (permutation_index in seq_along(leave_one_layer_out_cluster_label_permutations)) {
         current_cluster_label_permutation <- leave_one_layer_out_cluster_label_permutations[[permutation_index]]
         relabel_map <- setNames(baseline_unique_cluster_labels, current_cluster_label_permutation)
@@ -8309,7 +8461,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         current_assignment_accuracy <- mean(as.character(baseline_cluster_labels) == relabeled_leave_one_layer_out_cluster_labels, na.rm = TRUE)
         if (current_assignment_accuracy > best_assignment_accuracy) best_assignment_accuracy <- current_assignment_accuracy
       }
-
+      
       # Return results
       return(best_assignment_accuracy)
     }
@@ -8319,7 +8471,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     relabel_map <- apply(cluster_label_contingency_table, 1, function(cluster_count_vector) colnames(cluster_label_contingency_table)[which.max(cluster_count_vector)])
     relabeled_leave_one_layer_out_cluster_labels <- relabel_map[as.character(leave_one_layer_out_cluster_labels)]
     assignment_accuracy_to_original <- mean(as.character(baseline_cluster_labels) == relabeled_leave_one_layer_out_cluster_labels, na.rm = TRUE)
-
+    
     # Return results 
     return(assignment_accuracy_to_original)
   }
@@ -8439,7 +8591,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           error = function(error_message) {
             if (grepl("mehr Clusterzentren als verschiedene Datenpunkte|more cluster centers than distinct data points", conditionMessage(error_message))) {
               single_cluster_assignment <- matrix(1,
-                                                 nrow = nrow(input_data_for_SOM[[1]]),
+                                                  nrow = nrow(input_data_for_SOM[[1]]),
                                                   ncol = 1,
                                                   dimnames = list(rownames(input_data_for_SOM[[1]]), "R1"))
               clustered_single_replicate_SOM_output <- trained_single_replicate_SOM_output
@@ -8452,7 +8604,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           }
         )
       }
- return(clustered_single_replicate_SOM_output)
+      return(clustered_single_replicate_SOM_output)
     }
     
     # Extract baseline retained replicate indices
@@ -8538,18 +8690,18 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         
         # Store failed leave-one-layer-out run
         if (inherits(leave_one_layer_out.SOM.output, "error")) {
-        replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
-                                                                        retained.replicate.index = baseline_training_replicate_index,
-                                                                        layer = omitted_layer_name,
-                                                                        baseline.modal.k = baseline_modal_k,
-                                                                        leave.one.layer.out.modal.k = NA_real_,
-                                                                        absolute.k.deviation = NA_real_,
-                                                                        pairwise.coassignment.change = NA_real_,
-                                                                        baseline.mean.assignment.margin = baseline_mean_assignment_margin,
-                                                                        leave.one.layer.out.mean.assignment.margin = NA_real_,
-                                                                        delta.mean.assignment.margin = NA_real_,
-                                                                        error = conditionMessage(leave_one_layer_out.SOM.output),
-                                                                        stringsAsFactors = FALSE)
+          replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
+                                                                          retained.replicate.index = baseline_training_replicate_index,
+                                                                          layer = omitted_layer_name,
+                                                                          baseline.modal.k = baseline_modal_k,
+                                                                          leave.one.layer.out.modal.k = NA_real_,
+                                                                          absolute.k.deviation = NA_real_,
+                                                                          pairwise.coassignment.change = NA_real_,
+                                                                          baseline.mean.assignment.margin = baseline_mean_assignment_margin,
+                                                                          leave.one.layer.out.mean.assignment.margin = NA_real_,
+                                                                          delta.mean.assignment.margin = NA_real_,
+                                                                          error = conditionMessage(leave_one_layer_out.SOM.output),
+                                                                          stringsAsFactors = FALSE)
           results_counter <- results_counter + 1
           next
         }
@@ -8562,18 +8714,18 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         # Extract shared sample names
         shared_sample_names <- intersect(baseline_sample_names, names(leave_one_layer_out_hard_cluster_labels))
         if (length(shared_sample_names) < 2) {
-            replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
-                                                                            retained.replicate.index = baseline_training_replicate_index,
-                                                                            layer = omitted_layer_name,
-                                                                            baseline.modal.k = baseline_modal_k,
-                                                                            leave.one.layer.out.modal.k = leave_one_layer_out_modal_k,
-                                                                            absolute.k.deviation = abs(leave_one_layer_out_modal_k - baseline_modal_k),
-                                                                            pairwise.coassignment.change = NA_real_,
-                                                                            baseline.mean.assignment.margin = baseline_mean_assignment_margin,
-                                                                            leave.one.layer.out.mean.assignment.margin = NA_real_,
-                                                                            delta.mean.assignment.margin = NA_real_,
-                                                                            error = "Too few shared samples between stored baseline replicate and leave-one-layer-out output",
-                                                                            stringsAsFactors = FALSE)
+          replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
+                                                                          retained.replicate.index = baseline_training_replicate_index,
+                                                                          layer = omitted_layer_name,
+                                                                          baseline.modal.k = baseline_modal_k,
+                                                                          leave.one.layer.out.modal.k = leave_one_layer_out_modal_k,
+                                                                          absolute.k.deviation = abs(leave_one_layer_out_modal_k - baseline_modal_k),
+                                                                          pairwise.coassignment.change = NA_real_,
+                                                                          baseline.mean.assignment.margin = baseline_mean_assignment_margin,
+                                                                          leave.one.layer.out.mean.assignment.margin = NA_real_,
+                                                                          delta.mean.assignment.margin = NA_real_,
+                                                                          error = "Too few shared samples between stored baseline replicate and leave-one-layer-out output",
+                                                                          stringsAsFactors = FALSE)
           results_counter <- results_counter + 1
           next
         }
@@ -8583,7 +8735,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                                                                                    hard_cluster_labels = leave_one_layer_out_hard_cluster_labels,
                                                                                                                    retained_replicate_position = NULL)
         leave_one_layer_out_mean_assignment_margin <- calculate.mean.assignment.margin.SOM(leave_one_layer_out_assignment_probability_matrix)
-
+        
         # Calculate replicate-level metrics
         absolute.k.deviation <- abs(leave_one_layer_out_modal_k - baseline_modal_k)
         pairwise.coassignment.change <- calculate.pairwise.coassignment.change.SOM(baseline_cluster_labels = baseline_hard_cluster_labels,
@@ -8618,7 +8770,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       
       # Extract successful runs
       successful_current_layer_results_table <- current_layer_results_table[is.na(current_layer_results_table$error), , drop = FALSE]
-  
+      
       # Return summary row
       data.frame(layer = current_layer_results_table$layer[1],
                  N.replicates = nrow(current_layer_results_table),
@@ -8668,6 +8820,10 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   # Reorder replicate-level table to match layer.summary order
   successful_replicate_matched_results_table$layer <- factor(successful_replicate_matched_results_table$layer, levels = SOM_layer_names)
   
+  # Set SVG scaling correction
+  svg_scaling_factor <- 1
+  if (save && plot.type == "svg") svg_scaling_factor <- 96 / 72
+  
   # Open plot device if requested
   if (save) {
     
@@ -8683,37 +8839,72 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     
     # Open graphics device
     if (plot.type == "svg") {
-      svg(filename = file.name, width = width / 2.54, height = height / 2.54)
+      svg(filename = file.name,
+          width = (width / 2.54) * svg_scaling_factor,
+          height = (height / 2.54) * svg_scaling_factor)
     }
     if (plot.type == "png") {
-      png(filename = file.name, width = width, height = height, units = "cm", res = resolution)
+      png(filename = file.name,
+          width = width,
+          height = height,
+          units = "cm",
+          res = resolution)
     }
     if (plot.type == "jpg") {
-      jpeg(filename = file.name, width = width, height = height, units = "cm",res = resolution)
+      jpeg(filename = file.name,
+           width = width,
+           height = height,
+           units = "cm",
+           res = resolution)
     }
-    on.exit(dev.off(), add = TRUE)
+    device_opened <- TRUE
   }
   
-  # Reset plotting parameters
-  old_plotting_parameters <- par(no.readonly = TRUE)
-  on.exit(par(old_plotting_parameters), add = TRUE)
-
+  # Convert point-size arguments to base R relative font sizes
+  base_font_size <- par("ps")
+  title_relative_font_size <- (title.font.size * svg_scaling_factor) / base_font_size
+  axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
+  axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
+  
   # Determine whether assignment margin change can be shown
   show.assignment.margin.plot <- any(is.finite(successful_replicate_matched_results_table$delta.mean.assignment.margin) & !is.na(successful_replicate_matched_results_table$delta.mean.assignment.margin))
-
+  
+  # Set fixed internal panel margins
+  half_between_plot_margin <- between.plot.margin / 2
+  inner_bottom_margin <- 0
+  inner_left_margin <- 5
+  inner_top_margin <- 1
+  inner_right_margin <- 0
+  
+  # Set panel-specific internal margins
+  first_panel_margins <- c(inner_bottom_margin,
+                           inner_left_margin,
+                           inner_top_margin,
+                           half_between_plot_margin)
+  middle_panel_margins <- c(inner_bottom_margin,
+                            inner_left_margin,
+                            inner_top_margin,
+                            half_between_plot_margin)
+  last_panel_margins <- c(inner_bottom_margin,
+                          inner_left_margin,
+                          inner_top_margin,
+                          inner_right_margin)
+  outer_margins <- c(bottom.margin, left.margin, top.margin, right.margin)
+  
   # Set plotting layout
   if (show.assignment.margin.plot) {
     par(mfrow = c(1, 3),
-        mar = c(bottom.margin, left.margin, top.margin, right.margin),
-        oma = c(0, 0, 2, 0),
+        oma = outer_margins,
+        xpd = FALSE,
         mgp = c(4, 1, 0))
   } else {
     par(mfrow = c(1, 2),
-        mar = c(bottom.margin, left.margin, top.margin, right.margin),
-        oma = c(0, 0, 2, 0),
+        oma = outer_margins,
+        xpd = FALSE,
         mgp = c(4, 1, 0))
     messager("Assignment margin plot skipped because all successful replicates had k = 1")
-  }                                                
+  }
+  par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
   
   # Create function to add jittered points
   add.jittered.points.SOM <- function(response_variable_name) {
@@ -8732,73 +8923,103 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                col = adjustcolor(layer_colors[current_layer_name], alpha.f = point.alpha))
       }
     }
+    
+    # Return invisible NULL
+    return(invisible(NULL))
   }
   
-  # Plot absolute k deviation
-  boxplot(absolute.k.deviation ~ layer,
-          data = successful_replicate_matched_results_table,
-          col = layer_colors[SOM_layer_names],
-          outline = FALSE,
-          axes = FALSE,
-          las = 2,
-          ylab = "Absolute k deviation",
-          xlab = "",
-          main = "",
-          cex.lab = axis.font.size,
-          whisklty = ifelse(add.boxplot.whiskers, 1, 0),
-          staplelty = ifelse(add.boxplot.whiskers, 1, 0))
-  axis(1, cex.axis = axis.font.size)
-  axis(2, cex.axis = axis.font.size)
-  add.jittered.points.SOM("absolute.k.deviation")
-  
-  # Plot pairwise co-assignment change
-  boxplot(pairwise.coassignment.change ~ layer,
-          data = successful_replicate_matched_results_table,
-          col = layer_colors[SOM_layer_names],
-          outline = FALSE,
-          axes = FALSE,
-          las = 2,
-          ylab = "Pairwise co-assignment change",
-          xlab = "",
-          main = "",
-          cex.lab = axis.font.size,
-          whisklty = ifelse(add.boxplot.whiskers, 1, 0),
-          staplelty = ifelse(add.boxplot.whiskers, 1, 0))
-  axis(1, cex.axis = axis.font.size)
-  axis(2, cex.axis = axis.font.size)
-  add.jittered.points.SOM("pairwise.coassignment.change")
-  
-  # Plot assignment margin change
-  if (show.assignment.margin.plot) {
-    boxplot(delta.mean.assignment.margin ~ layer,
+  # Create function to plot one leave-one-layer-out metric
+  plot.leave.one.layer.out.metric.SOM <- function(response_formula,
+                                                  response_variable_name,
+                                                  y_axis_label) {
+    
+    # Create boxplot
+    boxplot(response_formula,
             data = successful_replicate_matched_results_table,
             col = layer_colors[SOM_layer_names],
             outline = FALSE,
             axes = FALSE,
-            las = 2,
-            ylab = "Assignment margin change",
+            ylab = "",
             xlab = "",
             main = "",
-            cex.lab = axis.font.size,
             whisklty = ifelse(add.boxplot.whiskers, 1, 0),
             staplelty = ifelse(add.boxplot.whiskers, 1, 0))
-    axis(1, cex.axis = axis.font.size)
-    axis(2, cex.axis = axis.font.size)
-    add.jittered.points.SOM("delta.mean.assignment.margin")
+    
+    # Add x-axis layer labels
+    axis(1,
+         at = seq_along(SOM_layer_names),
+         labels = SOM_layer_names,
+         las = 2,
+         font = 2,
+         cex.axis = axis_labels_relative_font_size)
+    
+    # Add y-axis numeric tick labels
+    axis(2, las = 3, cex.axis = axis_ticks_relative_font_size)
+    
+    # Add y-axis title
+    if (!is.null(y_axis_label) && y_axis_label != "") {
+      mtext(y_axis_label,
+            side = 2,
+            line = 2.5,
+            font = 2,
+            cex = axis_labels_relative_font_size)
+    }
+    
+    # Add jittered replicate-level points
+    add.jittered.points.SOM(response_variable_name)
+    
+    # Add box around plot
+    box()
+    
+    # Return invisible NULL
+    return(invisible(NULL))
   }
-
-  # Add overall title
- if (!is.null(title)) mtext(title, side = 3, outer = TRUE, line = -1.5, cex = title.font.size)
   
-  # Report saved plot if requested
+  # Plot absolute k deviation
+  par(mar = first_panel_margins)
+  plot.leave.one.layer.out.metric.SOM(response_formula = absolute.k.deviation ~ layer,
+                                      response_variable_name = "absolute.k.deviation",
+                                      y_axis_label = absolute.k.deviation.y.axis.label)
+  
+  # Plot pairwise co-assignment change
+  if (show.assignment.margin.plot) {
+    par(mar = middle_panel_margins)
+  } else {
+    par(mar = last_panel_margins)
+  }
+  plot.leave.one.layer.out.metric.SOM(response_formula = pairwise.coassignment.change ~ layer,
+                                      response_variable_name = "pairwise.coassignment.change",
+                                      y_axis_label = pairwise.coassignment.change.y.axis.label)
+  
+  # Plot assignment margin change
+  if (show.assignment.margin.plot) {
+    par(mar = last_panel_margins)
+    plot.leave.one.layer.out.metric.SOM(response_formula = delta.mean.assignment.margin ~ layer,
+                                        response_variable_name = "delta.mean.assignment.margin",
+                                        y_axis_label = assignment.margin.change.y.axis.label)
+  }
+  
+  # Add overall title
+  if (!is.null(title) && title != "") {
+    mtext(title,
+          side = 3,
+          outer = TRUE,
+          line = 0,
+          font = 2,
+          cex = title_relative_font_size)
+  }
+  
+  # Close graphics device
   if (save) {
-    if (overwrite) messager("Leave-one-layer-out plot overwritten as ", file.name)
-    if (!overwrite) messager("Leave-one-layer-out plot saved as ", file.name)
+    dev.off()
+    device_opened <- FALSE
+    messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
   
   # Return results
   return(leave.one.layer.out.results)
 }
+
 
                                                    
 ## Function to convert specified categorical columns into binary (0/1) indicators
