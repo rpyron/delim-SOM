@@ -6140,6 +6140,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
 ) {
 
   # Set messages
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Track whether any filtering message was printed
@@ -6158,6 +6159,12 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (verbose && filter.messages.printed) messager("")
     if (verbose) messager("Final SNP matrix: ", nrow(snp.matrix), " samples × ", ncol(snp.matrix), " loci") #summary
   }
+
+  # Create function to validate file path arguments
+  validate.file.path <- function(file.path.value, argument.name) {
+    if (!is.character(file.path.value) || length(file.path.value) != 1 || is.na(file.path.value) || trimws(file.path.value) == "") stop(argument.name, " must be a single non-empty character string")
+    if (!file.exists(file.path.value)) stop(argument.name, " does not exist: ", file.path.value)
+  }
   
   # Create function to validate arguments
   validate.arguments <- function() {
@@ -6173,18 +6180,18 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (!is.logical(make.biallelic) || length(make.biallelic) != 1 || is.na(make.biallelic)) stop("make.biallelic must be TRUE or FALSE") #validate
     if (!is.logical(singleton.loci.filter) || length(singleton.loci.filter) != 1 || is.na(singleton.loci.filter)) stop("singleton.loci.filter must be TRUE or FALSE") #validate
     if (!is.logical(invariant.loci.filter) || length(invariant.loci.filter) != 1 || is.na(invariant.loci.filter)) stop("invariant.loci.filter must be TRUE or FALSE") #validate
-    if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("verbose must be TRUE or FALSE") #validate
-    if (!is.null(missing.loci.cutoff.lenient) && (!is.numeric(missing.loci.cutoff.lenient) || length(missing.loci.cutoff.lenient) != 1 || is.na(missing.loci.cutoff.lenient) || missing.loci.cutoff.lenient < 0 || missing.loci.cutoff.lenient > 1)) stop("missing.loci.cutoff.lenient must be NULL or a single numeric value between 0 and 1") #validate
-    if (!is.null(missing.loci.cutoff.final) && (!is.numeric(missing.loci.cutoff.final) || length(missing.loci.cutoff.final) != 1 || is.na(missing.loci.cutoff.final) || missing.loci.cutoff.final < 0 || missing.loci.cutoff.final > 1)) stop("missing.loci.cutoff.final must be NULL or a single numeric value between 0 and 1") #validate
-    if (!is.null(missing.individuals.cutoff) && (!is.numeric(missing.individuals.cutoff) || length(missing.individuals.cutoff) != 1 || is.na(missing.individuals.cutoff) || missing.individuals.cutoff < 0 || missing.individuals.cutoff > 1)) stop("missing.individuals.cutoff must be NULL or a single numeric value between 0 and 1") #validate
-    if (!is.character(phylip.format) || length(phylip.format) != 1 || !(phylip.format %in% c("sequential", "interleaved"))) stop("phylip.format must be 'sequential' or 'interleaved'") #validate
-    if (!is.character(plink.raw.metadata.columns)) stop("plink.raw.metadata.columns must be a character vector") #validate
-    if (!is.null(vcf.path) && !file.exists(vcf.path)) stop("VCF file does not exist: ", vcf.path) #check vcf path
-    if (!is.null(plink.raw.path) && !file.exists(plink.raw.path)) stop("PLINK .raw file does not exist: ", plink.raw.path) #check PLINK .raw path
-    if (!is.numeric(snp.matrix.ploidy) || length(snp.matrix.ploidy) != 1 || is.na(snp.matrix.ploidy) || !(snp.matrix.ploidy %in% c(1, 2))) stop("snp.matrix.ploidy must be 1 or 2") #validate ploidy
-    if (!is.null(nexus.path) && !file.exists(nexus.path)) stop("NEXUS file does not exist: ", nexus.path) #check nexus path
-    if (!is.null(fasta.path) && !file.exists(fasta.path)) stop("FASTA file does not exist: ", fasta.path) #check fasta path
-    if (!is.null(phylip.path) && !file.exists(phylip.path)) stop("PHYLIP file does not exist: ", phylip.path) #check phylip path
+    if (!is.null(missing.loci.cutoff.lenient) && (!is.numeric(missing.loci.cutoff.lenient) || length(missing.loci.cutoff.lenient) != 1 || is.na(missing.loci.cutoff.lenient) || !is.finite(missing.loci.cutoff.lenient) || missing.loci.cutoff.lenient < 0 || missing.loci.cutoff.lenient > 1)) stop("missing.loci.cutoff.lenient must be NULL or a single finite numeric value between 0 and 1") #validate
+    if (!is.null(missing.loci.cutoff.final) && (!is.numeric(missing.loci.cutoff.final) || length(missing.loci.cutoff.final) != 1 || is.na(missing.loci.cutoff.final) || !is.finite(missing.loci.cutoff.final) || missing.loci.cutoff.final < 0 || missing.loci.cutoff.final > 1)) stop("missing.loci.cutoff.final must be NULL or a single finite numeric value between 0 and 1") #validate
+    if (!is.null(missing.individuals.cutoff) && (!is.numeric(missing.individuals.cutoff) || length(missing.individuals.cutoff) != 1 || is.na(missing.individuals.cutoff) || !is.finite(missing.individuals.cutoff) || missing.individuals.cutoff < 0 || missing.individuals.cutoff > 1)) stop("missing.individuals.cutoff must be NULL or a single finite numeric value between 0 and 1") #validate
+    if (!is.character(phylip.format) || length(phylip.format) != 1 || is.na(phylip.format) || !(phylip.format %in% c("sequential", "interleaved"))) stop("phylip.format must be 'sequential' or 'interleaved'") #validate
+    if (!is.character(plink.raw.metadata.columns) || any(is.na(plink.raw.metadata.columns)) || any(trimws(plink.raw.metadata.columns) == "")) stop("plink.raw.metadata.columns must be a character vector without NA or empty strings") #validate
+    if (anyDuplicated(plink.raw.metadata.columns)) stop("plink.raw.metadata.columns cannot contain duplicated column names") #validate
+    if (!is.numeric(snp.matrix.ploidy) || length(snp.matrix.ploidy) != 1 || is.na(snp.matrix.ploidy) || !is.finite(snp.matrix.ploidy) || !(snp.matrix.ploidy %in% c(1, 2))) stop("snp.matrix.ploidy must be 1 or 2") #validate ploidy
+    if (!is.null(vcf.path)) validate.file.path(vcf.path, "vcf.path") #check vcf path
+    if (!is.null(plink.raw.path)) validate.file.path(plink.raw.path, "plink.raw.path") #check PLINK .raw path
+    if (!is.null(nexus.path)) validate.file.path(nexus.path, "nexus.path") #check nexus path
+    if (!is.null(fasta.path)) validate.file.path(fasta.path, "fasta.path") #check fasta path
+    if (!is.null(phylip.path)) validate.file.path(phylip.path, "phylip.path") #check phylip path
     if (!is.null(genlight.input) && !inherits(genlight.input, "genlight")) stop("genlight.input must be a genlight object") #check genlight input
     if (!is.null(genind.input) && !inherits(genind.input, "genind")) stop("genind.input must be a genind object") #check genind input
     if (!is.null(snp.matrix.input) && !(is.matrix(snp.matrix.input) || is.data.frame(snp.matrix.input))) stop("snp.matrix.input must be a matrix or data frame") #check SNP matrix input
@@ -6214,8 +6221,10 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (any(invalid.values)) stop(input.name, " must contain only ", paste(valid.values, collapse = ", "), ", or NA values for snp.matrix.ploidy = ", snp.matrix.ploidy) #validate dosage values
     if (is.null(rownames(snp.matrix))) rownames(snp.matrix) <- paste0("Sample", seq_len(nrow(snp.matrix))) #fallback sample names
     if (is.null(colnames(snp.matrix))) colnames(snp.matrix) <- paste0("SNP", seq_len(ncol(snp.matrix))) #fallback SNP names
-    rownames(snp.matrix) <- make.unique(as.character(rownames(snp.matrix))) #unique rownames
-    colnames(snp.matrix) <- make.unique(as.character(colnames(snp.matrix))) #unique colnames
+    if (any(is.na(rownames(snp.matrix))) || any(trimws(rownames(snp.matrix)) == "") || anyDuplicated(rownames(snp.matrix))) stop(input.name, " must have valid unique row names")
+    if (any(is.na(colnames(snp.matrix))) || any(trimws(colnames(snp.matrix)) == "") || anyDuplicated(colnames(snp.matrix))) stop(input.name, " must have valid unique column names")
+    rownames(snp.matrix) <- as.character(rownames(snp.matrix)) #preserve rownames
+    colnames(snp.matrix) <- as.character(colnames(snp.matrix)) #preserve colnames
     storage.mode(snp.matrix) <- "integer" #store as integer dosage
     return(snp.matrix) #return dosage matrix
   }
@@ -6325,9 +6334,10 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     snp.matrix <- as.matrix(plink.raw.data[, genotype.columns, drop = FALSE]) #extract SNP matrix
     if ("IID" %in% colnames(plink.raw.data)) {
       sample.names <- as.character(plink.raw.data[["IID"]]) #sample names from IID
-      if (any(is.na(sample.names)) || any(sample.names == "") || any(duplicated(sample.names))) {
+      if (any(is.na(sample.names)) || any(trimws(sample.names) == "") || any(duplicated(sample.names))) {
         if (all(c("FID", "IID") %in% colnames(plink.raw.data))) {
           sample.names <- paste(as.character(plink.raw.data[["FID"]]), as.character(plink.raw.data[["IID"]]), sep = "_") #fallback FID_IID
+          if (any(is.na(sample.names)) || any(trimws(sample.names) == "") || any(duplicated(sample.names))) stop("PLINK .raw file has duplicated or invalid sample identifiers even after using FID_IID")
         } else {
           sample.names <- paste0("Sample", seq_len(nrow(plink.raw.data))) #fallback names
         }
@@ -6335,8 +6345,8 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     } else {
       sample.names <- paste0("Sample", seq_len(nrow(plink.raw.data))) #fallback names
     }
-    rownames(snp.matrix) <- make.unique(sample.names) #set rownames
-    colnames(snp.matrix) <- make.unique(genotype.columns) #set colnames
+	    rownames(snp.matrix) <- sample.names #set rownames
+	    colnames(snp.matrix) <- genotype.columns #set colnames
     return(snp.matrix) #return matrix
   }
   
@@ -6571,7 +6581,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     # Multiallelic alignment processing
     polymorphic.site.indices <- which(sapply(observed.alleles.per.site, length) > 1) #keep polymorphic sites
     loci.removed <- total.locus.count.before.filtering - length(polymorphic.site.indices) #number removed
-    if (loci.removed > 0) print.filter.message(loci.removed, " of ", total.locus.count.before.filtering, " loci removed because they were invariant") #report invariant filter
+    if (loci.removed > 0) print.filter.message(loci.removed, " of ", total.locus.count.before.filtering, " loci removed because they produced no variable allele-dosage columns") #report non-informative loci
     if (length(polymorphic.site.indices) == 0) stop("No polymorphic SNPs found in alignment") #stop if none
     alignment.matrix <- alignment.matrix[, polymorphic.site.indices, drop = FALSE] #keep polymorphic sites
     
@@ -6664,10 +6674,12 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     fast.vcf.result <- tryCatch({
       vcf.object <- suppressWarnings(vcfR::read.vcfR(vcf.path, verbose = FALSE)) #read VCF
       fixed.matrix <- vcf.object@fix #extract fixed fields
-      biallelic.variant.indices <- which(!grepl(",", fixed.matrix[, "ALT"]) & !is.na(fixed.matrix[, "ALT"]) & fixed.matrix[, "ALT"] != ".") #biallelic variants
-      if (length(biallelic.variant.indices) == 0) stop("No biallelic loci found") #stop if none
+      	      biallelic.variant.indices <- which(!is.na(fixed.matrix[, "REF"]) & !is.na(fixed.matrix[, "ALT"]) &
+	                                           grepl("^[ACGTacgt]$", fixed.matrix[, "REF"]) &
+	                                           grepl("^[ACGTacgt]$", fixed.matrix[, "ALT"])) #single-base biallelic SNP variants
+     if (length(biallelic.variant.indices) == 0) stop("No biallelic loci found") #stop if none
       loci.removed <- nrow(fixed.matrix) - length(biallelic.variant.indices) #number removed
-      if (loci.removed > 0) print.filter.message(loci.removed, " of ", nrow(fixed.matrix), " loci removed because they were not biallelic") #report
+      	      if (loci.removed > 0) print.filter.message(loci.removed, " of ", nrow(fixed.matrix), " loci removed because they were not single-base biallelic SNPs") #report
       vcf.object <- vcf.object[biallelic.variant.indices, ] #keep biallelic variants
       genotype.matrix <- vcfR::extract.gt(vcf.object, element = "GT", as.numeric = FALSE) #variants x samples
       if (is.null(dim(genotype.matrix))) stop("VCF genotype matrix could not be extracted as a matrix") #check matrix
@@ -6677,7 +6689,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                 nrow = nrow(genotype.matrix),
                                 ncol = ncol(genotype.matrix),
                                 dimnames = genotype.dimnames) #standardize phased genotypes
-      missing.genotype.codes <- c("./.", ".", "0/.", "./0", "1/.", "./1") #missing and partial-missing genotypes
+      missing.genotype.codes <- c("./.", ".", ".|.", "0/.", "./0", "1/.", "./1", "0|.", ".|0", "1|.", ".|1") #missing and partial-missing genotypes
       recognized.genotype.matrix <- genotype.matrix %in% c("0/0", "0/1", "1/0", "1/1", missing.genotype.codes) | is.na(genotype.matrix) #recognized genotypes
       if (any(!recognized.genotype.matrix)) stop("UNSUPPORTED_FAST_VCF_GENOTYPES") #fallback trigger
       snp.matrix <- matrix(NA_integer_,
@@ -6838,8 +6850,8 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     retained.column.indices <- vapply(retained.info, function(single.info) single.info$index, integer(1)) #retained column indices
     retained.allele.dosage.names <- vapply(retained.info, function(single.info) single.info$name, character(1)) #retained locus names
     biallelic.snp.matrix <- as.data.frame(allele.count.matrix[, retained.column.indices, drop = FALSE], stringsAsFactors = FALSE) #subset once
-    rownames(biallelic.snp.matrix) <- adegenet::indNames(genind.object) #set rownames
-    colnames(biallelic.snp.matrix) <- retained.allele.dosage.names #set colnames
+    rownames(biallelic.snp.matrix) <- make.unique(as.character(adegenet::indNames(genind.object))) #set rownames
+	  colnames(biallelic.snp.matrix) <- make.unique(as.character(retained.allele.dosage.names)) #set colnames
     print.final.summary(biallelic.snp.matrix) #summary
     return(biallelic.snp.matrix) #return SNP matrix
   }
