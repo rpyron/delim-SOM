@@ -3858,8 +3858,6 @@ plot.learning.SOM <- function(SOM.output,
 #'   no title is shown. Default: `"Layer distance scale across layers"`.
 #' @param plot.title.font.size A single positive numeric value giving the plot
 #'   title font size in points. Default: `11.1`.
-#' @param plot.title.line A single numeric value giving the distance of the plot
-#'   title from the plot. Default: `1`.
 #' @param y.axis.label Optional character string giving the y-axis title. If
 #'   `NULL`, no y-axis title is shown. Default: `"Average pairwise distance"`.
 #' @param axis.labels.font.size A single positive numeric value giving the
@@ -3935,7 +3933,6 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
                                           right.margin = 1, #right margin
                                           plot.title = "Layer distance scale across layers", #plot title name (NULL = no title)
                                           plot.title.font.size = 9.1, #font size of plot title in points
-                                          plot.title.line = 1, #distance of plot title from plot
                                           y.axis.label = "Average pairwise distance", #y-axis title (NULL = no y-axis title)
                                           axis.labels.font.size = 9.1, #font size of y-axis title and x-axis layer labels in points
                                           axis.ticks.font.size = 7 #font size of y-axis numeric tick labels in points
@@ -4003,7 +4000,6 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   # Validate label arguments
   if (!is.null(plot.title) && (!is.character(plot.title) || length(plot.title) != 1 || is.na(plot.title))) stop("Plotting aborted: plot.title must be NULL or a single character string")
   if (!is.numeric(plot.title.font.size) || length(plot.title.font.size) != 1 || is.na(plot.title.font.size) || plot.title.font.size <= 0) stop("Plotting aborted: plot.title.font.size must be a single positive number")
-  if (!is.numeric(plot.title.line) || length(plot.title.line) != 1 || is.na(plot.title.line)) stop("Plotting aborted: plot.title.line must be a single numeric value")
   if (!is.null(y.axis.label) && (!is.character(y.axis.label) || length(y.axis.label) != 1 || is.na(y.axis.label))) stop("Plotting aborted: y.axis.label must be NULL or a single character string")
   if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
   if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive number")
@@ -4098,7 +4094,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
   # Add plot title
   if (!is.null(plot.title) && plot.title != "") {
     title(main = plot.title,
-          line = plot.title.line,
+          line = 1,
           font.main = 2,
           cex.main = plot_title_relative_font_size)
   }
@@ -4160,8 +4156,6 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 #'   `NULL`, no title is shown. Default: `"Number of clusters (k)"`.
 #' @param plot.title.font.size A single positive numeric value giving the plot
 #'   title font size in points. Default: `9.1`.
-#' @param plot.title.line A single numeric value giving the distance of the plot
-#'   title within the top outer margin. Default: `0.5`.
 #' @param axis.labels.font.size A single positive numeric value giving the
 #'   y-axis-title and bottom x-axis k-label font size in points. Default: `9.1`.
 #' @param axis.ticks.font.size A single positive numeric value giving the
@@ -4234,11 +4228,10 @@ plot.K.SOM <- function(SOM.output,
                        resolution = 300, #plot resolution in dpi (only if saving plot)
                        bottom.margin = 0.5, #bottom outer margin
                        left.margin = 0.5, #left outer margin
-                       top.margin = 2.5, #top outer margin
+                       top.margin = 2, #top outer margin
                        right.margin = 0, #right outer margin
                        plot.title = "Number of clusters (k)", #plot title (NULL = no title)
                        plot.title.font.size = 9.1, #font size of plot title in points
-                       plot.title.line = 0.5, #distance of plot title within top outer margin
                        axis.labels.font.size = 9.1, #font size of y-axis titles and bottom x-axis k labels in points
                        axis.ticks.font.size = 7 #font size of y-axis numeric tick labels in points
 ) {
@@ -4309,7 +4302,6 @@ plot.K.SOM <- function(SOM.output,
   # Validate label arguments
   if (!is.null(plot.title) && (!is.character(plot.title) || length(plot.title) != 1 || is.na(plot.title))) stop("Plotting aborted: plot.title must be NULL or a single character string")
   if (!is.numeric(plot.title.font.size) || length(plot.title.font.size) != 1 || is.na(plot.title.font.size) || plot.title.font.size <= 0) stop("Plotting aborted: plot.title.font.size must be a single positive number")
-  if (!is.numeric(plot.title.line) || length(plot.title.line) != 1 || is.na(plot.title.line)) stop("Plotting aborted: plot.title.line must be a single numeric value")
   if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
   if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive number")
   
@@ -4564,7 +4556,7 @@ plot.K.SOM <- function(SOM.output,
       mtext(plot.title,
             side = 3,
             outer = TRUE,
-            line = plot.title.line,
+            line = 0,
             font = 2,
             cex = plot_title_relative_font_size)
     }
