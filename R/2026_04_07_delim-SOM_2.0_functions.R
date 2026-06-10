@@ -453,6 +453,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 ) {
   
   # Set messages
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Start processing input data
@@ -511,7 +512,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (valid_ext != "rdata") stop("Data processing aborted: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
   }
   if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) stop("Data processing aborted: overwrite.SOM.results must be TRUE or FALSE")
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Data processing aborted: verbose must be TRUE or FALSE")
   if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || !is.finite(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Data processing aborted: message.N.replicates must be a single positive integer (>= 1)")
   if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || !is.finite(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Data processing aborted: set.seed.N must be a single positive integer (>= 1)")
     
@@ -1784,6 +1784,7 @@ clustering.SOM <- function(SOM.output,
 ) {
 
   # Set messages
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Validate input arguments
@@ -5769,6 +5770,9 @@ plot.variable.importance.SOM <- function(SOM.output,
                                          set.k = NULL #if NULL, include all replicates - if integer, include only replicates where number of clusters (K) equals set.k (only if mode = "Cluster.separation")
 ) {
   
+  # Set messages
+  messager <- function(...) message(...)
+	
   # Reset plotting parameters
   old_plotting_parameters <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(old_plotting_parameters), add = TRUE)
@@ -7006,6 +7010,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 ) {
   
   # Set messages
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Reset plotting parameters
@@ -7025,7 +7030,6 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   if (!is.numeric(point.cex) || length(point.cex) != 1 || is.na(point.cex) || point.cex <= 0) stop("Plotting aborted: point.cex must be a single positive numeric value")
   if (!is.numeric(point.alpha) || length(point.alpha) != 1 || is.na(point.alpha) || point.alpha < 0 || point.alpha > 1) stop("Plotting aborted: point.alpha must be a single numeric value between 0 and 1")
   if (!is.logical(sort.by.median) || length(sort.by.median) != 1 || is.na(sort.by.median)) stop("Plotting aborted: sort.by.median must be TRUE or FALSE")
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Plotting aborted: verbose must be TRUE or FALSE")
   
   # Validate specified color palette
   viridis_palettes <- list(viridis::viridis,
@@ -7407,6 +7411,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
 ) {
   
   # Set messages
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Validate specified SOM_output
@@ -7513,8 +7518,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Leave-one-layer-out layer importance aborted: title.font.size must be a single positive numeric value")
   if (!is.numeric(axis.font.size) || length(axis.font.size) != 1 || is.na(axis.font.size) || axis.font.size <= 0) stop("Leave-one-layer-out layer importance aborted: axis.font.size must be a single positive numeric value")
   if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Leave-one-layer-out layer importance aborted: add.boxplot.whiskers must be TRUE or FALSE")
-  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
-  
+
   # Create function to return mean or NA
   mean.or.NA.SOM <- function(numeric_vector) {
     numeric_vector <- numeric_vector[is.finite(numeric_vector) & !is.na(numeric_vector)]
@@ -8167,9 +8171,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     messager("Assignment margin plot skipped because all successful replicates had k = 1")
   }                                                
   
-  # Add overall title
-    if (!is.null(title)) mtext(title, side = 3, outer = TRUE, line = -1.5, cex = title.font.size)
-  
   # Create function to add jittered points
   add.jittered.points.SOM <- function(response_variable_name) {
     
@@ -8244,6 +8245,9 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     box()
     add.jittered.points.SOM("delta.mean.assignment.margin")
   }
+
+  # Add overall title
+ if (!is.null(title)) mtext(title, side = 3, outer = TRUE, line = -1.5, cex = title.font.size)
   
   # Report saved plot if requested
   if (save) {
@@ -8319,6 +8323,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
                                  append.to.original = FALSE, #append.to.original - if TRUE, append to input; if FALSE, return only binary indicators
                                  verbose = TRUE #whether to show messages
 ) {
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   if (!is.data.frame(dataframe)) stop("dataframe must be a data frame") #ensure input is a data frame
   if (!is.character(make.binary.cols)) stop("make.binary.cols must be character vector of column names") #check type
