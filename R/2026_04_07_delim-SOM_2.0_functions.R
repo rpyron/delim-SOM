@@ -3648,7 +3648,6 @@ plot.learning.SOM <- function(SOM.output,
   # Add axes
   axis(1, cex.axis = axis_ticks_relative_font_size)
   axis(2, cex.axis = axis_ticks_relative_font_size)
-  box()
   
   # Add axis titles
   x_axis_label_to_plot <- if (is.null(x.axis.label)) "" else x.axis.label
@@ -4079,8 +4078,7 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
                            main = "")
   
   # Add y-axis numeric tick labels
-  axis(2,
-       cex.axis = axis_ticks_relative_font_size)
+  axis(2, cex.axis = axis_ticks_relative_font_size)
   
   # Add x-axis layer labels
   axis(1,
@@ -4089,9 +4087,6 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
        tick = FALSE,
        cex.axis = axis_labels_relative_font_size,
        font.axis = 2)
-  
-  # Add plot box
-  box()
   
   # Add y-axis title
   if (!is.null(y.axis.label) && y.axis.label != "") {
