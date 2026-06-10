@@ -3137,11 +3137,118 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 }
 
 
-## Function to plot Structure-like barplots
+#' Plot Structure-like SOM assignment coefficients
+#'
+#' Plot a Structure-like stacked barplot from the ancestry matrix returned by
+#' `clustering.SOM`. Each vertical bar represents one individual, and stacked
+#' colors represent assignment coefficients to SOM clusters.
+#'
+#' @param SOM.output A SOM result object returned by `clustering.SOM`. The object
+#'   must contain `ancestry_matrix`.
+#' @param col.pal A viridis color-palette function used to assign colors to
+#'   clusters. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
+#'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
+#'   `viridis::viridis`.
+#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing output file with the same
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
+#'   the output file already exists. Default: `TRUE`.
+#' @param plot.type Character string specifying the file format when
+#'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
+#'   Default: `"svg"`.
+#' @param file.name Optional character string giving the output file name when
+#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
+#'   `NULL`.
+#' @param width Numeric value giving plot width in centimeters when
+#'   `save = TRUE`. Default: `10`.
+#' @param height Numeric value giving plot height in centimeters when
+#'   `save = TRUE`. Default: `15`.
+#' @param resolution Numeric value giving plot resolution in dots per inch for
+#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
+#' @param bottom.margin Numeric value giving the bottom plot margin. Default:
+#'   `5`.
+#' @param left.margin Numeric value giving the left plot margin. Default: `5`.
+#' @param top.margin Numeric value giving the top plot margin. Default: `1.5`.
+#' @param right.margin Numeric value giving the right plot margin. Default:
+#'   `1.5`.
+#' @param Individual.labels.font.size A single positive numeric value giving the
+#'   individual-label font size in points. Default: `7`.
+#' @param Y.axis.title Optional character string giving the y-axis title. If
+#'   `NULL`, no y-axis title is shown. Default:
+#'   `"Cluster assignment coefficient"`.
+#' @param axis.labels.font.size A single positive numeric value giving the
+#'   y-axis-title font size in points. Default: `9.1`.
+#' @param axis.ticks.font.size A single positive numeric value giving the
+#'   y-axis numeric tick-label font size in points. Default: `7`.
+#' @param sort.by.col Optional positive integer giving the cluster column used to
+#'   order individuals. If `NULL`, individuals are ordered by hierarchical
+#'   clustering. Default: `1`.
+#' @param linkage.method Character string specifying the agglomeration method
+#'   used by `stats::hclust` when `sort.by.col = NULL`. Default: `"single"`.
+#' @param bar.border.col Optional character string giving the color of vertical
+#'   separation lines between individuals. If `NULL`, no separation lines are
+#'   drawn. Default: `NULL`.
+#' @param bar.border.lwd Numeric value giving the line width of vertical
+#'   separation lines between individuals. Ignored when `bar.border.col = NULL`.
+#'   Default: `1`.
+#' @param verbose Logical; if `TRUE`, informative messages are printed. Default:
+#'   `TRUE`.
+#'
+#' @details
+#' The plot is intended as a descriptive visualization of individual assignment
+#' coefficients to inferred SOM clusters. If `sort.by.col` is supplied,
+#' individuals are ordered by their assignment coefficient to that cluster. If
+#' `sort.by.col = NULL`, individuals are ordered by hierarchical clustering of
+#' their assignment-coefficient profiles.
+#'
+#' When saving SVG output, the function internally applies a `96 / 72` scaling
+#' correction to the SVG device size and point-style font sizes so that the
+#' figure is imported by common document and presentation software with the
+#' requested dimensions and font sizes.
+#'
+#' @return Invisibly returns the plotted assignment-coefficient matrix after
+#'   ordering. If `save = TRUE`, the plot is also written to the specified file.
+#'
+#' @importFrom graphics par plot polygon segments axis mtext box
+#' @importFrom grDevices dev.cur dev.off svg png jpeg
+#' @importFrom stats hclust dist
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' # Multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
+#' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
+#'
+#' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
+#' rownames(morphology_data) <- rownames(snp_data)
+#' rownames(environment_data) <- rownames(snp_data)
+#'
+#' input_data_multi <- list(
+#'   SNPs = snp_data,
+#'   Morphology = morphology_data,
+#'   Environment = environment_data
+#' )
+#'
+#' som_multi <- train.SOM(input_data = input_data_multi)
+#'
+#' som_clustered <- clustering.SOM(
+#'   SOM.output = som_multi,
+#'   clustering.method = "kmeans+BICthreshold"
+#' )
+#'
+#' plot.structure.SOM(som_clustered)
+#' }
+#'
+#' @export
 plot.structure.SOM <- function(SOM.output,
                                col.pal = viridis::viridis, #color palette
-                               save = F, #save plot
-                               overwrite = T, #overwrite plot if already present (only if saving plot)
+                               save = FALSE, #save plot
+                               overwrite = TRUE, #overwrite plot if already present (only if saving plot)
                                plot.type = "svg", #plot file type (choose: png, jpg or svg; only if saving plot)
                                file.name = NULL, #plot file name (if NULL, default name is created; only if saving plot)
                                width = 10, #plot width in cm (only if saving plot)
@@ -3151,180 +3258,259 @@ plot.structure.SOM <- function(SOM.output,
                                left.margin = 5, #left margin
                                top.margin = 1.5, #top margin
                                right.margin = 1.5, #right margin
-                               Individual.labels.font.size = 0.45, #font size of individual labels on axis
+                               Individual.labels.font.size = 7, #font size of individual labels in points
                                Y.axis.title = "Cluster assignment coefficient", #set y axis title
+                               axis.labels.font.size = 9.1, #font size of y-axis title in points
+                               axis.ticks.font.size = 7, #font size of y-axis numeric tick labels in points
                                sort.by.col = 1, #specify integer giving column index of ancestry matrix for ordering rows of ancestry matrix (if NULL, hierarchical ordering is performed)
                                linkage.method = "single", #agglomeration method used for hierarchical clustering (see hclust function)
                                bar.border.col = NULL, #color of separation lines (e.g. "black", "gray30"); NULL = no border
-                               bar.border.lwd = 1 #line width of separation lines (ignored if color is NULL)
+                               bar.border.lwd = 1, #line width of separation lines (ignored if color is NULL)
+                               verbose = TRUE #whether to print messages
 ) {
   
+  # Set messages
+  messager <- function(...) if (isTRUE(verbose)) message(...)
+  
   # Reset plotting parameters
-  old_dev <- dev.cur()
+  old_device <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
-  on.exit({if (dev.cur() == old_dev) par(old_plotting_parameters)}, add = TRUE)
+  device_opened <- FALSE
+  on.exit({
+    if (device_opened && dev.cur() != old_device) dev.off()
+    par(old_plotting_parameters)
+  }, add = TRUE)
   
   # Validate input
-  if (is.null(SOM.output$ancestry_matrix) || !is.matrix(SOM.output$ancestry_matrix)) stop("Plotting aborted: ancestry_matrix of SOM.output not valid - check SOM.output or rerun run.SOM")
+  if (is.null(SOM.output) || !is.list(SOM.output)) stop("Plotting aborted: SOM.output must be a non-NULL list")
+  if (is.null(SOM.output$ancestry_matrix) || !is.matrix(SOM.output$ancestry_matrix)) stop("Plotting aborted: ancestry_matrix of SOM.output not valid - check SOM.output or rerun clustering.SOM")
   if (nrow(SOM.output$ancestry_matrix) < 2) stop("Plotting aborted: ancestry_matrix must have at least 2 rows (individuals)")
   if (ncol(SOM.output$ancestry_matrix) < 1) stop("Plotting aborted: ancestry_matrix must have at least one column (clusters)")
+  if (!is.numeric(SOM.output$ancestry_matrix)) stop("Plotting aborted: ancestry_matrix must be numeric")
   if (all(is.na(SOM.output$ancestry_matrix))) stop("Plotting aborted: ancestry_matrix has all NA values")
-  viridis_palettes <- list(
-    viridis::viridis,
-    viridis::magma,
-    viridis::plasma,
-    viridis::inferno,
-    viridis::cividis,
-    viridis::rocket,
-    viridis::mako,
-    viridis::turbo
-  )
-  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  if (!is.logical(save) || length(save) != 1) stop("Plotting aborted: save must be TRUE or FALSE")
-  if (save) {
-    if (!is.logical(overwrite) || length(overwrite) != 1) stop("Plotting aborted: overwrite must be TRUE or FALSE")
-  }
+  if (any(!is.finite(SOM.output$ancestry_matrix) | is.na(SOM.output$ancestry_matrix))) stop("Plotting aborted: ancestry_matrix contains NA, NaN, or Inf values")
+  if (any(SOM.output$ancestry_matrix < 0)) stop("Plotting aborted: ancestry_matrix contains negative values")
+  if (ncol(SOM.output$ancestry_matrix) == 1) stop("Only one cluster detected - skipping Structure-like plot")
+  if (any(rowSums(SOM.output$ancestry_matrix) <= 0)) stop("Plotting aborted: ancestry_matrix contains rows with zero total assignment coefficient")
+  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
+  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Plotting aborted: verbose must be TRUE or FALSE")
+  
+  # Validate specified color palette
+  viridis_palettes <- list(viridis::viridis,
+                           viridis::magma,
+                           viridis::plasma,
+                           viridis::inferno,
+                           viridis::cividis,
+                           viridis::rocket,
+                           viridis::mako,
+                           viridis::turbo)
+  if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+  
+  # Validate plot-saving arguments
   if (save) {
     if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
-  }
-  if (save) {
-    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
-  }
-  if (save) {
+    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "")) stop("Plotting aborted: file.name must be NULL or single non-empty character string")
     if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
-    if (width < 4) message("Warning: width is very small (", width, " cm) – plot may be hard to read")
-    if (width > 50) message("Warning: width is very large (", width, " cm) – plot may be unwieldy")
+    if (width < 4) messager("Warning: width is very small (", width, " cm) - plot may be hard to read")
+    if (width > 50) messager("Warning: width is very large (", width, " cm) - plot may be unwieldy")
     if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
-    if (height < 4) message("Warning: height is very small (", height, " cm) – plot may be hard to read")
-    if (height > 50) message("Warning: height is very large (", height, " cm) – plot may be unwieldy")
+    if (height < 4) messager("Warning: height is very small (", height, " cm) - plot may be hard to read")
+    if (height > 50) messager("Warning: height is very large (", height, " cm) - plot may be unwieldy")
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number >= 72 (dpi)")
+    if (resolution > 1200) messager("Warning: resolution is very high (", resolution, " dpi) - file may be huge")
   }
-  if (save) {
-    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
-    if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
-  }
-  margin.list <- c(bottom.margin, left.margin, top.margin, right.margin)
-  margin.names <- c("bottom.margin", "left.margin", "top.margin", "right.margin")
-  for (i in seq_along(margin.list)) {
-    if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
-    if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
-    if (margin.list[i] > 10) message("Warning: ", margin.names[i], " is large (", margin.list[i], ") – plot area may shrink")
-  }
+  
+  # Validate margin arguments
+  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative numeric value")
+  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative numeric value")
+  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative numeric value")
+  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative numeric value")
+  if (bottom.margin > 10) messager("Warning: bottom.margin is large (", bottom.margin, ") - plot area may shrink")
+  if (left.margin > 10) messager("Warning: left.margin is large (", left.margin, ") - plot area may shrink")
+  if (top.margin > 10) messager("Warning: top.margin is large (", top.margin, ") - plot area may shrink")
+  if (right.margin > 10) messager("Warning: right.margin is large (", right.margin, ") - plot area may shrink")
+  
+  # Validate label and font-size arguments
   if (!is.numeric(Individual.labels.font.size) || length(Individual.labels.font.size) != 1 || is.na(Individual.labels.font.size) || Individual.labels.font.size <= 0) stop("Plotting aborted: Individual.labels.font.size must be a single positive number")
-  if (Individual.labels.font.size < 0.2) message("Warning: Individual.labels.font.size is very small (", Individual.labels.font.size, ") – labels may not be readable")
-  if (Individual.labels.font.size > 4) message("Warning: Individual.labels.font.size is large (", Individual.labels.font.size, ") – labels may overlap")
+  if (Individual.labels.font.size < 3) messager("Warning: Individual.labels.font.size is very small (", Individual.labels.font.size, ") - labels may not be readable")
+  if (Individual.labels.font.size > 20) messager("Warning: Individual.labels.font.size is large (", Individual.labels.font.size, ") - labels may overlap")
+  if (!is.null(Y.axis.title) && (!is.character(Y.axis.title) || length(Y.axis.title) != 1 || is.na(Y.axis.title))) stop("Plotting aborted: Y.axis.title must be NULL or a single character string")
+  if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
+  if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive number")
+  
+  # Validate ordering arguments
   if (!is.null(sort.by.col)) {
-  if (!is.numeric(sort.by.col) || length(sort.by.col) != 1 || is.na(sort.by.col) || sort.by.col < 1 || sort.by.col > ncol(SOM.output$ancestry_matrix) || (sort.by.col %% 1 != 0)) stop(paste0("Plotting aborted: sort.by.col must be integer between 1 and ", ncol(SOM.output$ancestry_matrix), " or NULL"))
+    if (!is.numeric(sort.by.col) || length(sort.by.col) != 1 || is.na(sort.by.col) || sort.by.col < 1 || sort.by.col > ncol(SOM.output$ancestry_matrix) || (sort.by.col %% 1 != 0)) stop(paste0("Plotting aborted: sort.by.col must be integer between 1 and ", ncol(SOM.output$ancestry_matrix), " or NULL"))
   }
   allowed_linkage <- c("single", "complete", "average", "ward.D", "ward.D2", "mcquitty", "median", "centroid")
-  if (!linkage.method %in% allowed_linkage) stop("Plotting aborted: linkage.method must be one of: ", paste(allowed_linkage, collapse = ", "))
+  if (!is.character(linkage.method) || length(linkage.method) != 1 || is.na(linkage.method) || !(linkage.method %in% allowed_linkage)) stop("Plotting aborted: linkage.method must be one of: ", paste(allowed_linkage, collapse = ", "))
+  
+  # Validate bar-border arguments
   if (!is.null(bar.border.col)) {
-    if (!is.character(bar.border.col) || length(bar.border.col) != 1 || is.na(bar.border.col)) stop("Plotting aborted: bar.border.col must be NULL or single character string (e.g. 'white' or 'black')")
+    if (!is.character(bar.border.col) || length(bar.border.col) != 1 || is.na(bar.border.col)) stop("Plotting aborted: bar.border.col must be NULL or single character string")
   }
   if (!is.null(bar.border.lwd)) {
     if (!is.numeric(bar.border.lwd) || length(bar.border.lwd) != 1 || is.na(bar.border.lwd) || bar.border.lwd <= 0) stop("Plotting aborted: bar.border.lwd must be a single positive number")
-    if (bar.border.lwd > 5) message("Warning: bar.border.lwd is large (", bar.border.lwd, ") — lines may obscure adjacent bars")
+    if (bar.border.lwd > 5) messager("Warning: bar.border.lwd is large (", bar.border.lwd, ") - lines may obscure adjacent bars")
   }
-  if (ncol(SOM.output$ancestry_matrix) == 1) stop("Only one cluster detected - skipping Structure-like plot")
+  
+  # Extract and normalize ancestry matrix if needed
+  ancestry_matrix <- SOM.output$ancestry_matrix
+  row_sums <- rowSums(ancestry_matrix)
+  if (any(abs(row_sums - 1) > 1e-8)) {
+    messager("Warning: ancestry_matrix rows do not sum to 1; rows are normalized for plotting")
+    ancestry_matrix <- ancestry_matrix / row_sums
+  }
   
   # Order rows of ancestry_matrix
   if (!is.null(sort.by.col)) {
-    if (sort.by.col > ncol(SOM.output$ancestry_matrix)) stop(paste0("Plotting aborted: sort.by.col exceeds number of columns in ancestry_matrix - select number from 1 - ", ncol(SOM.output$ancestry_matrix), " or NULL to prevent sorting"))
-    ancestry_proportions <- SOM.output$ancestry_matrix[order(SOM.output$ancestry_matrix[, sort.by.col]), ]
+    sample_order <- order(ancestry_matrix[, sort.by.col])
   } else {
-    ancestry_proportions <- SOM.output$ancestry_matrix #no sorting when set as NULL
+    sample_order <- stats::hclust(stats::dist(ancestry_matrix), method = linkage.method)$order
+  }
+  SOM_ancestry_proportions <- ancestry_matrix[sample_order, , drop = FALSE]
+  
+  # Generate cluster colors
+  cluster_colors <- col.pal(ncol(SOM_ancestry_proportions))
+  
+  # Set default file name
+  if (save && is.null(file.name)) {
+    if (!is.null(SOM.output$input_data_names)) {
+      file_name_suffix <- paste(make.names(as.character(SOM.output$input_data_names)), collapse = "_")
+    } else {
+      file_name_suffix <- "SOM"
+    }
+    file.name <- paste0("SOM_structure_plot_", file_name_suffix, ".", plot.type)
   }
   
-  # Perform hierarchical clustering on distance matrix
-  cluster_order <- stats::hclust(stats::dist(ancestry_proportions), method = linkage.method)$order
-  SOM_ancestry_proportions <- ancestry_proportions[cluster_order, ]
+  # Check overwrite settings
+  if (save && file.exists(file.name) && !overwrite) stop(paste("Plotting aborted:", file.name, "already exists and overwrite = FALSE"))
   
-  # Generate layer colors
-  layer_colors <- col.pal(ncol(SOM_ancestry_proportions))
+  # Set SVG scaling correction
+  svg_scaling_factor <- 1
+  if (save && plot.type == "svg") svg_scaling_factor <- 96 / 72
   
-  # Save file
+  # Save plot if requested
   if (save) {
-    if (is.null(file.name)) file.name <- paste0("SOM_structure_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
-    if (file.exists(file.name) && !overwrite) stop("Plotting aborted: ", paste(file.name), "already exists - set overwrite = TRUE to overwrite")
     if (plot.type == "svg") {
-      svg(file.name, width = width / 2.54, height = height / 2.54)
+      svg(file.name, width = (width / 2.54) * svg_scaling_factor, height = (height / 2.54) * svg_scaling_factor)
     } else if (plot.type == "png") {
-      png(file.name, width = width, height = height, res = resolution, units = "cm")
+      png(file.name, width = width, height = height, units = "cm", res = resolution)
     } else if (plot.type == "jpg") {
-      jpeg(file.name, width = width, height = height, res = resolution, units = "cm")
+      jpeg(file.name, width = width, height = height, units = "cm", res = resolution)
+    } else {
+      stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
     }
+    device_opened <- TRUE
+  }
+  
+  # Convert point-size arguments to base R relative font sizes
+  base_font_size <- par("ps")
+  individual_labels_relative_font_size <- (Individual.labels.font.size * svg_scaling_factor) / base_font_size
+  axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
+  axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
+  
+  # Create function to plot Structure-like plot
+  plot.Structure <- function(admix.proportions,
+                             sample.names = NULL,
+                             cluster.colors = NULL,
+                             Y.axis.title = "Cluster assignment coefficient",
+                             bar.border.col = NULL,
+                             bar.border.lwd = 1) {
+    
+    # Set dimensions
+    number_of_clusters <- ncol(admix.proportions)
+    number_of_individuals <- nrow(admix.proportions)
+    
+    # Set cumulative assignment coefficients
+    plotting_assignment_coefficients <- apply(cbind(0, admix.proportions), 1, cumsum)
+    
+    # Create empty plot
+    plot(0,
+         xlim = c(0, number_of_individuals),
+         ylim = c(0, 1),
+         type = "n",
+         ylab = "",
+         xlab = "",
+         xaxt = "n",
+         yaxt = "n")
+    
+    # Add y-axis numeric tick labels
+    axis(side = 2,
+         las = 3,
+         cex.axis = axis_ticks_relative_font_size)
+    
+    # Add y-axis title
+    if (!is.null(Y.axis.title) && Y.axis.title != "") {
+      mtext(Y.axis.title,
+            side = 2,
+            line = 3,
+            font = 2,
+            cex = axis_labels_relative_font_size)
+    }
+    
+    # Add assignment-coefficient polygons
+    for (cluster_index in seq_len(number_of_clusters)) {
+      for (individual_index in seq_len(number_of_individuals)) {
+        polygon(x = c(individual_index - 1, individual_index, individual_index, individual_index - 1),
+                y = c(plotting_assignment_coefficients[cluster_index, individual_index],
+                      plotting_assignment_coefficients[cluster_index, individual_index],
+                      plotting_assignment_coefficients[cluster_index + 1, individual_index],
+                      plotting_assignment_coefficients[cluster_index + 1, individual_index]),
+                col = cluster.colors[cluster_index],
+                border = NA)
+      }
+    }
+    
+    # Add vertical separation lines
+    if (!is.null(bar.border.col)) {
+      for (individual_index in 2:number_of_individuals) {
+        segments(x0 = individual_index - 1,
+                 y0 = 0,
+                 x1 = individual_index - 1,
+                 y1 = 1,
+                 col = bar.border.col,
+                 lwd = bar.border.lwd)
+      }
+    }
+    
+    # Add individual labels
+    if (!is.null(sample.names)) {
+      axis(side = 1,
+           at = seq_len(number_of_individuals) - 0.5,
+           labels = sample.names,
+           cex.axis = individual_labels_relative_font_size,
+           las = 2)
+    }
+    
+    # Return invisible NULL
+    return(invisible(NULL))
   }
   
   # Set plot layout
-  par(mfrow = c(1, 1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0))
-  
-  # Create function to plot Structure-like plot (based on conStruct)
-  plot.Structure <- function(admix.proportions, 
-                             mar = c(2, 4, 2, 2), 
-                             sample.order = NULL,
-                             layer.order = NULL, 
-                             sample.names = NULL, 
-                             sort.by = NULL,
-                             Y.axis.title = "Ancestry",
-                             layer.colors = NULL,
-                             bar.border.col = NULL,
-                             bar.border.lwd = 0.5)
-  {
-    K <- ncol(admix.proportions) #number of clusters (layers)
-    N <- nrow(admix.proportions) #number of individuals (samples)
-    par(mar = mar) #set plot margins
-    if (is.null(layer.order)) layer.order <- seq(1:K) #default cluster order (1 to K)
-    if (is.null(sample.order)) sample.order <- seq(1:N) #default sample order (1 to N)
-    use.colors <- layer.colors[1:K][layer.order]
-    plot(0,
-         xlim = c(0, N),
-         ylim = c(0, 1),
-         type = "n",
-         ylab = Y.axis.title,
-         xlab = "",
-         xaxt = "n") #create empty plot with custom axes
-    plotting.admix.props <- apply(cbind(0, admix.proportions[, layer.order]), 1, cumsum) #compute cumulative admixture proportions for polygons
-    for (i in 1:K) {
-      for (j in 1:N) {
-        polygon(
-          x = c(j - 1, j, j, j - 1),
-          y = c(plotting.admix.props[i, sample.order[j]],
-                plotting.admix.props[i, sample.order[j]],
-                plotting.admix.props[i + 1, sample.order[j]],
-                plotting.admix.props[i + 1, sample.order[j]]),
-          col = use.colors[i],
-          border = NA # disable within-bar borders
-        )
-      }
-    }
-    if (!is.null(bar.border.col)) {
-      for (j in 2:N) segments(x0 = j - 1, y0 = 0, x1 = j - 1, y1 = 1, col = bar.border.col, lwd = bar.border.lwd)
-    }
-    if (!is.null(sample.names)) {
-      axis(side = 1,
-           at = seq(1:N) - 0.5,
-           labels = sample.names[sample.order],
-           cex.axis = Individual.labels.font.size,
-           las = 2) #add sample names to x-axis
-    }
-    return(invisible(NULL)) #return invisible
-  }
+  par(mfrow = c(1, 1),
+      mar = c(bottom.margin, left.margin, top.margin, right.margin),
+      oma = c(0, 0, 0, 0))
+  par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
   
   # Generate structure plot
   plot.Structure(admix.proportions = SOM_ancestry_proportions,
                  sample.names = rownames(SOM_ancestry_proportions),
-                 mar = c(bottom.margin,
-                         left.margin,
-                         top.margin,
-                         right.margin),
-                 layer.colors = layer_colors,
+                 cluster.colors = cluster_colors,
                  Y.axis.title = Y.axis.title,
                  bar.border.col = bar.border.col,
-                 bar.border.lwd = bar.border.lwd,
-                 sort.by = sort.by.col)
+                 bar.border.lwd = bar.border.lwd)
+  
+  # Close graphics device
   if (save) {
     dev.off()
-    message(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
+    device_opened <- FALSE
+    messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
+  
+  # Return plotted assignment-coefficient matrix
+  return(invisible(SOM_ancestry_proportions))
 }
 
 
@@ -4622,23 +4808,157 @@ plot.K.SOM <- function(SOM.output,
 }
 
                                
-## Function to plot model results as SOM grids (showing sample assignment to cells, cell distances and boundaries between cell clusters)
+#' Plot SOM model grids
+#'
+#' Plot SOM model results as two stacked SOM grids: a neighbor-distance plot and
+#' a cluster-assignment plot. The neighbor-distance panel shows mean distances
+#' between neighboring codebook vectors across all SOM layers. The cluster panel
+#' shows SOM unit clusters and sample assignments to SOM units.
+#'
+#' @param SOM.output A SOM result object returned by `clustering.SOM`. The object
+#'   must contain `som_models` and `som_clusters`.
+#' @param col.pal.neighbor.dist A viridis color-palette function used for the
+#'   neighbor-distance panel. Supported palettes are `viridis::viridis`,
+#'   `viridis::magma`, `viridis::plasma`, `viridis::inferno`,
+#'   `viridis::cividis`, `viridis::rocket`, `viridis::mako`, and
+#'   `viridis::turbo`. Default: `viridis::cividis`.
+#' @param col.pal.clusters A viridis color-palette function used for SOM
+#'   clusters. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
+#'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
+#'   `viridis::viridis`.
+#' @param replicate.mode Character string specifying which SOM replicate to plot.
+#'   Supported values are `"first"`, `"representative"`, and `"average"`.
+#'   Default: `"representative"`.
+#' @param set.k Optional positive integer. If supplied, only SOM replicates with
+#'   this number of SOM unit clusters are considered. Default: `NULL`.
+#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing output file with the same
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
+#'   the output file already exists. Default: `TRUE`.
+#' @param plot.type Character string specifying the file format when
+#'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
+#'   Default: `"svg"`.
+#' @param file.name Optional character string giving the output file name when
+#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
+#'   `NULL`.
+#' @param width Numeric value giving plot width in centimeters when
+#'   `save = TRUE`. Default: `10`.
+#' @param height Numeric value giving plot height in centimeters when
+#'   `save = TRUE`. Default: `15`.
+#' @param resolution Numeric value giving plot resolution in dots per inch for
+#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
+#' @param bottom.margin Numeric value giving the bottom outer plot margin.
+#'   Default: `0`.
+#' @param left.margin Numeric value giving the left outer plot margin. Default:
+#'   `0`.
+#' @param top.margin Numeric value giving the top outer plot margin. Default:
+#'   `0.5`.
+#' @param right.margin Numeric value giving the right outer plot margin. Default:
+#'   `0`.
+#' @param boundary.col.clusters Character string giving the color of SOM cluster
+#'   boundaries in the cluster panel. Default: `"red"`.
+#' @param boundary.lwd.clusters Numeric value giving the line width of SOM
+#'   cluster boundaries in the cluster panel. Default: `3`.
+#' @param point.col.clusters Character string giving the color of sample points
+#'   in the cluster panel. Default: `"white"`.
+#' @param point.shape.clusters Integer plotting character used for sample points
+#'   in the cluster panel. Default: `19`.
+#' @param point.size.clusters Numeric value giving the size of sample points in
+#'   the cluster panel. Default: `0.9`.
+#' @param cluster.shape.clusters Character string specifying the SOM unit shape
+#'   in the cluster panel. Supported values are `"straight"` and `"round"`.
+#'   Default: `"straight"`.
+#' @param cluster.shape.neighbor.dist Character string specifying the SOM unit
+#'   shape in the neighbor-distance panel. Supported values are `"straight"` and
+#'   `"round"`. Default: `"straight"`.
+#' @param shift.plot.clusters Numeric value between 0 and 0.5 used to shift the
+#'   cluster panel slightly to the right for visual alignment with the
+#'   neighbor-distance panel. Default: `0.099`.
+#' @param title.clusters Optional character string giving the cluster-panel
+#'   title. If `NULL`, no title is shown. Default: `"SOM clusters"`.
+#' @param title.neighbor.dist Optional character string giving the
+#'   neighbor-distance-panel title. If `NULL`, no title is shown. Default:
+#'   `"SOM neighbor distances"`.
+#' @param plot.title.font.size A single positive numeric value giving panel
+#'   title font size in points. Default: `9.1`.
+#' @param legend.font.size A single positive numeric value giving the
+#'   neighbor-distance legend font size in points. Default: `7`.
+#' @param verbose Logical; if `TRUE`, informative messages are printed. Default:
+#'   `TRUE`.
+#'
+#' @details
+#' The neighbor-distance panel is calculated from all SOM codebook layers after
+#' combining codebook vectors across layers. Larger values indicate stronger
+#' differences between neighboring SOM units in the learned codebook space. The
+#' cluster panel shows the SOM unit clusters returned by `clustering.SOM`.
+#'
+#' With `replicate.mode = "first"`, the first retained replicate is plotted.
+#' With `replicate.mode = "representative"`, the plotted replicate is chosen as
+#' the replicate with the highest mean Adjusted Rand Index to other replicates
+#' with the same number of SOM unit clusters. With `replicate.mode = "average"`,
+#' SOM units are aligned to the representative replicate, sample-to-unit
+#' assignments and SOM unit clusters are summarized by consensus, and neighbor
+#' distances are averaged across aligned replicates with the same k.
+#'
+#' When saving SVG output, the function internally applies a `96 / 72` scaling
+#' correction to the SVG device size and point-style font sizes so that the
+#' figure is imported by common document and presentation software with the
+#' requested dimensions and font sizes.
+#'
+#' @return Invisibly returns `NULL`. The function is called for its plotting side
+#'   effect. If `save = TRUE`, the plot is written to the specified file.
+#'
+#' @importFrom graphics par plot segments
+#' @importFrom grDevices dev.cur dev.off svg png jpeg
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' # Multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
+#' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
+#'
+#' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
+#' rownames(morphology_data) <- rownames(snp_data)
+#' rownames(environment_data) <- rownames(snp_data)
+#'
+#' input_data_multi <- list(
+#'   SNPs = snp_data,
+#'   Morphology = morphology_data,
+#'   Environment = environment_data
+#' )
+#'
+#' som_multi <- train.SOM(input_data = input_data_multi)
+#'
+#' som_clustered <- clustering.SOM(
+#'   SOM.output = som_multi,
+#'   clustering.method = "kmeans+BICthreshold"
+#' )
+#'
+#' plot.model.SOM(som_clustered)
+#' }
+#'
+#' @export
 plot.model.SOM <- function(SOM.output,
                            col.pal.neighbor.dist = viridis::cividis, #color palette of neighbor distance plot (top)
                            col.pal.clusters = viridis::viridis, #color palette of cluster plot (bottom)
                            replicate.mode = "representative", #options: "first", "representative", "average"
                            set.k = NULL, #set to only use replicates with this k (NULL = no restriction)
-                           save = F, #option to save plot
-                           overwrite = T, #option to overwrite plot if already present (only if saving plot)
+                           save = FALSE, #option to save plot
+                           overwrite = TRUE, #option to overwrite plot if already present (only if saving plot)
                            plot.type = "svg", #plot type options: "svg", "png", "jpg" (only if saving plot)
                            file.name = NULL, #set plot file name (if NULL, default name is used; only if saving plot)
                            width = 10, #plot width in cm (only if saving plot)
                            height = 15, #plot height in cm (only if saving plot)
                            resolution = 300, #plot resolution in dpi (only if saving plot)
-                           bottom.margin = 0, #bottom margin
-                           left.margin = 0, #left margin
-                           top.margin = 1, #top margin
-                           right.margin = 0, #right margin
+                           bottom.margin = 0, #bottom outer margin
+                           left.margin = 0, #left outer margin
+                           top.margin = 0.5, #top outer margin
+                           right.margin = 0, #right outer margin
                            boundary.col.clusters = "red", #color of cluster boundaries (in bottom plot)
                            boundary.lwd.clusters = 3, #line width of cluster boundaries (in bottom plot)
                            point.col.clusters = "white", #color of sample points (in bottom plot)
@@ -4648,8 +4968,14 @@ plot.model.SOM <- function(SOM.output,
                            cluster.shape.neighbor.dist = "straight", #shape ("straight" or "round") of cluster cells (in top plot)
                            shift.plot.clusters = 0.099, #shift bottom plot slightly to the right to align with gridraster of top plot
                            title.clusters = "SOM clusters", #title of cluster plot (bottom)
-                           title.neighbor.dist = "SOM neighbor distances" #title of neighbor distances plot
+                           title.neighbor.dist = "SOM neighbor distances", #title of neighbor distances plot
+                           plot.title.font.size = 9.1, #font size of plot titles in points
+                           legend.font.size = 7, #font size of neighbor-distance legend in points
+                           verbose = TRUE #whether to print messages
 ) {
+  
+  # Set messages
+  messager <- function(...) if (isTRUE(verbose)) message(...)
   
   # Create function to calculate unit neighbor distances from SOM codebook vectors (ALL layers combined)
   calc.unit.neighbor.dist <- function(som_model) {
@@ -4753,7 +5079,7 @@ plot.model.SOM <- function(SOM.output,
       segment_length <- (d / sqrt(3)) * 0.98
       hx <- px * (segment_length / 2)
       hy <- py * (segment_length / 2)
-      graphics::segments(mx - hx, my - hy, mx + hx, my + hy, col = col, lwd = lwd)
+      segments(mx - hx, my - hy, mx + hx, my + hy, col = col, lwd = lwd)
     }
     invisible(NULL)
   }
@@ -4780,7 +5106,7 @@ plot.model.SOM <- function(SOM.output,
   choose.representative.replicate <- function(som_clusters) {
     number_of_replicates <- length(som_clusters)
     if (number_of_replicates < 2) return(1)
-    k_vals <- vapply(som_clusters, function(x) suppressWarnings(max(as.integer(x), na.rm = TRUE)), integer(1))
+    k_vals <- vapply(som_clusters, function(x) suppressWarnings(max(as.integer(x), na.rm = TRUE)), numeric(1))
     mean_adjusted_rand_index_per_replicate <- rep(NA_real_, number_of_replicates)
     for (candidate_replicate_index in seq_len(number_of_replicates)) {
       candidate_k <- k_vals[candidate_replicate_index]
@@ -4853,73 +5179,89 @@ plot.model.SOM <- function(SOM.output,
     }
     consensus_vec
   }
-                     
+  
   # Reset plotting parameters
-  old_dev <- dev.cur()
+  old_device <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
-  on.exit({if (dev.cur() == old_dev) par(old_plotting_parameters)}, add = TRUE)
+  device_opened <- FALSE
+  on.exit({
+    if (device_opened && dev.cur() != old_device) dev.off()
+    par(old_plotting_parameters)
+  }, add = TRUE)
   
   # Validate input
+  if (is.null(SOM.output) || !is.list(SOM.output)) stop("Plotting aborted: SOM.output must be a non-NULL list")
   if (is.null(SOM.output$som_models) || is.null(SOM.output$som_clusters)) stop("Plotting aborted: SOM.output is missing 'som_models' or 'som_clusters' - check SOM.output or rerun train.SOM/clustering.SOM")
+  if (!is.list(SOM.output$som_models) || length(SOM.output$som_models) == 0) stop("Plotting aborted: som_models must be a non-empty list")
+  if (!is.list(SOM.output$som_clusters) || length(SOM.output$som_clusters) == 0) stop("Plotting aborted: som_clusters must be a non-empty list")
+  if (length(SOM.output$som_models) != length(SOM.output$som_clusters)) stop("Plotting aborted: som_models and som_clusters must have the same length")
   if (!is.character(replicate.mode) || length(replicate.mode) != 1 || is.na(replicate.mode) || !(replicate.mode %in% c("first", "representative", "average"))) stop("Plotting aborted: replicate.mode must be 'first', 'representative', or 'average'")
   if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || (set.k %% 1 != 0))) stop("Plotting aborted: set.k must be NULL or single positive integer >= 1")
-  viridis_palettes <- list(
-    viridis::viridis,
-    viridis::magma,
-    viridis::plasma,
-    viridis::inferno,
-    viridis::cividis,
-    viridis::rocket,
-    viridis::mako,
-    viridis::turbo
-  )
+  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
+  if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Plotting aborted: verbose must be TRUE or FALSE")
+  
+  # Validate specified color palettes
+  viridis_palettes <- list(viridis::viridis,
+                           viridis::magma,
+                           viridis::plasma,
+                           viridis::inferno,
+                           viridis::cividis,
+                           viridis::rocket,
+                           viridis::mako,
+                           viridis::turbo)
   if (!any(vapply(viridis_palettes, identical, logical(1), col.pal.neighbor.dist))) stop("Plotting aborted: col.pal.neighbor.dist must be a viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
   if (!any(vapply(viridis_palettes, identical, logical(1), col.pal.clusters))) stop("Plotting aborted: col.pal.clusters must be a viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
-  if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
-  if (save && (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite))) stop("Plotting aborted: overwrite must be TRUE or FALSE")
+  
+  # Validate plot-saving arguments
   if (save) {
     if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
-  }
-  if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
-  if (save) {
+    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "")) stop("Plotting aborted: file.name must be NULL or single non-empty character string")
     if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
-    if (width < 4) messager("Warning: width is very small (", width, " cm) – plot may be hard to read")
-    if (width > 50) messager("Warning: width is very large (", width, " cm) – plot may be unwieldy")
+    if (width < 4) messager("Warning: width is very small (", width, " cm) - plot may be hard to read")
+    if (width > 50) messager("Warning: width is very large (", width, " cm) - plot may be unwieldy")
     if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
-    if (height < 4) messager("Warning: height is very small (", height, " cm) – plot may be hard to read")
-    if (height > 50) message("Warning: height is very large (", height, " cm) – plot may be unwieldy")
+    if (height < 4) messager("Warning: height is very small (", height, " cm) - plot may be hard to read")
+    if (height > 50) messager("Warning: height is very large (", height, " cm) - plot may be unwieldy")
+    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number >= 72 (dpi)")
+    if (resolution > 1200) messager("Warning: resolution is very high (", resolution, " dpi) - file may be huge")
   }
-  if (save) {
-    if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number ≥ 72 (dpi)")
-    if (resolution > 1200) message("Warning: resolution is very high (", resolution, " dpi) – file may be huge")
-  }
-  margin.list <- c(bottom.margin, left.margin, top.margin, right.margin)
-  margin.names <- c("bottom.margin", "left.margin", "top.margin", "right.margin")
-  for (i in seq_along(margin.list)) {
-    if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
-    if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be ≥ 0")
-    if (margin.list[i] > 10) message("Warning: ", margin.names[i], " is large (", margin.list[i], ") – plot area may shrink")
-  }
+  
+  # Validate margin arguments
+  if (!is.numeric(bottom.margin) || length(bottom.margin) != 1 || is.na(bottom.margin) || bottom.margin < 0) stop("Plotting aborted: bottom.margin must be a single non-negative numeric value")
+  if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Plotting aborted: left.margin must be a single non-negative numeric value")
+  if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Plotting aborted: top.margin must be a single non-negative numeric value")
+  if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Plotting aborted: right.margin must be a single non-negative numeric value")
+  if (bottom.margin > 10) messager("Warning: bottom.margin is large (", bottom.margin, ") - plot area may shrink")
+  if (left.margin > 10) messager("Warning: left.margin is large (", left.margin, ") - plot area may shrink")
+  if (top.margin > 10) messager("Warning: top.margin is large (", top.margin, ") - plot area may shrink")
+  if (right.margin > 10) messager("Warning: right.margin is large (", right.margin, ") - plot area may shrink")
+  
+  # Validate plotting arguments
   if (!is.numeric(boundary.lwd.clusters) || length(boundary.lwd.clusters) != 1 || is.na(boundary.lwd.clusters) || boundary.lwd.clusters <= 0) stop("Plotting aborted: boundary.lwd.clusters must be a single positive number")
   if (!is.numeric(point.size.clusters) || length(point.size.clusters) != 1 || is.na(point.size.clusters) || point.size.clusters <= 0) stop("Plotting aborted: point.size.clusters must be a single positive number")
   if (!is.numeric(point.shape.clusters) || length(point.shape.clusters) != 1 || is.na(point.shape.clusters) || (point.shape.clusters %% 1 != 0)) stop("Plotting aborted: point.shape.clusters must be a single integer")
+  if (!is.character(boundary.col.clusters) || length(boundary.col.clusters) != 1 || is.na(boundary.col.clusters)) stop("Plotting aborted: boundary.col.clusters must be a single character string")
+  if (!is.character(point.col.clusters) || length(point.col.clusters) != 1 || is.na(point.col.clusters)) stop("Plotting aborted: point.col.clusters must be a single character string")
   allowed_shapes <- c("straight", "round")
   if (!is.character(cluster.shape.clusters) || length(cluster.shape.clusters) != 1 || is.na(cluster.shape.clusters) || !(cluster.shape.clusters %in% allowed_shapes)) stop("Plotting aborted: cluster.shape.clusters must be 'straight' or 'round'")
   if (!is.character(cluster.shape.neighbor.dist) || length(cluster.shape.neighbor.dist) != 1 || is.na(cluster.shape.neighbor.dist) || !(cluster.shape.neighbor.dist %in% allowed_shapes)) stop("Plotting aborted: cluster.shape.neighbor.dist must be 'straight' or 'round'")
   if (!is.numeric(shift.plot.clusters) || length(shift.plot.clusters) != 1 || is.na(shift.plot.clusters) || shift.plot.clusters < 0 || shift.plot.clusters >= 0.5) {
-    message("Invalid shift.plot.clusters value (needs to be 0 - 0.5) - default of 0.099 is used")
+    messager("Invalid shift.plot.clusters value (needs to be 0 - 0.5) - default of 0.099 is used")
     shift.plot.clusters <- 0.099
   }
-  if (!is.character(boundary.col.clusters) || length(boundary.col.clusters) != 1 || is.na(boundary.col.clusters)) stop("Plotting aborted: boundary.col.clusters must be a single character (color name or hex)")
-  if (!is.character(point.col.clusters) || length(point.col.clusters) != 1 || is.na(point.col.clusters)) stop("Plotting aborted: point.col.clusters must be a single character (color name or hex)")
-  if (!is.null(title.clusters) && (!is.character(title.clusters) || length(title.clusters) != 1 || is.na(title.clusters))) stop("Plotting aborted: title.clusters must be NULL or single character string")
-  if (!is.null(title.neighbor.dist) && (!is.character(title.neighbor.dist) || length(title.neighbor.dist) != 1 || is.na(title.neighbor.dist))) stop("Plotting aborted: title.neighbor.dist must be NULL or single character string")
+  
+  # Validate label arguments
+  if (!is.null(title.clusters) && (!is.character(title.clusters) || length(title.clusters) != 1 || is.na(title.clusters))) stop("Plotting aborted: title.clusters must be NULL or a single character string")
+  if (!is.null(title.neighbor.dist) && (!is.character(title.neighbor.dist) || length(title.neighbor.dist) != 1 || is.na(title.neighbor.dist))) stop("Plotting aborted: title.neighbor.dist must be NULL or a single character string")
+  if (!is.numeric(plot.title.font.size) || length(plot.title.font.size) != 1 || is.na(plot.title.font.size) || plot.title.font.size <= 0) stop("Plotting aborted: plot.title.font.size must be a single positive number")
+  if (!is.numeric(legend.font.size) || length(legend.font.size) != 1 || is.na(legend.font.size) || legend.font.size <= 0) stop("Plotting aborted: legend.font.size must be a single positive number")
   
   # Subset replicates by set.k (if provided)
   som_models_use <- SOM.output$som_models
   som_clusters_use <- SOM.output$som_clusters
   if (!is.null(set.k)) {
-    k_vals <- vapply(som_clusters_use, function(x) suppressWarnings(max(as.integer(x), na.rm = TRUE)), integer(1))
+    k_vals <- vapply(som_clusters_use, function(x) suppressWarnings(max(as.integer(x), na.rm = TRUE)), numeric(1))
     keep <- which(is.finite(k_vals) & !is.na(k_vals) & k_vals == as.integer(set.k))
     if (length(keep) == 0) stop("Plotting aborted: no replicates match set.k - rerun clustering or choose different set.k")
     som_models_use <- som_models_use[keep]
@@ -4934,7 +5276,7 @@ plot.model.SOM <- function(SOM.output,
   if (replicate.mode == "average") {
     rep_k <- suppressWarnings(max(as.integer(som_clusters_use[[replicate.index]]), na.rm = TRUE))
     if (!is.finite(rep_k) || is.na(rep_k)) stop("Plotting aborted: representative replicate has invalid k")
-    k_vals <- vapply(som_clusters_use, function(x) suppressWarnings(max(as.integer(x), na.rm = TRUE)), integer(1))
+    k_vals <- vapply(som_clusters_use, function(x) suppressWarnings(max(as.integer(x), na.rm = TRUE)), numeric(1))
     keep_k <- which(is.finite(k_vals) & !is.na(k_vals) & k_vals == rep_k)
     if (length(keep_k) == 0) stop("Plotting aborted: no replicates share k with representative replicate")
     som_models_k <- som_models_use[keep_k]
@@ -4968,53 +5310,82 @@ plot.model.SOM <- function(SOM.output,
       neighbor_distances_aligned_matrix[, replicate_index] <- neighbor_distances_vec[reference_to_aligned_map]
     }
     
-    # Consensus sample->neuron assignment (unit.classif) in reference unit space
+    # Consensus sample-to-neuron assignment in reference unit space
     preferred_unit_assignments <- unit_classif_aligned_matrix[, rep_index_k]
     som_model$unit.classif <- consensus.unit.classif(unit_classif_aligned_matrix, preferred_unit_assignments)
     
-    # Consensus neuron clusters (reference replicate’s neuron cluster labels as reference, Hungarian-align labels, then majority vote)
+    # Consensus neuron clusters
     som_cluster <- consensus.som.clusters(som_clusters_aligned, reference_replicate_index = rep_index_k)
     
-    # Average neighbor distances per neuron (aligned to reference unit space)
+    # Average neighbor distances per neuron
     nd_plot <- rowMeans(neighbor_distances_aligned_matrix, na.rm = TRUE)
-
-  # Use selected replicate directly for non-average plotting modes                   
+    
+    # Use selected replicate directly for non-average plotting modes
   } else {
     som_cluster <- som_clusters_use[[replicate.index]]
     nd_plot <- calc.unit.neighbor.dist(som_model)
   }
   
-  # Save file
-  if (save) {
-    
-    # Set default file name
-    if (is.null(file.name)) {
-      file.name <- paste0("SOM_model_plot_", paste(SOM.output$input_data_names, collapse = "_"), ".", plot.type)
+  # Set default file name
+  if (save && is.null(file.name)) {
+    if (!is.null(SOM.output$input_data_names)) {
+      file_name_suffix <- paste(make.names(as.character(SOM.output$input_data_names)), collapse = "_")
+    } else {
+      file_name_suffix <- "SOM"
     }
-    
-    # Set overwrite option
-    if (file.exists(file.name) && !overwrite) stop(paste("File", file.name, "already exists - set overwrite = T to overwrite"))
-    
-    # Set plot format
-    if (plot.type == "svg") {
-      svg(file.name, width = width / 2.54, 
-          height = height / 2.54)
-    } else if (plot.type == "png") {
-      png(file.name, width = width,  height = height, res = resolution, units = "cm")
-    } else if (plot.type == "jpg") {
-      jpeg(file.name, width = width, height = height, res = resolution, units = "cm")
-    }
+    file.name <- paste0("SOM_model_plot_", file_name_suffix, ".", plot.type)
   }
   
-  # Set plotting area
-  par(mfrow = c(2, 1), oma = c(0, 0, 0, 0), mar = c(bottom.margin, left.margin,  top.margin,  right.margin))
+  # Check overwrite settings
+  if (save && file.exists(file.name) && !overwrite) stop(paste("Plotting aborted:", file.name, "already exists and overwrite = FALSE"))
   
-  # Plot SOM neighbor distances (top plot) - use all layers via property vector
+  # Set SVG scaling correction
+  svg_scaling_factor <- 1
+  if (save && plot.type == "svg") svg_scaling_factor <- 96 / 72
+  
+  # Save plot if requested
+  if (save) {
+    if (plot.type == "svg") {
+      svg(file.name, width = (width / 2.54) * svg_scaling_factor, height = (height / 2.54) * svg_scaling_factor)
+    } else if (plot.type == "png") {
+      png(file.name, width = width, height = height, units = "cm", res = resolution)
+    } else if (plot.type == "jpg") {
+      jpeg(file.name, width = width, height = height, units = "cm", res = resolution)
+    } else {
+      stop("Plotting aborted: plot.type must be 'svg', 'png', or 'jpg'")
+    }
+    device_opened <- TRUE
+  }
+  
+  # Convert point-size arguments to base R relative font sizes
+  base_font_size <- par("ps")
+  plot_title_relative_font_size <- (plot.title.font.size * svg_scaling_factor) / base_font_size
+  legend_relative_font_size <- (legend.font.size * svg_scaling_factor) / base_font_size
+  
+  # Set fixed internal panel margins
+  between.plot.margin <- 1
+  half_between_plot_margin <- between.plot.margin / 2
+  inner_bottom_margin <- 0.5
+  inner_left_margin <- 0.5
+  inner_top_margin <- 2.5
+  inner_right_margin <- 0.5
+  
+  # Set panel-specific internal margins
+  top_panel_margins <- c(half_between_plot_margin, inner_left_margin, inner_top_margin, inner_right_margin)
+  bottom_panel_margins <- c(inner_bottom_margin, inner_left_margin, inner_top_margin, inner_right_margin)
+  outer_margins <- c(bottom.margin, left.margin, top.margin, right.margin)
+  
+  # Plot SOM neighbor distances
+  par(mfrow = c(2, 1), oma = outer_margins, xpd = FALSE)
+  par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
+  par(mar = top_panel_margins)
+  par(cex.main = plot_title_relative_font_size, font.main = 2)
   plot(x = som_model,
        type = "property",
        property = nd_plot,
        main = title.neighbor.dist,
        shape = cluster.shape.neighbor.dist,
+       cex = legend_relative_font_size,
        palette.name = function(n) rev(col.pal.neighbor.dist(n)))
   
   # Set color palette for bottom plot
@@ -5024,10 +5395,10 @@ plot.model.SOM <- function(SOM.output,
   SOM_cluster_plot_col <- rep(NA, length(som_cluster))
   for (i in seq_len(max(som_cluster))) SOM_cluster_plot_col[som_cluster == i] <- k.cols[i]
   
-  # Adjust position of bottom plot to align with grid of top plot
-  par(fig = c(shift.plot.clusters, 1, 0, 0.5), new = T) #shift bottom plot
-  
-  # Plot SOM clusters (bottom plot)
+  # Plot SOM clusters
+  par(mar = bottom_panel_margins)
+  par(fig = c(shift.plot.clusters, 1, 0, 0.5), new = TRUE)
+  par(cex.main = plot_title_relative_font_size, font.main = 2)
   plot(x = som_model,
        shape = cluster.shape.clusters,
        type = "mapping",
@@ -5048,8 +5419,12 @@ plot.model.SOM <- function(SOM.output,
   # Close graphics device
   if (save) {
     dev.off()
-    message(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
+    device_opened <- FALSE
+    messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
+  
+  # Return invisible NULL
+  return(invisible(NULL))
 }
 
 
@@ -7296,9 +7671,6 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     # Add y-axis numeric tick labels
     axis(2, las = 3, cex.axis = axis_ticks_relative_font_size)
     
-    # Add plot box
-    box()
-    
     # Add y-axis title
     if (!is.null(y_axis_label) && y_axis_label != "") {
       mtext(y_axis_label,
@@ -8191,7 +8563,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           staplelty = ifelse(add.boxplot.whiskers, 1, 0))
   axis(1, cex.axis = axis.font.size)
   axis(2, cex.axis = axis.font.size)
-  box()
   add.jittered.points.SOM("absolute.k.deviation")
   
   # Plot pairwise co-assignment change
@@ -8209,7 +8580,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           staplelty = ifelse(add.boxplot.whiskers, 1, 0))
   axis(1, cex.axis = axis.font.size)
   axis(2, cex.axis = axis.font.size)
-  box()
   add.jittered.points.SOM("pairwise.coassignment.change")
   
   # Plot assignment margin change
@@ -8228,7 +8598,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
             staplelty = ifelse(add.boxplot.whiskers, 1, 0))
     axis(1, cex.axis = axis.font.size)
     axis(2, cex.axis = axis.font.size)
-    box()
     add.jittered.points.SOM("delta.mean.assignment.margin")
   }
 
