@@ -147,13 +147,14 @@ for (pkg in CRAN_packages) {
 #' for example with `process.SNP.data.SOM`.
 #'
 #' For multi-layer inputs, only samples shared across all layers are retained.
-#' Row-level missingness filtering is performed within each layer, followed by a
-#' second row-name intersection to ensure identical final samples across layers.
-#' Nonnumeric, all-missing, excessive-missingness, and zero-variance columns are
-#' removed. Each retained numeric variable is then independently min-max scaled
-#' to the interval from 0 to 1. This prevents variables with larger numerical
-#' ranges from dominating distance calculations because of their measurement
-#' units, while preserving their ordering and relative spacing (Kohonen, 2013).
+#' Row-level missingness filtering is performed within each layer, and row names
+#' are re-intersected after filtering to ensure identical final samples across
+#' layers. Nonnumeric, all-missing, excessive-missingness, and zero-variance
+#' columns are removed. Each retained numeric variable is then independently
+#' min-max scaled to the interval from 0 to 1. This prevents variables with
+#' larger numerical ranges from dominating distance calculations because of
+#' their measurement units, while preserving their ordering and relative
+#' spacing (Kohonen, 2013).
 #'
 #' Missing values are handled through filtering and NA-aware SOM training rather
 #' than global imputation. Missing variables are excluded from distance
@@ -212,17 +213,17 @@ for (pkg in CRAN_packages) {
 #'
 #' For multi-layer SOMs, layer weighting adjusts the relative influence of data
 #' types after internal distance normalization. Layers are weighted automatically
-#' to prevent layers with larger average within-layer distances. For example,
-#' layers with inherently large variances and many variables (e.g., binary or SNP
-#' layers) will be down-weighted while layers with relatively low within-layer
-#' distances (e.g., continuous layers) will be up-weighted. Users can
-#' additionally specify manual layer weights with `manual.layer.weights` to
-#' emphasize or down-weight data types according to analytical goals, prior
-#' biological knowledge, or measurement uncertainty (Wehrens & Buydens, 2007;
-#' Wehrens & Kruisselbrink, 2018). For example, layers with higher measurement
-#' uncertainty, lower information content, or stronger environmental noise may be
-#' down-weighted, whereas layers with well-characterized evolutionary signal may
-#' be emphasized.
+#' based on mean distances to prevent layers with larger average within-layer
+#' distances from dominating the combined distance. For example, layers with
+#' inherently large variances and many variables (e.g., binary or SNP layers)
+#' will be down-weighted while layers with relatively low within-layer distances
+#' (e.g., continuous layers) will be up-weighted. Users can additionally specify
+#' manual layer weights with `manual.layer.weights` to emphasize or down-weight
+#' data types according to analytical goals, prior biological knowledge, or
+#' measurement uncertainty (Wehrens & Buydens, 2007; Wehrens & Kruisselbrink,
+#' 2018). For example, layers with higher measurement uncertainty, lower
+#' information content, or stronger environmental noise may be down-weighted,
+#' whereas layers with well-characterized evolutionary signal may be emphasized.
 #'
 #' SOM grid size and shape determine the resolution of the learned map. A grid
 #' that is too coarse can merge distinct structures, whereas an overly fine grid
@@ -334,7 +335,8 @@ for (pkg in CRAN_packages) {
 #'
 #' @references
 #' Cottrell, M., & Letrémy, P. (2005). Missing values: Processing with the
-#'   Kohonen algorithm. ASMDA 2005, 489-496.
+#'   Kohonen algorithm. \emph{ASMDA 2005}, 489-496.
+#'   https://doi.org/10.48550/arXiv.math/0701152
 #'
 #' Dormann, C. F., Elith, J., Bacher, S., Buchmann, C., Carl, G., Carré, G.,
 #'   Marquéz, J. R. G., Gruber, B., Lafourcade, B., Leitão, P. J.,
@@ -385,11 +387,6 @@ for (pkg in CRAN_packages) {
 #'   humidity pattern classification over Southern Thailand. \emph{International
 #'   Journal of Modeling and Optimization}, 6(1), 61-65.
 #'   https://doi.org/10.7763/IJMO.2016.V6.504
-#'
-#' Park, S.-H., Hosoishi, S., Ogata, K., & Kuboki, Y. (2014). Clustering of ant
-#'   communities and indicator species analysis using self-organizing maps.
-#'   \emph{Comptes Rendus Biologies}, 337(9), 545-552.
-#'   https://doi.org/10.1016/j.crvi.2014.07.003
 #'
 #' Pyron, R. A. (2023). Unsupervised machine learning for species delimitation,
 #'   integrative taxonomy, and biodiversity conservation. \emph{Molecular
@@ -445,14 +442,14 @@ for (pkg in CRAN_packages) {
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Single-layer SOM from one continuous matrix
+#' # Single-layer SOM
 #' continuous_data <- matrix(rnorm(50 * 6), nrow = 50, ncol = 6)
 #' rownames(continuous_data) <- paste0("sample_", seq_len(nrow(continuous_data)))
 #' colnames(continuous_data) <- paste0("trait_", seq_len(ncol(continuous_data)))
 #'
 #' som_single <- train.SOM(input_data = continuous_data)
 #'
-#' # Multi-layer Super-SOM from genetic, morphological, and environmental data
+#' # Multi-layer Super-SOM
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
@@ -474,8 +471,8 @@ for (pkg in CRAN_packages) {
 #'
 #' @export
 train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dataframes provided as list()
-                      N.steps = 150, #number of training iterations S for SOM
-                      N.replicates = 100, #number of SOM runs R
+                      N.steps = 100, #number of training iterations S for SOM
+                      N.replicates = 110, #number of SOM runs R
                       parallel = TRUE, #whether to run SOM training in parallel 
                       N.cores = 3, #number of cores for training SOM in parallel (if parallel = TRUE)
                       grid.size = NULL, #grid size - specify as c(x, y) if desired (if grid.size = NULL, size and shape is automatically determined)
