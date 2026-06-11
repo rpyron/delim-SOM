@@ -7075,8 +7075,8 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' PLINK `.raw` input is expected to contain the standard metadata columns
 #' `FID`, `IID`, `PAT`, `MAT`, `SEX`, and `PHENOTYPE`, followed by dosage
 #' columns coded as `0`, `1`, `2`, or missing.
-
-Function is intended to process and prepare any genetic or genomic data prior to SOM analyses.					
+#'
+#' Function is intended to process and prepare any genetic or genomic data prior to SOM analyses.					
 #'
 #' @param vcf.path Character or `NULL`. Path to a VCF file.
 #' @param genind.input A `genind` object or `NULL`.
