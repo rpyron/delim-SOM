@@ -4286,79 +4286,92 @@ plot.learning.SOM <- function(SOM.output,
 }
 
 
-#' Plot layer distance scale across input layers
+#' Plot SOM layer distance scales
 #'
 #' Plot the average pairwise distance scale of each input layer from a trained
-#' multi-layer SOM object returned by `train.SOM`. The function visualizes
-#' layer-level distance scales derived from `distance_weights_matrix`, with input
-#' layers on the x-axis and average pairwise distance on the y-axis.
+#' multi-layer Self-Organizing Map (SOM). The function transforms the internal
+#' distance-normalization weights stored for each replicate back to pairwise
+#' distance scales, averages them across replicate maps, and displays the layers
+#' from highest to lowest average distance.
 #'
-#' @param SOM.output A SOM result object returned by `train.SOM`. The object must
-#'   contain `distance_weights_matrix`, a numeric matrix of replicate-specific
-#'   internal distance-normalization weights with SOM replicates in rows and
-#'   input layers in columns.
+#' @param SOM.output A list returned by `train.SOM`. The object must contain
+#'   `distance_weights_matrix`, a numeric replicate-by-layer matrix containing
+#'   positive internal distance-normalization weights. At least two input layers
+#'   are required.
 #' @param col.pal A viridis color-palette function used to assign colors to
-#'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   input layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
 #'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
 #'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
 #'   `viridis::turbo`.
-#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param save Logical; if `TRUE`, the plot is saved to a file. Default:
+#'   `FALSE`.
 #' @param overwrite Logical; if `TRUE`, an existing output file with the same
-#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
-#'   the output file already exists. Default: `TRUE`.
-#' @param plot.type Character string specifying the file format when
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted
+#'   when the output file already exists. Default: `TRUE`.
+#' @param plot.type A single character string specifying the file format when
 #'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
 #'   Default: `"svg"`.
 #' @param file.name Optional character string giving the output file name when
-#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
-#'   `NULL`.
-#' @param width Numeric value giving plot width in centimeters when
-#'   `save = TRUE`. Default: `16`.
-#' @param height Numeric value giving plot height in centimeters when
-#'   `save = TRUE`. Default: `10`.
-#' @param resolution Numeric value giving plot resolution in dots per inch for
-#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
-#' @param bottom.margin Numeric value giving the bottom plot margin. Default:
-#'   `3`.
-#' @param left.margin Numeric value giving the left plot margin. Default: `5`.
-#' @param top.margin Numeric value giving the top plot margin. Default: `2.5`.
-#' @param right.margin Numeric value giving the right plot margin. Default: `1`.
-#' @param plot.title Optional character string giving the plot title. If `NULL`,
-#'   no title is shown. Default: `"Layer distance scale across layers"`.
+#'   `save = TRUE`. If `NULL`, the default file name is
+#'   `"plot_layer_distance_scale.<plot.type>"`. Default: `NULL`.
+#' @param width A single positive numeric value giving the plot width in
+#'   centimeters when `save = TRUE`. Default: `16`.
+#' @param height A single positive numeric value giving the plot height in
+#'   centimeters when `save = TRUE`. Default: `10`.
+#' @param resolution A single numeric value giving the plot
+#'   resolution in dpi for `"png"` and `"jpg"` output. Default: `300`.
+#' @param bottom.margin A single non-negative numeric value giving the bottom
+#'   plot margin in lines. Default: `3`.
+#' @param left.margin A single non-negative numeric value giving the left plot
+#'   margin in lines. Default: `5`.
+#' @param top.margin A single non-negative numeric value giving the top plot
+#'   margin in lines. Default: `2.5`.
+#' @param right.margin A single non-negative numeric value giving the right plot
+#'   margin in lines. Default: `1`.
+#' @param plot.title Optional character string giving the main plot title. If
+#'   `NULL`, no title is shown. Default: `"Layer distance scale across layers"`.
 #' @param plot.title.font.size A single positive numeric value giving the plot
-#'   title font size in points. Default: `11.1`.
+#'   title font size in points. Default: `9.1`.
 #' @param y.axis.label Optional character string giving the y-axis title. If
 #'   `NULL`, no y-axis title is shown. Default: `"Average pairwise distance"`.
 #' @param axis.labels.font.size A single positive numeric value giving the
-#'   y-axis title and x-axis layer-label font size in points. Default: `9.1`.
+#'   y-axis-title and x-axis layer-label font size in points. Default: `9.1`.
 #' @param axis.ticks.font.size A single positive numeric value giving the
 #'   y-axis numeric tick-label font size in points. Default: `7`.
 #'
 #' @details
-#' The plot is intended as a diagnostic visualization of whole-layer distance
-#' structure and relative scale differences among layers. The function converts
-#' the replicate-specific entries in `distance_weights_matrix` back to average
-#' pairwise distances, calculates the mean across SOM replicates, orders layers
-#' from highest to lowest mean pairwise distance, and plots these values as a
-#' barplot.
+#' `plot.layer.distance.scale.SOM` visualizes differences in the overall distance
+#' scale among the input layers of a multi-layer SOM before internal weighting.
+#' The plot should not be interpreted as a measure of layer importance but rather
+#' as a diagnostic tool for assessing relative pairwise-distance scales among
+#' layers before weighting.
+#'
+#' The function takes the reciprocal of each replicate-specific entry in
+#' `distance_weights_matrix` to recover the corresponding average pairwise
+#' distance scale. These values are then averaged across replicate SOMs, and
+#' layers are plotted from the highest to the lowest mean pairwise distance.
 #'
 #' Relatively large values indicate layers that generate larger raw distances
 #' before internal SOM distance normalization. Such values may reflect many
-#' variables, large variance, sparsity, binary structure, SNP structure, or the
-#' selected distance metric. Relatively small values indicate layers with more
-#' compact raw distance structure. The plot should be interpreted as a distance
-#' scale diagnostic rather than as evidence that one layer is more important than
-#' another for delimitation.
+#' variables, large variance, sparsity, binary or SNP structure, or the selected
+#' distance metric. Layers with larger raw distance scales receive smaller
+#' internal distance-normalization weights, whereas layers with smaller raw
+#' distance scales receive larger weights. This prevents differences in overall
+#' distance magnitude from automatically determining the relative contribution
+#' of each layer during SOM training.
 #'
-#' When saving SVG output, the function internally applies a `96 / 72` scaling
-#' correction to the SVG device size and point-style font sizes so that the
-#' figure is imported by common document and presentation software with the
-#' requested dimensions and font sizes.
+#' Layer colors are assigned before the layers are reordered, so each color
+#' remains linked to its original input layer. Bars have black borders, and
+#' x-axis labels are shown in bold.
 #'
-#' @return Invisibly returns `NULL`. The function is called for its plotting side
-#'   effect. If `save = TRUE`, the plot is written to the specified file.
+#' If `file.name = NULL`, the default file name is
+#' `"plot_layer_distance_scale.<plot.type>"`.
 #'
-#' @importFrom graphics par barplot axis box title
+#' @return Invisibly returns `NULL`. The function is called for its plotting
+#'   side effect. If `save = TRUE`, the plot is also written to the specified
+#'   file.
+#'
+#' @importFrom graphics par barplot axis title
 #' @importFrom grDevices dev.cur dev.off svg png jpeg
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
@@ -4366,8 +4379,10 @@ plot.learning.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Multi-layer Super-SOM
-#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' # Train a multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
+#'                    nrow = 50,
+#'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
 #'
@@ -4383,10 +4398,18 @@ plot.learning.SOM <- function(SOM.output,
 #'
 #' som_multi <- train.SOM(input_data = input_data_multi)
 #'
-#' plot.layer.distance.scale.SOM(som_multi)
+#' plot.layer.distance.scale.SOM(SOM.output = som_multi)
+#'
+#' # Save the layer-distance-scale plot
+#' plot.layer.distance.scale.SOM(
+#'   SOM.output = som_multi,
+#'   save = TRUE,
+#'   plot.type = "svg",
+#'   file.name = "SOM_layer_distance_scale.svg"
+#' )
 #' }
 #'
-#' @export
+#' @export			
 plot.layer.distance.scale.SOM <- function(SOM.output,
                                           col.pal = viridis::turbo, #color palette
                                           save = FALSE, #option to save plot
