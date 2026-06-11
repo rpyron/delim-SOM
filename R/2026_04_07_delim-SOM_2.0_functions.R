@@ -31,43 +31,43 @@ for (pkg in CRAN_packages) {
 #### Functions
 
 ## Function to train single-layer SOM (one matrix) or multi-layer Super-SOM (multiple matrices)
-#' Train a single-layer SOM or multi-layer Super-SOM
+#' Train single-layer or multi-layer SOM
 #'
-#' Train a Self-Organizing Map (SOM) for one input matrix, or a
-#' multi-layer Super-SOM for a list of matrices. The function
-#' performs input validation, sample and variable filtering, min-max
-#' normalization, layer-type inference, distance-function assignment,
+#' Train a single-layer (one input matrix) or multi-layer (list of matrices)
+#' Self-Organizing Map (SOM)
+#'
+#' The function performs input validation, sample and variable filtering,
+#' min-max normalization, layer-type inference, distance-function assignment,
 #' layer-weight handling, automatic or user-defined SOM grid construction,
-#' optional learning-rate tuning, replicated SOM training, and calculation of
-#' replicate-level quantization and topographic error diagnostics.
+#' stochastic codebook initialization, optional learning-rate tuning, replicated
+#' SOM training, and calculation of replicate-level quantization and topographic
+#' error diagnostics.
 #'
-#' @param input_data A matrix, data frame, or list of matrices/data frames. A
-#'   single matrix or data frame is treated as a single-layer SOM input. A list
-#'   with more than one matrix or data frame is treated as a multi-layer
-#'   Super-SOM input. For multi-layer input, all layers must have row names, and
+#' @param input_data A matrix, data frame, or list of matrices/data frames. 
+#' 	 For multi-layer input, all layers must have row names, and
 #'   row names are used to identify the shared samples retained across layers.
 #'   All retained columns must be numeric after non-numeric columns are removed.
-#' @param N.steps A single positive integer giving the number of online SOM
-#'   training iterations. Default: `150`.
-#' @param N.replicates A single positive integer giving the number of stochastic
-#'   replicate SOMs to train. Default: `110`.
+#' @param N.steps A single positive integer giving the number of SOM
+#'   training iterations (epochs). Default: `100`.
+#' @param N.replicates A single positive integer giving the number of SOM
+#'   replicats to train. Default: `110`.
 #' @param parallel Logical; if `TRUE`, replicate SOMs are trained in parallel.
 #'   Default: `TRUE`.
 #' @param N.cores A single positive integer giving the number of cores to use
 #'   when `parallel = TRUE`. If `N.cores` exceeds the number of detected physical
 #'   cores, the detected maximum is used. Default: `3`.
 #' @param grid.size Optional numeric vector of length two giving user-specified
-#'   SOM grid dimensions as `c(xdim, ydim)`. If `NULL`, grid size and shape are
-#'   estimated automatically from sample size and the dominant data structure.
+#'   SOM grid dimensions as `c(xdim, ydim)`. If `NULL` (recommended), grid size
+#'   and shape are estimated automatically from sample size and data structure.
 #' @param grid.multiplier A single numeric value controlling the target number
-#'   of automatically generated SOM units relative to sample size. When
-#'   `grid.size = NULL`, the target number of units is calculated as
-#'   `round(grid.multiplier * sqrt(n_samples))`. Default: `5`.
+#'   of automatically generated SOM units relative to sample size. Larger values
+#'   generate more SOM units, whereas smaller values generate fewer SOM units.
+#'   Recommended default: 5.
 #' @param learning.rate.initial A single numeric value between 0 and 1 giving
-#'   the initial learning rate for online SOM training when
+#'   the initial learning rate for SOM training when
 #'   `learning.rate.tuning = FALSE`. Default: `0.5`.
 #' @param learning.rate.final A single numeric value between 0 and 1 giving the
-#'   final learning rate for online SOM training when
+#'   final learning rate for SOM training when
 #'   `learning.rate.tuning = FALSE`. This value must be smaller than
 #'   `learning.rate.initial`. Default: `0.1`.
 #' @param learning.rate.tuning Logical; if `TRUE`, a fixed grid of candidate
@@ -79,8 +79,8 @@ for (pkg in CRAN_packages) {
 #' @param layer.distance.functions Optional character vector specifying the
 #'   distance function for each data layer. Supported values are
 #'   `"sumofsquares"`, `"euclidean"`, `"manhattan"`, and `"tanimoto"`. If
-#'   `NULL` (default), distance functions are inferred automatically from the
-#'   pre-normalization layer structure: binary 0/1 layers are assigned
+#'   `NULL` (recommended default), distance functions are inferred automatically
+#'   from the pre-normalization layer structure: binary 0/1 layers are assigned
 #'   `"tanimoto"`, integer-like 0/1/2 dosage-like layers are assigned
 #'   `"manhattan"`, and all other numeric layers are assigned `"sumofsquares"`.
 #' @param manual.layer.weights Optional numeric vector of positive values
@@ -118,15 +118,21 @@ for (pkg in CRAN_packages) {
 #'   Default: `1`.
 #'
 #' @details
-#' `train.SOM` implements the SOM-training stage of the delim-SOM workflow. A
-#' Self-Organizing Map is an unsupervised, topology-preserving representation of
-#' multivariate data in which observations are summarized by codebook vectors
-#' arranged on 2D grid (Kohonen, 1990, 1998, 2001; Wehrens &
-#' Buydens, 2007). This makes SOMs useful for integrative species delimitation
+#' train.SOM implements the SOM-training stage of the delim-SOM workflow. A
+#' Self-Organizing Map (SOM) is an unsupervised, topology-preserving
+#' representation of multivariate data in which observations are summarized by
+#' codebook vectors arranged on a two-dimensional grid (Kohonen, 1990, 1998,
+#' 2001; Wehrens & Buydens, 2007). In simple words, the multivariate data are
+#' summarized as a 2D grid map (the SOM), with observations having similar
+#' combinations of variables placed in the same or nearby grid units, whereas
+#' more different observations are placed farther apart. Each grid cell contains
+#' a codebook vector, which is a trained local representation (or "average") of
+#' a part of the data. The codebook vectors have the same variable dimensions as
+#' the original data. This makes SOMs useful for integrative species delimitation
 #' because genetic, phenotypic, environmental, spatial, and other multivariate
-#' data can contribute to a shared representation of similarity without requiring
-#' a single explicit generative model for all data types (Pyron, 2023; Wehrens &
-#' Buydens, 2007; Wehrens & Kruisselbrink, 2018).
+#' data can contribute to a shared representation of similarity without
+#' requiring a single explicit generative model for all data types (Pyron, 2023;
+#' Pyron et al., 2023; Wehrens & Buydens, 2007; Wehrens & Kruisselbrink, 2018).
 #'
 #' Input data should be supplied as a sample-by-variable numeric matrix, data
 #' frame, or a list of such matrices/data frames, with rows representing samples
@@ -136,26 +142,35 @@ for (pkg in CRAN_packages) {
 #' types, such as SNPs, morphology, and climate, can be supplied as separate
 #' layers by providing each dataset as its own matrix or data frame within a
 #' list. Categorical variables should first be converted to binary indicator
-#' variables, for example with `make.cols.binary.SOM`. Genomic inputs should
-#' be processed into numeric SNP or dosage matrices, for example with
-#' `process.SNP.data.SOM`, before SOM training.
-
-#' Missing values are handled conservatively through filtering and NA-aware SOM
-#' training rather than global imputation, which is especially important for
-#' genetic and binary data where imputation can introduce artificial intermediate
-#' states (Cottrell & Letrémy, 2005; Kohonen, 2001; Samad & Harp, 1992). Users
-#' should choose `max.NA.row` and `max.NA.col` to balance sample retention and
-#' variable retention. We recommend 0.5 as the maximum allowed fraction of
-#' missing values. Stricter thresholds may be preferable for large genomic or
-#' high-dimensional datasets where enough information remains after filtering.
+#' variables, for example with `make.cols.binary.SOM`. Genomic inputs should be
+#' processed into numeric SNP or dosage matrices before SOM training,
+#' for example with `process.SNP.data.SOM`.
 #'
-#' Users should nevertheless consider preprocessing predictors before training,
-#' especially to remove near-constant variables and strongly redundant predictors
-#' when these are likely to overweight the same biological gradient (Dormann et
-#' al., 2013; Gregorich et al., 2021). For continuous or count-like layers, this
-#' can be done with `remove.lowCV.multicollinearity.SOM`. For genomic layers,
-#' low-information loci can be reduced during preprocessing with
-#' `process.SNP.data.SOM`.
+#' For multi-layer inputs, only samples shared across all layers are retained.
+#' Row-level missingness filtering is performed within each layer, followed by a
+#' second row-name intersection to ensure identical final samples across layers.
+#' Nonnumeric, all-missing, excessive-missingness, and zero-variance columns are
+#' removed. Each retained numeric variable is then independently min-max scaled
+#' to the interval from 0 to 1. This prevents variables with larger numerical
+#' ranges from dominating distance calculations because of their measurement
+#' units, while preserving their ordering and relative spacing (Kohonen, 2013).
+#'
+#' Missing values are handled through filtering and NA-aware SOM training rather
+#' than global imputation. Missing variables are excluded from distance
+#' calculations and, during training, codebook updates, allowing partially
+#' observed samples to contribute without introducing artificial intermediate
+#' values, especially in genetic and binary data (Cottrell & Letrémy, 2005;
+#' Kohonen, 2001; Samad & Harp, 1992; Wehrens & Buydens, 2007). Users should
+#' choose `max.NA.row` and `max.NA.col` to balance sample and variable retention.
+#' A maximum missing fraction of 0.5 is recommended; stricter thresholds may be
+#' preferable for large genomic or high-dimensional datasets when sufficient
+#' data remain after filtering.
+#'
+#' Predictors should be preprocessed to remove near-constant and strongly
+#' redundant variables that may overweight the same biological gradient (Dormann
+#' et al., 2013; Gregorich et al., 2021). Continuous, binary, and count-like
+#' numeric layers can be filtered with `remove.lowCV.multicollinearity.SOM`,
+#' whereas genomic layers can be processed with `process.SNP.data.SOM`.
 #'
 #' The choice of distance function is an important part of model specification
 #' because SOM training is fundamentally distance-based (Kohonen, 1998; Wehrens
@@ -165,32 +180,35 @@ for (pkg in CRAN_packages) {
 #' presence/absence traits should usually be supplied as separate layers rather
 #' than combined into a single mixed-structure matrix.
 #'
-#' When automatic distance-function inference is used (recommended
-#' default), continuous layers are assigned squared Euclidean distance
+#' When automatic distance-function inference is used (recommended default),
+#' continuous layers are assigned squared Euclidean distance
 #' (`"sumofsquares"`), binary 0/1 layers are assigned normalized Hamming distance
-#' (`"tanimoto"`), and 0/1/2 dosage-like layers are assigned Manhattan distance
-#' (`"manhattan"`). Users should double-check that the automatically inferred
-#' distance functions match the structure of their input layers. Distance
-#' functions can also be specified manually with `layer.distance.functions`; in
-#' that case, we recommend choosing among the available distance functions as
-#' follows. For continuous quantitative variables, such as climatic,
-#' morphometric, spatial, acoustic, physiological, or chemical data, we recommend
-#' squared Euclidean distance (`"sumofsquares"`), because these variables are
-#' naturally represented in continuous multivariate space and larger differences
-#' should generally contribute more strongly to sample separation. For binary
+#' (`"tanimoto"`), and integer-like 0/1/2 dosage-like layers are assigned
+#' Manhattan distance (`"manhattan"`). The inferred layer type is determined
+#' before min-max normalization. The stored type label `"count"` therefore
+#' specifically identifies 0/1/2 dosage-like layers rather than all possible
+#' count matrices. Users should double-check that the automatically inferred
+#' distance functions match the structure of their input layers.
+#'
+#' Distance functions can also be specified manually with
+#' `layer.distance.functions`. For continuous quantitative variables, such as
+#' climatic, morphometric, spatial, acoustic, physiological, or chemical data,
+#' squared Euclidean distance (`"sumofsquares"`) is recommended when larger
+#' differences should contribute disproportionately to sample separation.
+#' Standard Euclidean distance (`"euclidean"`) is available when distances
+#' should increase linearly with multivariate displacement. For binary
 #' presence/absence variables, such as habitat use, host association, parasite
 #' presence, symbiont presence, developmental mode, or gene presence, normalized
-#' Hamming distance (`"tanimoto"`) is appropriate because it measures the
-#' proportion of binary state differences among samples (Hamming, 1950; Wehrens
-#' & Kruisselbrink, 2018). For SNP dosages and other dosage-like genetic
-#' encodings, we recommend Manhattan distance (`"manhattan"`), because additive
-#' per-locus differences are typically more meaningful than squared deviations.
-#' For raw count data beyond 0/1/2 dosage encodings, users should manually
-#' specify Manhattan distance (`"manhattan"`) when additive absolute differences
-#' are more appropriate than squared deviations. If count-derived variables have
-#' already been transformed to behave more like continuous predictors, such as
-#' after log, square-root, or Hellinger transformation, squared Euclidean
-#' distance may be more appropriate (Legendre & Gallagher, 2001).
+#' Hamming distance (`"tanimoto"`) measures the proportion of binary state
+#' differences among samples (Hamming, 1950; Wehrens & Kruisselbrink, 2018).
+#' For SNP dosages and other dosage-like genetic encodings, Manhattan distance
+#' (`"manhattan"`) is recommended because additive per-locus differences are
+#' generally more meaningful than squared deviations. For raw count data beyond
+#' 0/1/2 dosage encodings, users should manually specify Manhattan distance.
+#' If count-derived variables have been transformed to behave more like
+#' continuous predictors, such as after log, square-root, or Hellinger
+#' transformation, squared Euclidean distance may be more appropriate (Legendre
+#' & Gallagher, 2001).
 #'
 #' For multi-layer SOMs, layer weighting adjusts the relative influence of data
 #' types after internal distance normalization. Layers are weighted automatically
@@ -206,108 +224,112 @@ for (pkg in CRAN_packages) {
 #' down-weighted, whereas layers with well-characterized evolutionary signal may
 #' be emphasized.
 #'
-#' SOM grid size and shape characterize SOM resolution. A grid that is too coarse
-#' can merge distinct structure, whereas an overly fine grid can fragment
-#' clusters, increase empty units, and slow computation. The default automatic
-#' grid sizing uses a practical `5 * sqrt(n)`-style starting heuristic (Vesanto,
-#' 1999), but optimal map size is data-dependent and should ideally be evaluated
-#' empirically (Kohonen, 2013). Users can increase resolution by increasing
-#' `grid.multiplier` and make the grid coarser by decreasing `grid.multiplier`.
-#' By default, the grid is estimated automatically, and the map shape reflects
-#' the dominant elongation of the data rather than being forced to be square.
-#' This is recommended because elongated data manifolds can be better represented
-#' by elongated maps, which can improve neighborhood continuity and convergence
-#' compared with arbitrary square grids (Kohonen, 2013). For single-layer data,
-#' the dominant elongation is estimated from the covariance structure of the
-#' retained numeric matrix. For multi-layer data, the dominant joint structure is
-#' summarized across layers with multiple factor analysis, so that the grid shape
-#' is informed by the grouped dataset rather than by any single layer alone (Lê et
-#' al., 2008). Grid dimensions can also be specified manually with `grid.size` as
-#' `c(xdim, ydim)`. Hexagonal grids are used because they provide more even
-#' neighborhood relationships and are commonly recommended for SOM visualization
-#' and training (Kohonen, 1995, 1998, 2013; Vesanto & Alhoniemi, 2000).
-
-#' Multiple SOM replicates are performed because stochastic initialization and
-#' online training order can produce different local organizations even when the
-#' same data and settings are used (Wehrens & Buydens, 2007; Wehrens &
-#' Kruisselbrink, 2018). Users should interpret recurring structure across
-#' replicate maps as more reliable than structure that appears only in isolated
-#' runs. Parallelization is provided to make replicate-based training feasible
-#' for larger genomic or multi-layer datasets.
+#' SOM grid size and shape determine the resolution of the learned map. A grid
+#' that is too coarse can merge distinct structures, whereas an overly fine grid
+#' can fragment clusters, increase empty units, and slow computation. The default
+#' automatic grid sizing follows a practical square-root sample-size heuristic
+#' (Vesanto, 1999) that usually works well, but optimal map size is data-dependent
+#' and should ideally be evaluated empirically (Kohonen, 2013). Users can increase
+#' resolution by increasing `grid.multiplier` and make the grid coarser by
+#' decreasing `grid.multiplier`. Hexagonal grids are used because they provide 
+#' more even neighborhood relationships and are commonly recommended for SOM 
+#' visualization and training (Kohonen, 1995, 1998, 2013; Vesanto & Alhoniemi, 2000).
 #'
-#' The default number of training steps and replicate maps is intended as a
-#' practical compromise between convergence, stability, and computational cost.
-#' Too few training steps can leave codebook vectors unstable, whereas too many
-#' steps increase run time with diminishing improvement. Too few replicate maps
-#' make downstream delimitation more sensitive to stochastic initialization and
-#' update order, whereas very large numbers of replicates mainly increase
-#' computation time. As a starting point, we recommend approximately 80-200
-#' training steps and 80-150 replicate maps, with adjustment based on dataset
-#' size, layer number, convergence behavior, and computational resources.
+#' By default, the grid shape reflects the dominant shape of the retained data
+#' rather than being forced to be square (Kohonen, 2013). For single-layer data,
+#' the aspect ratio is estimated from the first two eigenvalues of the covariance
+#' structure. For multi-layer data, the dominant joint structure is estimated
+#' with multiple factor analysis (Lê et al., 2008) so that the grid shape is
+#' informed by the grouped dataset rather than by any single layer alone. If the
+#' covariance or multiple-factor-analysis calculation fails, a square or
+#' square-like aspect ratio is used. Grid dimensions can also be specified 
+#' manually with `grid.size`.
 #'
-#' Online SOM training is implemented to allow direct control over the
-#' learning-rate schedule and neighborhood-radius schedule. A decreasing learning
-#' rate and shrinking neighborhood are recommended because SOM training should
-#' move from broad early ordering toward local fine-scale adjustment in later
-#' iterations (Kohonen, 1998, 2013; Wehrens & Kruisselbrink, 2018). 
-
-#' Users can activate learning-rate tuning with `learning.rate.tuning`, which
-#' can be useful for small datasets, exploratory calibration, or reduced-step
-#' pilot runs. However, tuning is computationally expensive and should not be
-#' treated as necessary for every analysis, especially for large datasets.
+#' Codebook vectors are initialized stochastically by randomly selecting retained
+#' samples without replacement. Sensitivity to stochastic initialization is
+#' addressed by training multiple independent replicate maps (Kohonen, 1998,
+#' 2013; Wehrens & Buydens, 2007). Parallelization is provided to make 
+#' replicate-based training feasible for larger genomic or multi-layer datasets.
+#'
+#' Online SOM training is used to provide direct control over the learning-rate
+#' and neighborhood-radius schedules (Kohonen, 1998, 2013). Each training step
+#' presents the complete retained dataset to the network once. The learning rate
+#' decreases linearly from `learning.rate.initial` to
+#' `learning.rate.final`. The neighborhood radius decreases linearly from a
+#' value covering approximately two-thirds of the pairwise grid-unit distances
+#' to zero. These decreasing schedules move training from broad early ordering
+#' toward local fine-scale adjustment during later training steps (Kohonen,
+#' 1998, 2013; Wehrens & Kruisselbrink, 2018).
+#'
+#' When `learning.rate.tuning = TRUE`, a fixed grid of initial and final
+#' learning-rate combinations is evaluated using short replicate SOM runs
+#' (initial rates: 0.1, 0.3, 0.5, 0.7, and 0.9; final rates: 0.001, 0.01, 0.1,
+#' 0.3, and 0.5; only combinations with a final rate smaller than the initial
+#' rate; 10 replicates and 50 steps per combination). The combination with the
+#' lowest mean quantization error is retained for final training. Since
+#' learning-rate tuning substantially increases computation time, this is not
+#' recommended for large datasets.
 #'
 #' The Gaussian neighborhood is used as the default because it provides smooth
-#' distance decay across the map and can support stable global ordering, while
+#' distance decay across the map and can support stable global ordering, whereas
 #' the `"bubble"` neighborhood remains available as a faster and sharper
 #' alternative (Stefanovič & Kurasova, 2011; Natita et al., 2016; Wehrens &
 #' Kruisselbrink, 2018).
 #'
-#' Quantization error and topographic error should be evaluated jointly.
-#' Quantization error measures how closely codebook vectors represent the input
-#' observations, whereas topographic error measures whether local neighborhood
-#' relationships are preserved on the map (Kiviluoto, 1996; Sun, 2000). A map can
-#' achieve low quantization error while still introducing topological distortion,
-#' so low quantization error alone should not be treated as sufficient evidence
-#' of a good SOM. These diagnostics are useful for comparing replicate maps,
-#' evaluating training settings, and identifying poorly fitting maps before
-#' downstream clustering (Kiviluoto, 1996; Park et al., 2014; Sun, 2000).
+#' The default numbers of training steps and replicate maps balance convergence,
+#' stability, and computational cost. As a starting point, we recommend 80-200
+#' training steps and 80-150 replicate maps, adjusted according to dataset size,
+#' layer number, convergence, and computational resources.
 #'
-#' @return A list named `SOM_results` containing:
+#' Quantization and topographic error should be evaluated jointly. Quantization
+#' error measures the mean weighted distance between samples and their
+#' best-matching units, whereas topographic error is the proportion of samples
+#' whose first- and second-best matching units are not adjacent (Kiviluoto, 1996;
+#' Sun, 2000). Because low quantization error can occur despite topological
+#' distortion, it alone should not be treated as sufficient evidence of a good SOM.
+#'
+#' @return A named list containing:
 #' \describe{
-#'   \item{distance_weights_matrix}{A replicate-by-layer matrix of internal
-#'   distance-normalization weights returned by `kohonen::supersom`.}
+#'   \item{distance_weights_matrix}{A replicate-by-layer matrix containing the
+#'   internal distance-normalization weights returned by `kohonen::supersom`.
+#'   These are not the final combined manual and internal layer weights.}
 #'   \item{learning_values_list}{A list containing one learning-trajectory matrix
 #'   per layer. Rows correspond to SOM training steps and columns correspond to
-#'   SOM replicates.}
-#'   \item{input_data_names}{Character vector with the names of the input data
-#'   layers.}
-#'   \item{N_steps}{Number of SOM training steps used for final training.}
-#'   \item{N_replicates}{Number of SOM replicate maps trained.}
-#'   \item{replicate_ids}{Character vector of replicate identifiers.}
-#'   \item{learning_rate_initial}{Initial learning rate used for final SOM
-#'   training. If learning-rate tuning was performed, this is the selected
-#'   tuned value.}
-#'   \item{learning_rate_final}{Final learning rate used for final SOM training.
-#'   If learning-rate tuning was performed, this is the selected tuned value.}
+#'   SOM replicates. Values are the mean average deviations from the layer's
+#'   codebook vectors reported by `kohonen::supersom`.}
+#'   \item{input_data_names}{A character vector containing the names of the input
+#'   data layers.}
+#'   \item{N_steps}{The number of SOM training steps used for final training.}
+#'   \item{N_replicates}{The number of replicate SOM maps trained.}
+#'   \item{replicate_ids}{A character vector containing the replicate
+#'   identifiers.}
+#'   \item{learning_rate_initial}{The initial learning rate used for final SOM
+#'   training. If learning-rate tuning was performed, this is the selected tuned
+#'   value.}
+#'   \item{learning_rate_final}{The final learning rate used for final SOM
+#'   training. If learning-rate tuning was performed, this is the selected tuned
+#'   value.}
 #'   \item{codebook_vectors}{A list of codebook-vector matrices, one per layer.
 #'   For each layer, codebook vectors from all replicate SOMs are row-bound.}
 #'   \item{som_models}{A named list of trained `kohonen` SOM or Super-SOM model
 #'   objects, one per replicate.}
-#'   \item{layer_numeric_types}{Named character vector giving the inferred
+#'   \item{layer_numeric_types}{A named character vector containing the inferred
 #'   pre-normalization numeric type of each layer: `"continuous"`, `"binary"`,
-#'   or `"count"`.}
-#'   \item{layer.distance.functions}{Named character vector giving the distance
-#'   function used for each layer.}
-#'   \item{quantization_error}{Named numeric vector of replicate-level
-#'   quantization errors.}
-#'   \item{topographic_error}{Named numeric vector of replicate-level
-#'   topographic errors.}
-#'   \item{input_data}{The processed, filtered, normalized SOM input data used
-#'   for final training, stored as a list of numeric matrices.}
+#'   or `"count"`, where `"count"` denotes an integer-like 0/1/2 dosage-like
+#'   layer.}
+#'   \item{layer.distance.functions}{A named character vector containing the
+#'   distance function used for each layer.}
+#'   \item{quantization_error}{A named numeric vector containing the mean
+#'   sample-to-best-matching-unit distance for each replicate.}
+#'   \item{topographic_error}{A named numeric vector containing the proportion of
+#'   valid samples with nonadjacent first- and second-best matching units for each
+#'   replicate.}
+#'   \item{input_data}{The processed, filtered, and normalized SOM input data
+#'   used for final training, stored as a list of numeric matrices.}
 #'   \item{train.SOM.set.seed.N}{The base random seed supplied through
 #'   `set.seed.N`.}
-#'   \item{train.SOM.args}{A list storing the main arguments used for the
-#'   training run.}
+#'   \item{train.SOM.args}{A list containing the effective arguments used for the
+#'   training run, including expanded layer weights and selected learning rates.}
 #' }
 #'
 #' @references
@@ -358,6 +380,12 @@ for (pkg in CRAN_packages) {
 #'   transformations for ordination of species data. \emph{Oecologia}, 129(2),
 #'   271-280. https://doi.org/10.1007/s004420100716
 #'
+#' Natita, W., Wiboonsak, W., & Dusadee, S. (2016). Appropriate learning rate
+#'   and neighborhood function of self-organizing map (SOM) for specific
+#'   humidity pattern classification over Southern Thailand. \emph{International
+#'   Journal of Modeling and Optimization}, 6(1), 61-65.
+#'   https://doi.org/10.7763/IJMO.2016.V6.504
+#'
 #' Park, S.-H., Hosoishi, S., Ogata, K., & Kuboki, Y. (2014). Clustering of ant
 #'   communities and indicator species analysis using self-organizing maps.
 #'   \emph{Comptes Rendus Biologies}, 337(9), 545-552.
@@ -368,9 +396,21 @@ for (pkg in CRAN_packages) {
 #'   Phylogenetics and Evolution}, 189, 107939.
 #'   https://doi.org/10.1016/j.ympev.2023.107939
 #'
+#' Pyron, R. A., O’Connell, K. A., Duncan, S. C., Burbrink, F. T., & Beamer,
+#'   D. A. (2023). Speciation hypotheses from phylogeographic delimitation yield
+#'   an integrative taxonomy for seal salamanders (\emph{Desmognathus
+#'   monticola}). \emph{Systematic Biology}, 72(1), 179-197.
+#'   https://doi.org/10.1093/sysbio/syac065
+#'
 #' Samad, T., & Harp, S. (1992). Self-organization with partial data.
 #'   \emph{Network: Computation in Neural Systems}, 3(2), 205-212.
 #'   https://doi.org/10.1088/0954-898X/3/2/008
+#'
+#' Stefanovič, P., & Kurasova, O. (2011). Influence of learning rates and
+#'   neighboring functions on self-organizing maps. In J. Laaksonen &
+#'   T. Honkela (Eds.), \emph{Advances in Self-Organizing Maps}, Lecture Notes
+#'   in Computer Science, 6731, 141-150.
+#'   https://doi.org/10.1007/978-3-642-21566-7_14
 #'
 #' Sun, Y. (2000). On quantization error of self-organizing map network.
 #'   \emph{Neurocomputing}, 34(1-4), 169-193.
@@ -378,6 +418,7 @@ for (pkg in CRAN_packages) {
 #'
 #' Vesanto, J. (1999). SOM-based data visualization methods. \emph{Intelligent
 #'   Data Analysis}, 3(2), 111-126.
+#'   https://doi.org/10.1016/S1088-467X(99)00013-X
 #'
 #' Vesanto, J., & Alhoniemi, E. (2000). Clustering of the self-organizing map.
 #'   \emph{IEEE Transactions on Neural Networks}, 11(3), 586-600.
@@ -412,7 +453,9 @@ for (pkg in CRAN_packages) {
 #' som_single <- train.SOM(input_data = continuous_data)
 #'
 #' # Multi-layer Super-SOM from genetic, morphological, and environmental data
-#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
+#'                    nrow = 50,
+#'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
 #'
@@ -432,7 +475,7 @@ for (pkg in CRAN_packages) {
 #' @export
 train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dataframes provided as list()
                       N.steps = 150, #number of training iterations S for SOM
-                      N.replicates = 110, #number of SOM runs R
+                      N.replicates = 100, #number of SOM runs R
                       parallel = TRUE, #whether to run SOM training in parallel 
                       N.cores = 3, #number of cores for training SOM in parallel (if parallel = TRUE)
                       grid.size = NULL, #grid size - specify as c(x, y) if desired (if grid.size = NULL, size and shape is automatically determined)
@@ -465,11 +508,11 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (!(is.matrix(input_data) || is.data.frame(input_data) || is.list(input_data))) stop("Data processing aborted: input_data must be a matrix, data.frame or list of such objects")
   if (is.list(input_data) && length(input_data) == 0) stop("Data processing aborted: input_data is an empty list")
   if (!is.numeric(N.steps) || length(N.steps) != 1 || is.na(N.steps) || !is.finite(N.steps) || N.steps < 1 || (N.steps %% 1 != 0)) stop("Data processing aborted: N.steps must be a single positive integer (>= 1)")
-  if (N.steps < 60) messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 60–200)")
-  if (N.steps > 200) messager("Warning: N.steps is high (", N.steps, ") - computation will be slow (recommended: 60–200)")
+  if (N.steps < 80) messager("Warning: N.steps is low (", N.steps, ") - SOM training may be unstable (recommended: 80–200)")
+  if (N.steps > 200) messager("Warning: N.steps is high (", N.steps, ") - computation will be slow (recommended: 80–200)")
   if (!is.numeric(N.replicates) || length(N.replicates) != 1 || is.na(N.replicates) || !is.finite(N.replicates) || N.replicates < 1 || (N.replicates %% 1 != 0)) stop("Data processing aborted: N.replicates must be a single positive integer (>= 1)")
-  if (N.replicates < 50) messager("Warning: N.replicates is low (", N.replicates, ") - results may be unreliable (recommended: 50–150)")
-  if (N.replicates > 200) messager("Warning: N.replicates is high (", N.replicates, ") - computation will be slow (recommended: 50–150)")
+  if (N.replicates < 80) messager("Warning: N.replicates is low (", N.replicates, ") - results may be unreliable (recommended: 80–150)")
+  if (N.replicates > 150) messager("Warning: N.replicates is high (", N.replicates, ") - computation will be slow (recommended: 80–150)")
   if (!is.logical(parallel) || length(parallel) != 1 || is.na(parallel)) stop("Data processing aborted: parallel must be TRUE or FALSE")
   if (parallel) {
     if (!is.numeric(N.cores) || length(N.cores) != 1 || is.na(N.cores) || !is.finite(N.cores) || N.cores < 1 || (N.cores %% 1 != 0)) stop("Data processing aborted: N.cores must be a single positive integer (>= 1)")
