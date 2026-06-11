@@ -12,6 +12,7 @@ CRAN_packages <- c(
   "FactoMineR",  #multiple factor analysis
   "foreach",     #parallel processing
   "kohonen",     #SOM / supersom
+  "matrixStats", #fast matrix summary calculations
   "maps",        #mapping
   "mclust",      #Gaussian mixture models
   "poppr",       #population genetics
@@ -6103,16 +6104,17 @@ plot.map.SOM <- function(SOM.output,
 }
 
 
-#' Plot SOM variable importance
+#' Plot variable importance across SOM layers
 #'
-#' Plot replicate-level variable-importance values for each input layer of a
-#' clustered SOM object returned by `clustering.SOM`. Variable importance can be
-#' quantified as eta squared cluster separation or as variance across the SOM
-#' map.
+#' Plot variable-level importance values across SOM replicates for each input
+#' layer of a trained and clustered SOM object. Variable importance can be
+#' quantified as cluster separation (eta squared effect size) or variance
+#' across the SOM map.
 #'
-#' @param SOM.output A SOM result object returned by `clustering.SOM`. The object
-#'   must contain `som_models` and `input_data_names`. For
-#'   `mode = "Cluster.separation"`, it must also contain `som_clusters`.
+#' @param SOM.output A SOM result object returned by `clustering.SOM`. 
+#'   The object must contain `som_models` and
+#'   `input_data_names`. For `mode = "Cluster.separation"`, it must also contain
+#'   replicate-specific `som_clusters`.
 #' @param mode Character string specifying the variable-importance metric.
 #'   Supported values are `"Cluster.separation"` and `"Map.variance"`.
 #'   Default: `"Cluster.separation"`.
@@ -6123,8 +6125,8 @@ plot.map.SOM <- function(SOM.output,
 #'   `viridis::turbo`.
 #' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
 #' @param overwrite Logical; if `TRUE`, an existing output file with the same
-#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
-#'   the output file already exists. Default: `TRUE`.
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted
+#'   when the output file already exists. Default: `TRUE`.
 #' @param plot.type Character string specifying the file format when
 #'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
 #'   Default: `"svg"`.
@@ -6132,9 +6134,9 @@ plot.map.SOM <- function(SOM.output,
 #'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
 #'   `NULL`.
 #' @param width Numeric value giving plot width in centimeters when
-#'   `save = TRUE`. Default: `20`.
+#'   `save = TRUE`. Default: `16`.
 #' @param height Numeric value giving plot height in centimeters when
-#'   `save = TRUE`. Default: `15`.
+#'   `save = TRUE`. Default: `10`.
 #' @param resolution Numeric value giving plot resolution in dots per inch for
 #'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
 #' @param bottom.margin.total Numeric value giving the bottom outer margin of the
@@ -6148,18 +6150,19 @@ plot.map.SOM <- function(SOM.output,
 #' @param bottom.margin Numeric value giving the bottom margin of each individual
 #'   layer panel. Default: `2.5`.
 #' @param left.margin Numeric value giving the left margin of each individual
-#'   layer panel. Default: `4`.
+#'   layer panel. Default: `3`.
 #' @param top.margin Numeric value giving the top margin of each individual layer
 #'   panel. Default: `2`.
 #' @param right.margin Numeric value giving the right margin of each individual
 #'   layer panel. Default: `2`.
 #' @param bars.threshold.N A single non-negative integer giving the maximum
-#'   number of variables for which variable labels and boxplot whiskers are
-#'   shown. Default: `50`.
+#'   number of plotted variables for which variable labels and boxplot whiskers
+#'   are shown. This argument does not remove variables from the plot. Default:
+#'   `50`.
 #' @param x.axis.label Optional character string giving the shared x-axis title.
-#'   If `NULL`, no shared x-axis title is shown. By default,
+#'   If `NULL` or `""`, no shared x-axis title is shown. By default,
 #'   `"Cluster separation (eta squared effect size)"` is used for
-#'   `mode = "Cluster.separation"`, and `"Variance across SOM map"` is used for
+#'   `mode = "Cluster.separation"` and `"Variance across SOM map"` is used for
 #'   `mode = "Map.variance"`.
 #' @param title.font.size A single positive numeric value giving the main plot
 #'   title font size in points. Default: `9.1`.
@@ -6171,9 +6174,9 @@ plot.map.SOM <- function(SOM.output,
 #'   x-axis title font size in points. Default: `9.1`.
 #' @param axis.ticks.font.size A single positive numeric value giving the x-axis
 #'   numeric tick-label font size in points. Default: `7`.
-#' @param add.boxplot.whiskers Logical; if `TRUE`, boxplot whiskers are shown when
-#'   the number of plotted variables does not exceed `bars.threshold.N`.
-#'   Default: `TRUE`.
+#' @param add.boxplot.whiskers Logical; if `TRUE`, boxplot whiskers and staples
+#'   are shown when the number of plotted variables does not exceed
+#'   `bars.threshold.N`. Default: `TRUE`.
 #' @param importance.threshold A single non-negative numeric value giving the
 #'   minimum median variable-importance value required for a variable to be
 #'   plotted. Variables with median importance less than or equal to this value
@@ -6185,41 +6188,73 @@ plot.map.SOM <- function(SOM.output,
 #'   Default: `NULL`.
 #'
 #' @details
-#' For `mode = "Cluster.separation"`, variable importance is calculated as a
-#' weighted eta squared effect size. SOM units are weighted by their number of
-#' assigned samples plus a baseline weight of one, so empty SOM units retain a
-#' small positive contribution. Larger values indicate stronger separation of
-#' codebook-vector values among inferred SOM unit clusters.
+#' 
+#' Variable importance is calculated separately for each retained SOM replicate.
+#' The replicate-level distributions are shown as horizontal boxplots, and
+#' variables are ordered by their median importance across replicates. All
+#' variables with median importance greater than `importance.threshold` are
+#' plotted.
+#' 
+#' For mode = "Cluster.separation", variable importance describes cluster
+#' separation using a weighted eta squared effect size calculated from an
+#' ANOVA-style variance partition. SOM units are weighted by their number of
+#' assigned samples plus a baseline weight of one, so empty units retain a small
+#' positive contribution while units containing more samples contribute more.
+#' The metric is calculated as the weighted between-cluster sum of squares
+#' divided by the weighted total sum of squares. Larger values indicate stronger
+#' separation of codebook-vector values among the inferred SOM-unit clusters.
 #'
-#' For `mode = "Map.variance"`, variable importance is calculated as the weighted
-#' variance of each variable across SOM units using the same SOM-unit weights.
+#' This mode is the recommended default for assessing variable importance in
+#' cluster differentiation. It is important to consider that eta squared
+#' summarizes the overall separation among clusters and does not identify which
+#' individual cluster or pair of clusters drives that separation. For example,
+#' a large effect size may result because one cluster differs strongly from two
+#' otherwise similar clusters, or because all clusters differ moderately from
+#' one another.
+#'
+#' For `mode = "Map.variance"`, variable importance is calculated as the
+#' weighted variance of each variable across SOM units. Similar to
+#' `mode = "Cluster.separation"`, each SOM unit is weighted by its number of
+#' assigned samples plus a baseline weight of one, so units containing more
+#' samples contribute more while empty units retain a small positive
+#' contribution. The weighted squared deviations from the weighted mean are
+#' divided by the sum of the weights rather than by a sample-size correction.
 #' Larger values indicate greater variation in that variable across the SOM map.
 #'
-#' Variable importance is calculated separately for each SOM replicate. The
-#' replicate-level distributions are shown as horizontal boxplots, and variables
-#' are ordered by their median importance across replicates. The plot is a
-#' descriptive diagnostic and not a formal statistical significance test.
+#' Variation across the map is necessary for a variable to contribute to cluster
+#' differentiation, whereas a variable with little or no variation cannot
+#' strongly differentiate clusters. Large map variance alone does not mean that
+#' the variation is aligned with the inferred clusters, as also shown by our
+#' testing. Therefore, this mode is intended as a complementary measure of
+#' variable importance. If variables that are highly important under
+#' `mode = "Cluster.separation"` also show large map variance, this provides
+#' additional evidence for their importance.
 #'
-#' When saving SVG output, the function internally applies a `96 / 72` scaling
-#' correction to the SVG device size and point-style font sizes so that common
-#' document and presentation software imports the figure as the requested
-#' dimensions and font sizes.
+#' In addition to its complementary role, `mode = "Map.variance"` is intended to
+#' assess variable importance for cases with `k = 1`, for which the
+#' `mode = "Cluster.separation"` metric cannot be calculated.
 #'
 #' @return Invisibly returns `NULL`. The function is called for its plotting side
 #'   effect. If `save = TRUE`, the plot is written to the specified file.
 #'
 #' @importFrom graphics par boxplot axis mtext
-#' @importFrom grDevices dev.off svg png jpeg
-#' @importFrom stats median
+#' @importFrom grDevices dev.cur dev.off svg png jpeg
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
 #' @examples
 #' \dontrun{
 #' set.seed(1)
 #'
-#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
-#' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
-#' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
+#' # Multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 200, replace = TRUE),
+#'                    nrow = 50,
+#'                    ncol = 200)
+#' morphology_data <- matrix(rnorm(50 * 5),
+#'                           nrow = 50,
+#'                           ncol = 5)
+#' environment_data <- matrix(rnorm(50 * 4),
+#'                            nrow = 50,
+#'                            ncol = 4)
 #'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
@@ -6231,19 +6266,19 @@ plot.map.SOM <- function(SOM.output,
 #'   Environment = environment_data
 #' )
 #'
-#' som_multi <- train.SOM(
-#'   input_data = input_data_multi,
-#'   N.steps = 100,
-#'   N.replicates = 60
-#' )
+#' som_multi <- train.SOM(input_data = input_data_multi)
 #'
 #' som_clustered <- clustering.SOM(
 #'   SOM.output = som_multi,
 #'   clustering.method = "kmeans+BICthreshold"
 #' )
 #'
-#' plot.variable.importance.SOM(som_clustered)
-#' plot.variable.importance.SOM(som_clustered, mode = "Map.variance")
+#' plot.variable.importance.SOM(
+#'   SOM.output = som_clustered,
+#'   mode = "Cluster.separation"
+#'   )
+#'
+#' plot.variable.importance.SOM(SOM.output = som_clustered, mode = "Map.variance")
 #' }
 #'
 #' @export
@@ -6254,15 +6289,15 @@ plot.variable.importance.SOM <- function(SOM.output,
                                          overwrite = TRUE, #option to overwrite plot if it already exists
                                          plot.type = "svg", #plot file plot.type (options: "png", "svg", "jpg")
                                          file.name = NULL, #plot file name (if NULL, default file name is used)
-                                         width = 20, #plot width in cm
-                                         height = 15, #plot height in cm
+                                         width = 16, #plot width in cm
+                                         height = 10, #plot height in cm
                                          resolution = 300, #plot resolution in dpi
                                          bottom.margin.total = 2, #bottom margin of entire plot
                                          left.margin.total = 1, #left margin of entire plot
                                          top.margin.total = 2, #top margin of entire plot
                                          right.margin.total = 0, #right margin of entire plot
                                          bottom.margin = 2.5, #bottom margin of individual plots
-                                         left.margin = 4, #left margin of individual plots
+                                         left.margin = 3, #left margin of individual plots
                                          top.margin = 2, #top margin of individual plots
                                          right.margin = 2, #right margin of individual plots
                                          bars.threshold.N = 50, #threshold for leaving out bar labels
@@ -6274,46 +6309,76 @@ plot.variable.importance.SOM <- function(SOM.output,
                                          axis.ticks.font.size = 7, #font size of x-axis numeric tick labels in points
                                          add.boxplot.whiskers = TRUE, #whether to plot boxplot whiskers
                                          importance.threshold = 0.001, #threshold for showing variable importance
+                                         calculation.block.size = 10000, #number of variables processed simultaneously during matrix calculations
                                          set.k = NULL #if NULL, include all replicates - if integer, include only replicates where number of clusters (K) equals set.k (only if mode = "Cluster.separation")
 ) {
-  
+
   # Set messages
   messager <- function(...) message(...)
-  
+
   # Reset plotting parameters
+  old_device <- dev.cur()
   old_plotting_parameters <- par(no.readonly = TRUE)
-  on.exit(par(old_plotting_parameters), add = TRUE)
-  
+  device_opened <- FALSE
+  on.exit({
+    if (device_opened && dev.cur() != old_device) dev.off()
+    par(old_plotting_parameters)
+  }, add = TRUE)
+
   # Validate input
+  if (is.null(SOM.output) || !is.list(SOM.output)) stop("Plotting aborted: SOM.output must be a non-NULL list")
   if (is.null(SOM.output$som_models) || length(SOM.output$som_models) < 1) stop("Plotting aborted: som_models not found in SOM.output - run train.SOM()")
   if (is.null(SOM.output$input_data_names)) stop("Plotting aborted: input_data_names not found in SOM.output - check SOM.output or rerun train.SOM()")
   if (!is.character(mode) || length(mode) != 1 || is.na(mode) || !(mode %in% c("Cluster.separation", "Map.variance"))) stop("Plotting aborted: mode must be 'Cluster.separation' or 'Map.variance'")
   if (mode == "Cluster.separation") {
     if (is.null(SOM.output$som_clusters) || length(SOM.output$som_clusters) != length(SOM.output$som_models)) stop("Plotting aborted: som_clusters not found in SOM.output or length mismatch - run clustering.SOM()")
   }
-  viridis_palettes <- list(viridis::viridis, viridis::magma, viridis::plasma,
-                           viridis::inferno, viridis::cividis, viridis::rocket,
-                           viridis::mako, viridis::turbo)
+
+  # Validate specified color palette
+  viridis_palettes <- list(viridis::viridis,
+                           viridis::magma,
+                           viridis::plasma,
+                           viridis::inferno,
+                           viridis::cividis,
+                           viridis::rocket,
+                           viridis::mako,
+                           viridis::turbo)
   if (!any(vapply(viridis_palettes, identical, logical(1), col.pal))) stop("Plotting aborted: col.pal must be viridis palette - viridis, magma, plasma, inferno, cividis, rocket, mako or turbo")
+
+  # Validate plot-saving arguments
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   if (save) {
     if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(plot.type %in% c("svg", "png", "jpg"))) stop("Plotting aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
-  }
-  if (save && !is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name))) stop("Plotting aborted: file.name must be NULL or single character string")
-  if (save) {
+    if (!is.null(file.name) && (!is.character(file.name) || length(file.name) != 1 || is.na(file.name) || trimws(file.name) == "")) stop("Plotting aborted: file.name must be NULL or a single non-empty character string")
     if (!is.numeric(width) || length(width) != 1 || is.na(width) || width <= 0) stop("Plotting aborted: width must be a single positive number (cm)")
     if (!is.numeric(height) || length(height) != 1 || is.na(height) || height <= 0) stop("Plotting aborted: height must be a single positive number (cm)")
-  }
-  if (save) {
     if (!is.numeric(resolution) || length(resolution) != 1 || is.na(resolution) || resolution < 72) stop("Plotting aborted: resolution must be a single number >= 72 (dpi)")
   }
-  margin.list <- c(bottom.margin.total, left.margin.total, top.margin.total, right.margin.total, bottom.margin, left.margin, top.margin, right.margin)
-  margin.names <- c("bottom.margin.total", "left.margin.total", "top.margin.total", "right.margin.total", "bottom.margin", "left.margin", "top.margin", "right.margin")
-  for (i in seq_along(margin.list)) {
-    if (!is.numeric(margin.list[i]) || length(margin.list[i]) != 1 || is.na(margin.list[i])) stop("Plotting aborted: ", margin.names[i], " must be a single numeric value")
-    if (margin.list[i] < 0) stop("Plotting aborted: ", margin.names[i], " must be >= 0")
+
+  # Validate margin arguments
+  margin_list <- c(bottom.margin.total,
+                   left.margin.total,
+                   top.margin.total,
+                   right.margin.total,
+                   bottom.margin,
+                   left.margin,
+                   top.margin,
+                   right.margin)
+  margin_names <- c("bottom.margin.total",
+                    "left.margin.total",
+                    "top.margin.total",
+                    "right.margin.total",
+                    "bottom.margin",
+                    "left.margin",
+                    "top.margin",
+                    "right.margin")
+  for (margin_index in seq_along(margin_list)) {
+    if (!is.numeric(margin_list[margin_index]) || length(margin_list[margin_index]) != 1 || is.na(margin_list[margin_index])) stop("Plotting aborted: ", margin_names[margin_index], " must be a single numeric value")
+    if (margin_list[margin_index] < 0) stop("Plotting aborted: ", margin_names[margin_index], " must be >= 0")
   }
+
+  # Validate plotting arguments
   if (!is.numeric(bars.threshold.N) || length(bars.threshold.N) != 1 || is.na(bars.threshold.N) || bars.threshold.N < 0 || bars.threshold.N %% 1 != 0) stop("Plotting aborted: bars.threshold.N must be a single non-negative integer")
   if (!is.null(x.axis.label) && (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label))) stop("Plotting aborted: x.axis.label must be NULL or a single character string")
   if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Plotting aborted: title.font.size must be a single positive number")
@@ -6323,132 +6388,324 @@ plot.variable.importance.SOM <- function(SOM.output,
   if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive number")
   if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
   if (!is.numeric(importance.threshold) || length(importance.threshold) != 1 || is.na(importance.threshold) || importance.threshold < 0) stop("Plotting aborted: importance.threshold must be a single non-negative number")
-  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || set.k %% 1 != 0)) stop("Plotting aborted: set.k must be NULL or single positive integer")
-  
-  # Create function to calculate weighted eta squared effect size per variable (weighted by neurons + sample counts)
-  calculate.etasquared.per.variable <- function(codebook_matrix, neuron_cluster_vector, som_model, baseline_weight = 1) {
-    neuron_cluster_vector <- as.integer(neuron_cluster_vector) #ensure cluster vector is integer
-    valid_cluster_rows <- is.finite(neuron_cluster_vector) & !is.na(neuron_cluster_vector) #identify valid cluster rows
-    n_units <- length(neuron_cluster_vector) #store original number of neurons (before filtering)
-    neuron_sample_counts <- tabulate(som_model$unit.classif, nbins = n_units) #number of samples per neuron (all neurons)
-    codebook_matrix <- codebook_matrix[valid_cluster_rows, , drop = FALSE] #subset codebook to valid rows
-    neuron_cluster_vector <- neuron_cluster_vector[valid_cluster_rows] #subset cluster vector to valid rows
-    neuron_sample_counts <- neuron_sample_counts[valid_cluster_rows] #subset to valid rows
-    neuron_weights <- neuron_sample_counts + baseline_weight #neuron weight = baseline + sample support (empty neurons still count)
-    etasquared_values <- apply(codebook_matrix, 2, function(variable_values) { #compute eta^2 per variable
-      valid_variable_rows <- is.finite(variable_values) & !is.na(variable_values) & is.finite(neuron_weights) & !is.na(neuron_weights) #identify valid values
-      variable_values <- variable_values[valid_variable_rows] #subset variable values
-      cluster_labels <- neuron_cluster_vector[valid_variable_rows] #subset cluster labels
-      weights <- neuron_weights[valid_variable_rows] #subset weights
-      if (length(variable_values) < 2) return(NA_real_) #require at least 2 observations
-      if (length(unique(cluster_labels)) < 2) return(NA_real_) #require at least 2 clusters
-      if (sum(weights) <= 0) return(NA_real_) #require positive total weight
-      grand_mean <- sum(weights * variable_values) / sum(weights) #weighted grand mean
-      total_sum_of_squares <- sum(weights * (variable_values - grand_mean)^2) #weighted total sum of squares
-      if (!is.finite(total_sum_of_squares) || total_sum_of_squares <= 0) return(0) #handle degenerate cases
-      cluster_means <- tapply(weights * variable_values, cluster_labels, sum) / tapply(weights, cluster_labels, sum) #weighted cluster means
-      cluster_sizes <- tapply(weights, cluster_labels, sum) #cluster "size" = sum of (baseline + hits) across neurons
-      between_cluster_sum_of_squares <- sum(cluster_sizes * (cluster_means - grand_mean)^2) #weighted between-cluster sum of squares
-      as.numeric(between_cluster_sum_of_squares / total_sum_of_squares) #return eta^2
-    })
-    etasquared_values #return vector of eta^2 values
+  if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || set.k < 1 || set.k %% 1 != 0)) stop("Plotting aborted: set.k must be NULL or a single positive integer")
+  if (!requireNamespace("matrixStats", quietly = TRUE)) stop("Plotting aborted: package 'matrixStats' is required")
+
+  # Create function to calculate weighted eta squared effect size per variable
+  calculate.etasquared.per.variable <- function(codebook_matrix,
+                                                neuron_cluster_vector,
+                                                som_model,
+                                                baseline_weight = 1,
+                                                calculation_block_size = 10000) {
+
+    # Prepare neuron-level values
+    codebook_matrix <- as.matrix(codebook_matrix)
+    storage.mode(codebook_matrix) <- "numeric"
+    neuron_cluster_vector <- as.integer(neuron_cluster_vector)
+    valid_neuron_rows <- is.finite(neuron_cluster_vector) & !is.na(neuron_cluster_vector)
+    number_of_SOM_units <- length(neuron_cluster_vector)
+    neuron_sample_counts <- tabulate(som_model$unit.classif,
+                                     nbins = number_of_SOM_units)
+
+    codebook_matrix <- codebook_matrix[valid_neuron_rows, , drop = FALSE]
+    neuron_cluster_vector <- neuron_cluster_vector[valid_neuron_rows]
+    neuron_sample_counts <- neuron_sample_counts[valid_neuron_rows]
+    neuron_weights <- neuron_sample_counts + baseline_weight
+
+    # Initialize eta squared values
+    number_of_variables <- ncol(codebook_matrix)
+    etasquared_values <- rep(NA_real_, number_of_variables)
+    names(etasquared_values) <- colnames(codebook_matrix)
+
+    # Require sufficient data
+    if (nrow(codebook_matrix) < 2 ||
+        length(unique(neuron_cluster_vector)) < 2 ||
+        !is.finite(sum(neuron_weights)) ||
+        sum(neuron_weights) <= 0) {
+      return(etasquared_values)
+    }
+
+    # Calculate cluster-level weight sums
+    total_neuron_weight <- sum(neuron_weights)
+    cluster_weight_sums <- rowsum(matrix(neuron_weights, ncol = 1),
+                                  group = neuron_cluster_vector,
+                                  reorder = FALSE)[, 1]
+
+    # Process variables in blocks
+    block_start_indices <- seq.int(from = 1, to = number_of_variables, by = calculation_block_size)
+
+    # Iterate over variable blocks
+    for (block_start_index in block_start_indices) {
+
+      # Extract current block
+      block_end_index <- min(block_start_index + calculation_block_size - 1, number_of_variables)
+      block_variable_indices <- block_start_index:block_end_index
+      codebook_block <- codebook_matrix[, block_variable_indices, drop = FALSE]
+
+      # Identify variables without missing or non-finite values
+      finite_block_variable_positions <- which(colSums(!is.finite(codebook_block)) == 0)
+
+      # Calculate all complete variables simultaneously
+      if (length(finite_block_variable_positions) > 0) {
+        finite_codebook_block <- codebook_block[, finite_block_variable_positions, drop = FALSE]
+        weighted_codebook_block <- finite_codebook_block * neuron_weights
+
+        # Calculate weighted total sum of squares
+        weighted_variable_sums <- colSums(weighted_codebook_block)
+        weighted_squared_variable_sums <- colSums(finite_codebook_block * weighted_codebook_block)
+        total_sum_of_squares <- weighted_squared_variable_sums - weighted_variable_sums^2 / total_neuron_weight
+
+        # Calculate weighted between-cluster sum of squares
+        cluster_weighted_variable_sums <- rowsum(weighted_codebook_block, group = neuron_cluster_vector, reorder = FALSE)
+        cluster_mean_components <- sweep(cluster_weighted_variable_sums^2, MARGIN = 1, STATS = cluster_weight_sums, FUN = "/")
+        between_cluster_sum_of_squares <- colSums(cluster_mean_components) - weighted_variable_sums^2 / total_neuron_weight
+
+        # Calculate eta squared
+        finite_etasquared_values <- rep(NA_real_, length(finite_block_variable_positions))
+        degenerate_variables <- is.finite(total_sum_of_squares) & total_sum_of_squares <= 0
+        valid_variables <- is.finite(total_sum_of_squares) & total_sum_of_squares > 0 & is.finite(between_cluster_sum_of_squares)
+        finite_etasquared_values[degenerate_variables] <- 0
+        finite_etasquared_values[valid_variables] <- between_cluster_sum_of_squares[valid_variables] / total_sum_of_squares[valid_variables]
+
+        # Correct only negligible floating-point deviations
+        numerical_tolerance <- sqrt(.Machine$double.eps)
+        finite_etasquared_values[finite_etasquared_values < 0 & finite_etasquared_values > -numerical_tolerance] <- 0
+        finite_etasquared_values[finite_etasquared_values > 1 & finite_etasquared_values < 1 + numerical_tolerance] <- 1
+
+        # Store results
+        complete_variable_indices <- block_variable_indices[finite_block_variable_positions]
+        etasquared_values[complete_variable_indices] <- finite_etasquared_values
+      }
+
+      # Calculate variables containing missing or non-finite values individually
+      incomplete_block_variable_positions <- which(colSums(!is.finite(codebook_block)) > 0)
+      if (length(incomplete_block_variable_positions) > 0) {
+        incomplete_variable_indices <- block_variable_indices[incomplete_block_variable_positions]
+        etasquared_values[incomplete_variable_indices] <- vapply(
+          incomplete_variable_indices,
+          function(variable_index) {
+
+            # Extract valid values
+            variable_values <- codebook_matrix[, variable_index]
+            valid_variable_rows <- is.finite(variable_values) &
+              !is.na(variable_values) &
+              is.finite(neuron_weights) &
+              !is.na(neuron_weights)
+            variable_values <- variable_values[valid_variable_rows]
+            cluster_labels <- neuron_cluster_vector[valid_variable_rows]
+            variable_weights <- neuron_weights[valid_variable_rows]
+
+            # Validate values
+            if (length(variable_values) < 2) return(NA_real_)
+            if (length(unique(cluster_labels)) < 2) return(NA_real_)
+            if (sum(variable_weights) <= 0) return(NA_real_)
+
+            # Calculate weighted total sum of squares
+            weighted_grand_mean <- sum(variable_weights * variable_values) / sum(variable_weights)
+            total_sum_of_squares <- sum(variable_weights * (variable_values - weighted_grand_mean)^2)
+            if (!is.finite(total_sum_of_squares) || total_sum_of_squares <= 0) return(0)
+
+            # Calculate weighted between-cluster sum of squares
+            cluster_weighted_sums <- tapply(variable_weights * variable_values, cluster_labels, sum)
+            cluster_weight_sums_current <- tapply(variable_weights, cluster_labels, sum)
+            cluster_weighted_means <- cluster_weighted_sums / cluster_weight_sums_current
+            between_cluster_sum_of_squares <- sum(cluster_weight_sums_current * (cluster_weighted_means - weighted_grand_mean)^2)
+
+            # Return eta squared
+            return(as.numeric(between_cluster_sum_of_squares / total_sum_of_squares))
+          },
+          numeric(1)
+        )
+      }
+    }
+
+    # Return eta squared values
+    return(etasquared_values)
   }
-  
+
   # Create function to calculate weighted map variance per variable
-  calculate.map.variance.per.variable <- function(codebook_matrix, som_model, baseline_weight = 1) {
-    neuron_sample_counts <- tabulate(som_model$unit.classif, nbins = nrow(codebook_matrix)) #number of samples per neuron
-    neuron_weights <- neuron_sample_counts + baseline_weight #empty neurons get small positive weight
-    variance_values <- apply(codebook_matrix, 2, function(variable_values) {
-      valid_rows <- is.finite(variable_values) & !is.na(variable_values) & is.finite(neuron_weights) & !is.na(neuron_weights) #valid rows
-      variable_values <- variable_values[valid_rows] #subset values
-      variable_weights <- neuron_weights[valid_rows] #subset weights
-      if (length(variable_values) < 2) return(NA_real_) #require at least 2 observations
-      if (sum(variable_weights) <= 0) return(NA_real_) #require positive total weight
-      weighted_mean <- sum(variable_weights * variable_values) / sum(variable_weights) #weighted mean
-      weighted_variance <- sum(variable_weights * (variable_values - weighted_mean)^2) / sum(variable_weights) #weighted variance
-      weighted_variance
-    })
-    variance_values
+  calculate.map.variance.per.variable <- function(codebook_matrix,
+                                                  som_model,
+                                                  baseline_weight = 1,
+                                                  calculation_block_size = 10000) {
+
+    # Prepare neuron-level values
+    codebook_matrix <- as.matrix(codebook_matrix)
+    storage.mode(codebook_matrix) <- "numeric"
+    neuron_sample_counts <- tabulate(som_model$unit.classif, nbins = nrow(codebook_matrix))
+    neuron_weights <- neuron_sample_counts + baseline_weight
+
+    # Initialize variance values
+    number_of_variables <- ncol(codebook_matrix)
+    variance_values <- rep(NA_real_, number_of_variables)
+    names(variance_values) <- colnames(codebook_matrix)
+
+    # Require positive total weight
+    total_neuron_weight <- sum(neuron_weights)
+    if (!is.finite(total_neuron_weight) || total_neuron_weight <= 0) return(variance_values)
+
+    # Process variables in blocks
+    block_start_indices <- seq.int(from = 1, to = number_of_variables, by = calculation_block_size)
+    for (block_start_index in block_start_indices) {
+
+      # Extract current block
+      block_end_index <- min(block_start_index + calculation_block_size - 1, number_of_variables)
+      block_variable_indices <- block_start_index:block_end_index
+      codebook_block <- codebook_matrix[, block_variable_indices, drop = FALSE]
+
+      # Identify variables without missing or non-finite values
+      finite_block_variable_positions <- which(colSums(!is.finite(codebook_block)) == 0)
+
+      # Calculate all complete variables simultaneously
+      if (length(finite_block_variable_positions) > 0) {
+        finite_codebook_block <- codebook_block[, finite_block_variable_positions, drop = FALSE]
+        weighted_codebook_block <- finite_codebook_block * neuron_weights
+
+        # Calculate weighted variance
+        weighted_variable_sums <- colSums(weighted_codebook_block)
+        weighted_squared_variable_sums <- colSums(finite_codebook_block * weighted_codebook_block)
+        finite_variance_values <- (weighted_squared_variable_sums - weighted_variable_sums^2 / total_neuron_weight) / total_neuron_weight
+
+        # Correct only negligible negative floating-point deviations
+        numerical_tolerance <- sqrt(.Machine$double.eps)
+        finite_variance_values[finite_variance_values < 0 & finite_variance_values > -numerical_tolerance] <- 0
+
+        # Store results
+        complete_variable_indices <- block_variable_indices[finite_block_variable_positions]
+        variance_values[complete_variable_indices] <- finite_variance_values
+      }
+
+      # Calculate variables containing missing or non-finite values individually
+      incomplete_block_variable_positions <- which(colSums(!is.finite(codebook_block)) > 0)
+      if (length(incomplete_block_variable_positions) > 0) {
+        incomplete_variable_indices <- block_variable_indices[incomplete_block_variable_positions]
+        variance_values[incomplete_variable_indices] <- vapply(
+          incomplete_variable_indices,
+          function(variable_index) {
+
+            # Extract valid values
+            variable_values <- codebook_matrix[, variable_index]
+            valid_variable_rows <- is.finite(variable_values) & !is.na(variable_values) & is.finite(neuron_weights) & !is.na(neuron_weights)
+            variable_values <- variable_values[valid_variable_rows]
+            variable_weights <- neuron_weights[valid_variable_rows]
+
+            # Validate values
+            if (length(variable_values) < 2) return(NA_real_)
+            if (sum(variable_weights) <= 0) return(NA_real_)
+
+            # Calculate weighted variance
+            weighted_variable_mean <- sum(variable_weights * variable_values) / sum(variable_weights)
+            weighted_variable_variance <- sum(variable_weights * (variable_values - weighted_variable_mean)^2) / sum(variable_weights)
+
+            # Return weighted variance
+            return(weighted_variable_variance)
+          },
+          numeric(1)
+        )
+      }
+    }
+
+    # Return weighted variance values
+    return(variance_values)
   }
-  
+
   # Extract matrix names from SOM.output
   matrix_names <- SOM.output$input_data_names
-  
+
   # Determine layers from first model
-  codes0 <- kohonen::getCodes(SOM.output$som_models[[1]])
-  if (!is.list(codes0)) codes0 <- list(codes0)
-  num_layers <- length(codes0)
-  if (length(matrix_names) != num_layers) matrix_names <- paste0("layer", seq_len(num_layers))
-  
+  first_model_codebook_list <- kohonen::getCodes(SOM.output$som_models[[1]])
+  if (!is.list(first_model_codebook_list)) first_model_codebook_list <- list(first_model_codebook_list)
+  number_of_layers <- length(first_model_codebook_list)
+  if (length(matrix_names) != number_of_layers) matrix_names <- paste0("layer", seq_len(number_of_layers))
+
   # Set main plot title
-  plot_title <- if (num_layers == 1) "Variable importance" else "Variable importance across SOM layers"
-  
-  # Filter replicates by set.k (Cluster.separation) or use all replicates (Map.variance)
+  plot_title <- if (number_of_layers == 1) "Variable importance" else "Variable importance across SOM layers"
+
+  # Filter replicates by set.k or use all replicates
   if (mode == "Cluster.separation") {
-    rep.k <- vapply(SOM.output$som_clusters, function(x) length(unique(x[is.finite(x) & !is.na(x)])), integer(1)) #number of clusters per replicate
-    if (all(rep.k < 2L)) {
-      messager("Eta squared effect size (variable importance) could not be computed because all replicates produced k = 1") #no cluster separation possible
+    replicate_k_values <- vapply(SOM.output$som_clusters, function(cluster_vector) length(unique(cluster_vector[is.finite(cluster_vector) & !is.na(cluster_vector)])), integer(1))
+    if (all(replicate_k_values < 2L)) {
+      messager("Eta squared effect size (variable importance) could not be computed because all replicates produced k = 1")
       return(invisible(NULL))
     }
     if (is.null(set.k)) {
-      keep.reps <- which(is.finite(rep.k) & !is.na(rep.k) & rep.k >= 2L) #keep only k > 1 replicates
+      retained_replicate_indices <- which(is.finite(replicate_k_values) & !is.na(replicate_k_values) & replicate_k_values >= 2L)
     } else {
-      keep.reps <- which(rep.k == set.k) #keep only replicates matching set.k
+      retained_replicate_indices <- which(replicate_k_values == set.k)
       if (set.k < 2L) {
-        messager("Eta squared effect size (variable importance) could not be computed because set.k = 1") #no cluster separation possible
+        messager("Eta squared effect size (variable importance) could not be computed because set.k = 1")
         return(invisible(NULL))
       }
     }
-    if (length(keep.reps) == 0) stop("Plotting aborted: no replicates matched set.k")
+    if (length(retained_replicate_indices) == 0) stop("Plotting aborted: no replicates matched set.k")
   }
-  if (mode == "Map.variance") keep.reps <- seq_along(SOM.output$som_models)
-  
-  # Compute per-replicate metric matrices per layer
-  metric_layers <- vector("list", num_layers)
-  for (i in seq_len(num_layers)) metric_layers[[i]] <- list()
-  for (r in keep.reps) {
-    som_model <- SOM.output$som_models[[r]]
-    codes <- kohonen::getCodes(som_model)
-    if (!is.list(codes)) codes <- list(codes)
-    if (mode == "Cluster.separation") som_cluster <- SOM.output$som_clusters[[r]]
-    for (i in seq_len(num_layers)) {
-      if (is.null(colnames(codes[[i]]))) colnames(codes[[i]]) <- paste0("V", seq_len(ncol(codes[[i]]))) #ensure variable names exist
-      if (mode == "Cluster.separation") metric_layers[[i]][[paste0("R", r)]] <- calculate.etasquared.per.variable(codes[[i]], som_cluster, som_model)
-      if (mode == "Map.variance") metric_layers[[i]][[paste0("R", r)]] <- calculate.map.variance.per.variable(codes[[i]], som_model)
+  if (mode == "Map.variance") retained_replicate_indices <- seq_along(SOM.output$som_models)
+
+  # Extract variable names from first retained replicate
+  first_retained_codebook_list <- kohonen::getCodes(SOM.output$som_models[[retained_replicate_indices[1]]])
+  if (!is.list(first_retained_codebook_list)) first_retained_codebook_list <- list(first_retained_codebook_list)
+  if (length(first_retained_codebook_list) != number_of_layers) stop("Plotting aborted: number of SOM layers differs among replicates")
+  for (layer_index in seq_len(number_of_layers)) {
+    if (is.null(colnames(first_retained_codebook_list[[layer_index]]))) colnames(first_retained_codebook_list[[layer_index]]) <- paste0("V", seq_len(ncol(first_retained_codebook_list[[layer_index]])))
+  }
+
+  # Preallocate replicate-by-variable result matrices
+  all_layer_metric <- vector("list", number_of_layers)
+  names(all_layer_metric) <- matrix_names
+  for (layer_index in seq_len(number_of_layers)) {
+    all_layer_metric[[layer_index]] <- matrix(NA_real_, nrow = length(retained_replicate_indices), ncol = ncol(first_retained_codebook_list[[layer_index]]), dimnames = list(paste0("R", retained_replicate_indices), colnames(first_retained_codebook_list[[layer_index]])))
+  }
+
+  # Calculate variable importance for each retained replicate
+  for (retained_replicate_position in seq_along(retained_replicate_indices)) {
+
+    # Extract current replicate
+    retained_replicate_index <- retained_replicate_indices[retained_replicate_position]
+    som_model <- SOM.output$som_models[[retained_replicate_index]]
+    codebook_list <- kohonen::getCodes(som_model)
+    if (!is.list(codebook_list)) codebook_list <- list(codebook_list)
+    if (length(codebook_list) != number_of_layers) stop("Plotting aborted: number of SOM layers differs among replicates")
+
+    # Extract SOM clusters if required
+    if (mode == "Cluster.separation") {
+      som_cluster_vector <- SOM.output$som_clusters[[retained_replicate_index]]
+    }
+
+    # Calculate each layer
+    for (layer_index in seq_len(number_of_layers)) {
+
+      # Ensure variable names exist
+      if (is.null(colnames(codebook_list[[layer_index]]))) colnames(codebook_list[[layer_index]]) <- paste0("V", seq_len(ncol(codebook_list[[layer_index]])))
+
+      # Validate variables across replicates
+      if (ncol(codebook_list[[layer_index]]) != ncol(all_layer_metric[[layer_index]])) stop("Plotting aborted: number of variables differs among SOM replicates for layer ", matrix_names[layer_index])
+      if (!identical(colnames(codebook_list[[layer_index]]), colnames(all_layer_metric[[layer_index]]))) stop("Plotting aborted: variable names or ordering differ among SOM replicates for layer ", matrix_names[layer_index])
+
+      # Calculate weighted eta squared
+      if (mode == "Cluster.separation") all_layer_metric[[layer_index]][retained_replicate_position, ] <- calculate.etasquared.per.variable(codebook_matrix = codebook_list[[layer_index]], neuron_cluster_vector = som_cluster_vector, som_model = som_model, calculation_block_size = calculation.block.size)
+      
+      # Calculate weighted map variance
+      if (mode == "Map.variance") all_layer_metric[[layer_index]][retained_replicate_position, ] <- calculate.map.variance.per.variable(codebook_matrix = codebook_list[[layer_index]], som_model = som_model, calculation_block_size = calculation.block.size)
     }
   }
-  
-  # Build replicate x variable matrices for plotting
-  all_layer_metric <- vector("list", num_layers)
-  for (i in seq_len(num_layers)) {
-    variable_names <- unique(unlist(lapply(metric_layers[[i]], names)))
-    metric_matrix <- matrix(NA_real_, nrow = length(metric_layers[[i]]), ncol = length(variable_names))
-    rownames(metric_matrix) <- names(metric_layers[[i]])
-    colnames(metric_matrix) <- variable_names
-    for (j in seq_along(metric_layers[[i]])) {
-      metric_values <- metric_layers[[i]][[j]]
-      metric_matrix[j, names(metric_values)] <- metric_values
-    }
-    all_layer_metric[[i]] <- metric_matrix
-  }
-  
+
   # Set SVG scaling correction
   svg_scaling_factor <- 1
   if (save && plot.type == "svg") svg_scaling_factor <- 96 / 72
-  
+
   # Set plot saving
   if (save) {
-    
+
     # Set default plotting name
     if (is.null(file.name)) {
       if (mode == "Cluster.separation") file.name <- paste0("SOM_etasquared_plot_", paste(matrix_names, collapse = "_"), ".", plot.type)
       if (mode == "Map.variance") file.name <- paste0("SOM_map_variance_plot_", paste(matrix_names, collapse = "_"), ".", plot.type)
     }
-    
+
     # Check overwrite
     if (file.exists(file.name) && !overwrite) stop(paste(file.name, "already exists - set overwrite = TRUE to overwrite"))
-    
-    # Set plot plot.type
+
+    # Open graphics device
     if (plot.type == "svg") {
       svg(file.name, width = (width / 2.54) * svg_scaling_factor, height = (height / 2.54) * svg_scaling_factor)
     } else if (plot.type == "png") {
@@ -6458,84 +6715,92 @@ plot.variable.importance.SOM <- function(SOM.output,
     } else {
       stop("Plotting aborted: unsupported file plot.type - choose from 'svg', 'png', or 'jpg'")
     }
+    device_opened <- TRUE
   }
-  
+
   # Convert point-size arguments to base R relative font sizes
   base_font_size <- par("ps")
   title_relative_font_size <- (title.font.size * svg_scaling_factor) / base_font_size
-  matrix_label_relative_font_size <- (layer.label.font.size * svg_scaling_factor) / base_font_size
+  layer_label_relative_font_size <- (layer.label.font.size * svg_scaling_factor) / base_font_size
   bar_label_relative_font_size <- (bar.label.font.size * svg_scaling_factor) / base_font_size
   axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
   axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
-  
+
   # Set plotting area
-  par(mfrow = if (num_layers <= 3) c(1, num_layers) else if (num_layers == 4) c(2, 2) else if (num_layers <= 6) c(2, 3) else if (num_layers <= 8) c(2, 4) else if (num_layers == 9) c(3, 3) else c(ceiling(num_layers / 3), 3),
+  par(mfrow = if (number_of_layers <= 3) c(1, number_of_layers) else if (number_of_layers == 4) c(2, 2) else if (number_of_layers <= 6) c(2, 3) else if (number_of_layers <= 8) c(2, 4) else if (number_of_layers == 9) c(3, 3) else c(ceiling(number_of_layers / 3), 3),
       oma = c(bottom.margin.total, left.margin.total, top.margin.total, right.margin.total),
       mar = c(bottom.margin, left.margin, top.margin, right.margin))
   par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
-  
+
+  # Set layer colors
+  layer_colors <- setNames(col.pal(length(matrix_names)), matrix_names)
+
   # Iterate over each matrix and generate plots
-  for (i in seq_along(all_layer_metric)) {
-    
-    # Extract replicate x variable matrix for this layer
-    var_mat <- all_layer_metric[[i]]
-    if (is.null(var_mat) || nrow(var_mat) == 0 || ncol(var_mat) == 0) {
-      messager(paste("No values available for", matrix_names[i], "- skipping"))
+  for (layer_index in seq_along(all_layer_metric)) {
+
+    # Extract replicate-by-variable matrix for this layer
+    variable_importance_matrix <- all_layer_metric[[layer_index]]
+    if (is.null(variable_importance_matrix) || nrow(variable_importance_matrix) == 0 || ncol(variable_importance_matrix) == 0) {
+      messager(paste("No values available for", matrix_names[layer_index], "- skipping"))
       next
     }
-    
+
     # Compute median metric per variable across replicates
-    median_metric_per_variable <- apply(var_mat, 2, stats::median, na.rm = TRUE)
+    median_metric_per_variable <- matrixStats::colMedians(variable_importance_matrix, na.rm = TRUE, useNames = TRUE)
     median_metric_per_variable[!is.finite(median_metric_per_variable)] <- NA_real_
     
     # Filter variables by threshold
-    keep_vars <- which(is.finite(median_metric_per_variable) & !is.na(median_metric_per_variable) & median_metric_per_variable > importance.threshold)
-    if (length(keep_vars) == 0) {
-      messager(paste("No variables exceed importance.threshold of", importance.threshold, "for", matrix_names[i], " - specify lower value for importance.threshold"))
+    retained_variable_indices <- which(is.finite(median_metric_per_variable) & !is.na(median_metric_per_variable) & median_metric_per_variable > importance.threshold)
+
+    if (length(retained_variable_indices) == 0) {
+      messager(paste("No variables exceed importance.threshold of", importance.threshold, "for", matrix_names[layer_index], "- specify lower value for importance.threshold"))
       next
     }
-    var_mat <- var_mat[, keep_vars, drop = FALSE]
-    
-    # Sort variables by median (lowest at bottom)
-    median_metric_per_variable <- median_metric_per_variable[colnames(var_mat)]
-    sort_idx <- order(median_metric_per_variable, decreasing = FALSE)
-    var_mat <- var_mat[, sort_idx, drop = FALSE]
-    y_labels <- colnames(var_mat)
-    num_bars <- ncol(var_mat)
-    
+
+    # Subset retained variables
+    variable_importance_matrix <- variable_importance_matrix[ , retained_variable_indices, drop = FALSE]
+
+    # Sort variables by median importance
+    retained_variable_medians <- median_metric_per_variable[colnames(variable_importance_matrix)]
+    variable_sort_indices <- order(retained_variable_medians, decreasing = FALSE)
+    variable_importance_matrix <- variable_importance_matrix[, variable_sort_indices, drop = FALSE]
+    variable_labels <- colnames(variable_importance_matrix)
+    number_of_bars <- ncol(variable_importance_matrix)
+
     # Set layer color
-    layer_colors <- setNames(col.pal(length(matrix_names)), matrix_names)
-    layer.col <- layer_colors[matrix_names[i]]
-    
+    layer_color <- layer_colors[matrix_names[layer_index]]
+
     # Plot boxplots
-    boxplot(var_mat,
+    boxplot(variable_importance_matrix,
             horizontal = TRUE,
             las = 1,
             notch = FALSE,
             outline = FALSE,
-            col = rep(layer.col, num_bars),
+            col = rep(layer_color, number_of_bars),
             axes = FALSE,
-            whisklty = if(!add.boxplot.whiskers || num_bars > bars.threshold.N) 0 else 1,
-            staplelty = if(!add.boxplot.whiskers || num_bars > bars.threshold.N) 0 else 1,
-            names = rep("", num_bars))
+            whisklty = if(!add.boxplot.whiskers || number_of_bars > bars.threshold.N) 0 else 1,
+            staplelty = if(!add.boxplot.whiskers || number_of_bars > bars.threshold.N) 0 else 1,
+            names = rep("", number_of_bars))
+
+    # Add x-axis numeric tick labels
     axis(1, cex.axis = axis_ticks_relative_font_size)
-    
-    # Add y-axis labels as text
+
+    # Add variable labels
     axis(2,
-         at = seq_len(num_bars),
-         labels = if(num_bars > bars.threshold.N) rep("", num_bars) else y_labels,
+         at = seq_len(number_of_bars),
+         labels = if(number_of_bars > bars.threshold.N) rep("", number_of_bars) else variable_labels,
          las = 1,
          tick = FALSE,
          cex.axis = bar_label_relative_font_size)
-    
+
     # Add layer title
-    mtext(matrix_names[i], 
+    mtext(matrix_names[layer_index], 
           side = 3,
           line = 0.3,
-          cex = matrix_label_relative_font_size,
+          cex = layer_label_relative_font_size,
           font = 2)
   }
-  
+
   # Add shared x-axis title in outer margin
   if (!is.null(x.axis.label) && x.axis.label != "") {
     mtext(x.axis.label,
@@ -6545,7 +6810,7 @@ plot.variable.importance.SOM <- function(SOM.output,
           cex = axis_labels_relative_font_size,
           font = 2)
   }
-  
+
   # Add main title in outer margin
   mtext(plot_title,
         outer = TRUE,
@@ -6553,13 +6818,14 @@ plot.variable.importance.SOM <- function(SOM.output,
         line = 0,
         cex = title_relative_font_size,
         font = 2)
-  
+
   # Close graphics device
   if (save) {
     dev.off()
+    device_opened <- FALSE
     messager(paste("Plot", ifelse(overwrite, "overwritten to", "saved to"), file.name))
   }
-  
+
   # Return invisible NULL
   return(invisible(NULL))
 }
@@ -7979,9 +8245,9 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #'   `NULL`, a default file name is generated from the layer names. Default:
 #'   `NULL`.
 #' @param width A single positive numeric value giving plot width in centimeters
-#'   when `save = TRUE`. Default: `16`.
+#'   when `save = TRUE`. Default: `20`.
 #' @param height A single positive numeric value giving plot height in
-#'   centimeters when `save = TRUE`. Default: `10`.
+#'   centimeters when `save = TRUE`. Default: `15`.
 #' @param resolution A single positive numeric value giving plot resolution in
 #'   dots per inch for `"png"` and `"jpg"` output. Default: `300`.
 #' @param title Optional character string giving the overall plot title. If
@@ -8025,11 +8291,12 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #' leave-one-layer-out mean assignment margin, so positive values indicate that
 #' omitting the layer reduced assignment certainty.
 #'
-#' Replicate-level assignment probabilities are used when available. If they are
-#' unavailable, the function falls back to one-hot probabilities derived from
-#' hard cluster assignments. Assignment-margin change is not plotted when it
-#' cannot be calculated, such as when all successful comparisons have one
-#' cluster.
+#' Replicate-specific soft assignment probabilities are used only when they are
+#' available for both the retained baseline replicate and its matched
+#' leave-one-layer-out replicate. Hard cluster assignments are not converted to
+#' one-hot probabilities for this metric. Assignment-margin change is therefore
+#' recorded as `NA` when comparable replicate-specific soft probabilities are
+#' unavailable and is not plotted when it cannot be calculated.
 #'
 #' When saving SVG output, the function internally applies a `96 / 72` scaling
 #' correction to the SVG device size and point-style font sizes so that common
@@ -8072,8 +8339,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   overwrite = TRUE, #whether to overwrite plot if it already exists
                                                   plot.type = "svg", #plot file type (options: "svg", "png", "jpg")
                                                   file.name = NULL, #plot file name (if NULL, default file name is used)
-                                                  width = 16, #plot width in cm
-                                                  height = 10, #plot height in cm
+                                                  width = 20, #plot width in cm
+                                                  height = 15, #plot height in cm
                                                   resolution = 300, #plot resolution in dpi
                                                   title = "Layer importance", #plot title (NULL = no title)
                                                   absolute.k.deviation.y.axis.label = "Absolute k deviation", #y-axis title of absolute k deviation plot (NULL = no title)
@@ -8229,20 +8496,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     return(stats::median(numeric_vector))
   }
   
-  # Create function to build one-hot assignment probabilities from hard labels
-  create.one.hot.assignment.probabilities.SOM <- function(hard_cluster_labels) {
-    if (is.null(hard_cluster_labels) || length(hard_cluster_labels) == 0) return(NULL)
-    if (is.null(names(hard_cluster_labels))) return(NULL)
-    hard_cluster_labels <- as.character(hard_cluster_labels)
-    unique_cluster_labels <- sort(unique(hard_cluster_labels))
-    one_hot_assignment_probability_matrix <- matrix(0,
-                                                    nrow = length(hard_cluster_labels),
-                                                    ncol = length(unique_cluster_labels),
-                                                    dimnames = list(names(hard_cluster_labels), unique_cluster_labels))
-    one_hot_assignment_probability_matrix[cbind(seq_along(hard_cluster_labels), match(hard_cluster_labels, unique_cluster_labels))] <- 1
-    return(one_hot_assignment_probability_matrix)
-  }
-  
   # Create function to normalize assignment probability matrix
   normalize.assignment.probabilities.SOM <- function(assignment_probability_matrix) {
     if (is.null(assignment_probability_matrix)) return(NULL)
@@ -8277,12 +8530,14 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     return(hard_cluster_labels)
   }
   
-  # Create function to extract replicate-level assignment probabilities if available
-  extract.single.replicate.assignment.probabilities.SOM <- function(clustered_SOM_output, hard_cluster_labels = NULL, retained_replicate_position = NULL) {
+  # Create function to extract replicate-specific soft assignment probabilities if available
+  extract.single.replicate.assignment.probabilities.SOM <- function(clustered_SOM_output,
+                                                                    hard_cluster_labels = NULL,
+                                                                    retained_replicate_position = NULL) {
     
     # Extract sample names from hard cluster labels
     sample_names <- names(hard_cluster_labels)
-    if (is.null(sample_names) || length(sample_names) == 0) return(create.one.hot.assignment.probabilities.SOM(hard_cluster_labels))
+    if (is.null(sample_names) || length(sample_names) == 0) return(NULL)
     
     # Create function to validate and align a candidate assignment-probability matrix
     validate.and.align.assignment.probabilities.SOM <- function(candidate_assignment_probability_matrix) {
@@ -8290,6 +8545,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       # Normalize candidate matrix
       candidate_assignment_probability_matrix <- normalize.assignment.probabilities.SOM(candidate_assignment_probability_matrix)
       if (is.null(candidate_assignment_probability_matrix)) return(NULL)
+      if (ncol(candidate_assignment_probability_matrix) <= 1) return(NULL)
       
       # If row names are missing but dimensions match, assume sample order matches
       if (is.null(rownames(candidate_assignment_probability_matrix)) && nrow(candidate_assignment_probability_matrix) == length(sample_names)) rownames(candidate_assignment_probability_matrix) <- sample_names
@@ -8307,16 +8563,16 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       
       # Renormalize after alignment
       candidate_assignment_probability_matrix <- normalize.assignment.probabilities.SOM(candidate_assignment_probability_matrix)
-      if (is.null(candidate_assignment_probability_matrix)) return(NULL)
+      if (is.null(candidate_assignment_probability_matrix) || ncol(candidate_assignment_probability_matrix) <= 1) return(NULL)
       
       # Return results
       return(candidate_assignment_probability_matrix)
     }
     
-    # Return one-hot fallback if output is invalid
-    if (is.null(clustered_SOM_output) || !is.list(clustered_SOM_output)) return(create.one.hot.assignment.probabilities.SOM(hard_cluster_labels))
+    # Return NULL if output is invalid
+    if (is.null(clustered_SOM_output) || !is.list(clustered_SOM_output)) return(NULL)
     
-    # Check common list-style fields first
+    # Check replicate-specific list-style fields first
     possible_list_field_names <- c("replicate_ancestry_matrices",
                                    "ancestry_matrices",
                                    "sample_ancestry_matrices",
@@ -8341,14 +8597,14 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       }
     }
     
-    # For single-replicate leave-one-layer-out output, ancestry_matrix may already correspond to that single run
+    # For a single-replicate leave-one-layer-out output, ancestry_matrix may represent that replicate directly
     if (is.null(retained_replicate_position) && !is.null(clustered_SOM_output$ancestry_matrix)) {
       current_assignment_probability_matrix <- validate.and.align.assignment.probabilities.SOM(clustered_SOM_output$ancestry_matrix)
       if (!is.null(current_assignment_probability_matrix)) return(current_assignment_probability_matrix)
     }
     
-    # Fallback to one-hot hard assignments
-    return(create.one.hot.assignment.probabilities.SOM(hard_cluster_labels))
+    # Do not construct one-hot probabilities from hard assignments
+    return(NULL)
   }
   
   # Create function to summarize k distributions
@@ -8538,11 +8794,10 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       # Fit leave-one-layer-out SOM
       trained_single_replicate_SOM_output <- do.call(train.SOM, c(list(input_data = input_data_for_SOM), train.SOM.args))
       
-      # Extract clustering arguments with defaults
+      # Extract clustering arguments that may require adaptation
       max.k.current <- if (!is.null(clustering.SOM.args$max.k)) clustering.SOM.args$max.k else 10
       set.k.current <- if (!is.null(clustering.SOM.args$set.k)) clustering.SOM.args$set.k else NULL
-      clustering.method.current <- if (!is.null(clustering.SOM.args$clustering.method)) clustering.SOM.args$clustering.method else stop("Leave-one-layer-out layer importance aborted: clustering.method is missing in clustering.SOM.args")
-      BIC.thresh.current <- if (!is.null(clustering.SOM.args$BIC.thresh)) clustering.SOM.args$BIC.thresh else 6
+      if (is.null(clustering.SOM.args$clustering.method)) stop("Leave-one-layer-out layer importance aborted: clustering.method is missing in clustering.SOM.args")
       
       # Extract codebook matrix and count distinct codebook rows
       trained_codes <- kohonen::getCodes(trained_single_replicate_SOM_output$som_models[[1]])
@@ -8567,23 +8822,25 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         max.k.current <- min(max.k.current, max.k.allowed)
         if (!is.null(set.k.current)) set.k.current <- min(set.k.current, max.k.allowed)
         
-        # Fit clustering
+        # Prepare complete stored clustering argument list and override only rerun-specific arguments
+        current_clustering.SOM.args <- clustering.SOM.args
+        current_clustering.SOM.args$SOM.output <- trained_single_replicate_SOM_output
+        current_clustering.SOM.args$max.k <- max.k.current
+        current_clustering.SOM.args$set.k <- set.k.current
+        current_clustering.SOM.args["quantization.error.quantile"] <- list(NULL)
+        current_clustering.SOM.args["topographic.error.quantile"] <- list(NULL)
+        current_clustering.SOM.args$calculate.soft.ancestry <- TRUE
+        current_clustering.SOM.args$calculate.variable.importance <- FALSE
+        current_clustering.SOM.args$save.SOM.results <- FALSE
+        current_clustering.SOM.args["save.SOM.results.name"] <- list(NULL)
+        current_clustering.SOM.args$overwrite.SOM.results <- TRUE
+        current_clustering.SOM.args$verbose <- FALSE
+        current_clustering.SOM.args$set.seed.N <- matched_clustering_seed
+        
+        # Fit clustering with all stored method-specific settings retained
         clustered_single_replicate_SOM_output <- tryCatch(
           withCallingHandlers(
-            clustering.SOM(SOM.output = trained_single_replicate_SOM_output,
-                           max.k = max.k.current,
-                           set.k = set.k.current,
-                           clustering.method = clustering.method.current,
-                           BIC.thresh = BIC.thresh.current,
-                           quantization.error.quantile = NULL,
-                           topographic.error.quantile = NULL,
-                           calculate.soft.ancestry = TRUE,
-                           calculate.variable.importance = FALSE,
-                           save.SOM.results = FALSE,
-                           save.SOM.results.name = NULL,
-                           overwrite.SOM.results = TRUE,
-                           verbose = FALSE,
-                           set.seed.N = matched_clustering_seed),
+            do.call(clustering.SOM, current_clustering.SOM.args),
             warning = function(w) {
               if (grepl("^Eta squared effect size \\(variable importance\\) could not be computed because all replicates produced k = 1$", conditionMessage(w))) {invokeRestart("muffleWarning")}
             }
@@ -8650,11 +8907,11 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       baseline_modal_k <- baseline_optimal_k_values[retained_replicate_position]
       baseline_sample_names <- names(baseline_hard_cluster_labels)
       
-      # Extract baseline assignment probabilities if available, otherwise fallback to one-hot hard assignments
+      # Extract replicate-specific baseline soft assignment probabilities if available
       baseline_assignment_probability_matrix <- extract.single.replicate.assignment.probabilities.SOM(clustered_SOM_output = SOM_output,
                                                                                                       hard_cluster_labels = baseline_hard_cluster_labels,
                                                                                                       retained_replicate_position = retained_replicate_position)
-      baseline_mean_assignment_margin <- calculate.mean.assignment.margin.SOM(baseline_assignment_probability_matrix)
+      baseline_mean_assignment_margin <- NA_real_
       
       # Loop through omitted layers
       for (layer_index in seq_along(input_data)) {
@@ -8730,17 +8987,33 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
           next
         }
         
-        # Extract leave-one-layer-out assignment probabilities if available, otherwise fallback to one-hot hard assignments
+        # Extract replicate-specific leave-one-layer-out soft assignment probabilities if available
         leave_one_layer_out_assignment_probability_matrix <- extract.single.replicate.assignment.probabilities.SOM(clustered_SOM_output = leave_one_layer_out.SOM.output,
                                                                                                                    hard_cluster_labels = leave_one_layer_out_hard_cluster_labels,
                                                                                                                    retained_replicate_position = NULL)
-        leave_one_layer_out_mean_assignment_margin <- calculate.mean.assignment.margin.SOM(leave_one_layer_out_assignment_probability_matrix)
+        # Calculate assignment margins only from comparable replicate-specific soft probabilities
+        baseline_mean_assignment_margin <- NA_real_
+        leave_one_layer_out_mean_assignment_margin <- NA_real_
+        delta.mean.assignment.margin <- NA_real_
+        if (!is.null(baseline_assignment_probability_matrix) && !is.null(leave_one_layer_out_assignment_probability_matrix)) {
+          shared_assignment_probability_sample_names <- intersect(rownames(baseline_assignment_probability_matrix),
+                                                                  rownames(leave_one_layer_out_assignment_probability_matrix))
+          if (length(shared_assignment_probability_sample_names) >= 2) {
+            baseline_assignment_probability_matrix_aligned <- baseline_assignment_probability_matrix[shared_assignment_probability_sample_names, , drop = FALSE]
+            leave_one_layer_out_assignment_probability_matrix_aligned <- leave_one_layer_out_assignment_probability_matrix[shared_assignment_probability_sample_names, , drop = FALSE]
+            baseline_mean_assignment_margin <- calculate.mean.assignment.margin.SOM(baseline_assignment_probability_matrix_aligned)
+            leave_one_layer_out_mean_assignment_margin <- calculate.mean.assignment.margin.SOM(leave_one_layer_out_assignment_probability_matrix_aligned)
+            if (is.finite(baseline_mean_assignment_margin) && !is.na(baseline_mean_assignment_margin) &&
+                is.finite(leave_one_layer_out_mean_assignment_margin) && !is.na(leave_one_layer_out_mean_assignment_margin)) {
+              delta.mean.assignment.margin <- baseline_mean_assignment_margin - leave_one_layer_out_mean_assignment_margin
+            }
+          }
+        }
         
         # Calculate replicate-level metrics
         absolute.k.deviation <- abs(leave_one_layer_out_modal_k - baseline_modal_k)
         pairwise.coassignment.change <- calculate.pairwise.coassignment.change.SOM(baseline_cluster_labels = baseline_hard_cluster_labels,
                                                                                    leave_one_layer_out_cluster_labels = leave_one_layer_out_hard_cluster_labels)
-        delta.mean.assignment.margin <- baseline_mean_assignment_margin - leave_one_layer_out_mean_assignment_margin
         
         # Store results
         replicate_matched_results_list[[results_counter]] <- data.frame(retained.replicate.position = retained_replicate_position,
@@ -8872,7 +9145,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   # Set fixed internal panel margins
   half_between_plot_margin <- between.plot.margin / 2
   inner_bottom_margin <- 0
-  inner_left_margin <- 5
+  inner_left_margin <- 5.5
   inner_top_margin <- 1
   inner_right_margin <- 0
   
@@ -8902,7 +9175,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         oma = outer_margins,
         xpd = FALSE,
         mgp = c(4, 1, 0))
-    messager("Assignment margin plot skipped because all successful replicates had k = 1")
+    messager("Assignment margin plot skipped because comparable replicate-specific soft assignment probabilities were unavailable")
   }
   par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
   
@@ -8960,7 +9233,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     if (!is.null(y_axis_label) && y_axis_label != "") {
       mtext(y_axis_label,
             side = 2,
-            line = 2.5,
+            line = 3,
             font = 2,
             cex = axis_labels_relative_font_size)
     }
@@ -9019,7 +9292,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   # Return results
   return(leave.one.layer.out.results)
 }
-
 
                                                    
 ## Function to convert specified categorical columns into binary (0/1) indicators
