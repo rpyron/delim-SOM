@@ -292,7 +292,7 @@ plot.model.SOM(SOM_multi_MORPH_ENV, replicate.mode = "first")
 
 ## Test species coefficient plot
 try(plot.structure.SOM(SOM_single_Alleles, bottom.margin = 4)) #will fail with message
-plot.structure.SOM(SOM_single_TestD, Individual.labels.font.size = 0.5, bar.border.col = "white")
+plot.structure.SOM(SOM_single_TestD, Individual.labels.font.size = 5, bar.border.col = "orange")
 plot.structure.SOM(SOM_single_k3_2)
 plot.structure.SOM(SOM_single_k3_2, sort.by.col = 2)
 
