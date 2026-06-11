@@ -3326,78 +3326,123 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 
 #' Plot Structure-like SOM assignment coefficients
 #'
-#' Plot a Structure-like stacked barplot from the ancestry matrix returned by
-#' `clustering.SOM`. Each vertical bar represents one individual, and stacked
-#' colors represent assignment coefficients to SOM clusters.
+#' Plot the replicate-consensus cluster assignment coefficients returned by
+#' `clustering.SOM` as a Structure-like stacked barplot. Each vertical bar
+#' represents one sample, and the stacked colored segments represent the
+#' proportion of retained replicate maps assigning that sample to each inferred
+#' cluster.
 #'
-#' @param SOM.output A SOM result object returned by `clustering.SOM`. The object
-#'   must contain `ancestry_matrix`.
+#' @param SOM.output A list returned by `clustering.SOM`. The object must contain
+#'   `ancestry_matrix`, a numeric sample-by-cluster matrix with at least two
+#'   samples and two clusters.
 #' @param col.pal A viridis color-palette function used to assign colors to
 #'   clusters. Supported palettes are `viridis::viridis`, `viridis::magma`,
 #'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
 #'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
 #'   `viridis::viridis`.
-#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param save Logical; if `TRUE`, the plot is saved to a file. Default:
+#'   `FALSE`.
 #' @param overwrite Logical; if `TRUE`, an existing output file with the same
-#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
-#'   the output file already exists. Default: `TRUE`.
-#' @param plot.type Character string specifying the file format when
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted
+#'   when the file already exists. Default: `TRUE`.
+#' @param plot.type A single character string specifying the file format when
 #'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
 #'   Default: `"svg"`.
 #' @param file.name Optional character string giving the output file name when
-#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
-#'   `NULL`.
-#' @param width Numeric value giving plot width in centimeters when
-#'   `save = TRUE`. Default: `10`.
-#' @param height Numeric value giving plot height in centimeters when
-#'   `save = TRUE`. Default: `15`.
-#' @param resolution Numeric value giving plot resolution in dots per inch for
-#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
-#' @param bottom.margin Numeric value giving the bottom plot margin. Default:
-#'   `5`.
-#' @param left.margin Numeric value giving the left plot margin. Default: `5`.
-#' @param top.margin Numeric value giving the top plot margin. Default: `1.5`.
-#' @param right.margin Numeric value giving the right plot margin. Default:
-#'   `1.5`.
+#'   `save = TRUE`. If `NULL`, a default name is generated from the SOM input
+#'   layer names and `plot.type`. Default: `NULL`.
+#' @param width A single positive numeric value giving the plot width in
+#'   centimeters when `save = TRUE`. Default: `16`.
+#' @param height A single positive numeric value giving the plot height in
+#'   centimeters when `save = TRUE`. Default: `10`.
+#' @param resolution A single numeric value giving the plot
+#'   resolution in dpi for `"png"` and `"jpg"` output. Default: `300`.
+#' @param bottom.margin A single non-negative numeric value giving the bottom
+#'   plot margin in lines. Default: `5`.
+#' @param left.margin A single non-negative numeric value giving the left plot
+#'   margin in lines. Default: `5`.
+#' @param top.margin A single non-negative numeric value giving the top plot
+#'   margin in lines. Default: `1.5`.
+#' @param right.margin A single non-negative numeric value giving the right plot
+#'   margin in lines. Default: `1.5`.
 #' @param Individual.labels.font.size A single positive numeric value giving the
-#'   individual-label font size in points. Default: `7`.
+#'   sample-label font size in points. Sample labels are taken from the row names
+#'   of `ancestry_matrix`. Default: `7`.
 #' @param Y.axis.title Optional character string giving the y-axis title. If
-#'   `NULL`, no y-axis title is shown. Default:
+#'   `NULL` or an empty string, no y-axis title is shown. Default:
 #'   `"Cluster assignment coefficient"`.
 #' @param axis.labels.font.size A single positive numeric value giving the
 #'   y-axis-title font size in points. Default: `9.1`.
 #' @param axis.ticks.font.size A single positive numeric value giving the
 #'   y-axis numeric tick-label font size in points. Default: `7`.
-#' @param sort.by.col Optional positive integer giving the cluster column used to
-#'   order individuals. If `NULL`, individuals are ordered by hierarchical
-#'   clustering. Default: `1`.
-#' @param linkage.method Character string specifying the agglomeration method
-#'   used by `stats::hclust` when `sort.by.col = NULL`. Default: `"single"`.
+#' @param sort.by.col Optional positive integer giving the cluster column used
+#'   to order samples by increasing assignment coefficient. If `NULL`, samples
+#'   are ordered by single-linkage hierarchical clustering of their complete 
+#' 	 assignment profiles. Default: `1`.
 #' @param bar.border.col Optional character string giving the color of vertical
-#'   separation lines between individuals. If `NULL`, no separation lines are
+#'   separation lines between samples. If `NULL`, no separation lines are
 #'   drawn. Default: `NULL`.
-#' @param bar.border.lwd Numeric value giving the line width of vertical
-#'   separation lines between individuals. Ignored when `bar.border.col = NULL`.
-#'   Default: `1`.
-#' @param verbose Logical; if `TRUE`, informative messages are printed. Default:
-#'   `TRUE`.
+#' @param bar.border.lwd Optional positive numeric value (or NULL) giving the 
+#' line width of vertical separation lines between samples. Ignored when
+#'   `bar.border.col = NULL`. Default: `1`.
+#' @param verbose Logical; if `TRUE`, informative messages and warnings are
+#'   printed. Default: `TRUE`.
 #'
 #' @details
-#' The plot is intended as a descriptive visualization of individual assignment
-#' coefficients to inferred SOM clusters. If `sort.by.col` is supplied,
-#' individuals are ordered by their assignment coefficient to that cluster. If
-#' `sort.by.col = NULL`, individuals are ordered by hierarchical clustering of
-#' their assignment-coefficient profiles.
+#' `plot.structure.SOM` visualizes the individual-level `ancestry_matrix`
+#' returned by `clustering.SOM` as a Structure-like stacked barplot. This
+#' presentation follows the general assignment-coefficient visualization widely
+#' used in population-genetic clustering analyses (Pritchard et al., 2000).
+#' Each row of `ancestry_matrix` represents one sample, each column represents
+#' one inferred cluster, and each value gives the proportion of retained SOM
+#' replicates in which the sample was assigned to that cluster. These values can
+#' be interpreted as replicate-consensus "species coefficients" (Pyron, 2023;
+#' Pyron et al., 2023). Samples dominated by one color are consistently assigned
+#' to one cluster across replicate maps, whereas samples with intermediate
+#' contributions from multiple colors are assigned to different clusters across
+#' replicates. Such patterns may reflect uncertain delimitation, weak
+#' differentiation, recent divergence, incomplete lineage sorting, hybridization,
+#' or conflicting signals among data layers. The plot is not produced for K = 1
+#' because all samples would have an assignment coefficient of one for the same cluster.
 #'
-#' When saving SVG output, the function internally applies a `96 / 72` scaling
-#' correction to the SVG device size and point-style font sizes so that the
-#' figure is imported by common document and presentation software with the
-#' requested dimensions and font sizes.
+#' If `sort.by.col` is supplied, samples are ordered from the smallest to the
+#' largest assignment coefficient for the selected cluster. This can make gradual
+#' transitions between strongly and intermediately assigned samples easier to
+#' visualize. If `sort.by.col = NULL`, Euclidean distances are calculated among
+#' the complete assignment-coefficient profiles, and samples are ordered using
+#' single-linkage hierarchical clustering. Cluster colors follow the column order of 
+#' `ancestry_matrix`.
 #'
-#' @return Invisibly returns the plotted assignment-coefficient matrix after
-#'   ordering. If `save = TRUE`, the plot is also written to the specified file.
+#' Sample names are displayed vertically below the bars. For datasets containing
+#' many samples or long sample names, increasing `width` or `bottom.margin`, or
+#' decreasing `Individual.labels.font.size`, may improve readability.
 #'
-#' @importFrom graphics par plot polygon segments axis mtext box
+#' When saving is requested, the function supports SVG, PNG, and JPEG output. A
+#' default file name is generated as
+#' `"SOM_structure_plot_<input-layer-names>.<plot.type>"` when `file.name` is
+#' `NULL`.
+#'
+#' @return Invisibly returns the numeric assignment-coefficient matrix displayed
+#'   in the plot. If `save = TRUE`, the plot is also written to the specified file.
+#'
+#' @references
+#'
+#' Pritchard, J. K., Stephens, M., & Donnelly, P. (2000). Inference of
+#'   population structure using multilocus genotype data. \emph{Genetics},
+#'   155(2), 945-959. https://doi.org/10.1093/genetics/155.2.945
+#'
+#' Pyron, R. A. (2023). Unsupervised machine learning for species delimitation,
+#'   integrative taxonomy, and biodiversity conservation. \emph{Molecular
+#'   Phylogenetics and Evolution}, 189, 107939.
+#'   https://doi.org/10.1016/j.ympev.2023.107939
+#'
+#' Pyron, R. A., O'Connell, K. A., Duncan, S. C., Burbrink, F. T., & Beamer,
+#'   D. A. (2023). Speciation hypotheses from phylogeographic delimitation yield
+#'   an integrative taxonomy for seal salamanders (\emph{Desmognathus
+#'   monticola}). \emph{Systematic Biology}, 72(1), 179-197.
+#'   https://doi.org/10.1093/sysbio/syac065
+#'
+#' @importFrom graphics par plot polygon segments axis mtext
 #' @importFrom grDevices dev.cur dev.off svg png jpeg
 #' @importFrom stats hclust dist
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
@@ -3406,8 +3451,10 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Multi-layer Super-SOM
-#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' # Train and cluster a multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
+#'                    nrow = 50,
+#'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
 #'
@@ -3415,20 +3462,29 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
 #'
-#' input_data_multi <- list(
-#'   SNPs = snp_data,
-#'   Morphology = morphology_data,
-#'   Environment = environment_data
+#' som_multi <- train.SOM(
+#'   input_data = list(
+#'     SNPs = snp_data,
+#'     Morphology = morphology_data,
+#'     Environment = environment_data
+#'   )
 #' )
-#'
-#' som_multi <- train.SOM(input_data = input_data_multi)
 #'
 #' som_clustered <- clustering.SOM(
 #'   SOM.output = som_multi,
-#'   clustering.method = "kmeans+BICthreshold"
+#'   clustering.method = "kmeans+BICelbow"
 #' )
 #'
-#' plot.structure.SOM(som_clustered)
+#' # Order samples by the first cluster-assignment coefficient
+#' plot.structure.SOM(SOM.output = som_clustered, sort.by.col = 1)
+#'
+#' # Save the plot
+#' plot.structure.SOM(
+#'   SOM.output = som_clustered,
+#'   save = TRUE,
+#'   plot.type = "svg",
+#'   file.name = "SOM_structure_plot.svg"
+#' )
 #' }
 #'
 #' @export
@@ -3450,7 +3506,6 @@ plot.structure.SOM <- function(SOM.output,
                                axis.labels.font.size = 9.1, #font size of y-axis title in points
                                axis.ticks.font.size = 7, #font size of y-axis numeric tick labels in points
                                sort.by.col = 1, #specify integer giving column index of ancestry matrix for ordering rows of ancestry matrix (if NULL, hierarchical ordering is performed)
-                               linkage.method = "single", #agglomeration method used for hierarchical clustering (see hclust function)
                                bar.border.col = NULL, #color of separation lines (e.g. "black", "gray30"); NULL = no border
                                bar.border.lwd = 1, #line width of separation lines (ignored if color is NULL)
                                verbose = TRUE #whether to print messages
@@ -3530,8 +3585,6 @@ plot.structure.SOM <- function(SOM.output,
   if (!is.null(sort.by.col)) {
     if (!is.numeric(sort.by.col) || length(sort.by.col) != 1 || is.na(sort.by.col) || sort.by.col < 1 || sort.by.col > ncol(SOM.output$ancestry_matrix) || (sort.by.col %% 1 != 0)) stop(paste0("Plotting aborted: sort.by.col must be integer between 1 and ", ncol(SOM.output$ancestry_matrix), " or NULL"))
   }
-  allowed_linkage <- c("single", "complete", "average", "ward.D", "ward.D2", "mcquitty", "median", "centroid")
-  if (!is.character(linkage.method) || length(linkage.method) != 1 || is.na(linkage.method) || !(linkage.method %in% allowed_linkage)) stop("Plotting aborted: linkage.method must be one of: ", paste(allowed_linkage, collapse = ", "))
   
   # Validate bar-border arguments
   if (!is.null(bar.border.col)) {
@@ -3554,7 +3607,7 @@ plot.structure.SOM <- function(SOM.output,
   if (!is.null(sort.by.col)) {
     sample_order <- order(ancestry_matrix[, sort.by.col])
   } else {
-    sample_order <- stats::hclust(stats::dist(ancestry_matrix), method = linkage.method)$order
+    sample_order <- stats::hclust(stats::dist(ancestry_matrix), method = "single")$order
   }
   SOM_ancestry_proportions <- ancestry_matrix[sample_order, , drop = FALSE]
   
@@ -3704,88 +3757,121 @@ plot.structure.SOM <- function(SOM.output,
 #' Plot SOM learning trajectories across training steps
 #'
 #' Plot replicate-level learning trajectories from a trained single-layer or
-#' multi-layer SOM object returned by `train.SOM`. The function visualizes
-#' the learning values stored in `learning_values_list`, with training
-#' steps on the x-axis and training change on the y-axis. For multi-layer
-#' Super-SOMs, one color is used per input layer, and replicate trajectories
-#' within each layer are overlaid with transparent lines.
+#' multi-layer Self-Organizing Map (SOM). The function plots training steps on
+#' the x-axis and the learning values stored during SOM training on the y-axis.
+#' For multi-layer SOMs, each input layer is shown in a different color, with
+#' replicate-specific trajectories overlaid as transparent lines.
 #'
-#' @param SOM.output A SOM result object returned by `train.SOM`. The object must
-#'   contain `learning_values_list`, a list of numeric matrices with one matrix
-#'   per input layer, or `learning_values`, a numeric matrix for single-layer SOMs.
+#' @param SOM.output A list returned by `train.SOM`. The object must contain
+#'   `learning_values_list`, a list containing one numeric learning-trajectory
+#'   matrix per input layer, or `learning_values`, a numeric matrix for a
+#'   single-layer SOM. Rows represent training steps and columns represent SOM
+#'   replicates. The object must also contain `input_data_names`.
 #' @param col.pal A viridis color-palette function used to assign colors to
-#'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
+#'   input layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
 #'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
 #'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
 #'   `viridis::turbo`.
-#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param save Logical; if `TRUE`, the plot is saved to a file. Default:
+#'   `FALSE`.
 #' @param overwrite Logical; if `TRUE`, an existing output file with the same
-#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
-#'   the output file already exists. Default: `TRUE`.
-#' @param plot.type Character string specifying the file format when
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted
+#'   when the output file already exists. Default: `TRUE`.
+#' @param plot.type A single character string specifying the file format when
 #'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
 #'   Default: `"svg"`.
 #' @param file.name Optional character string giving the output file name when
-#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
-#'   `NULL`.
-#' @param width Numeric value giving plot width in centimeters when
-#'   `save = TRUE`. Default: `16`.
-#' @param height Numeric value giving plot height in centimeters when
-#'   `save = TRUE`. Default: `10`.
-#' @param resolution Numeric value giving plot resolution in dots per inch for
-#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
-#' @param bottom.margin Numeric value giving the bottom plot margin. Default:
-#'   `5`.
-#' @param left.margin Numeric value giving the left plot margin. Default: `5`.
-#' @param top.margin Numeric value giving the top plot margin. Default: `3`.
-#' @param right.margin Numeric value giving the right plot margin. Default: `2`.
-#' @param lines.alpha Numeric value between 0 and 1 giving the transparency of
-#'   replicate trajectory lines. Lower values make overlapping replicate lines
-#'   less visually dominant. Default: `0.3`.
-#' @param lines.thickness Numeric value giving the line width for replicate
-#'   trajectory lines. Default: `0.9`.
+#'   `save = TRUE`. If `NULL`, a default name is generated from the SOM input
+#'   layer names and `plot.type`. Default: `NULL`.
+#' @param width A single positive numeric value giving the plot width in
+#'   centimeters when `save = TRUE`. Default: `16`.
+#' @param height A single positive numeric value giving the plot height in
+#'   centimeters when `save = TRUE`. Default: `10`.
+#' @param resolution A single numeric value of at least 72 giving the plot
+#'   resolution in dpi for `"png"` and `"jpg"` output. Default: `300`.
+#' @param bottom.margin A single non-negative numeric value giving the bottom
+#'   plot margin in plot.learning `5`.
+#' @param left.margin A single non-negative numeric value giving the left plot
+#'   margin in lines. Default: `5`.
+#' @param top.margin A single non-negative numeric value giving the top plot
+#'   margin in lines. Default: `3`.
+#' @param right.margin A single non-negative numeric value giving the right plot
+#'   margin in lines. Default: `2`.
+#' @param lines.alpha A single numeric value between 0 and 1 giving the
+#'   transparency of replicate trajectory lines. Default: `0.3`.
+#' @param lines.thickness A single positive numeric value giving the line width
+#'   of replicate trajectories. Default: `0.9`.
 #' @param plot.title Optional character string giving the main plot title. If
 #'   `NULL`, no title is shown. Default: `"SOM learning trajectories"`.
 #' @param plot.title.font.size A single positive numeric value giving the plot
 #'   title font size in points. Default: `9.1`.
 #' @param legend.title Optional character string giving the legend title. If
 #'   `NULL`, no legend title is shown. Default: `"Layer"`.
-#' @param legend.position Character string specifying the legend position.
-#'   Supported values are `"topright"`, `"topleft"`, `"bottomright"`,
-#'   `"bottomleft"`, `"right"`, `"left"`, `"top"`, `"bottom"`, and
-#'   `"center"`. Default: `"topright"`.
-#' @param legend.lines.thickness Numeric value giving the line width used in the
-#'   legend. Default: `3`.
+#' @param legend.position A single character string specifying the legend
+#'   position. Supported values are `"topright"`, `"topleft"`,
+#'   `"bottomright"`, `"bottomleft"`, `"right"`, `"left"`, `"top"`,
+#'   `"bottom"`, and `"center"`. Default: `"topright"`.
+#' @param legend.lines.thickness A single positive numeric value giving the line
+#'   width used in the legend. Default: `3`.
 #' @param legend.text.font.size A single positive numeric value giving the
 #'   legend text font size in points. Default: `9.1`.
 #' @param legend.title.font.size A single positive numeric value giving the
-#'   legend title font size in points. Default: `9.1`.
-#' @param legend.box Logical; if `TRUE`, a white box is drawn around the legend.
-#'   Default: `FALSE`.
+#'   legend-title font size in points. Default: `9.1`.
+#' @param legend.box Logical; if `TRUE`, a box with a black border is
+#'   drawn around the legend. Default: `FALSE`.
 #' @param x.axis.label Optional character string giving the x-axis title. If
 #'   `NULL`, no x-axis title is shown. Default: `"Training steps"`.
 #' @param y.axis.label Optional character string giving the y-axis title. If
-#'   `NULL`, no y-axis title is shown. Default:
-#'   `"Mean distance to closest codebook vector"`.
+#'   NULL, no y-axis title is shown. Default:
+#'   "Mean distance to closest codebook vector".
 #' @param axis.labels.font.size A single positive numeric value giving the axis
 #'   title font size in points. Default: `9.1`.
 #' @param axis.ticks.font.size A single positive numeric value giving the axis
 #'   tick-label font size in points. Default: `7`.
 #'
 #' @details
-#' The plot is intended as a SOM convergence diagnostic. A rapid initial decline
-#' followed by a plateau in the learning values suggests that the map has
-#' stabilized toward a coherent representation. Persistently erratic
-#' trajectories, late-stage increases, or the absence of a clear plateau may
-#' indicate insufficient training steps, problematic scaling, weak data
-#' structure, or unstable SOM training. The plot should be interpreted as a
-#' training-progress diagnostic rather than as evidence that one layer is more
-#' important than another for delimitation.
+#' `plot.learning.SOM` visualizes the SOM training trajectories stored in
+#' `learning_values_list` by `train.SOM`. Each matrix represents one input
+#' layer, with rows corresponding to training steps and columns corresponding to
+#' replicate SOMs. Each line therefore shows how the learning value for one
+#' replicate changes during training. For multi-layer SOMs, all replicates from
+#' the same layer are shown in the same color.
 #'
-#' @return Invisibly returns `NULL`. The function is called for its plotting side
-#'   effect. If `save = TRUE`, the plot is written to the specified file.
+#' The learning values describe how closely the observations are represented by
+#' the codebook vectors during training. A rapid initial decline followed by a
+#' stable plateau suggests that training has converged toward a stable map
+#' representation (Kohonen, 2013; Wehrens & Kruisselbrink, 2018). Persistently
+#' erratic trajectories, substantial late-stage changes, or the absence of a
+#' clear plateau may indicate insufficient training steps, problematic scaling,
+#' weakly structured input data, or unstable SOM training.
 #'
-#' @importFrom graphics par plot lines axis box title rect segments strheight strwidth text
+#' For multi-layer SOMs, the absolute height of trajectories should not be used
+#' to compare the biological importance of layers. Layers can use different
+#' distance functions and have different dimensionality and distance
+#' distributions, so learning values are primarily diagnostic within a layer
+#' and across training steps. Layer importance should instead be evaluated with
+#' the variable-importance and leave-one-layer-out functions.
+#'
+#' Layer colors follow the order of `input_data_names`, and the legend identifies
+#' the color assigned to each layer.
+#'
+#' If `file.name = NULL`, the default file name is
+#' `"SOM_learning_plot_<input-layer-names>.<plot.type>"`.
+#'
+#' @return Invisibly returns `NULL`. The function is called for its plotting
+#'   side effect. If `save = TRUE`, the plot is also written to the specified
+#'   file.
+#'
+#' @references
+#' Kohonen, T. (2013). Essentials of the self-organizing map. \emph{Neural
+#'   Networks}, 37, 52-65. https://doi.org/10.1016/j.neunet.2012.09.018
+#'
+#' Wehrens, R., & Kruisselbrink, J. (2018). Flexible self-organizing maps in
+#'   kohonen 3.0. \emph{Journal of Statistical Software}, 87(7).
+#'   https://doi.org/10.18637/jss.v087.i07
+#'
+#' @importFrom graphics par plot lines axis title rect segments strheight
+#'   strwidth text
 #' @importFrom grDevices adjustcolor dev.cur dev.off svg png jpeg
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
@@ -3793,17 +3879,19 @@ plot.structure.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Single-layer SOM
+#' # Train and plot a single-layer SOM
 #' continuous_data <- matrix(rnorm(50 * 6), nrow = 50, ncol = 6)
 #' rownames(continuous_data) <- paste0("sample_", seq_len(nrow(continuous_data)))
 #' colnames(continuous_data) <- paste0("trait_", seq_len(ncol(continuous_data)))
 #'
 #' som_single <- train.SOM(input_data = continuous_data)
 #'
-#' plot.learning.SOM(som_single)
+#' plot.learning.SOM(SOM.output = som_single)
 #'
-#' # Multi-layer Super-SOM
-#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' # Train and plot a multi-layer Super-SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
+#'                    nrow = 50,
+#'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
 #'
@@ -3811,15 +3899,23 @@ plot.structure.SOM <- function(SOM.output,
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
 #'
-#' input_data_multi <- list(
-#'   SNPs = snp_data,
-#'   Morphology = morphology_data,
-#'   Environment = environment_data
+#' som_multi <- train.SOM(
+#'   input_data = list(
+#'     SNPs = snp_data,
+#'     Morphology = morphology_data,
+#'     Environment = environment_data
+#'   )
 #' )
 #'
-#' som_multi <- train.SOM(input_data = input_data_multi)
+#' plot.learning.SOM(SOM.output = som_multi)
 #'
-#' plot.learning.SOM(som_multi)
+#' # Save the learning-trajectory plot
+#' plot.learning.SOM(
+#'   SOM.output = som_multi,
+#'   save = TRUE,
+#'   plot.type = "svg",
+#'   file.name = "SOM_learning_plot.svg"
+#' )
 #' }
 #'
 #' @export
@@ -3845,7 +3941,7 @@ plot.learning.SOM <- function(SOM.output,
                               legend.lines.thickness = 3, #thickness for lines in legend
                               legend.text.font.size = 9.1, #font size of legend text in points
                               legend.title.font.size = 9.1, #font size of legend title in points
-                              legend.box = FALSE, #create white box around legend
+                              legend.box = FALSE, #create box with black outline around legend
                               x.axis.label = "Training steps", #x-axis title (NULL = no x-axis title)
                               y.axis.label = "Mean distance to closest codebook vector", #y-axis title (NULL = no y-axis title)
                               axis.labels.font.size = 9.1, #font size of axis titles in points
