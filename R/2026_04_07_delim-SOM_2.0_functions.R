@@ -7301,7 +7301,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   # Create function to print final summary
   print.final.summary <- function(snp.matrix) {
     if (verbose && filter.messages.printed) messager("")
-    if (verbose) messager("Final SNP matrix: ", nrow(snp.matrix), " samples × ", ncol(snp.matrix), " loci") #summary
+    if (verbose) messager("Final SNP matrix: ", nrow(snp.matrix), " samples × ", ncol(snp.matrix), " loci (SNP variables)") #summary
   }
 
   # Create function to validate file path arguments
@@ -7326,6 +7326,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (!is.logical(invariant.loci.filter) || length(invariant.loci.filter) != 1 || is.na(invariant.loci.filter)) stop("invariant.loci.filter must be TRUE or FALSE") #validate
     if (!is.null(missing.loci.cutoff.lenient) && (!is.numeric(missing.loci.cutoff.lenient) || length(missing.loci.cutoff.lenient) != 1 || is.na(missing.loci.cutoff.lenient) || !is.finite(missing.loci.cutoff.lenient) || missing.loci.cutoff.lenient < 0 || missing.loci.cutoff.lenient > 1)) stop("missing.loci.cutoff.lenient must be NULL or a single finite numeric value between 0 and 1") #validate
     if (!is.null(missing.loci.cutoff.final) && (!is.numeric(missing.loci.cutoff.final) || length(missing.loci.cutoff.final) != 1 || is.na(missing.loci.cutoff.final) || !is.finite(missing.loci.cutoff.final) || missing.loci.cutoff.final < 0 || missing.loci.cutoff.final > 1)) stop("missing.loci.cutoff.final must be NULL or a single finite numeric value between 0 and 1") #validate
+	if (!is.null(missing.loci.cutoff.lenient) && !is.null(missing.loci.cutoff.final) && missing.loci.cutoff.final > missing.loci.cutoff.lenient) stop("missing.loci.cutoff.final must be less than or equal to missing.loci.cutoff.lenient") #ensure final filter is at least as stringent
     if (!is.null(missing.individuals.cutoff) && (!is.numeric(missing.individuals.cutoff) || length(missing.individuals.cutoff) != 1 || is.na(missing.individuals.cutoff) || !is.finite(missing.individuals.cutoff) || missing.individuals.cutoff < 0 || missing.individuals.cutoff > 1)) stop("missing.individuals.cutoff must be NULL or a single finite numeric value between 0 and 1") #validate
     if (!is.character(phylip.format) || length(phylip.format) != 1 || is.na(phylip.format) || !(phylip.format %in% c("sequential", "interleaved"))) stop("phylip.format must be 'sequential' or 'interleaved'") #validate
     if (!is.character(plink.raw.metadata.columns) || any(is.na(plink.raw.metadata.columns)) || any(trimws(plink.raw.metadata.columns) == "")) stop("plink.raw.metadata.columns must be a character vector without NA or empty strings") #validate
@@ -7473,8 +7474,12 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                         comment.char = "",
                                         na.strings = c("NA", "NaN", ".", "-9", "")) #read PLINK .raw file
     if (nrow(plink.raw.data) == 0 || ncol(plink.raw.data) == 0) stop("PLINK .raw file is empty") #check empty
-    genotype.columns <- setdiff(colnames(plink.raw.data), plink.raw.metadata.columns) #SNP columns
-    if (length(genotype.columns) == 0) stop("No SNP dosage columns found in PLINK .raw file") #check SNP columns
+	if (anyDuplicated(colnames(plink.raw.data)) > 0) stop("PLINK .raw file must have unique column names") #prevent ambiguous metadata and SNP selection
+	columns.dropped.as.metadata <- intersect(colnames(plink.raw.data), plink.raw.metadata.columns) #columns dropped as metadata
+	genotype.columns <- setdiff(colnames(plink.raw.data), plink.raw.metadata.columns) #SNP columns
+	non.standard.metadata.dropped <- setdiff(columns.dropped.as.metadata, c("FID", "IID", "PAT", "MAT", "SEX", "PHENOTYPE")) #non-default names dropped as metadata
+	if (length(non.standard.metadata.dropped) > 0) messager("Warning: the following non-standard column names matched plink.raw.metadata.columns and were excluded from SNP dosage columns: ", paste(non.standard.metadata.dropped, collapse = ", "), " - if any of these are SNP columns, update plink.raw.metadata.columns") #warn about unexpected drops
+	if (length(genotype.columns) == 0) stop("No SNP dosage columns found in PLINK .raw file") #check SNP columns
     snp.matrix <- as.matrix(plink.raw.data[, genotype.columns, drop = FALSE]) #extract SNP matrix
     if ("IID" %in% colnames(plink.raw.data)) {
       sample.names <- as.character(plink.raw.data[["IID"]]) #sample names from IID
@@ -7501,7 +7506,13 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (is.null(dim(snp.matrix))) stop("genlight.input could not be converted to a matrix") #check matrix
     individual.names <- tryCatch(adegenet::indNames(genlight.input), error = function(error) NULL) #individual names
     locus.names <- tryCatch(adegenet::locNames(genlight.input), error = function(error) NULL) #locus names
-    if (!is.null(individual.names) && length(individual.names) > 0 && ncol(snp.matrix) == length(individual.names) && nrow(snp.matrix) != length(individual.names)) snp.matrix <- t(snp.matrix) #transpose if orientation is loci x individuals
+    if (!is.null(individual.names) && length(individual.names) > 0) {
+    if (nrow(snp.matrix) != length(individual.names) && ncol(snp.matrix) == length(individual.names)) {
+      snp.matrix <- t(snp.matrix) #transpose if orientation is loci x individuals
+    } else if (nrow(snp.matrix) == length(individual.names) && ncol(snp.matrix) == length(individual.names)) {
+      messager("Warning: genlight matrix is square (n_samples == n_loci) - orientation assumed correct from as.matrix(); verify manually if results are unexpected")
+    }
+  }
     if (!is.null(individual.names) && length(individual.names) == nrow(snp.matrix)) rownames(snp.matrix) <- individual.names #set rownames
     if (!is.null(locus.names) && length(locus.names) == ncol(snp.matrix)) colnames(snp.matrix) <- locus.names #set colnames
     return(snp.matrix) #return matrix
@@ -7618,19 +7629,26 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   
   # Create function to generate aligned sequence processor for NEXUS/FASTA/PHYLIP
   process.alignment.input <- function(sequence.list, file.type) {
-    if (length(sequence.list) == 0) stop("No sequences found in ", file.type, " file") #check for empty
+
+	# Validate input
+	if (length(sequence.list) == 0) stop("No sequences found in ", file.type, " file") #check for empty
     if (is.null(names(sequence.list))) names(sequence.list) <- paste0("Sample", seq_along(sequence.list)) #fallback names
     sequence.lengths <- vapply(sequence.list, function(single.sequence) nchar(paste0(single.sequence, collapse = "")), integer(1)) #sequence lengths
     if (any(sequence.lengths == 0)) stop("Empty sequences detected in ", file.type, " file") #empty sequence
     if (length(unique(sequence.lengths)) != 1) stop(file.type, " file is not aligned: sequences have different lengths") #not aligned
-    
+    if (snp.matrix.ploidy == 2) messager("Note: ", file.type, " alignment input always produces haploid 0/1 dosages - heterozygotes cannot be represented from sequence alignments and snp.matrix.ploidy is ignored for this input type") #warn about dosage scale
+
+	# Convert sequences to samples-by-sites alignment matrix						   
     alignment.matrix <- t(sapply(sequence.list, function(single.sequence) strsplit(paste0(single.sequence, collapse = ""), "")[[1]])) #make samples × sites character matrix
     if (any(dim(alignment.matrix) == 0)) stop(file.type, " alignment matrix is empty or malformed") #check for empty matrix
     alignment.matrix <- toupper(alignment.matrix) #standardize case
     rownames(alignment.matrix) <- make.unique(as.character(names(sequence.list))) #set rownames
-    if (identical(file.type, "NEXUS")) alignment.matrix <- expand.nexus.match.characters(alignment.matrix = alignment.matrix, match.symbol = ".") #expand NEXUS match characters
-    
-    missing.symbols <- c("?", "-", ".", "N", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "X") #define missing and ambiguous symbols
+
+	# Expand NEXUS match characters							 
+	if (identical(file.type, "NEXUS")) alignment.matrix <- expand.nexus.match.characters(alignment.matrix = alignment.matrix, match.symbol = ".") #expand NEXUS match characters
+
+	# Standardize missing and ambiguous sequence states							 
+	missing.symbols <- c("?", "-", ".", "N", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "X") #define missing and ambiguous symbols
     observed.alleles.per.site <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols))) #observed alleles per site
     total.locus.count.before.filtering <- ncol(alignment.matrix) #total loci before filtering
     
