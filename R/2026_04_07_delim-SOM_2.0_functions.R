@@ -1714,7 +1714,7 @@ calculate.topographic.error <- function(som_model) {
 #' \item{optim_k_mean}{The mean inferred number of clusters across retained
 #' replicates.}
 #' \item{optim_k_summary}{A matrix containing the count and proportion of
-#' retained replicates supporting each observed value of k.}
+#' retained replicates supporting each observed value of K.}
 #' \item{max_k}{The effective maximum number of clusters considered.}
 #' \item{set_k}{The fixed number of clusters requested through `set.k`, or
 #' `NULL` when K was estimated.}
@@ -2408,7 +2408,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       fits <- vector("list", max.k) #store kmeans fits
       max_fit_k <- min(max.k, nrow(unique(som_codes))) #maximum K supported by distinct codebook rows
       wss[1] <- (nrow(som_codes) - 1) * sum(apply(som_codes, 2, stats::var)) #calculate wss for K = 1 (= total sum of squared distances to overall mean)
-      if (!is.null(set.k)) { #if user specified K, only fit that k
+      if (!is.null(set.k)) { #if user specified K, only fit that K
         if (set.k >= 2) {
           if (set.k > max_fit_k) stop(sprintf("Aborted SOM clustering: set.k = %d exceeds distinct codebook rows of %d", set.k, max_fit_k))
           km <- stats::kmeans(som_codes, centers = set.k, nstart = 30, iter.max = 1e5) #fit kmeans at user-specified K
@@ -2445,9 +2445,9 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       if (length(BIC_vec) < 2) return(1) #if there is only one or no BIC value, set default to K = 1
       if (all(is.na(BIC_vec))) stop("All BIC values are NA - cannot determine optimal number of clusters")
       if (is.na(BIC_vec[1]) || is.na(BIC_vec[2])) return(which.min(replace(BIC_vec, !is.finite(BIC_vec) | is.na(BIC_vec), Inf))) #fallback when only K = 1 is estimable
-      som_N_clusters <- NA #store optimal k
+      som_N_clusters <- NA #store optimal K
       for (k in 2:length(BIC_vec)) {
-        if (!is.na(BIC_vec[k]) && !is.na(BIC_vec[k - 1]) && ((BIC_vec[k - 1] - BIC_vec[k]) < BIC.thresh)) { #if improvement is not at least as large as threshold, select previous k
+        if (!is.na(BIC_vec[k]) && !is.na(BIC_vec[k - 1]) && ((BIC_vec[k - 1] - BIC_vec[k]) < BIC.thresh)) { #if improvement is not at least as large as threshold, select previous K
           som_N_clusters <- k - 1
           break
         }
@@ -2468,7 +2468,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
         if (length(BIC_vec) <= 2) { #if only 2 BIC values, pick K = 2
           som_N_clusters <- 2
         } else {
-          delta_BIC_vec <- BIC_vec[-length(BIC_vec)] - BIC_vec[-1] #calculate BIC drop (improvement) from K - 1 -> k
+          delta_BIC_vec <- BIC_vec[-length(BIC_vec)] - BIC_vec[-1] #calculate BIC drop (improvement) from K - 1 -> K
           valid_delta <- which(is.finite(delta_BIC_vec) & !is.na(delta_BIC_vec)) #keep only finite ΔBIC
           if (length(valid_delta) < 2) { #not enough info for elbow clustering
             som_N_clusters <- which.min(replace(BIC_vec, !is.finite(BIC_vec) | is.na(BIC_vec), Inf)) #fallback to best available BIC
@@ -2503,7 +2503,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       if (som_N_clusters == 1) { #if optimal K = 1
         som_cluster <- rep(1, nrow(som_codes)) #assign all units to a single cluster
       } else { 
-        som_cluster <- kmeans_results$fits[[som_N_clusters]]$cluster #assign clusters from kmeans using selected k
+        som_cluster <- kmeans_results$fits[[som_N_clusters]]$cluster #assign clusters from kmeans using selected K
       }
     }
     
@@ -2515,7 +2515,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       if (som_N_clusters == 1) { #if optimal K = 1
         som_cluster <- rep(1L, nrow(som_codes)) #assign all units to a single cluster
       } else { 
-        som_cluster <- kmeans_results$fits[[som_N_clusters]]$cluster #assign clusters from kmeans using selected k
+        som_cluster <- kmeans_results$fits[[som_N_clusters]]$cluster #assign clusters from kmeans using selected K
       }
     }
     
@@ -2536,10 +2536,10 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       mclust_BIC_matrix <- matrix(NA_real_, nrow = max.k, ncol = length(modelNames_all)) #initialize matrix of BIC values (rows = G, cols = modelNames)
       rownames(mclust_BIC_matrix) <- as.character(seq_len(max.k)) #set K rownames
       colnames(mclust_BIC_matrix) <- modelNames_all #set covariance model names
-      BIC_vec <- rep(NA_real_, max.k) #initialize vector to store best BIC value per k
+      BIC_vec <- rep(NA_real_, max.k) #initialize vector to store best BIC value per K
       available_k_values <- if (!is.null(set.k)) as.integer(set.k) else seq_len(min(max.k, n_distinct_codes)) #available K values
-      for (k_value in available_k_values) { #extract best BIC values per k
-        found_finite_BIC_for_k <- FALSE #track whether any finite BIC was obtained for this k
+      for (k_value in available_k_values) { #extract best BIC values per K
+        found_finite_BIC_for_k <- FALSE #track whether any finite BIC was obtained for this K
         best_BIC_value_for_k <- NA_real_ #store best BIC for this K (maximized)
         best_model_name_for_k <- NA_character_ #store covariance model name for best BIC
         for (modelNames_set in modelNames_stable) { #try stable tier first
@@ -2611,14 +2611,14 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             }
           }
         }
-        if (!is.na(best_BIC_value_for_k) && is.finite(best_BIC_value_for_k)) BIC_vec[k_value] <- best_BIC_value_for_k #store best BIC for this k
+        if (!is.na(best_BIC_value_for_k) && is.finite(best_BIC_value_for_k)) BIC_vec[k_value] <- best_BIC_value_for_k #store best BIC for this K
       }
       if (all(is.na(BIC_vec))) stop("All GMM BIC values are NA - cannot determine optimal number of clusters")
       BIC_vec <- -BIC_vec #invert sign so threshold selector (which assumes lower = better) works with mclust BIC (higher = better)
       som_N_clusters <- select.k.BICthresh(BIC_vec, BIC.thresh, set.k) #select K using BIC threshold rule (first K where improvement falls below threshold, otherwise global optimum)
       row_match <- as.character(som_N_clusters) #match selected K to BIC matrix row
       if (!row_match %in% rownames(mclust_BIC_matrix)) stop("Selected GMM K not found in mclust BIC matrix - check mclust output")
-      best_model_name <- colnames(mclust_BIC_matrix)[which.max(replace(mclust_BIC_matrix[row_match, ], !is.finite(mclust_BIC_matrix[row_match, ]) | is.na(mclust_BIC_matrix[row_match, ]), -Inf))] #identify covariance model with highest BIC at selected k
+      best_model_name <- colnames(mclust_BIC_matrix)[which.max(replace(mclust_BIC_matrix[row_match, ], !is.finite(mclust_BIC_matrix[row_match, ]) | is.na(mclust_BIC_matrix[row_match, ]), -Inf))] #identify covariance model with highest BIC at selected K
       if (som_N_clusters == 1) { #if optimal K = 1
         som_cluster <- rep(1L, nrow(som_codes)) #assign all units to a single cluster
       } else {
@@ -2631,7 +2631,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     
     # Clustering method: hierarchical clustering + Davies-Bouldin pruning (allow K = 1 via permutation test on DB for K = 2)
     if (clustering.method == "hierarchical+DB") {
-      davies_bouldin_values <- rep(NA_real_, max.k) #store DB values across k
+      davies_bouldin_values <- rep(NA_real_, max.k) #store DB values across K
       dist_som_codes <- stats::dist(som_codes) #compute pairwise Euclidean distances
       hierarchical_clust_som_codes <- stats::hclust(dist_som_codes, method = "ward.D2") #perform hierarchical clustering
       if (!is.null(set.k)) { #check if user specified K
@@ -2667,13 +2667,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             som_cluster <- rep(1L, nrow(som_codes)) #assign all units to single cluster
             BIC_vec <- rep(NA_real_, max.k) #initialize BIC vector as NA
           } else {
-            davies_bouldin_values <- rep(NA_real_, max.k) #initialize Davies-Bouldin vector for all k
+            davies_bouldin_values <- rep(NA_real_, max.k) #initialize Davies-Bouldin vector for all K
             davies_bouldin_values[1] <- Inf #assign infinite DB to K = 1
             davies_bouldin_values[2] <- davies_bouldin_observed #store observed DB for K = 2
             if (max.k >= 3) { #check if additional K values exist
               for (k in 3:max.k) { #iterate over candidate K values
-                cluster_assignments_k <- stats::cutree(hierarchical_clust_som_codes, k) #extract cluster assignments for k
-                davies_bouldin_values[k] <- tryCatch({clusterCrit::intCriteria(as.matrix(som_codes), cluster_assignments_k, "Davies_Bouldin")$davies_bouldin}, error = function(e) NA_real_) #calculate Davies-Bouldin index for k
+                cluster_assignments_k <- stats::cutree(hierarchical_clust_som_codes, k) #extract cluster assignments for K
+                davies_bouldin_values[k] <- tryCatch({clusterCrit::intCriteria(as.matrix(som_codes), cluster_assignments_k, "Davies_Bouldin")$davies_bouldin}, error = function(e) NA_real_) #calculate Davies-Bouldin index for K
               }
             }
             if (all(is.na(davies_bouldin_values[2:max.k]) | is.infinite(davies_bouldin_values[2:max.k]))) { #check if all Davies-Bouldin values failed
@@ -2725,8 +2725,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             BIC_vec <- rep(NA_real_, max.k)
           } else {
             valid_HDBSCAN_k <- which(hdbscan_model_results$n_clusters == som_N_clusters & !is.na(hdbscan_model_results$mean_mem)) #filter valid runs matching set.k
-            if (length(valid_HDBSCAN_k) == 0) stop(sprintf("Aborted SOM clustering: HDBSCAN with set.k = %d could not find any minPts value that produced exactly this number of non-noise clusters - use clustering.method = 'kmeans+BICelbow', 'kmeans+BICthreshold', 'hierarchical+DB', or 'GMM+BICthreshold', or run HDBSCAN without set.k.", som_N_clusters)) #explain fixed-k HDBSCAN failure
-              best_minPts_row <- valid_HDBSCAN_k[which.max(hdbscan_model_results$mean_mem[valid_HDBSCAN_k])] #select best minPts among matching-k runs
+            if (length(valid_HDBSCAN_k) == 0) stop(sprintf("Aborted SOM clustering: HDBSCAN with set.k = %d could not find any minPts value that produced exactly this number of non-noise clusters - use clustering.method = 'kmeans+BICelbow', 'kmeans+BICthreshold', 'hierarchical+DB', or 'GMM+BICthreshold', or run HDBSCAN without set.k.", som_N_clusters)) #explain fixed-K HDBSCAN failure
+              best_minPts_row <- valid_HDBSCAN_k[which.max(hdbscan_model_results$mean_mem[valid_HDBSCAN_k])] #select best minPts among matching-K runs
               best_minPts <- hdbscan_model_results$minPts[best_minPts_row]
               best_hdbscan_model <- dbscan::hdbscan(som_codes, minPts = best_minPts) #run HDBSCAN with selected minPts
               base_clusters <- best_hdbscan_model$cluster #extract clusters (0 = noise)
@@ -2805,7 +2805,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     # Clustering method: OPTICS + Silhouette score
     if (clustering.method == "OPTICS+Silhouette") {
       dist_som_codes <- stats::dist(som_codes) #compute pairwise Euclidean distances
-      silhouette_values <- rep(NA_real_, max.k) #best silhouette support per k
+      silhouette_values <- rep(NA_real_, max.k) #best silhouette support per K
       if (!is.null(set.k)) { #check if user specified K
         som_N_clusters <- as.integer(set.k) #set number of clusters to user-specified K
         if (som_N_clusters <= 1) { #check if user specified K <= 1
@@ -2860,10 +2860,10 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               optics_cluster_solutions[[result_counter]] <- cluster_assignments_relabelled #store cluster solution
             }
           }
-          if (nrow(optics_model_results) == 0) stop(sprintf("Aborted SOM clustering: OPTICS+Silhouette with set.k = %d could not find any OPTICS minPts/xi combination that produced exactly this number of clusters - use clustering.method = 'kmeans+BICelbow', 'kmeans+BICthreshold', 'hierarchical+DB', or 'GMM+BICthreshold', or run OPTICS+Silhouette without set.k.", som_N_clusters)) #explain fixed-k OPTICS failure
+          if (nrow(optics_model_results) == 0) stop(sprintf("Aborted SOM clustering: OPTICS+Silhouette with set.k = %d could not find any OPTICS minPts/xi combination that produced exactly this number of clusters - use clustering.method = 'kmeans+BICelbow', 'kmeans+BICthreshold', 'hierarchical+DB', or 'GMM+BICthreshold', or run OPTICS+Silhouette without set.k.", som_N_clusters)) #explain fixed-K OPTICS failure
           best_row <- which.max(optics_model_results$mean_silhouette) #select best silhouette
           best_cluster_solution <- optics_cluster_solutions[[optics_model_results$result_index[best_row]]] #extract best clustering
-          som_cluster <- best_cluster_solution #assign best clustering for user-specified K without collapsing fixed-k requests
+          som_cluster <- best_cluster_solution #assign best clustering for user-specified K without collapsing fixed-K requests
           som_N_clusters <- length(unique(som_cluster)) #store actual selected cluster count
           BIC_vec <- rep(NA_real_, max.k) #initialize BIC vector as NA
         }
@@ -2920,7 +2920,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
           best_row <- which.max(optics_model_results$mean_silhouette) #select best silhouette
           best_silhouette <- optics_model_results$mean_silhouette[best_row] #extract best silhouette
           best_cluster_solution <- optics_cluster_solutions[[optics_model_results$result_index[best_row]]] #extract best clustering
-          best_number_of_clusters <- optics_model_results$n_clusters[best_row] #extract best k
+          best_number_of_clusters <- optics_model_results$n_clusters[best_row] #extract best K
           if (is.na(best_silhouette) || best_silhouette <= 0.15) { #collapse weak structure to K = 1
             som_cluster <- rep(1L, nrow(som_codes))
             som_N_clusters <- 1L
@@ -3052,7 +3052,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
   
   # Preprocess input data and generate cluster labels
   base::set.seed(set.seed.N) #set seed for reproducibility
-  max_reference_k <- as.integer(min(max.k, max(as.numeric(optim_k_vals), na.rm = TRUE), nrow(unique(processed_input_data)))) #maximum valid reference k
+  max_reference_k <- as.integer(min(max.k, max(as.numeric(optim_k_vals), na.rm = TRUE), nrow(unique(processed_input_data)))) #maximum valid reference K
   if (!is.finite(max_reference_k) || max_reference_k < 1L) stop("Aborted SOM clustering: no valid reference K available for Hungarian relabeling")
   cluster_labels <- do.call(cbind, lapply(seq_len(max_reference_k), function(number_of_clusters) stats::kmeans(processed_input_data, centers = number_of_clusters, nstart = 30, iter.max = 1e5)$cluster)) #generate reference cluster labels for Hungarian relabeling
   rownames(cluster_labels) <- rownames(processed_input_data) #set row names for cluster labels
@@ -7021,7 +7021,7 @@ plot.variable.importance.SOM <- function(SOM.output,
 #'   NEXUS, FASTA, or PHYLIP inputs.
 #' @param make.biallelic Logical. If `TRUE`, retain only biallelic loci where
 #'   explicit allele/locus structure is available. If `FALSE`, retain
-#'   multiallelic loci as `k - 1` allele-dosage columns where supported.
+#'   multiallelic loci as K - 1 allele-dosage columns where supported.
 #' @param missing.loci.cutoff.lenient Numeric between 0 and 1 or `NULL`.
 #'   First-pass missing-data cutoff for loci. Loci with a missing proportion
 #'   greater than this value are removed.
