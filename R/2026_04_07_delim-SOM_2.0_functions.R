@@ -30,7 +30,6 @@ for (pkg in CRAN_packages) {
 
 #### Functions
 
-## Function to train single-layer SOM (one matrix) or multi-layer Super-SOM (multiple matrices)
 #' Train single-layer or multi-layer SOM
 #'
 #' Train a single-layer (one input matrix) or multi-layer (list of matrices)
@@ -312,8 +311,8 @@ for (pkg in CRAN_packages) {
 #'   value.}
 #'   \item{codebook_vectors}{A list of codebook-vector matrices, one per layer.
 #'   For each layer, codebook vectors from all replicate SOMs are row-bound.}
-#'   \item{som_models}{A named list of trained `kohonen` SOM or Super-SOM model
-#'   objects, one per replicate.}
+#'   \item{som_models}{A named list of trained `kohonen` SOM model objects,
+#'   one per replicate.}
 #'   \item{layer_numeric_types}{A named character vector containing the inferred
 #'   pre-normalization numeric type of each layer: `"continuous"`, `"binary"`,
 #'   or `"count"`, where `"count"` denotes an integer-like 0/1/2 dosage-like
@@ -449,7 +448,7 @@ for (pkg in CRAN_packages) {
 #'
 #' som_single <- train.SOM(input_data = continuous_data)
 #'
-#' # Multi-layer Super-SOM
+#' # Multi-layer SOM
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
@@ -1677,8 +1676,8 @@ calculate.topographic.error <- function(som_model) {
 #' SOM layer, with codebook vectors from retained replicate SOMs row-bound.}
 #' \item{N_replicates}{The number of retained SOM replicates stored in the
 #' returned object.
-#' \item{som_models}{A named list containing the retained `kohonen` SOM or
-#' Super-SOM model objects.}										
+#' \item{som_models}{A named list containing the retained `kohonen` SOM
+#' model objects.}										
 #' \item{replicate_ids}{A character vector containing the retained replicate
 #' identifiers.}
 #' \item{cluster_assignment}{A sample-by-replicate matrix of hard cluster
@@ -1938,7 +1937,7 @@ calculate.topographic.error <- function(som_model) {
 #' clustering.method = "kmeans+BICelbow"
 #' )
 #'
-#' # Train and cluster a multi-layer Super-SOM
+#' # Train and cluster a multi-layer SOM
 #' snp_data <- matrix(sample(0:2, 80 * 30, replace = TRUE),
 #' nrow = 80,
 #' ncol = 30)
@@ -3451,7 +3450,7 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Train and cluster a multi-layer Super-SOM
+#' # Train and cluster a multi-layer SOM
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
@@ -3888,7 +3887,7 @@ plot.structure.SOM <- function(SOM.output,
 #'
 #' plot.learning.SOM(SOM.output = som_single)
 #'
-#' # Train and plot a multi-layer Super-SOM
+#' # Train and plot a multi-layer SOM
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
@@ -4379,7 +4378,7 @@ plot.learning.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Train a multi-layer Super-SOM
+#' # Train a multi-layer SOM
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
@@ -4603,77 +4602,89 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 }
 
 
-#' Plot support for alternative numbers of SOM clusters
+#' Plot support for alternative numbers of SOM clusters (K)
 #'
 #' Plot replicate-level support for alternative numbers of clusters from a
-#' clustered SOM object returned by `clustering.SOM`. The function can show up to
-#' three panels: replicate-level support values across candidate k values,
-#' successive delta-BIC values for BIC-based methods, and the sampling frequency
-#' with which each k value was selected across SOM replicates.
+#' clustered Self-Organizing Map (SOM). Depending on the available clustering
+#' results, the function plots support values across candidate K values,
+#' successive delta-BIC values, and the sampling frequency with which each K
+#' value was selected across retained SOM replicates.
 #'
-#' @param SOM.output A SOM result object returned by `clustering.SOM`. The object
-#'   must contain `N_replicates`, `optim_k_vals`, and `max_k`. If available,
+#' @param SOM.output A list returned by `clustering.SOM`. The object must contain
+#'   `N_replicates`, `optim_k_vals`, and `max_k`. If available,
 #'   `support_values`, `support_label`, and `BIC_values` are used to create the
 #'   support-value and delta-BIC panels.
 #' @param col.pal A viridis color-palette function used to assign colors to
-#'   candidate k values. Supported palettes are `viridis::viridis`,
+#'   candidate K values. Supported palettes are `viridis::viridis`,
 #'   `viridis::magma`, `viridis::plasma`, `viridis::inferno`,
 #'   `viridis::cividis`, `viridis::rocket`, `viridis::mako`, and
 #'   `viridis::turbo`. Default: `viridis::magma`.
-#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param save Logical; if `TRUE`, the plot is saved to a file. Default:
+#'   `FALSE`.
 #' @param overwrite Logical; if `TRUE`, an existing output file with the same
-#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
-#'   the output file already exists. Default: `TRUE`.
-#' @param plot.type Character string specifying the file format when
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted
+#'   when the output file already exists. Default: `TRUE`.
+#' @param plot.type A single character string specifying the file format when
 #'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
 #'   Default: `"svg"`.
 #' @param file.name Optional character string giving the output file name when
-#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
-#'   `NULL`.
-#' @param width Numeric value giving plot width in centimeters when
-#'   `save = TRUE`. Default: `10`.
-#' @param height Numeric value giving plot height in centimeters when
-#'   `save = TRUE`. Default: `15`.
-#' @param resolution Numeric value giving plot resolution in dots per inch for
-#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
-#' @param bottom.margin Numeric value giving the bottom outer plot margin.
-#'   Default: `0.5`.
-#' @param left.margin Numeric value giving the left outer plot margin. Default:
-#'   `0.5`.
-#' @param top.margin Numeric value giving the top outer plot margin. Default:
-#'   `2.5`.
-#' @param right.margin Numeric value giving the right outer plot margin. Default:
-#'   `0`.
+#'   `save = TRUE`. If `NULL`, the default file name is
+#'   `"K_plot.<plot.type>"`. Default: `NULL`.
+#' @param width A single positive numeric value giving the plot width in
+#'   centimeters when `save = TRUE`. Default: `10`.
+#' @param height A single positive numeric value giving the plot height in
+#'   centimeters when `save = TRUE`. Default: `15`.
+#' @param resolution A single numeric value giving the plot
+#'   resolution in dpi for `"png"` and `"jpg"` output. Default: `300`.
+#' @param bottom.margin A single non-negative numeric value giving the bottom
+#'   outer plot margin in lines. Default: `0.5`.
+#' @param left.margin A single non-negative numeric value giving the left outer
+#'   plot margin in lines. Default: `0.5`.
+#' @param top.margin A single non-negative numeric value giving the top outer
+#'   plot margin in lines. Default: `2`.
+#' @param right.margin A single non-negative numeric value giving the right outer
+#'   plot margin in lines. Default: `0`.
 #' @param plot.title Optional character string giving the main plot title. If
 #'   `NULL`, no title is shown. Default: `"Number of clusters (k)"`.
 #' @param plot.title.font.size A single positive numeric value giving the plot
 #'   title font size in points. Default: `9.1`.
 #' @param axis.labels.font.size A single positive numeric value giving the
-#'   y-axis-title and bottom x-axis k-label font size in points. Default: `9.1`.
+#'   y-axis-title and bottom x-axis K-label font size in points. Default: `9.1`.
 #' @param axis.ticks.font.size A single positive numeric value giving the
 #'   y-axis numeric tick-label font size in points. Default: `7`.
 #'
 #' @details
-#' The plot is intended as a replicate-level diagnostic for k selection in the
-#' SOM clustering workflow. The support panel shows the distribution of support
-#' values across SOM replicates for each candidate k value. The bottom panel
-#' shows the frequency with which each k value was selected as optimal across
-#' replicates.
+#' `plot.K.SOM` visualizes replicate-level support for alternative numbers of
+#' clusters, thus summarizing the results returned by `clustering.SOM`. The plots
+#' show how support changes across candidate K values and whether replicate maps
+#' consistently select one delimitation level or support several alternative
+#' values of K.
 #'
-#' For BIC-based clustering methods, an additional delta-BIC panel is shown when
-#' `BIC_values` are available. For `"GMM+BICthreshold"`, Gaussian mixture models
-#' are fitted with `mclust`, where larger BIC values indicate better support.
-#' Here, these values are sign-inverted so that lower values represent better
-#' support, matching the threshold logic used for other BIC-like criteria. The
-#' plot label is kept as `"BIC"` for simplicity.
+#' The support-value panel shows boxplots of the finite support values stored for
+#' each candidate K across retained SOM replicates. Depending on the clustering
+#' method used in `clustering.SOM`, these values may represent BIC-like criteria,
+#' Davies-Bouldin indices, or silhouette support. Candidate K values without any
+#' finite support values are omitted from this panel. The y-axis title is taken
+#' from `support_label` when available. For all BIC-based clustering methods, 
+#' smaller stored values indicate better support.
 #'
-#' When saving SVG output, the function internally applies a `96 / 72` scaling
-#' correction to the SVG device size and point-style font sizes so that the
-#' figure is imported by common document and presentation software with the
-#' requested dimensions and font sizes.
+#' When BIC values are available and `max_k` is at least 3, an additional
+#' delta-BIC panel shows the improvement between each successive pair of
+#' candidate values. For each replicate, delta BIC for a candidate K is
+#' calculated as the BIC value for K - 1 minus the BIC value for K. Positive
+#' values indicate improvement in support for the higher K, whereas values 
+#' near or below zero indicate little or no improvement. If no finite
+#' successive delta-BIC values are available, the delta-BIC panel is omitted.
 #'
-#' @return Invisibly returns `NULL`. The function is called for its plotting side
-#'   effect. If `save = TRUE`, the plot is written to the specified file.
+#' The bottom panel shows the sampling frequency with which each K value was
+#' selected across retained replicates. If no finite support curve is available,
+#' as for `"HDBSCAN"`, only the K-frequency panel is shown.
+#'
+#' If `file.name = NULL`, the default file name is `"K_plot.<plot.type>"`.
+#'
+#' @return Invisibly returns `NULL`. The function is called for its plotting
+#'   side effect. If `save = TRUE`, the plot is also written to the specified
+#'   file.
 #'
 #' @importFrom graphics par boxplot barplot axis mtext
 #' @importFrom grDevices dev.cur dev.off svg png jpeg
@@ -4683,8 +4694,10 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Multi-layer Super-SOM
-#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' # Train multi-layer SOM
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
+#'                    nrow = 50,
+#'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
 #'
@@ -4705,7 +4718,15 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 #'   clustering.method = "kmeans+BICthreshold"
 #' )
 #'
-#' plot.K.SOM(som_clustered)
+#' plot.K.SOM(SOM.output = som_clustered)
+#'
+#' # Save K-evaluation plot
+#' plot.K.SOM(
+#'   SOM.output = som_clustered,
+#'   save = TRUE,
+#'   plot.type = "svg",
+#'   file.name = "SOM_K_plot.svg"
+#' )
 #' }
 #'
 #' @export
@@ -4745,10 +4766,8 @@ plot.K.SOM <- function(SOM.output,
   # Extract and validate k-selection values
   number_of_replicates <- SOM.output$N_replicates
   if (!is.numeric(number_of_replicates) || length(number_of_replicates) != 1 || is.na(number_of_replicates) || !is.finite(number_of_replicates) || number_of_replicates < 1) stop("Plotting aborted: N_replicates must be a single positive numeric value")
-  
   max_k <- SOM.output$max_k
   if (!is.numeric(max_k) || length(max_k) != 1 || is.na(max_k) || !is.finite(max_k) || max_k < 1 || max_k %% 1 != 0) stop("Plotting aborted: max_k must be a single positive integer")
-  
   optim_k_vals <- as.numeric(SOM.output$optim_k_vals)
   optim_k_vals <- optim_k_vals[is.finite(optim_k_vals) & !is.na(optim_k_vals)]
   if (length(optim_k_vals) == 0) stop("Plotting aborted: optim_k_vals contains no finite values")
@@ -4899,8 +4918,7 @@ plot.K.SOM <- function(SOM.output,
   outer_margins <- c(bottom.margin, left.margin, top.margin, right.margin)
   
   # Create support panel
-  plot.support.panel <- function(values_matrix,
-                                 y.axis.label) {
+  plot.support.panel <- function(values_matrix, 	y.axis.label) {
     
     # Identify candidate k values with finite support values
     finite_k_rows <- apply(values_matrix, 1, function(x) any(is.finite(x) & !is.na(x)))
@@ -5223,7 +5241,7 @@ plot.K.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Multi-layer Super-SOM
+#' # Multi-layer SOM
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
@@ -6550,7 +6568,7 @@ plot.map.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Multi-layer Super-SOM
+#' # Multi-layer SOM
 #' snp_data <- matrix(sample(0:2, 50 * 200, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 200)
@@ -7139,7 +7157,7 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' Process SNP data for SOM-based species delimitation
 #'
 #' Filters and converts SNP data into a numeric SNP dosage matrix suitable for
-#' SOM or Super-SOM analyses. The function accepts one of eight input types:
+#' analyses. The function accepts one of eight input types:
 #' a VCF file, an existing `genind` object, an existing `genlight` object, an
 #' already processed numeric SNP matrix/data frame, a PLINK `.raw` dosage file,
 #' a NEXUS alignment, a FASTA alignment, or a PHYLIP alignment.
@@ -8073,7 +8091,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Multi-layer Super-SOM
+#' # Multi-layer SOM
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
