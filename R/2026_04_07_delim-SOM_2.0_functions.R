@@ -5085,7 +5085,7 @@ plot.K.SOM <- function(SOM.output,
     
     # Fallback to support and K-frequency panels if delta-BIC cannot be plotted
     if (!support_panel_plotted || !delta_BIC_panel_plotted) {
-      message("Plotting support panel and k-frequency only (insufficient finite BIC values for delta-BIC panel)")
+      message("Plotting support panel and K-frequency only (insufficient finite BIC values for delta-BIC panel)")
       par(mfrow = c(2, 1), bty = "n", oma = outer_margins)
       par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
       par(mar = top_panel_margins)
