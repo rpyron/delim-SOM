@@ -168,9 +168,9 @@ for (pkg in CRAN_packages) {
 #'
 #' Predictors should be preprocessed to remove near-constant and strongly
 #' redundant variables that may overweight the same biological gradient (Dormann
-#' et al., 2013; Gregorich et al., 2021). Continuous, binary, and count-like
-#' numeric layers can be filtered with `remove.lowCV.multicollinearity.SOM`,
-#' whereas genomic layers can be processed with `process.SNP.data.SOM`.
+#' et al., 2013). Continuous, binary, and count-like numeric layers can be
+#' filtered with `remove.lowCV.multicollinearity.SOM`, whereas genomic layers can
+#' be processed with `process.SNP.data.SOM`.
 #'
 #' The choice of distance function is an important part of model specification
 #' because SOM training is fundamentally distance-based (Kohonen, 1998; Wehrens
@@ -9521,75 +9521,178 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 }
 
 
-#' Remove low-variation and highly collinear variables before SOM analysis
+#' Remove low-variation and highly correlated variables before SOM analysis
 #'
-#' Filters numeric variables before SOM analysis by removing rare binary variables,
-#' rare count variables, low-CV non-binary variables, and highly correlated retained
-#' variables. Columns listed in `exclude.cols` are excluded from all filtering steps
-#' and are bound back to the output in original order. Row names are preserved.
+#' Filter numeric variables before Self-Organizing Map (SOM) analysis by
+#' removing rare binary variables, rare count variables, low-variation
+#' non-binary variables, and highly correlated retained variables. Columns
+#' listed in `exclude.cols` are excluded from all filtering steps and retained
+#' in the output.
 #'
-#' @param input.dataframe Data frame, or object coercible to a data frame. Rows are
-#'   samples and columns are variables. All filtered columns must be numeric.
-#' @param CV.threshold Numeric scalar. Non-binary variables with CV less than or equal
-#'   to this value are removed. Default is `0.05`, corresponding to 5% relative
-#'   variation around the mean.
-#' @param cor.threshold Numeric scalar between `0` and `1`. Absolute Spearman
-#'   correlations greater than this value are filtered iteratively. Default is `0.9`,
-#'   corresponding to |rho| > 0.90.
-#' @param prevalence.threshold Numeric scalar between `0` and `0.5`. Minimum
-#'   prevalence required for the minor state of binary variables and nonzero
-#'   observations in count variables. Default is `0.05`, corresponding to at least
-#'   5% of finite observations.
-#' @param exclude.cols Optional character vector of column names to exclude from all
-#'   filtering steps and retain in the output.
-#' @param verbose Logical scalar. If `TRUE`, prints filtering summaries. Default is
-#'   `TRUE`.
-#'
-#' @return A data frame containing retained variables and any excluded columns.
-#'   The output has attributes `variables.removed.rare.binary`,
-#'   `variables.removed.rare.count`, `variables.removed.by.CV`, and
-#'   `variables.removed.by.correlation`.
+#' @param input.dataframe A data frame or object coercible to a data frame. Rows
+#'   represent samples and columns represent variables. All columns subjected to
+#'   filtering must be numeric.
+#' @param CV.threshold A single finite non-negative numeric value giving the
+#'   variability threshold for non-binary variables. Variables with a
+#'   coefficient of variation, or fallback range-standardized variability when
+#'   the mean is effectively zero, less than or equal to this value are removed.
+#'   Recommended default: `0.05`.
+#' @param cor.threshold A single finite numeric value between 0 and 1 giving the
+#'   absolute Spearman-correlation threshold. Correlations greater than this
+#'   value are filtered iteratively. Recommended default: `0.9`, corresponding 
+#'   to absolute rho greater than 0.90.
+#' @param prevalence.threshold A single finite numeric value between 0 and 0.5
+#'   giving the minimum prevalence required for the minor state of binary
+#'   variables and for nonzero observations in count variables. Recommended 
+#'   default: `0.05`.
+#' @param exclude.cols Optional character vector containing column names to
+#'   exclude from all filtering steps and retain in the output. This can be used
+#'   for identifiers, species names, coordinates, grouping variables, or other
+#'   columns that should not be evaluated. Default: `NULL`.
+#' @param verbose Logical; if `TRUE`, filtering summaries and messages about
+#'   near-zero variable means are printed. Default: `TRUE`.
 #'
 #' @details
-#' Missing, infinite, and non-finite values are ignored when detecting variable types,
-#' estimating prevalence, calculating CV, and estimating correlations. Non-finite
-#' correlations are set to zero before iterative correlation filtering.
+#' `remove.lowCV.multicollinearity.SOM` filters variables in three stages:
+#' prevalence filtering of binary and count variables, variability filtering of
+#' non-binary variables, and iterative correlation filtering of the remaining
+#' variables. Removing near-constant variables reduces uninformative
+#' dimensionality and potential numerical instability (Dormann et al., 2013;
+#' Greenacre & Primicerio, 2014), whereas removing strongly correlated variables
+#' reduces redundant weighting of the same underlying gradient (Dormann et al.,
+#' 2013; Gregorich et al., 2021). Columns listed in `exclude.cols` bypass all
+#' three stages.
 #'
-#' Binary variables are identified as variables with two observed states, `0` and
-#' `1`. Rare binary variables are removed according to `prevalence.threshold`.
-#' With the default `prevalence.threshold = 0.05`, the less common binary state
-#' must occur in at least 5% of finite observations, rounded up to the next whole
-#' sample. For example, with 100 finite observations, the less common state must
-#' occur in at least 5 samples. Count variables are identified as non-binary,
-#' non-negative, integer-like variables. Rare count variables are removed using
-#' the same threshold, based on the number of nonzero observations.
+#' Non-finite values are excluded from variable-type detection, prevalence and
+#' variability calculations, and correlations. Spearman correlations use
+#' pairwise complete observations.
 #'
-#' For non-binary variables, low-variation variables are removed according to
-#' `CV.threshold`. With the default `CV.threshold = 0.05`, variables are removed
-#' when their coefficient of variation is less than or equal to 0.05, so that the
-#' standard deviation is 5% or less of the absolute mean. When the absolute mean
-#' is near zero (below 1e-7), CV is treated as unstable because division by a value close
-#' to zero can produce misleadingly large CV values. In that case,
-#' an alternative variability ratio is used during the initial low-variation
-#' filtering step, calculated as the standard deviation divided by the median
-#' absolute deviation plus a small constant to avoid division by zero.
+#' Binary variables are identified as variables whose finite observations
+#' contain exactly the two states 0 and 1. Rare binary variables are removed
+#' according to the prevalence of the less common state. The required number of
+#' observations is calculated by multiplying the number of finite observations
+#' by `prevalence.threshold` and rounding upward to the next whole sample. With
+#' the default `prevalence.threshold = 0.05`, the less common binary state must
+#' therefore occur in at least 5 percent of finite observations. For example,
+#' with 100 finite observations, each binary state must occur in at least five
+#' samples.
 #'
-#' After prevalence and CV filtering, highly correlated variables are removed
-#' iteratively according to `cor.threshold`, using absolute Spearman correlations.
-#' With the default `cor.threshold = 0.9`, variable pairs are considered highly
-#' correlated only when their absolute Spearman correlation is greater than 0.90.
-#' Count variables are transformed only for correlation estimation, while the
-#' returned data remain on the original scale. For each highly correlated pair,
-#' the function first removes the variable with more missing values. If
-#' missingness is tied, it removes the variable with lower variability. If
-#' variability comparison is unstable, it removes the variable that is more
-#' strongly correlated with the other retained variables. Remaining ties are
-#' resolved deterministically.
+#' Count variables are identified as non-binary variables whose finite values
+#' are non-negative and integer-like. Rare count variables are removed using the
+#' same prevalence threshold, based on the number of observations containing a
+#' nonzero value. This filter therefore identifies highly zero-inflated count
+#' variables rather than evaluating the frequencies of individual positive
+#' count values.
 #'
-#' Integer-like non-negative variables are treated as count variables unless they are
-#' binary. Integer-coded categorical variables should therefore be excluded or recoded
-#' before using this function.
+#' All non-binary variables, including retained count variables, are then
+#' evaluated using `CV.threshold`. When the mean is sufficiently different from
+#' zero, variability is measured using the absolute coefficient of variation,
+#' calculated as the standard deviation divided by the absolute mean (Pearson,
+#' 1896; Sokal & Rohlf, 2012; Zar, 2010). With the default
+#' `CV.threshold = 0.05`, a variable is removed when its standard deviation is
+#' 5 percent or less of the absolute mean. Binary variables are not subjected to
+#' the coefficient-of-variation filter because their variability is determined
+#' directly by state prevalence. The coefficient of variation is undefined or
+#' unstable when the variable mean is zero or effectively zero. The function
+#' identifies this condition relative to the largest absolute observed value,
+#' then min-max standardizes the variable to the interval from 0 to 1 and uses
+#' the standard deviation of the standardized values as a fallback variability
+#' measure. Variables with fallback variability less than or equal to
+#' `CV.threshold` are removed.
 #'
+#' After prevalence and variability filtering, absolute Spearman correlations
+#' are calculated among the retained variables on their original scales.
+#' Spearman correlation is rank-based, so the variables do not need to be
+#' standardized before correlation estimation. Correlations based on fewer than
+#' five pairwise finite observations and undefined correlations are set to zero
+#' and therefore do not cause variable removal.
+#'
+#' Correlation filtering is iterative. At each step, the pair with the largest
+#' absolute correlation above `cor.threshold` is identified and one variable is
+#' removed until no correlation exceeds the threshold. The variable with more
+#' missing or non-finite values is removed first. If missingness is equal, the
+#' variable with lower variability after independent min-max standardization is
+#' removed. If variability is effectively equal, the variable with the larger
+#' mean absolute correlation to the remaining variables is removed; exact ties
+#' are resolved by removing the second variable in the selected pair. The
+#' threshold is strict, so with `cor.threshold = 0.9`, correlations greater than
+#' 0.90 are filtered but correlations equal to 0.90 are retained. Integer-like
+#' non-negative variables are treated as count variables unless binary, so
+#' integer-coded categorical or ordinal variables should be recoded or included
+#' in `exclude.cols`.
+#'
+#' @return A data frame containing the retained filtered variables and any
+#'   columns listed in `exclude.cols`. Original row names and the relative order
+#'   of retained columns are preserved. The returned data frame contains the
+#'   following attributes:
+#' \describe{
+#'   \item{variables.removed.rare.binary}{A character vector containing binary
+#'   variables removed because the less common state occurred below
+#'   `prevalence.threshold`.}
+#'   \item{variables.removed.rare.count}{A character vector containing count
+#'   variables removed because nonzero observations occurred below
+#'   `prevalence.threshold`.}
+#'   \item{variables.removed.by.CV}{A character vector containing non-binary
+#'   variables removed because their coefficient of variation or fallback
+#'   range-standardized variability was less than or equal to `CV.threshold`.}
+#'   \item{variables.removed.by.correlation}{A character vector containing
+#'   variables removed during iterative absolute Spearman-correlation
+#'   filtering.}
+#' }
+#'
+#' @references
+#' Dormann, C. F., Elith, J., Bacher, S., Buchmann, C., Carl, G., Carré, G.,
+#'   Marquéz, J. R. G., Gruber, B., Lafourcade, B., Leitão, P. J.,
+#'   Münkemüller, T., McClean, C., Osborne, P. E., Reineking, B., Schröder, B.,
+#'   Skidmore, A. K., Zurell, D., & Lautenbach, S. (2013). Collinearity: A
+#'   review of methods to deal with it and a simulation study evaluating their
+#'   performance. \emph{Ecography}, 36(1), 27-46.
+#'   https://doi.org/10.1111/j.1600-0587.2012.07348.x
+#'
+#' Greenacre, M., & Primicerio, R. (2014). \emph{Multivariate analysis of
+#'   ecological data}. Fundación BBVA.
+#'
+#' Pearson, K. (1896). VII. Mathematical contributions to the theory of
+#'   evolution.—III. Regression, heredity, and panmixia. \emph{Philosophical
+#'   Transactions of the Royal Society of London. Series A, Containing Papers of
+#'   a Mathematical or Physical Character}, 187, 253-318.
+#'   https://doi.org/10.1098/rsta.1896.0007
+#'
+#' Sokal, R. R., & Rohlf, F. J. (2012). \emph{Biometry: The principles and
+#'   practice of statistics in biological research} (4th ed.). W. H. Freeman.
+#'
+#' Zar, J. H. (2010). \emph{Biostatistical analysis}. Pearson.
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' n_samples <- 100
+#'
+#' input_data <- data.frame(
+#'   Latitude = runif(n_samples, 36, 39),
+#'   Longitude = runif(n_samples, -89, -82),
+#'   continuous_1 = rnorm(n_samples),
+#'   continuous_2 = rnorm(n_samples),
+#'   low_variation = 10 + rnorm(n_samples, sd = 0.01),
+#'   balanced_binary = rep(c(0, 1), each = n_samples / 2),
+#'   rare_binary = c(rep(0, 98), 1, 1),
+#'   common_count = rpois(n_samples, lambda = 2),
+#'   rare_count = c(rep(0, 97), 1, 2, 3)
+#' )
+#'
+#' input_data$continuous_1_correlated <-
+#'   input_data$continuous_1 + rnorm(n_samples, sd = 0.001)
+#'
+#' filtered_data <- remove.lowCV.multicollinearity.SOM(
+#'   input.dataframe = input_data,
+#'   CV.threshold = 0.05,
+#'   cor.threshold = 0.9,
+#'   prevalence.threshold = 0.05,
+#'   exclude.cols = c("Latitude", "Longitude")
+#' )
+#'}
+#'						
 #' @export
 remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with numeric columns (e.g., climatic, environmental or morphological variables)
                                                CV.threshold = 0.05, #numeric, remove variables with CV ≤ this value (only for non-binary vars)
@@ -9677,18 +9780,30 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
     variables.removed.rare.count <- character(0)
   }
   
+  # Compute variability after min-max scaling
+  compute_scaled_variability <- function(variable_values) {
+    variable_values <- variable_values[is.finite(variable_values)]
+    if (length(variable_values) < 2) return(0)
+    variable_range <- range(variable_values)
+    variable_range_width <- diff(variable_range)
+    if (!is.finite(variable_range_width) || variable_range_width == 0) return(0)
+    stats::sd((variable_values - variable_range[1]) / variable_range_width)
+  }
+  
   # Compute CV
   compute_CV <- function(variable_values, variable_name) {
     variable_values <- variable_values[is.finite(variable_values)]
-    if (length(variable_values) <= 5) return(0)
+    if (length(variable_values) < 2) return(0)
     variable_mean <- mean(variable_values)
     variable_sd <- stats::sd(variable_values)
     if (!is.finite(variable_sd) || variable_sd == 0) return(0) #no variation
-    if (!is.finite(variable_mean) || abs(variable_mean) < 1e-7) { #mean near zero: CV invalid
-      if (verbose) messager("Variable '", variable_name, "' has mean near zero (", format(variable_mean, digits = 4), ") - falling back to SD-based variability")
-      mad_val <- stats::mad(variable_values, constant = 1, na.rm = TRUE)
-      if (!is.finite(mad_val) || mad_val == 0) return(0) #MAD=0 so truly constant
-      return(variable_sd / (mad_val + 1e-12)) #SD/MAD scale-free variability
+    variable.scale <- max(abs(variable_values))
+    mean.tolerance <- sqrt(.Machine$double.eps) * variable.scale
+    if (!is.finite(variable_mean) || abs(variable_mean) <= mean.tolerance) { #mean effectively zero: CV invalid
+      scaled.variability <- compute_scaled_variability(variable_values)
+      if (!is.finite(scaled.variability)) return(0)
+      if (verbose) messager("Variable '", variable_name, "' has a mean effectively equal to zero (", format(variable_mean, digits = 4), ") - using range-standardized SD instead of CV")
+      return(scaled.variability)
     }
     abs(variable_sd / variable_mean)
   }
@@ -9709,12 +9824,8 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
   # Subset to variables kept by CV and prevalence filtering
   variables.retained.for.correlation <- variables.to.filter[, variables.retained.after.CV, drop = FALSE]
   
-  # Log-transform retained count variables only for correlation filtering
+  # Use retained variables on their original scale for Spearman correlation
   variables.for.correlation <- variables.retained.for.correlation
-  retained.count.variable.names <- intersect(names(count.variable.logical)[count.variable.logical], colnames(variables.for.correlation))
-  if (length(retained.count.variable.names) > 0) {
-    for (variable.name in retained.count.variable.names) variables.for.correlation[[variable.name]] <- log1p(variables.for.correlation[[variable.name]])
-  }
 
   # Convert non-finite values to NA before pairwise correlation
   variables.for.correlation[] <- lapply(variables.for.correlation, function(variable.values) {
@@ -9724,8 +9835,10 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
   
   # Calculate absolute correlation matrix, ignoring NAs pairwise
   if (ncol(variables.for.correlation) > 1) {
-    absolute.correlation.matrix <- abs(stats::cor(variables.for.correlation, use = "pairwise.complete.obs", method = "spearman"))
+    absolute.correlation.matrix <- abs(suppressWarnings(stats::cor(variables.for.correlation, use = "pairwise.complete.obs", method = "spearman")))
+    pairwise.complete.count.matrix <- crossprod(!is.na(as.matrix(variables.for.correlation)))
     absolute.correlation.matrix[!is.finite(absolute.correlation.matrix)] <- 0
+    absolute.correlation.matrix[pairwise.complete.count.matrix < 5] <- 0
     diag(absolute.correlation.matrix) <- 0
   } else if (ncol(variables.for.correlation) == 1) {
     absolute.correlation.matrix <- matrix(0, nrow = 1, ncol = 1)
@@ -9750,13 +9863,14 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
     } else if (variable.NA.count.2 > variable.NA.count.1) {
       variable.name.to.remove <- variable.name.2
     } else {
-      variable.values.finite.1 <- variable.values.1[is.finite(variable.values.1)]
-      variable.values.finite.2 <- variable.values.2[is.finite(variable.values.2)]
-      variable.mean.1 <- if (length(variable.values.finite.1) > 0) mean(variable.values.finite.1) else NA_real_
-      variable.mean.2 <- if (length(variable.values.finite.2) > 0) mean(variable.values.finite.2) else NA_real_
-      variable.mean.close.to.zero.1 <- !is.finite(variable.mean.1) || abs(variable.mean.1) < 1e-7
-      variable.mean.close.to.zero.2 <- !is.finite(variable.mean.2) || abs(variable.mean.2) < 1e-7
-      if (variable.mean.close.to.zero.1 || variable.mean.close.to.zero.2) {
+      variable.variability.1 <- compute_scaled_variability(variable.values.1)
+      variable.variability.2 <- compute_scaled_variability(variable.values.2)
+      variability.tolerance <- sqrt(.Machine$double.eps) * max(1, abs(variable.variability.1), abs(variable.variability.2))
+      if (variable.variability.1 < variable.variability.2 - variability.tolerance) {
+        variable.name.to.remove <- variable.name.1
+      } else if (variable.variability.2 < variable.variability.1 - variability.tolerance) {
+        variable.name.to.remove <- variable.name.2
+      } else {
         variable.mean.correlation.1 <- mean(absolute.correlation.matrix[variable.name.1, ], na.rm = TRUE)
         variable.mean.correlation.2 <- mean(absolute.correlation.matrix[variable.name.2, ], na.rm = TRUE)
         if (!is.finite(variable.mean.correlation.1)) variable.mean.correlation.1 <- 0
@@ -9764,22 +9878,6 @@ remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with
         if (variable.mean.correlation.1 > variable.mean.correlation.2) {
           variable.name.to.remove <- variable.name.1
         } else if (variable.mean.correlation.2 > variable.mean.correlation.1) {
-          variable.name.to.remove <- variable.name.2
-        } else if (variable.mean.close.to.zero.1 && !variable.mean.close.to.zero.2) {
-          variable.name.to.remove <- variable.name.1
-        } else if (variable.mean.close.to.zero.2 && !variable.mean.close.to.zero.1) {
-          variable.name.to.remove <- variable.name.2
-        } else {
-          variable.name.to.remove <- variable.name.2
-        }
-      } else {
-        variable.CV.1 <- compute_CV(variable.values.1, variable.name.1)
-        variable.CV.2 <- compute_CV(variable.values.2, variable.name.2)
-        if (!is.finite(variable.CV.1)) variable.CV.1 <- 0
-        if (!is.finite(variable.CV.2)) variable.CV.2 <- 0
-        if (variable.CV.1 < variable.CV.2) {
-          variable.name.to.remove <- variable.name.1
-        } else if (variable.CV.2 < variable.CV.1) {
           variable.name.to.remove <- variable.name.2
         } else {
           variable.name.to.remove <- variable.name.2
