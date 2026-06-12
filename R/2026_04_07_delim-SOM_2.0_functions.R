@@ -1402,7 +1402,6 @@ calculate.topographic.error <- function(som_model) {
 }
 
 
-## Function to cluster SOM codebook vectors and select optimal K
 #' Cluster SOM codebook vectors and select optimal K
 #'
 #' Cluster the codebook vectors from retained replicate Self-Organizing Maps
@@ -1685,7 +1684,7 @@ calculate.topographic.error <- function(som_model) {
 #' \item{BIC_values}{A K-by-replicate matrix containing BIC-like values for the
 #' k-means methods, sign-inverted Gaussian-mixture BIC values for
 #' `"GMM+BICthreshold"`, and missing values where BIC is not applicable.}
-#' \item{support_values}{A k-by-replicate matrix containing method-specific
+#' \item{support_values}{A K-by-replicate matrix containing method-specific
 #' BIC-like, Davies-Bouldin, or silhouette support values.}
 #' \item{support_label}{A character string describing the method-specific
 #' support metric stored in `support_values`.}
@@ -2042,7 +2041,7 @@ clustering.SOM <- function(SOM.output,
   invisible(gc())
   
   # Create function to find nearest neighbors (following FNN get.knnx function)
-  get.knnx.custom <- function(reference_data, query_data, K = 1) {
+  get.knnx.custom <- function(reference_data, query_data, k = 1) {
     if (k != 1) stop("get.knnx.custom currently supports only K = 1")
     reference_data <- as.matrix(reference_data) #ensure matrix input
     query_data <- as.matrix(query_data) #ensure matrix input
@@ -2378,7 +2377,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     if (!is.list(codes)) codes <- list(codes)
     som_codes <- do.call(cbind, codes)
     rownames(som_codes) <- paste0("G", seq_len(nrow(som_codes)))
-    support_vec <- rep(NA_real_, max.k) #method-specific support values across k
+    support_vec <- rep(NA_real_, max.k) #method-specific support values across K
     support_label <- NULL #name of support metric
     support_higher_is_better <- NA #whether larger values indicate better support
     
@@ -2409,10 +2408,10 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       fits <- vector("list", max.k) #store kmeans fits
       max_fit_k <- min(max.k, nrow(unique(som_codes))) #maximum K supported by distinct codebook rows
       wss[1] <- (nrow(som_codes) - 1) * sum(apply(som_codes, 2, stats::var)) #calculate wss for K = 1 (= total sum of squared distances to overall mean)
-      if (!is.null(set.k)) { #if user specified k, only fit that k
+      if (!is.null(set.k)) { #if user specified K, only fit that k
         if (set.k >= 2) {
           if (set.k > max_fit_k) stop(sprintf("Aborted SOM clustering: set.k = %d exceeds distinct codebook rows of %d", set.k, max_fit_k))
-          km <- stats::kmeans(som_codes, centers = set.k, nstart = 30, iter.max = 1e5) #fit kmeans at user-specified k
+          km <- stats::kmeans(som_codes, centers = set.k, nstart = 30, iter.max = 1e5) #fit kmeans at user-specified K
           fits[[set.k]] <- km #store fit
           wss[set.k] <- sum(km$withinss) #store wss
         }
@@ -2449,7 +2448,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       som_N_clusters <- NA #store optimal k
       for (k in 2:length(BIC_vec)) {
         if (!is.na(BIC_vec[k]) && !is.na(BIC_vec[k - 1]) && ((BIC_vec[k - 1] - BIC_vec[k]) < BIC.thresh)) { #if improvement is not at least as large as threshold, select previous k
-          som_N_clusters <- K - 1
+          som_N_clusters <- k - 1
           break
         }
       }
@@ -2459,24 +2458,24 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     
     # Create function to determine optimal number of clusters using BIC elbow rule
     select.k.BICelbow <- function(BIC_vec, BIC.thresh, set.k = NULL) {
-      if (!is.null(set.k)) return(set.k) #user-specified k
+      if (!is.null(set.k)) return(set.k) #user-specified K
       if (length(BIC_vec) < 2) return(1) # if there is only one or no BIC value, return K = 1
       if (all(is.na(BIC_vec))) stop("All BIC values are NA - cannot determine optimal number of clusters")
       if (is.na(BIC_vec[1]) || is.na(BIC_vec[2])) return(which.min(replace(BIC_vec, !is.finite(BIC_vec) | is.na(BIC_vec), Inf))) #fallback when only K = 1 is estimable
       if (((BIC_vec[1] - BIC_vec[2]) < BIC.thresh)) { #computes ΔBIC between K = 1 and K = 2 and if that drop is smaller than BIC threshold, there is no real improvement from adding second cluster, so pick K = 1
-        som_N_clusters <- 1 #k = 1
+        som_N_clusters <- 1 #K = 1
       } else {
         if (length(BIC_vec) <= 2) { #if only 2 BIC values, pick K = 2
           som_N_clusters <- 2
         } else {
-          delta_BIC_vec <- BIC_vec[-length(BIC_vec)] - BIC_vec[-1] #calculate BIC drop (improvement) from k-1 -> k
+          delta_BIC_vec <- BIC_vec[-length(BIC_vec)] - BIC_vec[-1] #calculate BIC drop (improvement) from K - 1 -> k
           valid_delta <- which(is.finite(delta_BIC_vec) & !is.na(delta_BIC_vec)) #keep only finite ΔBIC
           if (length(valid_delta) < 2) { #not enough info for elbow clustering
             som_N_clusters <- which.min(replace(BIC_vec, !is.finite(BIC_vec) | is.na(BIC_vec), Inf)) #fallback to best available BIC
             return(som_N_clusters)
           }
           delta_BIC_vec_valid <- delta_BIC_vec[valid_delta] #subset ΔBIC
-          deltaBIC_clusters_valid <- stats::cutree(stats::hclust(stats::dist(delta_BIC_vec_valid), method = "ward.D2"), K = 2) #cluster valid ΔBIC values into two groups using hierarchical clustering
+          deltaBIC_clusters_valid <- stats::cutree(stats::hclust(stats::dist(delta_BIC_vec_valid), method = "ward.D2"), k = 2) #cluster valid ΔBIC values into two groups using hierarchical clustering
           deltaBIC_clusters <- rep(NA_integer_, length(delta_BIC_vec)) #expand back to full length
           deltaBIC_clusters[valid_delta] <- deltaBIC_clusters_valid #fill valid positions
           valid_groups <- which(!is.na(deltaBIC_clusters) & is.finite(delta_BIC_vec) & !is.na(delta_BIC_vec)) #valid grouped ΔBIC entries
@@ -2635,13 +2634,13 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       davies_bouldin_values <- rep(NA_real_, max.k) #store DB values across k
       dist_som_codes <- stats::dist(som_codes) #compute pairwise Euclidean distances
       hierarchical_clust_som_codes <- stats::hclust(dist_som_codes, method = "ward.D2") #perform hierarchical clustering
-      if (!is.null(set.k)) { #check if user specified k
-        som_N_clusters <- as.integer(set.k) #set number of clusters to user-specified k
+      if (!is.null(set.k)) { #check if user specified K
+        som_N_clusters <- as.integer(set.k) #set number of clusters to user-specified K
         if (som_N_clusters <= 1) { #check if user specified K <= 1
           som_N_clusters <- 1L #set number of clusters to 1
           som_cluster <- rep(1L, nrow(som_codes)) #assign all units to single cluster
         } else {
-          som_cluster <- stats::cutree(hierarchical_clust_som_codes, som_N_clusters) #extract cluster assignments for user-specified k
+          som_cluster <- stats::cutree(hierarchical_clust_som_codes, som_N_clusters) #extract cluster assignments for user-specified K
         }
         BIC_vec <- rep(NA_real_, max.k) #initialize BIC vector as NA
       } else {
@@ -2711,15 +2710,15 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
       }
       valid_HDBSCAN <- which(hdbscan_model_results$n_clusters > 0 & hdbscan_model_results$n_clusters <= max.k & !is.na(hdbscan_model_results$mean_mem)) #filter valid results and respect max.k
       if (length(valid_HDBSCAN) == 0) { #if no valid runs
-        if (!is.null(set.k) && set.k > 1L) stop(sprintf("Aborted SOM clustering: HDBSCAN with set.k = %d could not find any minPts value that produced exactly this number of non-noise clusters - use clustering.method = 'kmeans+BICelbow', 'kmeans+BICthreshold', 'hierarchical+DB', or 'GMM+BICthreshold', or run HDBSCAN without set.k.", as.integer(set.k))) #explain fixed-k HDBSCAN failure
+        if (!is.null(set.k) && set.k > 1L) stop(sprintf("Aborted SOM clustering: HDBSCAN with set.k = %d could not find any minPts value that produced exactly this number of non-noise clusters - use clustering.method = 'kmeans+BICelbow', 'kmeans+BICthreshold', 'hierarchical+DB', or 'GMM+BICthreshold', or run HDBSCAN without set.k.", as.integer(set.k))) #explain fixed-K HDBSCAN failure
         som_cluster <- rep(1L, nrow(som_codes)) #assign all points to one cluster
         som_N_clusters <- 1L
         BIC_vec <- rep(NA_real_, max.k)
       }
         if (length(valid_HDBSCAN) > 0) { #run best model and evaluate reassignment strategies
         hdbscan_model_results <- hdbscan_model_results[valid_HDBSCAN, , drop = FALSE] #subset to valid runs
-        if (!is.null(set.k)) { #check if user specified k
-          som_N_clusters <- as.integer(set.k) #set number of clusters to user-specified k
+        if (!is.null(set.k)) { #check if user specified K
+          som_N_clusters <- as.integer(set.k) #set number of clusters to user-specified K
           if (som_N_clusters <= 1) { #check if user specified K <= 1
             som_N_clusters <- 1L #set number of clusters to 1
             som_cluster <- rep(1L, nrow(som_codes)) #assign all points to one cluster
@@ -2738,7 +2737,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
                 noise_indices <- which(base_clusters == 0) #noise points (cluster = 0)
                 core_indices <- which(base_clusters != 0) #core points (real clusters)
                 if (length(noise_indices) > 0 && length(core_indices) > 0) { #assign noise points to nearest core cluster
-                  hdbscan_nn_result <- get.knnx.custom(reference_data = som_codes[core_indices, , drop = FALSE], query_data = som_codes[noise_indices, , drop = FALSE], K = 1)
+                  hdbscan_nn_result <- get.knnx.custom(reference_data = som_codes[core_indices, , drop = FALSE], query_data = som_codes[noise_indices, , drop = FALSE], k = 1)
                   nearest_clusters <- base_clusters[core_indices][hdbscan_nn_result$nn.index]
                   base_clusters[noise_indices] <- nearest_clusters
                 }
@@ -2763,7 +2762,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               som_cluster <- as.integer(factor(base_clusters)) #relabel clusters sequentially
               som_N_clusters <- length(unique(som_cluster)) #extract number of clusters
             } else {
-              hdbscan_nn_result <- get.knnx.custom(reference_data = som_codes[core_indices, , drop = FALSE], query_data = som_codes[noise_indices, , drop = FALSE], K = 1)
+              hdbscan_nn_result <- get.knnx.custom(reference_data = som_codes[core_indices, , drop = FALSE], query_data = som_codes[noise_indices, , drop = FALSE], k = 1)
               nearest_clusters <- base_clusters[core_indices][hdbscan_nn_result$nn.index]
               clusters_nearest <- base_clusters
               clusters_nearest[noise_indices] <- nearest_clusters
@@ -2807,8 +2806,8 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
     if (clustering.method == "OPTICS+Silhouette") {
       dist_som_codes <- stats::dist(som_codes) #compute pairwise Euclidean distances
       silhouette_values <- rep(NA_real_, max.k) #best silhouette support per k
-      if (!is.null(set.k)) { #check if user specified k
-        som_N_clusters <- as.integer(set.k) #set number of clusters to user-specified k
+      if (!is.null(set.k)) { #check if user specified K
+        som_N_clusters <- as.integer(set.k) #set number of clusters to user-specified K
         if (som_N_clusters <= 1) { #check if user specified K <= 1
           som_N_clusters <- 1L #set number of clusters to 1
           som_cluster <- rep(1L, nrow(som_codes)) #assign all units to single cluster
@@ -2839,12 +2838,12 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
               noise_indices <- which(cluster_assignments == 0L) #identify noise points
               core_indices <- which(cluster_assignments != 0L) #identify core points
               if (length(noise_indices) > 0 && length(core_indices) > 0) { #assign noise points to nearest core cluster
-                optics_nn_result <- get.knnx.custom(reference_data = som_codes[core_indices, , drop = FALSE], query_data = som_codes[noise_indices, , drop = FALSE], K = 1)
+                optics_nn_result <- get.knnx.custom(reference_data = som_codes[core_indices, , drop = FALSE], query_data = som_codes[noise_indices, , drop = FALSE], k = 1)
                 cluster_assignments[noise_indices] <- cluster_assignments[core_indices][optics_nn_result$nn.index]
               }
               cluster_assignments_relabelled <- as.integer(factor(cluster_assignments)) #relabel clusters sequentially
               number_of_clusters <- length(unique(cluster_assignments_relabelled)) #number of clusters
-              if (number_of_clusters != som_N_clusters) next #enforce user-specified k
+              if (number_of_clusters != som_N_clusters) next #enforce user-specified K
               silhouette_value <- tryCatch({mean(cluster::silhouette(cluster_assignments_relabelled, dist_som_codes)[, 3])}, error = function(e) NA_real_) #calculate silhouette
               if (!is.na(silhouette_value) && is.finite(silhouette_value) && number_of_clusters <= max.k) {
                 if (is.na(silhouette_values[number_of_clusters]) || silhouette_value > silhouette_values[number_of_clusters]) silhouette_values[number_of_clusters] <- silhouette_value
@@ -2894,7 +2893,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
             noise_indices <- which(cluster_assignments == 0L) #identify noise points
             core_indices <- which(cluster_assignments != 0L) #identify core points
             if (length(noise_indices) > 0 && length(core_indices) > 0) { #assign noise points to nearest core cluster
-              optics_nn_result <- get.knnx.custom(reference_data = som_codes[core_indices, , drop = FALSE], query_data = som_codes[noise_indices, , drop = FALSE], K = 1)
+              optics_nn_result <- get.knnx.custom(reference_data = som_codes[core_indices, , drop = FALSE], query_data = som_codes[noise_indices, , drop = FALSE], k = 1)
               cluster_assignments[noise_indices] <- cluster_assignments[core_indices][optics_nn_result$nn.index]
             }
             cluster_assignments_relabelled <- as.integer(factor(cluster_assignments)) #relabel clusters sequentially
@@ -3193,7 +3192,7 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
       mapvar_across_replicates[[length(mapvar_across_replicates) + 1]] <- mapvar_current #store
       neuron_cluster_labels_current <- som_clusters[[replicate_index]] #current neuron clusters
       if (!is.finite(n_clusters_per_rep[replicate_index]) || n_clusters_per_rep[replicate_index] < 2L) {
-        etasquared_current <- rep(NA_real_, ncol(codebook_matrix_current)) #k = 1 replicate
+        etasquared_current <- rep(NA_real_, ncol(codebook_matrix_current)) #K = 1 replicate
         names(etasquared_current) <- colnames(codebook_matrix_current) #assign names
       } else {
         etasquared_current <- calculate.etasquared.per.variable(codebook_matrix_current, neuron_cluster_labels_current, som_model_current) #compute eta^2
@@ -5020,13 +5019,13 @@ plot.K.SOM <- function(SOM.output,
     return(TRUE)
   }
   
-  # Create k-frequency panel
-  plot.K.frequency.panel <- function() {
+  # Create K-frequency panel
+  plot.k.frequency.panel <- function() {
     
-    # Calculate k-selection frequencies
+    # Calculate K-selection frequencies
     k_frequency_values <- table(factor(optim_k_vals, levels = seq_len(max_k))) / length(optim_k_vals)
     
-    # Create k-frequency barplot
+    # Create K-frequency barplot
     bar_midpoints <- barplot(k_frequency_values,
                              ylim = c(0, 1),
                              col = k_colors,
@@ -5076,7 +5075,7 @@ plot.K.SOM <- function(SOM.output,
   # Create plot
   if (support_available && support_is_BIC && max_k > 2) {
     
-    # Plot support, delta-BIC, and k-frequency panels
+    # Plot support, delta-BIC, and K-frequency panels
     par(mfrow = c(3, 1), bty = "n", oma = outer_margins)
     par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
     par(mar = top_panel_margins)
@@ -5084,7 +5083,7 @@ plot.K.SOM <- function(SOM.output,
     par(mar = middle_panel_margins)
     delta_BIC_panel_plotted <- plot.deltaBIC.panel()
     
-    # Fallback to support and k-frequency panels if delta-BIC cannot be plotted
+    # Fallback to support and K-frequency panels if delta-BIC cannot be plotted
     if (!support_panel_plotted || !delta_BIC_panel_plotted) {
       message("Plotting support panel and k-frequency only (insufficient finite BIC values for delta-BIC panel)")
       par(mfrow = c(2, 1), bty = "n", oma = outer_margins)
@@ -5092,31 +5091,31 @@ plot.K.SOM <- function(SOM.output,
       par(mar = top_panel_margins)
       plot.support.panel(values_matrix = support_values, y.axis.label = support_label)
       par(mar = bottom_panel_margins)
-      plot.K.frequency.panel()
+      plot.k.frequency.panel()
     } else {
       par(mar = bottom_panel_margins)
-      plot.K.frequency.panel()
+      plot.k.frequency.panel()
     }
     add.outer.plot.title()
     
-    # Plot support and k-frequency panels
+    # Plot support and K-frequency panels
   } else if (support_available) {
     par(mfrow = c(2, 1), bty = "n", oma = outer_margins)
     par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
     par(mar = top_panel_margins)
     plot.support.panel(values_matrix = support_values, y.axis.label = support_label)
     par(mar = bottom_panel_margins)
-    plot.K.frequency.panel()
+    plot.k.frequency.panel()
     add.outer.plot.title()
     
-    # Plot only k-frequency panel
+    # Plot only K-frequency panel
   } else {
     par(mfrow = c(1, 1),
         bty = "n",
         oma = outer_margins,
         mar = single_panel_margins)
     par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
-    plot.K.frequency.panel()
+    plot.k.frequency.panel()
     add.outer.plot.title()
   }
   
@@ -6961,8 +6960,8 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' and `NA = missing/ambiguous state`.
 #'
 #' If `make.biallelic = FALSE`, multiallelic loci from alignment or `genind`
-#' inputs are retained by encoding each polymorphic locus as `k - 1`
-#' allele-dosage columns, where `k` is the number of observed non-missing alleles
+#' inputs are retained by encoding each polymorphic locus as K - 1
+#' allele-dosage columns, where K is the number of observed non-missing alleles
 #' at that locus. For direct dosage-matrix-like inputs (`snp.matrix.input`,
 #' `genlight.input`, and `plink.raw.path`), `make.biallelic` does not create
 #' multiallelic encodings because those inputs are already dosage matrices.
@@ -7055,7 +7054,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                  phylip.format = "sequential", #PHYLIP format: sequential or interleaved
                                  plink.raw.metadata.columns = c("FID", "IID", "PAT", "MAT", "SEX", "PHENOTYPE"), #PLINK .raw metadata columns
                                  snp.matrix.ploidy = 2, #ploidy for snp.matrix.input, genlight.input, and plink.raw.path
-                                 make.biallelic = TRUE, #whether to restrict to biallelic loci or retain multiallelic loci as k-1 dosage columns
+                                 make.biallelic = TRUE, #whether to restrict to biallelic loci or retain multiallelic loci as K - 1 dosage columns
                                  missing.loci.cutoff.lenient = 0.7, #remove loci with > this proportion missing (1st lenient filter)
                                  missing.loci.cutoff.final = 0.5, #remove loci with > this proportion missing (2nd final stringent filter)
                                  missing.individuals.cutoff = 0.5, #remove individuals with > this proportion missing
@@ -7288,11 +7287,11 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     return(snp.matrix) #return matrix
   }
   
-  # Create function to encode multiallelic alignment as k-1 dosage columns
+  # Create function to encode multiallelic alignment as K - 1 dosage columns
   encode.multiallelic.alignment.as.k.minus.one <- function(alignment.matrix, missing.symbols = c("?", "-", "N", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "X")
   ) {
     observed.alleles.per.locus <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) sort(setdiff(unique(alignment.matrix[, locus.index]), missing.symbols))) #observed alleles
-    retained.alleles.per.locus <- lapply(observed.alleles.per.locus, function(observed.alleles) if (length(observed.alleles) < 2) character(0) else observed.alleles[-length(observed.alleles)]) #retained k-1 alleles
+    retained.alleles.per.locus <- lapply(observed.alleles.per.locus, function(observed.alleles) if (length(observed.alleles) < 2) character(0) else observed.alleles[-length(observed.alleles)]) #retained K - 1 alleles
     retained.column.counts <- lengths(retained.alleles.per.locus) #number of retained columns per locus
     total.retained.columns <- sum(retained.column.counts) #total retained columns
     if (total.retained.columns == 0) return(data.frame(row.names = rownames(alignment.matrix))) #return empty if none
@@ -7339,7 +7338,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     return(minor.allele.counts) #return counts
   }
   
-  # Create function to convert genind object to k-1 allele dosage matrix
+  # Create function to convert genind object to K - 1 allele dosage matrix
   convert.genind.to.k.minus.one.dosage <- function(genind.object) {
     allele.count.matrix <- suppressMessages(suppressWarnings(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
     locus.names <- adegenet::locNames(genind.object) #locus names
@@ -7349,7 +7348,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     retained.column.indices <- unlist(lapply(locus.column.list, function(locus.column.indices) {
       observed.column.indices <- locus.column.indices[allele.present[locus.column.indices]] #observed columns
       if (length(observed.column.indices) < 2) return(integer(0)) #skip invariant loci
-      observed.column.indices[-length(observed.column.indices)] #retain k-1 columns
+      observed.column.indices[-length(observed.column.indices)] #retain K - 1 columns
     }), use.names = FALSE) #retained columns
     if (length(retained.column.indices) == 0) return(data.frame(row.names = adegenet::indNames(genind.object))) #return empty if none
     multiallelic.snp.matrix <- as.data.frame(allele.count.matrix[, retained.column.indices, drop = FALSE], stringsAsFactors = FALSE) #subset once
@@ -7567,7 +7566,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       if (ncol(alignment.matrix) == 0) stop("No polymorphic loci remain after filtering") #stop if all gone
     }
     
-    # Convert to k-1 dosage matrix
+    # Convert to K - 1 dosage matrix
     multiallelic.snp.matrix <- encode.multiallelic.alignment.as.k.minus.one(alignment.matrix = alignment.matrix, missing.symbols = missing.symbols) #encode multiallelic loci
     if (ncol(multiallelic.snp.matrix) == 0) stop("No multiallelic SNP columns remain after filtering") #stop if empty
     
@@ -7780,7 +7779,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     print.final.summary(biallelic.snp.matrix) #summary
     return(biallelic.snp.matrix) #return SNP matrix
   }
-  multiallelic.snp.matrix <- convert.genind.to.k.minus.one.dosage(genind.object) #convert to k-1 dosage matrix
+  multiallelic.snp.matrix <- convert.genind.to.k.minus.one.dosage(genind.object) #convert to K - 1 dosage matrix
   if (ncol(multiallelic.snp.matrix) == 0) stop("No multiallelic SNP columns remain after filtering") #stop if empty
   print.final.summary(multiallelic.snp.matrix) #summary
   return(multiallelic.snp.matrix) #return multiallelic SNP matrix
@@ -8364,7 +8363,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #' @param title Optional character string giving the overall plot title. If
 #'   `NULL` or `""`, no title is shown. Default: `"Layer importance"`.
 #' @param absolute.k.deviation.y.axis.label Optional character string giving the
-#'   y-axis title of the absolute-k-deviation panel. If `NULL` or `""`, no
+#'   y-axis title of the absolute-K-deviation panel. If `NULL` or `""`, no
 #'   y-axis title is shown. Default: `"Absolute K deviation"`.
 #' @param pairwise.coassignment.change.y.axis.label Optional character string
 #'   giving the y-axis title of the pairwise-co-assignment-change panel. If
@@ -8816,7 +8815,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     leave_one_layer_out_unique_cluster_labels <- sort(unique(as.character(leave_one_layer_out_cluster_labels)))
     if (length(baseline_unique_cluster_labels) != length(leave_one_layer_out_unique_cluster_labels)) return(0)
     
-    # Use exact permutation matching for small k
+    # Use exact permutation matching for small K
     if (length(baseline_unique_cluster_labels) <= 8) {
       leave_one_layer_out_cluster_label_permutations <- generate.permutations.SOM(leave_one_layer_out_unique_cluster_labels)
       best_assignment_accuracy <- 0
@@ -8833,7 +8832,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       return(best_assignment_accuracy)
     }
     
-    # Fallback greedy matching for larger k
+    # Fallback greedy matching for larger K
     cluster_label_contingency_table <- table(as.character(leave_one_layer_out_cluster_labels), as.character(baseline_cluster_labels))
     relabel_map <- apply(cluster_label_contingency_table, 1, function(cluster_count_vector) colnames(cluster_label_contingency_table)[which.max(cluster_count_vector)])
     relabeled_leave_one_layer_out_cluster_labels <- relabel_map[as.character(leave_one_layer_out_cluster_labels)]
@@ -9498,7 +9497,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
       next
     }
     n <- length(col_factor) #number of rows
-    K <- length(levs) #number of levels
+    k <- length(levs) #number of levels
     model_mat <- matrix(NA_real_, nrow = n, ncol = k) #init NA matrix so NA rows remain NA
     colnames(model_mat) <- make.names(paste0(colname, "_", levs), unique = TRUE) #clean names
     non_na <- !is.na(col_factor) #identify non-NA rows
