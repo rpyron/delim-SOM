@@ -6287,11 +6287,12 @@ plot.map.SOM <- function(SOM.output,
 #' one another.
 #'
 #' For `mode = "Map.variance"`, variable importance is quantified as the weighted
-#' variance of each codebook variable across SOM units. SOM units are weighted as in `mode = "Cluster.separation"`
-#' using the same mapped-sample counts plus a baseline weight of one. The
-#' weighted squared deviations from the weighted mean are divided by the sum of
-#' the weights. Larger values indicate stronger variation across the SOM surface
-#' and therefore a greater contribution to its broader topological organization.
+#' variance of each codebook variable across SOM units. As in
+#' `mode = "Cluster.separation"`, SOM units are weighted using their mapped-sample
+#' counts plus a baseline weight of one. The weighted squared deviations from the
+#' weighted mean are divided by the sum of the weights. Larger values indicate
+#' stronger variation across the SOM surface and therefore a greater contribution
+#' to its broader topological organization.
 #'
 #' Variation across the map is necessary for a variable to contribute to cluster
 #' differentiation, whereas a variable with little or no variation cannot
@@ -6303,17 +6304,18 @@ plot.map.SOM <- function(SOM.output,
 #' additional evidence for their importance.
 #'
 #' In addition to its complementary role, `mode = "Map.variance"` is intended to
-#' assess variable importance for cases with `k = 1`, for which the
+#' assess variable importance for cases with K = 1, for which the
 #' `mode = "Cluster.separation"` metric cannot be calculated.
 #'
 #' For each layer, the median importance of every variable is calculated across
 #' retained replicates. Variables with median importance greater than
 #' `importance.threshold` are retained and ordered from the smallest to the
 #' largest median importance. Variables with median importance less than or equal
-#' to the threshold are omitted. Variable labels are shown when the number of retained variables in a layer
-#' does not exceed `bars.threshold.N`. Boxplot whiskers and staples are shown
-#' only when `add.boxplot.whiskers = TRUE` and the number of retained variables
-#' does not exceed this threshold.
+#' to the threshold are omitted. Variable labels are shown when the number of
+#' retained variables in a layer does not exceed `bars.threshold.N`. Boxplot
+#' whiskers and staples are shown only when `add.boxplot.whiskers = TRUE` and the
+#' number of retained variables does not exceed this threshold. Boxplot outliers
+#' are not displayed.
 #'
 #' If `file.name = NULL`, the default file name is
 #' `"SOM_etasquared_plot_<input-layer-names>.<plot.type>"` for
