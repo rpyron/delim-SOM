@@ -441,34 +441,35 @@ for (pkg in CRAN_packages) {
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Single-layer SOM
+#' # Create single-layer example data
 #' continuous_data <- matrix(rnorm(50 * 6), nrow = 50, ncol = 6)
 #' rownames(continuous_data) <- paste0("sample_", seq_len(nrow(continuous_data)))
 #' colnames(continuous_data) <- paste0("trait_", seq_len(ncol(continuous_data)))
 #'
+#' # Train single-layer SOM
 #' som_single <- train.SOM(input_data = continuous_data)
 #'
-#' # Multi-layer SOM
+#' # Create multi-layer example data
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
-#'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
-#'
 #' input_data_multi <- list(
 #'   SNPs = snp_data,
 #'   Morphology = morphology_data,
 #'   Environment = environment_data
 #' )
 #'
+#' # Train multi-layer SOM
 #' som_multi <- train.SOM(input_data = input_data_multi)
 #' }
 #'
 #' @export
+
 train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dataframes provided as list()
                       N.steps = 100, #number of training iterations S for SOM
                       N.replicates = 110, #number of SOM runs R
@@ -1916,30 +1917,31 @@ calculate.topographic.error <- function(som_model) {
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Train a SOM from one continuous matrix
+#' # Create single-layer example data
 #' continuous_data <- matrix(rnorm(80 * 8), nrow = 80, ncol = 8)
 #' rownames(continuous_data) <- paste0("sample_", seq_len(nrow(continuous_data)))
 #' colnames(continuous_data) <- paste0("trait_", seq_len(ncol(continuous_data)))
 #'
+#' # Train single-layer SOM
 #' som_single <- train.SOM(input_data = continuous_data)
 #'
-#' # Cluster codebook vectors with the recommended BIC-elbow method
+#' # Cluster SOM with recommended BIC-elbow method
 #' som_single_clustered <- clustering.SOM(
-#' SOM.output = som_single,
-#' clustering.method = "kmeans+BICelbow"
+#'   SOM.output = som_single,
+#'   clustering.method = "kmeans+BICelbow"
 #' )
 #'
-#' # Force a fixed three-cluster solution
+#' # Cluster SOM with fixed three-cluster solution
 #' som_single_k3 <- clustering.SOM(
-#' SOM.output = som_single,
-#' set.k = 3,
-#' clustering.method = "kmeans+BICelbow"
+#'   SOM.output = som_single,
+#'   set.k = 3,
+#'   clustering.method = "kmeans+BICelbow"
 #' )
 #'
-#' # Train and cluster a multi-layer SOM
+#' # Create multi-layer example data
 #' snp_data <- matrix(sample(0:2, 80 * 30, replace = TRUE),
-#' nrow = 80,
-#' ncol = 30)
+#'                    nrow = 80,
+#'                    ncol = 30)
 #' morphology_data <- matrix(rnorm(80 * 5), nrow = 80, ncol = 5)
 #' environment_data <- matrix(rnorm(80 * 4), nrow = 80, ncol = 4)
 #'
@@ -1947,17 +1949,19 @@ calculate.topographic.error <- function(som_model) {
 #' rownames(morphology_data) <- rownames(continuous_data)
 #' rownames(environment_data) <- rownames(continuous_data)
 #'
+#' # Train multi-layer SOM
 #' som_multi <- train.SOM(
-#' input_data = list(
-#' SNPs = snp_data,
-#' Morphology = morphology_data,
-#' Environment = environment_data
-#' )
+#'   input_data = list(
+#'     SNPs = snp_data,
+#'     Morphology = morphology_data,
+#'     Environment = environment_data
+#'   )
 #' )
 #'
+#' # Cluster multi-layer SOM
 #' som_multi_clustered <- clustering.SOM(
-#' SOM.output = som_multi,
-#' clustering.method = "kmeans+BICelbow"
+#'   SOM.output = som_multi,
+#'   clustering.method = "kmeans+BICelbow"
 #' )
 #' }
 #'
@@ -5131,7 +5135,249 @@ plot.K.SOM <- function(SOM.output,
 }
 
                                
-
+#' Plot SOM neighbor distances and clusters
+#'
+#' Plot a selected clustered Self-Organizing Map (SOM) in two panels. The upper
+#' panel shows the mean codebook distance from each SOM unit to its immediately
+#' neighboring units, and the lower panel shows sample mappings, SOM-unit
+#' clusters, and boundaries between clusters.
+#'
+#' @param SOM.output A list returned by `clustering.SOM`. The object must contain
+#'   `som_models`, a non-empty list of trained SOM replicates, and
+#'   `som_clusters`, a corresponding list of SOM-unit cluster assignments.
+#'   `input_data_names` is used to generate the default output file name when
+#'   available.
+#' @param col.pal.neighbor.dist A viridis color-palette function used for the
+#'   neighbor-distance panel. Supported palettes are `viridis::viridis`,
+#'   `viridis::magma`, `viridis::plasma`, `viridis::inferno`,
+#'   `viridis::cividis`, `viridis::rocket`, `viridis::mako`, and
+#'   `viridis::turbo`. The selected palette is reversed when plotted. Default:
+#'   `viridis::cividis`.
+#' @param col.pal.clusters A viridis color-palette function used to assign
+#'   colors to SOM-unit clusters. Supported palettes are `viridis::viridis`,
+#'   `viridis::magma`, `viridis::plasma`, `viridis::inferno`,
+#'   `viridis::cividis`, `viridis::rocket`, `viridis::mako`, and
+#'   `viridis::turbo`. Default: `viridis::viridis`.
+#' @param replicate.mode A single character string specifying which eligible SOM
+#'   replicate is plotted. Supported values are `"first"` and
+#'   `"representative"`. Default: `"representative"`.
+#' @param set.k Optional single positive integer. If supplied, only replicates
+#'   with this number of SOM-unit clusters are eligible for plotting. The
+#'   function stops if no replicate matches the requested K. Default: `NULL`.
+#' @param save Logical; if `TRUE`, the plot is saved to a file. Default:
+#'   `FALSE`.
+#' @param overwrite Logical; if `TRUE`, an existing output file with the same
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted
+#'   when the output file already exists. Default: `TRUE`.
+#' @param plot.type A single character string specifying the file format when
+#'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
+#'   Default: `"svg"`.
+#' @param file.name Optional character string giving the output file name when
+#'   `save = TRUE`. If `NULL`, a default name is generated from the SOM input
+#'   layer names and `plot.type`. Default: `NULL`.
+#' @param width A single positive numeric value giving the plot width in
+#'   centimeters when `save = TRUE`. Default: `10`.
+#' @param height A single positive numeric value giving the plot height in
+#'   centimeters when `save = TRUE`. Default: `15`.
+#' @param resolution A single numeric value of at least 72 giving the plot
+#'   resolution in dpi for `"png"` and `"jpg"` output. Default: `300`.
+#' @param bottom.margin A single non-negative numeric value giving the bottom
+#'   outer plot margin in lines. Default: `0`.
+#' @param left.margin A single non-negative numeric value giving the left outer
+#'   plot margin in lines. Default: `0`.
+#' @param top.margin A single non-negative numeric value giving the top outer
+#'   plot margin in lines. Default: `0.5`.
+#' @param right.margin A single non-negative numeric value giving the right outer
+#'   plot margin in lines. Default: `0`.
+#' @param boundary.col.clusters A single character string giving the color of
+#'   the boundaries between SOM-unit clusters in the lower panel. Default:
+#'   `"red"`.
+#' @param boundary.lwd.clusters A single positive numeric value giving the line
+#'   width of the cluster boundaries in the lower panel. Default: `3`.
+#' @param point.col.clusters A single character string giving the color of the
+#'   mapped sample points in the lower panel. Default: `"white"`.
+#' @param point.shape.clusters A single integer giving the plotting symbol used
+#'   for mapped samples in the lower panel. Default: `19`.
+#' @param point.size.clusters A single positive numeric value controlling the
+#'   size of mapped sample points in the lower panel. Default: `0.9`.
+#' @param cluster.shape.clusters A single character string specifying the SOM
+#'   cell shape in the lower cluster panel. Supported values are `"straight"`
+#'   and `"round"`. Default: `"straight"`.
+#' @param cluster.shape.neighbor.dist A single character string specifying the
+#'   SOM cell shape in the upper neighbor-distance panel. Supported values are
+#'   `"straight"` and `"round"`. Default: `"straight"`.
+#' @param shift.plot.clusters A single numeric value from 0 to less than 0.5
+#'   giving the horizontal shift applied to the lower panel to align it with the
+#'   upper panel. Invalid values are replaced with `0.099`. Default: `0.099`.
+#' @param title.clusters Optional character string giving the title of the lower
+#'   cluster panel. If `NULL` or an empty string, no title is shown. Default:
+#'   `"SOM clusters"`.
+#' @param title.neighbor.dist Optional character string giving the title of the
+#'   upper neighbor-distance panel. If `NULL` or an empty string, no title is
+#'   shown. Default: `"SOM neighbor distances"`.
+#' @param plot.title.font.size A single positive numeric value giving the panel
+#'   title font size in points. Default: `9.1`.
+#' @param legend.font.size A single positive numeric value giving the
+#'   neighbor-distance legend font size in points. Default: `7`.
+#' @param verbose Logical; if `TRUE`, plotting and validation messages are
+#'   printed. Default: `TRUE`.
+#'
+#' @details
+#' `plot.model.SOM` displays a selected retained SOM replicate in a fixed
+#' two-panel layout. If `set.k` is supplied, the replicate set is first
+#' restricted to replicates containing the requested number of SOM-unit
+#' clusters.
+#'
+#' With `replicate.mode = "first"`, the first eligible replicate is plotted.
+#' With `replicate.mode = "representative"`, the function first identifies the
+#' most frequently inferred K among eligible replicates. If multiple K values
+#' have the same maximum frequency, the smallest is selected. Only replicates
+#' supporting this K are then considered.
+#'
+#' Each candidate replicate's SOM-unit cluster labels are mapped to its samples
+#' using the sample-to-unit assignments stored in `unit.classif`. Agreement
+#' between every pair of candidate sample partitions is measured using the
+#' Adjusted Rand Index, a chance-corrected measure of agreement between
+#' partitions (Hubert & Arabie, 1985). Values near 1 indicate nearly identical
+#' partitions, whereas values near 0 indicate agreement close to that expected
+#' by chance. The replicate with the highest mean pairwise Adjusted Rand Index is
+#' selected as representative using `mclust::adjustedRandIndex` (Scrucca et al.,
+#' 2016). If no finite pairwise comparisons are available, the first candidate
+#' replicate is selected.
+#'
+#' The representative mode is intended to reduce the chance that the displayed
+#' map is an idiosyncratic stochastic SOM realization. It favors a retained
+#' replicate whose sample partition most closely reflects the recurrent
+#' clustering structure across eligible runs. The function nevertheless plots
+#' one observed replicate and does not construct an averaged or consensus SOM.
+#'
+#' The upper panel is a U-matrix-style visualization of local SOM codebook
+#' differences (Ultsch, 1993; Vesanto & Alhoniemi, 2000; Wehrens & Buydens,
+#' 2007). Codebook distances are calculated using the trained layer-distance
+#' functions and layer weights stored in the SOM model (Wehrens &
+#' Kruisselbrink, 2018). For each SOM unit, the function calculates the mean
+#' codebook distance to units located one grid step away.
+#'
+#' Larger neighbor distances indicate stronger local changes across the learned
+#' SOM surface and may identify transitions or boundaries between distinct
+#' regions of multivariate structure. Smaller values indicate smoother local
+#' continuity among neighboring units. Neighbor-distance patterns should be
+#' interpreted together with sample occupancy and the cluster panel because
+#' empty or sparsely occupied units can also arise through topological smoothing
+#' between more strongly occupied regions (Vesanto & Alhoniemi, 2000; Wehrens &
+#' Buydens, 2007).
+#'
+#' The lower panel shows the selected replicate's sample-to-unit mappings and
+#' SOM-unit cluster assignments. Cluster labels are converted to consecutive
+#' integers for plotting, which changes only their displayed colors and not the
+#' underlying partition. Boundaries are added between clusters when more than
+#' one cluster is present.
+#'
+#' Compact and contiguous cluster regions indicate that the inferred partition
+#' corresponds closely to the SOM topology. Fragmented cluster regions may
+#' indicate weak separation, gradual transitions, or an overly fine partition.
+#' Empty SOM units do not by themselves indicate model failure but can represent
+#' interpolating regions of the trained map (Vesanto & Alhoniemi, 2000; Wehrens
+#' & Buydens, 2007).
+#'
+#' If `file.name = NULL`, the default file name is
+#' `"SOM_model_plot_<input-layer-names>.<plot.type>"`. If
+#' `SOM.output$input_data_names` is unavailable, `"SOM"` is used in place of the
+#' input-layer names.
+#'
+#' When saving SVG output, the function applies a `96 / 72` scaling correction
+#' to the device dimensions and point-based font sizes so that the figure is
+#' imported by common document and presentation software with the requested
+#' dimensions and font sizes.
+#'
+#' @return Invisibly returns `NULL`. The function is called for its plotting
+#'   side effect. If `save = TRUE`, the plot is also written to the specified
+#'   file.
+#'
+#' @references
+#' Hubert, L., & Arabie, P. (1985). Comparing partitions. \emph{Journal of
+#'   Classification}, 2, 193-218.
+#'   https://doi.org/10.1007/BF01908075
+#'
+#' Scrucca, L., Fop, M., Murphy, T. B., & Raftery, A. E. (2016). mclust 5:
+#'   Clustering, classification and density estimation using Gaussian finite
+#'   mixture models. \emph{The R Journal}, 8(1), 289-317.
+#'   https://doi.org/10.32614/RJ-2016-021
+#'
+#' Ultsch, A. (1993). Self-organizing neural networks for visualization and
+#'   classification. In O. Opitz, B. Lausen, & R. Klar (Eds.),
+#'   \emph{Information and classification} (pp. 307-313). Springer.
+#'
+#' Vesanto, J., & Alhoniemi, E. (2000). Clustering of the self-organizing map.
+#'   \emph{IEEE Transactions on Neural Networks}, 11(3), 586-600.
+#'   https://doi.org/10.1109/72.846731
+#'
+#' Wehrens, R., & Buydens, L. M. C. (2007). Self- and super-organizing maps in
+#'   R: The kohonen package. \emph{Journal of Statistical Software}, 21(5),
+#'   1-19. https://doi.org/10.18637/jss.v021.i05
+#'
+#' Wehrens, R., & Kruisselbrink, J. (2018). Flexible self-organizing maps in
+#'   kohonen 3.0. \emph{Journal of Statistical Software}, 87(7).
+#'   https://doi.org/10.18637/jss.v087.i07
+#'
+#' @importFrom graphics par plot
+#' @importFrom grDevices dev.cur dev.off svg png jpeg
+#' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(1)
+#'
+#' # Create multi-layer example data
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
+#'                    nrow = 50,
+#'                    ncol = 20)
+#' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
+#' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
+#'
+#' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
+#' rownames(morphology_data) <- rownames(snp_data)
+#' rownames(environment_data) <- rownames(snp_data)
+#'
+#' input_data_multi <- list(
+#'   SNPs = snp_data,
+#'   Morphology = morphology_data,
+#'   Environment = environment_data
+#' )
+#'
+#' # Train multi-layer SOM
+#' som_multi <- train.SOM(input_data = input_data_multi)
+#'
+#' # Cluster SOM with a fixed three-cluster solution
+#' som_clustered <- clustering.SOM(
+#'   SOM.output = som_multi,
+#'   clustering.method = "kmeans+BICelbow",
+#'   set.k = 3
+#' )
+#'
+#' # Plot representative SOM replicate
+#' plot.model.SOM(
+#'   SOM.output = som_clustered,
+#'   replicate.mode = "representative"
+#' )
+#'
+#' # Plot first retained SOM replicate
+#' plot.model.SOM(
+#'   SOM.output = som_clustered,
+#'   replicate.mode = "first"
+#' )
+#'
+#' # Save representative SOM model plot
+#' plot.model.SOM(
+#'   SOM.output = som_clustered,
+#'   replicate.mode = "representative",
+#'   save = TRUE,
+#'   plot.type = "svg",
+#'   file.name = "SOM_model_plot.svg"
+#' )
+#' }
+#'
+#' @export
 plot.model.SOM <- function(SOM.output,
                            col.pal.neighbor.dist = viridis::cividis, #color palette of neighbor distance plot (top)
                            col.pal.clusters = viridis::viridis, #color palette of cluster plot (bottom)
@@ -5252,6 +5498,7 @@ plot.model.SOM <- function(SOM.output,
   if (!is.list(SOM.output$som_models) || length(SOM.output$som_models) == 0) stop("Plotting aborted: som_models must be a non-empty list")
   if (!is.list(SOM.output$som_clusters) || length(SOM.output$som_clusters) == 0) stop("Plotting aborted: som_clusters must be a non-empty list")
   if (length(SOM.output$som_models) != length(SOM.output$som_clusters)) stop("Plotting aborted: som_models and som_clusters must have the same length")
+  if (!is.null(names(SOM.output$som_models)) && !is.null(names(SOM.output$som_clusters)) && !identical(names(SOM.output$som_models), names(SOM.output$som_clusters))) stop("Plotting aborted: names and ordering of som_models and som_clusters do not match")
   if (!is.character(replicate.mode) || length(replicate.mode) != 1 || is.na(replicate.mode) || !(replicate.mode %in% c("first", "representative"))) stop("Plotting aborted: replicate.mode must be 'first' or 'representative'")
   if (!is.null(set.k) && (!is.numeric(set.k) || length(set.k) != 1 || is.na(set.k) || !is.finite(set.k) || set.k < 1 || (set.k %% 1 != 0))) stop("Plotting aborted: set.k must be NULL or single positive integer >= 1")
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
@@ -5580,43 +5827,45 @@ plot.model.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Train and cluster a multi-layer Super-SOM
+#' # Create example data
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
-#'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
-#'
 #' input_data_multi <- list(
 #'   SNPs = snp_data,
 #'   Morphology = morphology_data,
 #'   Environment = environment_data
 #' )
 #'
+#' # Train multi-layer SOM
 #' som_multi <- train.SOM(input_data = input_data_multi)
 #'
+#' # Cluster SOM
 #' som_clustered <- clustering.SOM(
 #'   SOM.output = som_multi,
 #'   clustering.method = "kmeans+BICelbow",
 #'   set.k = 3
 #' )
 #'
+#' # Create sample coordinates
 #' coordinates <- data.frame(
 #'   Latitude = runif(50, 36.5, 39.5),
 #'   Longitude = runif(50, -89.5, -82.0)
 #' )
 #' rownames(coordinates) <- rownames(snp_data)
 #'
+#' # Plot cluster assignments on map
 #' plot.map.SOM(
 #'   SOM.output = som_clustered,
 #'   Coordinates = coordinates
 #' )
 #'
-#' # Use custom cluster names and save the map
+#' # Use custom cluster names and save map
 #' plot.map.SOM(
 #'   SOM.output = som_clustered,
 #'   Coordinates = coordinates,
@@ -9404,59 +9653,87 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
 }
 
                                                    
-## Function to convert specified categorical columns into binary (0/1) indicators
 #' Convert categorical columns into binary indicator variables
 #'
-#' Converts selected categorical columns of a data frame into binary 0/1
-#' indicator variables. Each level of each selected categorical column is
-#' represented by one binary column. Missing values in the original categorical
-#' column are retained as `NA` across the corresponding binary indicator
-#' columns.
+#' Convert selected categorical columns of a data frame into binary 0/1
+#' indicator variables for Self-Organizing Map (SOM) analysis. Each observed
+#' level of each selected column is represented by one binary indicator column.
 #'
-#' @param dataframe A data frame containing the variables to process.
+#' @param dataframe A data frame containing the variables to process. The data
+#'   frame must have unique, non-missing, non-empty column names.
 #' @param make.binary.cols A character vector giving the names of categorical
-#'   columns to convert to binary indicator variables. All specified columns must
-#'   exist in `dataframe` and must be character or factor columns.
-#' @param remove.original.cols Logical; if `TRUE`, the original categorical
-#'   columns listed in `make.binary.cols` are removed when the binary columns are
-#'   appended to the original data frame. Default: `TRUE`.
+#'   columns to convert into binary indicator variables. Values must be unique,
+#'   non-missing, non-empty column names present in `dataframe`. All specified
+#'   columns must be character or factor columns.
+#' @param remove.original.cols Logical; if `TRUE`, all original columns listed
+#'   in `make.binary.cols` are removed when `append.to.original = TRUE`.
+#'   Ignored when `append.to.original = FALSE`. Default: `TRUE`.
 #' @param append.to.original Logical; if `TRUE`, the binary indicator variables
 #'   are appended to the original data frame. If `FALSE`, only the binary
 #'   indicator variables are returned. Default: `FALSE`.
-#' @param verbose Logical; if `TRUE`, processing messages are printed. Default:
+#' @param verbose Logical; if `TRUE`, messages are printed when selected columns
+#'   are skipped because they contain fewer than two observed levels. Default:
 #'   `TRUE`.
 #'
 #' @details
 #' `make.cols.binary.SOM` is intended as a preprocessing helper for SOM analyses
 #' when categorical variables should be represented as binary 0/1 layers or
-#' predictors.
+#' predictors. Missing values in the original categorical column are retained
+#' as `NA` across all corresponding indicator columns.
 #'
-#' One binary indicator column is created for each observed factor level. Column
-#' names are constructed from the original column name and the corresponding
-#' factor level. Columns with fewer than two levels are skipped because they do
-#' not contain useful categorical variation. Columns with more than 30 levels
-#' trigger a warning because they can produce many binary variables.
+#' For each non-missing observation, the indicator corresponding to its observed
+#' level is assigned 1 and all other indicators for that categorical variable
+#' are assigned 0. If the original observation is missing, all indicators
+#' created from that variable remain `NA`. Indicator names are constructed by
+#' joining the original column name and factor level with an underscore. Columns
+#' containing fewer than two observed levels are skipped because they contain no
+#' categorical variation.
 #'
-#' @return A data frame. If `append.to.original = FALSE`, the returned data frame
-#'   contains only the newly created binary indicator variables. If
-#'   `append.to.original = TRUE`, the returned data frame contains the original
-#'   data frame plus the binary indicator variables; original categorical columns
-#'   listed in `make.binary.cols` are removed when `remove.original.cols = TRUE`.
+#' When `append.to.original = FALSE`, the output contains only the newly created
+#' indicator variables. When `append.to.original = TRUE`, the indicator
+#' variables are appended after the original columns. If
+#' `remove.original.cols = TRUE`, all columns listed in `make.binary.cols` are
+#' removed, including any selected columns that were skipped because they
+#' contained fewer than two observed levels. Original row names are preserved in
+#' all returned outputs.
+#'
+#' @return A data frame containing numeric binary indicator variables with
+#'   values of 0, 1, or `NA`. If `append.to.original = FALSE`, only the generated
+#'   indicators are returned. If `append.to.original = TRUE`, the original data
+#'   frame and generated indicators are returned, with columns listed in
+#'   `make.binary.cols` removed when `remove.original.cols = TRUE`.
 #'
 #' @examples
 #' \dontrun{
+#' # Create example data
 #' trait_data <- data.frame(
 #'   sample = paste0("sample_", 1:6),
 #'   color = c("red", "red", "blue", "blue", "black", NA),
 #'   habitat = c("forest", "grassland", "forest", "desert", "desert", "forest"),
 #'   size = c(1.2, 1.5, 1.1, 1.9, 2.0, 1.4)
 #' )
-#'
 #' rownames(trait_data) <- trait_data$sample
 #'
+#' # Return only binary indicator variables
 #' binary_traits <- make.cols.binary.SOM(
 #'   dataframe = trait_data,
 #'   make.binary.cols = c("color", "habitat")
+#' )
+#'
+#' # Append indicators and remove original categorical columns
+#' trait_data_binary <- make.cols.binary.SOM(
+#'   dataframe = trait_data,
+#'   make.binary.cols = c("color", "habitat"),
+#'   append.to.original = TRUE,
+#'   remove.original.cols = TRUE
+#' )
+#'
+#' # Append indicators while retaining original categorical columns
+#' trait_data_with_both <- make.cols.binary.SOM(
+#'   dataframe = trait_data,
+#'   make.binary.cols = c("color", "habitat"),
+#'   append.to.original = TRUE,
+#'   remove.original.cols = FALSE
 #' )
 #' }
 #'
@@ -9470,23 +9747,23 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Processing aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
   if (!is.data.frame(dataframe)) stop("dataframe must be a data frame") #ensure input is a data frame
-  if (!is.character(make.binary.cols)) stop("make.binary.cols must be character vector of column names") #check type
-  if (length(make.binary.cols) == 0) stop("make.binary.cols must contain at least one column name") #non-empty
+  if (is.null(colnames(dataframe)) || anyNA(colnames(dataframe)) || any(colnames(dataframe) == "") || anyDuplicated(colnames(dataframe)) > 0) stop("dataframe must have unique, non-missing, non-empty column names")
+  if (!is.character(make.binary.cols) || length(make.binary.cols) == 0 || anyNA(make.binary.cols) || any(trimws(make.binary.cols) == "") || anyDuplicated(make.binary.cols) > 0) stop("make.binary.cols must be a character vector of unique, non-missing, non-empty column names")
   if (!all(make.binary.cols %in% colnames(dataframe))) { #check all exist in df
     missing_cols <- make.binary.cols[!make.binary.cols %in% colnames(dataframe)] #identify missing
     stop("The following columns are not in data frame: ", paste(missing_cols, collapse = ", ")) #error if any missing
   }
-  if (!is.logical(remove.original.cols) || length(remove.original.cols) != 1) stop("remove.original.cols must be TRUE or FALSE") #check logical
-  if (!is.logical(append.to.original) || length(append.to.original) != 1) stop("append.to.original must be TRUE or FALSE") #check logical
+  if (!is.logical(remove.original.cols) || length(remove.original.cols) != 1 || is.na(remove.original.cols)) stop("remove.original.cols must be TRUE or FALSE") #check logical
+  if (!is.logical(append.to.original) || length(append.to.original) != 1 || is.na(append.to.original)) stop("append.to.original must be TRUE or FALSE") #check logical
   dataframe_subset <- dataframe[, make.binary.cols, drop = FALSE] #extract selected columns
-  noncat_cols <- sapply(dataframe_subset, function(x) !is.factor(x) && !is.character(x)) #identify non-categorical
+  noncat_cols <- vapply(dataframe_subset, function(x) !is.factor(x) && !is.character(x), logical(1)) #identify non-categorical
   if (any(noncat_cols)) {
     bad_cols <- names(noncat_cols[noncat_cols]) #get bad column names
     stop("The following columns are not categorical (factor or character): ", paste(bad_cols, collapse = ", ")) #stop if any bad
   }
-  dataframe_subset <- as.data.frame(lapply(dataframe_subset, function(x) {if (!is.factor(x)) x <- as.factor(x); return(x)})) #convert to factor
-  high_card <- sapply(dataframe_subset, nlevels) > 30 #check number of levels
-  if (any(high_card)) warning("The following columns have >30 levels: ", paste(names(dataframe_subset)[high_card], collapse = ", ")) #warn if too many levels
+  dataframe_subset[] <- lapply(dataframe_subset, base::factor) #convert to factor and drop unused levels
+  high_card <- vapply(dataframe_subset, nlevels, integer(1)) > 30 #check number of observed levels
+  if (any(high_card)) warning("The following columns have >30 observed levels: ", paste(names(dataframe_subset)[high_card], collapse = ", ")) #warn if too many observed levels
   binary_list <- list() #initialize list of binary matrices
   for (colname in colnames(dataframe_subset)) {
     col_factor <- dataframe_subset[[colname]] #get factor column
@@ -9496,9 +9773,9 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
       messager("Skipping column '", colname, "' because it has fewer than 2 levels")
       next
     }
-    n <- length(col_factor) #number of rows
-    k <- length(levs) #number of levels
-    model_mat <- matrix(NA_real_, nrow = n, ncol = k) #init NA matrix so NA rows remain NA
+    N_rows <- length(col_factor) #number of rows
+    N_levels <- length(levs) #number of levels
+    model_mat <- matrix(NA_real_, nrow = N_rows, ncol = N_levels) #init NA matrix so NA rows remain NA
     colnames(model_mat) <- make.names(paste0(colname, "_", levs), unique = TRUE) #clean names
     non_na <- !is.na(col_factor) #identify non-NA rows
     model_mat[non_na, ] <- 0 #set non-NA rows to 0
@@ -9507,7 +9784,8 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
     binary_list[[colname]] <- model_mat #store in list
   }
   if (length(binary_list) == 0) stop("No binary columns could be created — all input columns had fewer than 2 levels") #stop if nothing created
-  binary_dataframe <- as.data.frame(do.call(cbind, binary_list)) #combine to single data frame
+  binary_dataframe <- as.data.frame(do.call(cbind, unname(binary_list)), check.names = FALSE) #combine to single data frame
+  colnames(binary_dataframe) <- make.unique(colnames(binary_dataframe)) #ensure globally unique indicator names
   rownames(binary_dataframe) <- rownames(dataframe) #preserve rownames
   if (append.to.original) {
     overlap <- intersect(colnames(dataframe), colnames(binary_dataframe)) #check for collisions
@@ -9667,8 +9945,8 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 #' \dontrun{
 #' set.seed(1)
 #'
+#' # Create example data
 #' n_samples <- 100
-#'
 #' input_data <- data.frame(
 #'   Latitude = runif(n_samples, 36, 39),
 #'   Longitude = runif(n_samples, -89, -82),
@@ -9681,9 +9959,11 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 #'   rare_count = c(rep(0, 97), 1, 2, 3)
 #' )
 #'
+#' # Create a strongly correlated variable
 #' input_data$continuous_1_correlated <-
 #'   input_data$continuous_1 + rnorm(n_samples, sd = 0.001)
 #'
+#' # Filter variables
 #' filtered_data <- remove.lowCV.multicollinearity.SOM(
 #'   input.dataframe = input_data,
 #'   CV.threshold = 0.05,
@@ -9691,7 +9971,7 @@ make.cols.binary.SOM <- function(dataframe, #dataframe - input data frame
 #'   prevalence.threshold = 0.05,
 #'   exclude.cols = c("Latitude", "Longitude")
 #' )
-#'}
+#' }
 #'						
 #' @export
 remove.lowCV.multicollinearity.SOM <- function(input.dataframe, #data.frame with numeric columns (e.g., climatic, environmental or morphological variables)
