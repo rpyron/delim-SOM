@@ -4908,7 +4908,7 @@ plot.K.SOM <- function(SOM.output,
   
   # Set fixed internal panel margins
   between.plot.margin <- 2.5
-  half_between_plot_margin <- between.plot.margin / 2
+  half_between_plot_margin <- 0 / 2
   inner_left_margin <- 4.5
   inner_right_margin <- 1
   inner_bottom_margin_with_x_labels <- 2.6
@@ -5137,7 +5137,7 @@ plot.K.SOM <- function(SOM.output,
                                
 #' Plot SOM neighbor distances and clusters
 #'
-#' Plot a selected clustered Self-Organizing Map (SOM) in two panels. The upper
+#' Visualize a selected clustered Self-Organizing Map (SOM) in two panels. The upper
 #' panel shows the mean codebook distance from each SOM unit to its immediately
 #' neighboring units, and the lower panel shows sample mappings, SOM-unit
 #' clusters, and boundaries between clusters.
@@ -5160,7 +5160,7 @@ plot.K.SOM <- function(SOM.output,
 #'   `viridis::turbo`. Default: `viridis::viridis`.
 #' @param replicate.mode A single character string specifying which eligible SOM
 #'   replicate is plotted. Supported values are `"first"` and
-#'   `"representative"`. Default: `"representative"`.
+#'   `"representative"`. Recommended default: `"representative"`.
 #' @param set.k Optional single positive integer. If supplied, only replicates
 #'   with this number of SOM-unit clusters are eligible for plotting. The
 #'   function stops if no replicate matches the requested K. Default: `NULL`.
@@ -5179,8 +5179,8 @@ plot.K.SOM <- function(SOM.output,
 #'   centimeters when `save = TRUE`. Default: `10`.
 #' @param height A single positive numeric value giving the plot height in
 #'   centimeters when `save = TRUE`. Default: `15`.
-#' @param resolution A single numeric value of at least 72 giving the plot
-#'   resolution in dpi for `"png"` and `"jpg"` output. Default: `300`.
+#' @param resolution A single numeric value giving the plot resolution
+#'   in dpi for `"png"` and `"jpg"` output. Default: `300`.
 #' @param bottom.margin A single non-negative numeric value giving the bottom
 #'   outer plot margin in lines. Default: `0`.
 #' @param left.margin A single non-negative numeric value giving the left outer
@@ -5201,20 +5201,19 @@ plot.K.SOM <- function(SOM.output,
 #' @param point.size.clusters A single positive numeric value controlling the
 #'   size of mapped sample points in the lower panel. Default: `0.9`.
 #' @param cluster.shape.clusters A single character string specifying the SOM
-#'   cell shape in the lower cluster panel. Supported values are `"straight"`
+#'   cell shape in the lower cluster panel. Supported are `"straight"`
 #'   and `"round"`. Default: `"straight"`.
 #' @param cluster.shape.neighbor.dist A single character string specifying the
-#'   SOM cell shape in the upper neighbor-distance panel. Supported values are
+#'   SOM cell shape in the upper neighbor-distance panel. Supported are
 #'   `"straight"` and `"round"`. Default: `"straight"`.
 #' @param shift.plot.clusters A single numeric value from 0 to less than 0.5
 #'   giving the horizontal shift applied to the lower panel to align it with the
-#'   upper panel. Invalid values are replaced with `0.099`. Default: `0.099`.
+#'   upper panel. Default: `0.099`.
 #' @param title.clusters Optional character string giving the title of the lower
-#'   cluster panel. If `NULL` or an empty string, no title is shown. Default:
-#'   `"SOM clusters"`.
+#'   cluster panel. If `NULL`, no title is shown. Default: `"SOM clusters"`.
 #' @param title.neighbor.dist Optional character string giving the title of the
-#'   upper neighbor-distance panel. If `NULL` or an empty string, no title is
-#'   shown. Default: `"SOM neighbor distances"`.
+#'   upper neighbor-distance panel. If `NULL`, no title is shown. Default:
+#'   `"SOM neighbor distances"`.
 #' @param plot.title.font.size A single positive numeric value giving the panel
 #'   title font size in points. Default: `9.1`.
 #' @param legend.font.size A single positive numeric value giving the
@@ -5223,72 +5222,55 @@ plot.K.SOM <- function(SOM.output,
 #'   printed. Default: `TRUE`.
 #'
 #' @details
-#' `plot.model.SOM` displays a selected retained SOM replicate in a fixed
-#' two-panel layout. If `set.k` is supplied, the replicate set is first
-#' restricted to replicates containing the requested number of SOM-unit
-#' clusters.
+#' `plot.model.SOM` displays the trained SOM in a two-panel layout. The upper
+#' panel shows the mean codebook distance between each SOM unit and its immediate
+#' neighbors, whereas the lower panel shows the SOM units, inferred clusters,
+#' cluster boundaries, and mapped samples. If `set.k` is supplied, the replicate
+#' set is first restricted to replicates containing the requested number of
+#' SOM-unit clusters.
 #'
 #' With `replicate.mode = "first"`, the first eligible replicate is plotted.
-#' With `replicate.mode = "representative"`, the function first identifies the
-#' most frequently inferred K among eligible replicates. If multiple K values
-#' have the same maximum frequency, the smallest is selected. Only replicates
-#' supporting this K are then considered.
+#' With `replicate.mode = "representative"`, the most frequently inferred K is
+#' selected (with ties resolved by choosing the smallest K) and only replicates
+#' supporting this K are considered.
 #'
-#' Each candidate replicate's SOM-unit cluster labels are mapped to its samples
-#' using the sample-to-unit assignments stored in `unit.classif`. Agreement
-#' between every pair of candidate sample partitions is measured using the
-#' Adjusted Rand Index, a chance-corrected measure of agreement between
-#' partitions (Hubert & Arabie, 1985). Values near 1 indicate nearly identical
-#' partitions, whereas values near 0 indicate agreement close to that expected
-#' by chance. The replicate with the highest mean pairwise Adjusted Rand Index is
-#' selected as representative using `mclust::adjustedRandIndex` (Scrucca et al.,
-#' 2016). If no finite pairwise comparisons are available, the first candidate
-#' replicate is selected.
-#'
-#' The representative mode is intended to reduce the chance that the displayed
-#' map is an idiosyncratic stochastic SOM realization. It favors a retained
-#' replicate whose sample partition most closely reflects the recurrent
-#' clustering structure across eligible runs. The function nevertheless plots
-#' one observed replicate and does not construct an averaged or consensus SOM.
+#' Each candidate replicate's SOM-unit cluster labels are transferred to the
+#' samples mapped to those units. Agreement between every pair of candidate
+#' sample partitions is measured using the Adjusted Rand Index, a
+#' chance-corrected measure of agreement between partitions (Hubert & Arabie,
+#' 1985). Values near 1 indicate nearly identical partitions, whereas values
+#' near 0 indicate agreement close to that expected by chance. The replicate
+#' with the highest mean pairwise Adjusted Rand Index is selected as
+#' representative, providing the sample partition with the greatest average
+#' agreement with the other candidate partitions. If no finite pairwise
+#' comparisons are available, the first candidate replicate is selected.
 #'
 #' The upper panel is a U-matrix-style visualization of local SOM codebook
-#' differences (Ultsch, 1993; Vesanto & Alhoniemi, 2000; Wehrens & Buydens,
-#' 2007). Codebook distances are calculated using the trained layer-distance
-#' functions and layer weights stored in the SOM model (Wehrens &
-#' Kruisselbrink, 2018). For each SOM unit, the function calculates the mean
-#' codebook distance to units located one grid step away.
-#'
-#' Larger neighbor distances indicate stronger local changes across the learned
-#' SOM surface and may identify transitions or boundaries between distinct
-#' regions of multivariate structure. Smaller values indicate smoother local
-#' continuity among neighboring units. Neighbor-distance patterns should be
-#' interpreted together with sample occupancy and the cluster panel because
-#' empty or sparsely occupied units can also arise through topological smoothing
-#' between more strongly occupied regions (Vesanto & Alhoniemi, 2000; Wehrens &
-#' Buydens, 2007).
+#' differences commonly used in SOM applications (Ultsch, 1993; Vesanto &
+#' Alhoniemi, 2000; Wehrens & Buydens, 2007). Codebook distances are calculated
+#' using the trained layer-distance functions and layer weights. For each SOM
+#' unit, the function calculates the mean codebook distance to units located one
+#' grid step away. Low neighbor distances indicate smoother local continuity
+#' across adjacent map units and are often seen as valleys corresponding to more
+#' cohesive regions of the map. High neighbor distances indicate sharp local
+#' changes in the SOM codebook surface, marking transitions between distinct
+#' regions of multivariate structure, often seen as ridges and potential cluster
+#' boundaries. Neighbor-distance patterns should be interpreted together with
+#' sample occupancy and the cluster panel because empty or sparsely occupied
+#' units can also arise through topological smoothing between more strongly
+#' occupied regions (Vesanto & Alhoniemi, 2000; Wehrens & Buydens, 2007).
 #'
 #' The lower panel shows the selected replicate's sample-to-unit mappings and
 #' SOM-unit cluster assignments. Cluster labels are converted to consecutive
 #' integers for plotting, which changes only their displayed colors and not the
 #' underlying partition. Boundaries are added between clusters when more than
-#' one cluster is present.
-#'
-#' Compact and contiguous cluster regions indicate that the inferred partition
-#' corresponds closely to the SOM topology. Fragmented cluster regions may
-#' indicate weak separation, gradual transitions, or an overly fine partition.
-#' Empty SOM units do not by themselves indicate model failure but can represent
-#' interpolating regions of the trained map (Vesanto & Alhoniemi, 2000; Wehrens
-#' & Buydens, 2007).
+#' one cluster is present. Compact and contiguous cluster regions indicate that
+#' the inferred partition corresponds closely to the SOM topology. Fragmented
+#' cluster regions may indicate weak separation, gradual transitions, or an
+#' overly fine partition.
 #'
 #' If `file.name = NULL`, the default file name is
-#' `"SOM_model_plot_<input-layer-names>.<plot.type>"`. If
-#' `SOM.output$input_data_names` is unavailable, `"SOM"` is used in place of the
-#' input-layer names.
-#'
-#' When saving SVG output, the function applies a `96 / 72` scaling correction
-#' to the device dimensions and point-based font sizes so that the figure is
-#' imported by common document and presentation software with the requested
-#' dimensions and font sizes.
+#' `"SOM_model_plot_<input-layer-names>.<plot.type>"`.
 #'
 #' @return Invisibly returns `NULL`. The function is called for its plotting
 #'   side effect. If `save = TRUE`, the plot is also written to the specified
@@ -5298,11 +5280,6 @@ plot.K.SOM <- function(SOM.output,
 #' Hubert, L., & Arabie, P. (1985). Comparing partitions. \emph{Journal of
 #'   Classification}, 2, 193-218.
 #'   https://doi.org/10.1007/BF01908075
-#'
-#' Scrucca, L., Fop, M., Murphy, T. B., & Raftery, A. E. (2016). mclust 5:
-#'   Clustering, classification and density estimation using Gaussian finite
-#'   mixture models. \emph{The R Journal}, 8(1), 289-317.
-#'   https://doi.org/10.32614/RJ-2016-021
 #'
 #' Ultsch, A. (1993). Self-organizing neural networks for visualization and
 #'   classification. In O. Opitz, B. Lausen, & R. Klar (Eds.),
@@ -5315,10 +5292,6 @@ plot.K.SOM <- function(SOM.output,
 #' Wehrens, R., & Buydens, L. M. C. (2007). Self- and super-organizing maps in
 #'   R: The kohonen package. \emph{Journal of Statistical Software}, 21(5),
 #'   1-19. https://doi.org/10.18637/jss.v021.i05
-#'
-#' Wehrens, R., & Kruisselbrink, J. (2018). Flexible self-organizing maps in
-#'   kohonen 3.0. \emph{Journal of Statistical Software}, 87(7).
-#'   https://doi.org/10.18637/jss.v087.i07
 #'
 #' @importFrom graphics par plot
 #' @importFrom grDevices dev.cur dev.off svg png jpeg
@@ -5334,11 +5307,9 @@ plot.K.SOM <- function(SOM.output,
 #'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
-#'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
-#'
 #' input_data_multi <- list(
 #'   SNPs = snp_data,
 #'   Morphology = morphology_data,
@@ -5348,7 +5319,7 @@ plot.K.SOM <- function(SOM.output,
 #' # Train multi-layer SOM
 #' som_multi <- train.SOM(input_data = input_data_multi)
 #'
-#' # Cluster SOM with a fixed three-cluster solution
+#' # Cluster SOM with fixed three-cluster solution
 #' som_clustered <- clustering.SOM(
 #'   SOM.output = som_multi,
 #'   clustering.method = "kmeans+BICelbow",
@@ -8036,88 +8007,131 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
 
 #' Plot variable-importance summaries across SOM layers
 #'
-#' Plot replicate-level variable-importance summaries for each input layer from
-#' a clustered SOM object returned by `clustering.SOM`. The function can show eta
-#' squared effect sizes, map-variance summaries, or both, depending on which
-#' values are available in `SOM.output`.
+#' Plot variable-importance summaries for each input layer from a clustered
+#' Self-Organizing Map (SOM). The function displays the distributions of
+#' variable-level median eta-squared importance, map-variance importance, or
+#' both, depending on which values are available in `SOM.output`.
 #'
-#' @param SOM.output A SOM result object returned by `clustering.SOM`. The object
-#'   must contain layer names through `input_data_names` or
-#'   `distance_weights_matrix`. If available,
-#'   `median_etasquared_variable_importance` and
-#'   `median_map_variance_variable_importance` are used for plotting.
+#' @param SOM.output A list returned by `clustering.SOM`. Layer names must be
+#'   available through `input_data_names` or the column names of
+#'   `distance_weights_matrix`. The object must also contain at least one of
+#'   `median_etasquared_variable_importance` or
+#'   `median_map_variance_variable_importance`.
 #' @param col.pal A viridis color-palette function used to assign colors to
 #'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
 #'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
 #'   `viridis::rocket`, `viridis::mako`, and `viridis::turbo`. Default:
 #'   `viridis::turbo`.
-#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#' @param save Logical; if `TRUE`, the plot is saved to a file. Default:
+#'   `FALSE`.
 #' @param overwrite Logical; if `TRUE`, an existing output file with the same
-#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
-#'   the output file already exists. Default: `TRUE`.
-#' @param plot.type Character string specifying the file format when
+#'   name is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted
+#'   when the output file already exists. Default: `TRUE`.
+#' @param plot.type A single character string specifying the file format when
 #'   `save = TRUE`. Supported values are `"svg"`, `"png"`, and `"jpg"`.
 #'   Default: `"svg"`.
 #' @param file.name Optional character string giving the output file name when
-#'   `save = TRUE`. If `NULL`, a default file name is generated. Default:
-#'   `NULL`.
-#' @param width Numeric value giving plot width in centimeters when
-#'   `save = TRUE`. Default: `20`.
-#' @param height Numeric value giving plot height in centimeters when
-#'   `save = TRUE`. Default: `12`.
-#' @param resolution Numeric value giving plot resolution in dots per inch for
-#'   `"png"` and `"jpg"` output when `save = TRUE`. Default: `300`.
-#' @param bottom.margin Numeric value giving the bottom outer plot margin.
-#'   Default: `2`.
-#' @param left.margin Numeric value giving the left outer plot margin. Default:
-#'   `0.5`.
-#' @param top.margin Numeric value giving the top outer plot margin. Default:
-#'   `1.5`.
-#' @param right.margin Numeric value giving the right outer plot margin. Default:
-#'   `1.5`.
+#'   `save = TRUE`. If `NULL`, a default file name is generated from the
+#'   available importance metric or metrics, the SOM input layer names, and
+#'   `plot.type`. Default: `NULL`.
+#' @param width A single positive numeric value giving the plot width in
+#'   centimeters when `save = TRUE`. When only one importance metric is
+#'   available, half of this width is used. Default: `16`.
+#' @param height A single positive numeric value giving the plot height in
+#'   centimeters when `save = TRUE`. Default: `10`.
+#' @param resolution A single numeric value giving the plot   resolution 
+#' in dpi for `"png"` and `"jpg"` output. Default: `300`.
+#' @param bottom.margin A single non-negative numeric value giving the bottom
+#'   outer plot margin in lines. Default: `2`.
+#' @param left.margin A single non-negative numeric value giving the left outer
+#'   plot margin in lines. Default: `0.5`.
+#' @param top.margin A single non-negative numeric value giving the top outer
+#'   plot margin in lines. Default: `1.5`.
+#' @param right.margin A single non-negative numeric value giving the right outer
+#'   plot margin in lines. Default: `1.5`.
 #' @param etasquared.title Optional character string giving the eta-squared panel
 #'   title. If `NULL`, no title is shown. Default: `"Cluster separation"`.
 #' @param mapvariance.title Optional character string giving the map-variance
-#'   panel title. If `NULL`, no title is shown. Default:
+#'   panel title. If `NULL`, no title is shown. Default: 
 #'   `"Variance across SOM map"`.
 #' @param etasquared.y.axis.label Optional character string giving the y-axis
 #'   title for the eta-squared panel. If `NULL`, no y-axis title is shown.
 #'   Default: `"Eta squared effect size"`.
 #' @param mapvariance.y.axis.label Optional character string giving the y-axis
-#'   title for the map-variance panel. If `NULL`, no y-axis title is shown.
-#'   Default: `"Variance"`.
+#'   title for the map-variance panel. If `NULL` or an empty string, no y-axis
+#'   title is shown. Default: `"Variance"`.
 #' @param plot.title.font.size A single positive numeric value giving the panel
 #'   title font size in points. Default: `9.1`.
 #' @param axis.labels.font.size A single positive numeric value giving the
 #'   y-axis-title and x-axis layer-label font size in points. Default: `9.1`.
 #' @param axis.ticks.font.size A single positive numeric value giving the
 #'   y-axis numeric tick-label font size in points. Default: `7`.
-#' @param add.boxplot.whiskers Logical; if `TRUE`, boxplot whiskers are shown.
-#'   Default: `TRUE`.
-#' @param point.cex Numeric value giving the size of jittered replicate-level
-#'   points. Default: `0.8`.
-#' @param point.alpha Numeric value between 0 and 1 giving the transparency of
-#'   jittered replicate-level points. Default: `0.65`.
-#' @param sort.by.median Logical; if `TRUE`, layers are sorted by median value
-#'   separately within each panel. Default: `TRUE`.
+#' @param add.boxplot.whiskers Logical; if `TRUE`, boxplot whiskers and staples
+#'   are shown. Default: `TRUE`.
+#' @param point.cex A single positive numeric value controlling the size of the
+#'   jittered variable-level points. Default: `0.8`.
+#' @param point.alpha A single numeric value between 0 and 1 giving the
+#'   transparency of the jittered variable-level points. Default: `0.65`.
+#' @param sort.by.median Logical; if `TRUE`, layers are ordered from the highest
+#'   to the lowest median importance separately within each panel. Default:
+#'   `TRUE`.
 #' @param verbose Logical; if `TRUE`, informative messages are printed. Default:
 #'   `TRUE`.
 #'
 #' @details
-#' The plot is intended as a diagnostic visualization of replicate-level
-#' variable-importance summaries across SOM layers. Eta squared summarizes how
-#' strongly variables in a layer differ among inferred clusters. Map variance
-#' summarizes how strongly variables vary across the SOM map. Larger values
-#' indicate stronger variable-level structure within the corresponding layer for
-#' the displayed metric, but the plot should be interpreted as a variable- and
-#' layer-level diagnostic rather than as a formal statistical test of layer
-#' importance.
+#' `plot.layer.importance.varimp.SOM` summarizes the variable-importance values
+#' calculated by `clustering.SOM` for each SOM input layer. Each plotted point
+#' represents the median importance of one variable across all retained SOM
+#' replicates. The boxplots summarize the distributions of these variable-level
+#' median importance values within layers. Each layer is assigned a color
+#' according to its position in `input_data_names`.
 #'
-#' @return A data frame summarizing mean and standard deviation of available eta
-#'   squared and map-variance values for each layer. If `save = TRUE`, the plot
-#'   is also written to the specified file.
+#' The eta-squared panel summarizes cluster-separation importance based on
+#' eta-squared effect sizes. Eta squared expresses the proportion of a
+#' variable's weighted variation associated with differences among the inferred
+#' SOM-unit clusters, equivalent to an ANOVA-like effect-size measure
+#' (Cohen, 1973; Richardson, 2011). SOM units are weighted by their number of
+#' mapped samples plus a baseline weight of one. Larger values indicate that a
+#' variable more strongly separates the inferred clusters. Eta squared is
+#' unavailable for replicates with K = 1.
 #'
-#' @importFrom graphics par boxplot axis box points jitter mtext
+#' The map-variance panel summarizes how strongly variables vary across the
+#' trained SOM surface. Larger values indicate stronger variation across the
+#' map, but this variation may reflect cluster separation, continuous gradients,
+#' or within-cluster heterogeneity. Map variance therefore provides
+#' complementary information to eta-squared cluster-separation importance and is
+#' especially important when K = 1, for which eta squared is unavailable.
+#'
+#' If `sort.by.median = TRUE`, layers are sorted separately within each panel
+#' according to their median variable-importance value. The layer order can
+#' therefore differ between the eta-squared and map-variance panels. Setting
+#' `add.boxplot.whiskers = FALSE` hides the whiskers and staples but retains the
+#' boxes and jittered points.
+#'
+#' If `file.name = NULL`, the default file name is
+#' `"SOM_variable_importance_layers_both_<input-layer-names>.<plot.type>"` when
+#' both metrics are available,
+#' `"SOM_variable_importance_layers_eta_squared_<input-layer-names>.<plot.type>"`
+#' when only eta squared is available, and
+#' `"SOM_variable_importance_layers_map_variance_<input-layer-names>.<plot.type>"`
+#' when only map variance is available.
+#'
+#' @return A data frame containing one row per SOM layer and the columns
+#'   `layer`, `eta.squared.mean`, `eta.squared.sd`, `map.variance.mean`, and
+#'   `map.variance.sd`. Means and standard deviations are calculated across the
+#'   finite variable-level median importance values within each layer. If
+#'   `save = TRUE`, the plot is also written to the specified file.
+#'
+#' @references
+#' Cohen, J. (1973). Eta-squared and partial eta-squared in fixed factor ANOVA
+#'   designs. \emph{Educational and Psychological Measurement}, 33(1), 107-112.
+#'   https://doi.org/10.1177/001316447303300111
+#'
+#' Richardson, J. T. E. (2011). Eta squared and partial eta squared as measures
+#'   of effect size in educational research. \emph{Educational Research Review},
+#'   6(2), 135-147. https://doi.org/10.1016/j.edurev.2010.12.001
+#'
+#' @importFrom graphics par boxplot axis box points mtext
 #' @importFrom grDevices adjustcolor dev.cur dev.off svg png jpeg
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
@@ -8125,29 +8139,42 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Multi-layer SOM
-#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE), nrow = 50, ncol = 20)
+#' # Create multi-layer example data
+#' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
+#'                    nrow = 50,
+#'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
-#'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
-#'
 #' input_data_multi <- list(
 #'   SNPs = snp_data,
 #'   Morphology = morphology_data,
 #'   Environment = environment_data
 #' )
 #'
+#' # Train multi-layer SOM
 #' som_multi <- train.SOM(input_data = input_data_multi)
 #'
+#' # Cluster SOM
 #' som_clustered <- clustering.SOM(
 #'   SOM.output = som_multi,
 #'   clustering.method = "kmeans+BICthreshold"
 #' )
 #'
-#' plot.layer.importance.varimp.SOM(som_clustered)
+#' # Plot variable-importance summaries across layers
+#' layer_importance_summary <- plot.layer.importance.varimp.SOM(
+#'   SOM.output = som_clustered
+#' )
+#'
+#' # Save variable-importance layer plot
+#' plot.layer.importance.varimp.SOM(
+#'   SOM.output = som_clustered,
+#'   save = TRUE,
+#'   plot.type = "svg",
+#'   file.name = "SOM_variable_importance_layers.svg"
+#' )
 #' }
 #'
 #' @export
@@ -8157,8 +8184,8 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
                                              overwrite = TRUE, #option to overwrite plot if it already exists
                                              plot.type = "svg", #plot type options: "svg", "png", "jpg"
                                              file.name = NULL, #set file.name for saving (if NULL, default plot file.name is used)
-                                             width = 20, #plot width in cm
-                                             height = 12, #plot height in cm
+                                             width = 16, #plot width in cm
+                                             height = 10, #plot height in cm
                                              resolution = 300, #plot resolution in dpi
                                              bottom.margin = 2, #bottom outer margin
                                              left.margin = 0.5, #left outer margin
@@ -8285,12 +8312,9 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   
   # Report informative messages for special cases
   if (length(SOM_layer_names) == 1) messager("Only one SOM layer was detected")
-  if (!eta_squared_available) {
-    if (!is.null(SOM.output$optim_k_vals) && length(SOM.output$optim_k_vals) > 0 && all(SOM.output$optim_k_vals == 1, na.rm = TRUE)) {
-      messager("Eta squared could not be calculated because all retained SOM replicates had K = 1")
-    } else if (length(SOM_layer_names) == 1) {
-      messager("Eta squared could not be calculated because only one layer was detected")
-    }
+  if (!eta_squared_available && !is.null(SOM.output$optim_k_vals)) {
+    valid_optim_k_vals <- SOM.output$optim_k_vals[is.finite(SOM.output$optim_k_vals) & !is.na(SOM.output$optim_k_vals)]
+    if (length(valid_optim_k_vals) > 0 && all(valid_optim_k_vals == 1)) messager("Eta squared could not be calculated because all retained SOM replicates had K = 1")
   }
   if (!eta_squared_available && !map_variance_available) stop("Plotting aborted: no valid eta squared or map variance values found across layers")
   
@@ -8318,7 +8342,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
       }
       if (!is.null(current_eta_squared_values) && length(current_eta_squared_values) > 0) {
         layer_importance_summary_table$eta.squared.mean[layer_index] <- mean(current_eta_squared_values, na.rm = TRUE)
-        layer_importance_summary_table$eta.squared.sd[layer_index] <- ifelse(length(current_eta_squared_values) > 1, stats::sd(current_eta_squared_values, na.rm = TRUE), 0)
+        layer_importance_summary_table$eta.squared.sd[layer_index] <- if (length(current_eta_squared_values) > 1) stats::sd(current_eta_squared_values, na.rm = TRUE) else NA_real_
       }
     }
     
@@ -8332,7 +8356,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
       }
       if (!is.null(current_map_variance_values) && length(current_map_variance_values) > 0) {
         layer_importance_summary_table$map.variance.mean[layer_index] <- mean(current_map_variance_values, na.rm = TRUE)
-        layer_importance_summary_table$map.variance.sd[layer_index] <- ifelse(length(current_map_variance_values) > 1, stats::sd(current_map_variance_values, na.rm = TRUE), 0)
+        layer_importance_summary_table$map.variance.sd[layer_index] <- if (length(current_map_variance_values) > 1) stats::sd(current_map_variance_values, na.rm = TRUE) else NA_real_
       }
     }
   }
@@ -8413,23 +8437,20 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   
   # Calculate y-axis limits
   calculate.y.axis.limits.SOM <- function(plot_list) {
-    boxplot_object <- boxplot(plot_list, plot = FALSE, outline = FALSE)
-    y_axis_limits <- range(boxplot_object$stats, na.rm = TRUE)
-    if (!all(is.finite(y_axis_limits))) {
-      all_values <- unlist(lapply(plot_list, function(x) x[is.finite(x) & !is.na(x)]), use.names = FALSE)
-      y_axis_limits <- range(all_values, na.rm = TRUE)
-    }
+    all_values <- unlist(lapply(plot_list, function(variable_values) {
+      variable_values[is.finite(variable_values) & !is.na(variable_values)]
+    }), use.names = FALSE)
+    if (length(all_values) == 0) stop("Plotting aborted: no finite values are available for plotting")
+    y_axis_limits <- range(all_values)
     if (diff(y_axis_limits) == 0) {
       y_axis_padding <- max(abs(y_axis_limits[1]) * 0.05, 0.01)
-      y_axis_limits <- c(y_axis_limits[1] - y_axis_padding, y_axis_limits[2] + y_axis_padding)
     } else {
       y_axis_padding <- diff(y_axis_limits) * 0.05
-      y_axis_limits <- c(y_axis_limits[1] - y_axis_padding, y_axis_limits[2] + y_axis_padding)
     }
-    return(y_axis_limits)
+    return(c(y_axis_limits[1] - y_axis_padding, y_axis_limits[2] + y_axis_padding))
   }
   
-  # Add jittered replicate-level points
+# Add jittered variable-level median-importance points
   add.jittered.layer.points.SOM <- function(plot_list) {
     for (layer_index in seq_along(plot_list)) {
       current_values <- plot_list[[layer_index]]
@@ -8553,17 +8574,18 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 
 #' Plot leave-one-layer-out SOM layer importance
 #'
-#' Refit replicate-matched SOMs after omitting each input layer and quantify how
-#' strongly omission changes the inferred clustering. The function compares each
-#' leave-one-layer-out replicate with its corresponding retained baseline
-#' replicate and plots layer-level distributions of absolute K deviation,
-#' pairwise co-assignment change, and assignment-margin change.
+#' Refit replicate-matched Self-Organizing Maps (SOMs) after omitting each input
+#' layer and quantify how strongly the omission changes the inferred clustering.
+#' The function plots layer-level distributions of absolute K deviation,
+#' pairwise co-assignment change, and, when available, assignment-margin change.
 #'
 #' @param SOM_output A clustered multi-layer SOM object returned by
 #'   `clustering.SOM`. The object must contain `som_models`,
-#'   `cluster_assignment`, `optim_k_vals`, the original `input_data`, the stored
-#'   training and clustering seeds, and preferably the stored argument lists
-#'   `train.SOM.args` and `clustering.SOM.args`.
+#'   `cluster_assignment`, `optim_k_vals`, `input_data`,
+#'   `train.SOM.set.seed.N`, `clustering.SOM.set.seed.N`, and
+#'   `clustering.SOM.args` containing the original clustering method.
+#'   `train.SOM.args`, `retained_replicates`, and replicate-specific soft
+#'   assignment matrices are used when available.
 #' @param col.pal A viridis color-palette function used to assign colors to
 #'   layers. Supported palettes are `viridis::viridis`, `viridis::magma`,
 #'   `viridis::plasma`, `viridis::inferno`, `viridis::cividis`,
@@ -8571,56 +8593,57 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #'   `viridis::turbo`.
 #' @param add.points Logical; if `TRUE`, replicate-level observations are added
 #'   as jittered points over the boxplots. Default: `TRUE`.
-#' @param point.cex A single positive numeric value giving the size of jittered
-#'   replicate-level points. Default: `0.8`.
+#' @param point.cex A single positive numeric value controlling the size of the
+#'   jittered replicate-level points. Default: `0.8`.
 #' @param point.alpha A single numeric value between 0 and 1 giving the
-#'   transparency of jittered replicate-level points. Default: `0.65`.
-#' @param bottom.margin Numeric value giving the bottom outer plot margin.
-#'   Default: `5`.
-#' @param left.margin Numeric value giving the left outer plot margin. Default:
-#'   `0`.
-#' @param top.margin Numeric value giving the top outer plot margin. Default:
-#'   `2.5`.
-#' @param right.margin Numeric value giving the right outer plot margin. Default:
-#'   `2`.
-#' @param between.plot.margin A single non-negative numeric value controlling the
-#'   additional internal margin between adjacent plot panels. Default: `0`.
+#'   transparency of the jittered replicate-level points. Default: `0.65`.
+#' @param bottom.margin A single non-negative numeric value giving the bottom
+#'   outer plot margin in lines. Default: `5`.
+#' @param left.margin A single non-negative numeric value giving the left outer
+#'   plot margin in lines. Default: `0`.
+#' @param top.margin A single non-negative numeric value giving the top outer
+#'   plot margin in lines. Default: `2.5`.
+#' @param right.margin A single non-negative numeric value giving the right outer
+#'   plot margin in lines. Default: `2`.
 #' @param save.leave.one.layer.out.results Logical; if `TRUE`, the calculated
-#'   leave-one-layer-out results are saved as an `.Rdata` file. Default:
+#'   leave-one-layer-out results are saved to an `.Rdata` file. Default:
 #'   `TRUE`.
 #' @param save.leave.one.layer.out.results.name Optional character string giving
-#'   the `.Rdata` file name used for leave-one-layer-out results. If `NULL`, a
-#'   default file name is generated from the layer names. Default: `NULL`.
+#'   the `.Rdata` file name for the leave-one-layer-out results. The name must
+#'   end with `".Rdata"`. If `NULL`, a default name is generated from the input
+#'   layer names. Default: `NULL`.
 #' @param overwrite.leave.one.layer.out.results Logical; if `TRUE`, existing
-#'   leave-one-layer-out results are recalculated and overwritten. If `FALSE`
-#'   and the results file exists, it is loaded and the computationally expensive
-#'   reruns are skipped. Default: `FALSE`.
-#' @param save Logical; if `TRUE`, the plot is saved to file. Default: `FALSE`.
+#'   leave-one-layer-out results are recalculated and overwritten. If `FALSE`,
+#'   `save.leave.one.layer.out.results = TRUE`, and the results file already
+#'   exists, the saved results are loaded and the reruns are skipped. Default:
+#'   `FALSE`.
+#' @param save Logical; if `TRUE`, the plot is saved to a file. Default:
+#'   `FALSE`.
 #' @param overwrite Logical; if `TRUE`, an existing plot file with the same name
-#'   is overwritten when `save = TRUE`. Default: `TRUE`.
-#' @param plot.type Character string specifying the plot file format. Supported
-#'   values are `"svg"`, `"png"`, and `"jpg"`. Default: `"svg"`.
+#'   is overwritten when `save = TRUE`. If `FALSE`, plotting is aborted when
+#'   the output file already exists. Default: `TRUE`.
+#' @param plot.type A single character string specifying the plot file format.
+#'   Supported values are `"svg"`, `"png"`, and `"jpg"`. Default: `"svg"`.
 #' @param file.name Optional character string giving the plot file name. If
-#'   `NULL`, a default file name is generated from the layer names. Default:
-#'   `NULL`.
-#' @param width A single positive numeric value giving plot width in centimeters
-#'   when `save = TRUE`. Default: `20`.
-#' @param height A single positive numeric value giving plot height in
-#'   centimeters when `save = TRUE`. Default: `15`.
-#' @param resolution A single positive numeric value giving plot resolution in
-#'   dots per inch for `"png"` and `"jpg"` output. Default: `300`.
+#'   `NULL`, a default name is generated from the input layer names and
+#'   `plot.type`. Default: `NULL`.
+#' @param width A single positive numeric value giving the plot width in
+#'   centimeters when `save = TRUE`. Default: `16`.
+#' @param height A single positive numeric value giving the plot height in
+#'   centimeters when `save = TRUE`. Default: `10`.
+#' @param resolution A single positive numeric value giving the plot resolution
+#'   in dpi for `"png"` and `"jpg"` output. Default: `300`.
 #' @param title Optional character string giving the overall plot title. If
-#'   `NULL` or `""`, no title is shown. Default: `"Layer importance"`.
+#'   `NULL`, no title is shown. Default: `"Layer importance"`.
 #' @param absolute.k.deviation.y.axis.label Optional character string giving the
-#'   y-axis title of the absolute-K-deviation panel. If `NULL` or `""`, no
-#'   y-axis title is shown. Default: `"Absolute K deviation"`.
+#'   y-axis title of the absolute-K-deviation panel. If `NULL`, no y-axis title 
+#'   is shown. Default: `"Absolute K deviation"`.
 #' @param pairwise.coassignment.change.y.axis.label Optional character string
 #'   giving the y-axis title of the pairwise-co-assignment-change panel. If
-#'   `NULL` or `""`, no y-axis title is shown. Default:
-#'   `"Pairwise co-assignment change"`.
+#'   `NULL`, no y-axis title is shown. Default: `"Pairwise co-assignment change"`.
 #' @param assignment.margin.change.y.axis.label Optional character string giving
-#'   the y-axis title of the assignment-margin-change panel. If `NULL` or `""`,
-#'   no y-axis title is shown. Default: `"Assignment margin change"`.
+#'   the y-axis title of the assignment-margin-change panel. If `NULL`, no y-axis 
+#' title is shown. Default: `"Assignment margin change"`.
 #' @param title.font.size A single positive numeric value giving the overall plot
 #'   title font size in points. Default: `9.1`.
 #' @param axis.labels.font.size A single positive numeric value giving the
@@ -8629,54 +8652,140 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #'   numeric tick-label font size in points. Default: `7`.
 #' @param add.boxplot.whiskers Logical; if `TRUE`, boxplot whiskers and staples
 #'   are shown. Default: `TRUE`.
-#' @param message.N.replicates Optional positive integer giving the frequency of
-#'   progress messages during replicate-matched leave-one-layer-out reruns. If
-#'   `NULL`, the stored `train.SOM` value is used when available, otherwise 20.
-#'   Default: `20`.
-#' @param verbose Logical; if `TRUE`, progress and file-handling messages are
-#'   printed. Default: `TRUE`.
+#' @param message.N.replicates Optional single positive integer giving the
+#'   frequency of progress messages during the replicate-matched
+#'   leave-one-layer-out reruns. If `NULL`, the value stored in
+#'   `train.SOM.args` is used when available; otherwise, 20 is used. Default:
+#'   `20`.
+#' @param verbose Logical; if `TRUE`, progress, plotting, and file-handling
+#'   messages are printed. Default: `TRUE`.
 #'
 #' @details
-#' Each retained baseline replicate is matched to a leave-one-layer-out rerun by
-#' reusing the corresponding training and clustering seeds. This reduces
-#' differences caused only by random initialization and makes the comparison
-#' focus on omission of the selected layer.
+#' `plot.layer.importance.leaveoneout.SOM` evaluates the contribution of each
+#' input layer by comparing every retained baseline SOM replicate with a new SOM
+#' fitted after omitting that layer (leave-one-layer-out). Layers whose omission
+#' causes larger changes in the inferred clustering are considered more
+#' influential. Generally, higher values in the plots can therefore be
+#' interpreted as indicating more important layers. For each retained replicate,
+#' the leave-one-layer-out SOM is retrained and reclustered using the original
+#' settings, adjusted for the remaining layers.
 #'
-#' Absolute K deviation is the absolute difference between the baseline and
-#' leave-one-layer-out optimal numbers of clusters. Pairwise co-assignment change
-#' is the proportion of specimen pairs whose same-cluster versus
-#' different-cluster relationship changes after omitting the layer.
-#' Assignment-margin change is the baseline mean assignment margin minus the
-#' leave-one-layer-out mean assignment margin, so positive values indicate that
-#' omitting the layer reduced assignment certainty.
+#' Absolute K deviation is the absolute difference between the optimal K of the
+#' retained baseline replicate and the optimal K of its matched
+#' leave-one-layer-out replicate. A value of zero indicates that omitting the
+#' layer did not change the selected number of clusters, whereas larger values
+#' indicate that the omitted layer contributed more strongly to determining the
+#' inferred delimitation level.
 #'
-#' Replicate-specific soft assignment probabilities are used only when they are
-#' available for both the retained baseline replicate and its matched
-#' leave-one-layer-out replicate. Hard cluster assignments are not converted to
-#' one-hot probabilities for this metric. Assignment-margin change is therefore
-#' recorded as `NA` when comparable replicate-specific soft probabilities are
-#' unavailable and is not plotted when it cannot be calculated.
+#' Pairwise co-assignment change is the proportion of shared sample pairs whose
+#' same-cluster versus different-cluster relationship changes after omitting the
+#' layer. A value of zero indicates identical pairwise co-assignment structure,
+#' whereas a value of one indicates that the relationship changed for every
+#' sample pair. Because the baseline clustering was inferred using all layers,
+#' changes after omitting one layer indicate that the original grouping depended
+#' on information contained in that layer. Larger values therefore indicate
+#' greater conditional importance of the omitted layer for determining which
+#' samples were grouped, given the remaining layers.
 #'
-#' When saving SVG output, the function internally applies a `96 / 72` scaling
-#' correction to the SVG device size and point-style font sizes so that common
-#' document and presentation software imports the figure as the requested
-#' dimensions and font sizes.
+#' Assignment margin is the difference between the largest and second-largest
+#' soft cluster-assignment values for each sample, averaged across samples.
+#' Assignment-margin change is calculated as the baseline mean assignment margin
+#' minus the leave-one-layer-out mean assignment margin. Because the baseline
+#' assignments were inferred using all layers, a reduction in assignment margins
+#' after omitting one layer indicates that the original assignment certainty
+#' depended on information contained in that layer. Larger positive values
+#' therefore indicate greater conditional importance of the omitted layer for
+#' assignment certainty, given the remaining layers. Negative values indicate
+#' that assignment margins increased after the layer was removed, suggesting
+#' that the omitted layer introduced conflicting or uncertain assignment signal.
+#' Assignment-margin change is calculated only when replicate-specific soft
+#' assignment matrices are available for both the retained baseline replicate
+#' and its matched leave-one-layer-out replicate.
+#' 
+#' Failed reruns and their error messages are retained in the replicate-level
+#' results but excluded from summaries and plots. Layer summaries report the
+#' numbers of attempted and successful comparisons and the mean and median of
+#' each diagnostic.
 #'
-#' @return A list with two elements: `layer.summary`, containing layer-level
-#'   summaries, and `replicate.matched.results`, containing replicate-level
-#'   baseline versus leave-one-layer-out comparisons.
+#' The first panel shows absolute K deviation, and the second panel shows
+#' pairwise co-assignment change. A third panel showing assignment-margin change
+#' is added when at least one finite value is available. Otherwise, the
+#' assignment-margin panel is omitted. All finite replicate-level values are
+#' shown when `add.points = TRUE`. Setting `add.boxplot.whiskers = FALSE` hides
+#' the whiskers and staples while retaining the boxes and any jittered points.
+#' Each layer is assigned a color according to its position in the layer order
+#' of the returned summary table.
+#'
+#' If `save.leave.one.layer.out.results.name = NULL`, the default results file
+#' name is `"leave_one_layer_out_results_<input-layer-names>.Rdata"`. The saved
+#' file contains an object named `leave.one.layer.out.results`. If
+#' `file.name = NULL`, the default plot file name is
+#' `"leave_one_layer_out_layer_importance_<input-layer-names>.<plot.type>"`.
+#'
+#' @return A list with two elements:
+#' \describe{
+#'   \item{layer.summary}{A data frame containing one row per omitted layer and
+#'   the columns `layer`, `N.replicates`, `N.successful`,
+#'   `mean.absolute.k.deviation`, `median.absolute.k.deviation`,
+#'   `mean.pairwise.coassignment.change`,
+#'   `median.pairwise.coassignment.change`,
+#'   `mean.delta.mean.assignment.margin`, and
+#'   `median.delta.mean.assignment.margin`.}
+#'   \item{replicate.matched.results}{A data frame containing one row for every
+#'   retained baseline replicate and omitted-layer combination. It contains the
+#'   retained replicate position and original index, omitted layer, baseline and
+#'   leave-one-layer-out K values, the three comparison diagnostics, and any
+#'   rerun error message.}
+#' }
+#' If `save.leave.one.layer.out.results = TRUE`, this list is also saved in the
+#' specified `.Rdata` file. If `save = TRUE`, the plot is written to the
+#' specified graphics file.
 #'
 #' @importFrom graphics par boxplot axis mtext points box
 #' @importFrom grDevices dev.cur dev.off svg png jpeg adjustcolor
-#' @importFrom stats median sd jitter
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
 #' @examples
 #' \dontrun{
+#' set.seed(1)
+#'
+#' # Create multi-layer example data
+#' snp_data <- matrix(sample(0:2, 40 * 20, replace = TRUE),
+#'                    nrow = 40,
+#'                    ncol = 20)
+#' morphology_data <- matrix(rnorm(40 * 5), nrow = 40, ncol = 5)
+#' environment_data <- matrix(rnorm(40 * 4), nrow = 40, ncol = 4)
+#' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
+#' rownames(morphology_data) <- rownames(snp_data)
+#' rownames(environment_data) <- rownames(snp_data)
+#' input_data_multi <- list(
+#'   SNPs = snp_data,
+#'   Morphology = morphology_data,
+#'   Environment = environment_data
+#' )
+#'
+#' # Train multi-layer SOM
+#' som_multi <- train.SOM(input_data = input_data_multi)
+#'
+#' # Cluster SOM
+#' som_clustered <- clustering.SOM(
+#'   SOM.output = som_multi,
+#'   clustering.method = "kmeans+BICelbow"
+#' )
+#'
+#' # Calculate and plot leave-one-layer-out importance
 #' leave_one_layer_out_results <- plot.layer.importance.leaveoneout.SOM(
-#'   SOM_output = clustered_som,
+#'   SOM_output = som_clustered,
+#'   save.leave.one.layer.out.results = FALSE
+#' )
+#'
+#' # Save the calculated results and plot
+#' leave_one_layer_out_results <- plot.layer.importance.leaveoneout.SOM(
+#'   SOM_output = som_clustered,
 #'   save.leave.one.layer.out.results = TRUE,
-#'   overwrite.leave.one.layer.out.results = FALSE
+#'   overwrite.leave.one.layer.out.results = TRUE,
+#'   save = TRUE,
+#'   plot.type = "svg"
 #' )
 #' }
 #'
@@ -8690,7 +8799,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   left.margin = 0, #left outer margin
                                                   top.margin = 2.5, #top outer margin
                                                   right.margin = 2, #right outer margin
-                                                  between.plot.margin = 0, #distance between adjacent plot panels
                                                   save.leave.one.layer.out.results = TRUE, #whether to save leave-one-layer-out results to file
                                                   save.leave.one.layer.out.results.name = NULL, #file name for saving leave-one-layer-out results; if NULL, default name is generated
                                                   overwrite.leave.one.layer.out.results = FALSE, #if FALSE, existing results are loaded instead of re-running
@@ -8698,8 +8806,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   overwrite = TRUE, #whether to overwrite plot if it already exists
                                                   plot.type = "svg", #plot file type (options: "svg", "png", "jpg")
                                                   file.name = NULL, #plot file name (if NULL, default file name is used)
-                                                  width = 20, #plot width in cm
-                                                  height = 15, #plot height in cm
+                                                  width = 16, #plot width in cm
+                                                  height = 10, #plot height in cm
                                                   resolution = 300, #plot resolution in dpi
                                                   title = "Layer importance", #plot title (NULL = no title)
                                                   absolute.k.deviation.y.axis.label = "Absolute K deviation", #y-axis title of absolute K deviation plot (NULL = no title)
@@ -8815,7 +8923,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Leave-one-layer-out layer importance aborted: left.margin must be a single non-negative numeric value")
   if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Leave-one-layer-out layer importance aborted: top.margin must be a single non-negative numeric value")
   if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Leave-one-layer-out layer importance aborted: right.margin must be a single non-negative numeric value")
-  if (!is.numeric(between.plot.margin) || length(between.plot.margin) != 1 || is.na(between.plot.margin) || between.plot.margin < 0) stop("Leave-one-layer-out layer importance aborted: between.plot.margin must be a single non-negative numeric value")
   if (!is.logical(save.leave.one.layer.out.results) || length(save.leave.one.layer.out.results) != 1 || is.na(save.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results must be TRUE or FALSE")
   if (save.leave.one.layer.out.results && !is.null(save.leave.one.layer.out.results.name)) {
     if (!is.character(save.leave.one.layer.out.results.name) || length(save.leave.one.layer.out.results.name) != 1 || is.na(save.leave.one.layer.out.results.name) || trimws(save.leave.one.layer.out.results.name) == "") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must be a non-empty character string if provided")
@@ -9502,7 +9609,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   show.assignment.margin.plot <- any(is.finite(successful_replicate_matched_results_table$delta.mean.assignment.margin) & !is.na(successful_replicate_matched_results_table$delta.mean.assignment.margin))
   
   # Set fixed internal panel margins
-  half_between_plot_margin <- between.plot.margin / 2
+  half_between_plot_margin <- 0 / 2
   inner_bottom_margin <- 0
   inner_left_margin <- 5.5
   inner_top_margin <- 1
