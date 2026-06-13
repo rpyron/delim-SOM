@@ -7162,38 +7162,45 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' Preprocess SNP data for SOM analysis
 #'
 #' `process.SNP.data.SOM` reads, validates, filters, and converts genetic marker
-#' data into a numeric SNP dosage matrix suitable for use as an input layer in
-#' SOM analyses. The function accepts exactly one genetic input source at a time:
+#' data into a numeric SNP matrix suitable for use as an input layer in SOM
+#' analyses. The function accepts exactly one genetic input source at a time:
 #' a VCF file, `genind` object, `genlight` object, numeric SNP dosage matrix,
 #' PLINK `.raw` file, or aligned NEXUS, FASTA, or PHYLIP sequence file.
 #'
-#' The output is a data frame with samples in rows and SNP variables in columns.
-#' For diploid genotype data, SNP values are encoded as `0`, `1`, or `2`,
-#' representing alternate-allele dosage. For haploid data, SNP values are encoded
-#' as `0` or `1`. Missing genotypes are retained as `NA` and can be filtered by
-#' locus- and individual-level missing-data thresholds.
+#' The output is a data frame with samples in rows and retained biallelic SNP
+#' variables in columns. For standard diploid genotype inputs, values are encoded
+#' as `0`, `1`, or `2`, representing the retained allele-dosage coding. For standard
+#' haploid dosage inputs, values are encoded as `0` or `1`. For sequence
+#' alignment inputs, unambiguous biallelic sequence states are encoded as `0`
+#' and `1`; when `alignment.ambiguity.mode = "heterozygote"`, matching two-base
+#' IUPAC ambiguity codes are encoded as `0.5`. Missing genotypes or sequence
+#' states are retained as `NA` and can be filtered by locus- and individual-level
+#' missing-data thresholds.
 #'
 #' The function is intentionally biallelic-only. Multiallelic loci are removed
-#' rather than expanded into multiple allele-dosage variables. This avoids
-#' reference-dependent K - 1 encodings and keeps each retained SNP locus
-#' represented by a single variable. Singleton loci can optionally be removed
-#' using minor-allele count, and invariant loci can optionally be removed after
-#' missing-data and singleton filtering.
+#' rather than expanded into K - 1 allele-dosage variables. This avoids
+#' reference-dependent multiallelic encodings and prevents one biological locus
+#' from contributing multiple SOM variables. This is important because K - 1
+#' encodings can distort distance calculations, especially Manhattan and
+#' Euclidean/sum-of-squares distances, and can also create reference-dependent
+#' behavior for binary/Tanimoto-style comparisons.
 #'
-#' Sequence alignment inputs are treated as haploid sequence-state data. For
-#' NEXUS, FASTA, and PHYLIP alignments, each sample is assumed to have one
-#' observed character per site. Ambiguous IUPAC symbols such as `R`, `Y`, `S`,
-#' `W`, `K`, and `M`, as well as gaps and missing sequence symbols, are treated
-#' as missing values rather than inferred as diploid heterozygotes. Therefore,
-#' alignment inputs are appropriate for haploid sequence-state encodings,
-#' consensus haplotypes, or phased sequence data, but not for representing
-#' unphased diploid heterozygous genotypes. Use VCF, `genind`, `genlight`,
-#' PLINK `.raw`, or a numeric dosage matrix for diploid genotype data.
+#' Sequence alignment inputs are treated as sequence-state alignments, with an
+#' optional interpretation of two-base IUPAC ambiguity codes as diploid
+#' heterozygotes. With the default `alignment.ambiguity.mode = "heterozygote"`,
+#' the function assumes that `R`, `Y`, `S`, `W`, `K`, and `M` represent true
+#' heterozygous genotypes when they match the two alleles observed or implied at
+#' a biallelic site. For example, at an A/G site, `A` is encoded as `0`, `R` as
+#' `0.5`, and `G` as `1`. With `alignment.ambiguity.mode = "missing"`, these
+#' ambiguity codes are treated as missing values instead. The `"missing"` mode
+#' should be used when ambiguity codes represent uncertain base calls,
+#' low-quality sequence reads, mixed templates, or unresolved consensus states
+#' rather than true heterozygosity.
 #'
 #' @param vcf.path Optional character string giving the path to a VCF file. VCF
-#'   input is first processed through a fast biallelic diploid parser for
-#'   single-base SNPs with standard genotype codes (`0/0`, `0/1`, `1/0`, `1/1`,
-#'   and missing genotypes). Unsupported genotype coding falls back to
+#'   input is first processed through a fast parser for single-base biallelic
+#'   diploid SNPs with standard genotype codes (`0/0`, `0/1`, `1/0`, `1/1`, and
+#'   missing genotypes). Unsupported genotype coding falls back to
 #'   `vcfR::vcfR2genind()` when possible.
 #' @param genind.input Optional `genind` object. Must contain codominant genetic
 #'   data with one uniform haploid or diploid ploidy value and valid unique
@@ -7207,9 +7214,9 @@ plot.variable.importance.SOM <- function(SOM.output,
 #'   diploid data, with missing values coded as `NA`.
 #' @param plink.raw.path Optional character string giving the path to a PLINK
 #'   `.raw` dosage file. Standard PLINK metadata columns are removed before SNP
-#'   processing. The file must contain an `IID` column for sample names; duplicated
-#'   `IID` values are resolved with `FID_IID` when a valid `FID` column is
-#'   available.
+#'   processing. The file must contain an `IID` column for sample names;
+#'   duplicated `IID` values are resolved with `FID_IID` when a valid `FID`
+#'   column is available.
 #' @param nexus.path Optional character string giving the path to an aligned
 #'   NEXUS sequence file.
 #' @param fasta.path Optional character string giving the path to an aligned
@@ -7221,11 +7228,17 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' @param plink.raw.metadata.columns Character vector of column names to treat as
 #'   PLINK `.raw` metadata rather than SNP dosage columns. Default is
 #'   `c("FID", "IID", "PAT", "MAT", "SEX", "PHENOTYPE")`.
+#' @param alignment.ambiguity.mode Character string specifying how two-base IUPAC
+#'   ambiguity codes in sequence alignments are handled. Must be either
+#'   `"heterozygote"` or `"missing"`. The default is `"heterozygote"`, which
+#'   encodes matching two-base IUPAC ambiguity codes as `0.5` at biallelic sites.
+#'   If `"missing"`, ambiguity codes `R`, `Y`, `S`, `W`, `K`, and `M` are treated
+#'   as missing values.
 #' @param snp.matrix.ploidy Numeric value specifying the ploidy for numeric
 #'   dosage inputs. Must be `1` or `2`. For `genlight` input, this value must
-#'   match the ploidy stored in the object. Sequence alignment inputs are always
-#'   treated as haploid sequence-state data, and this argument is ignored for
-#'   alignment inputs.
+#'   match the ploidy stored in the object. PLINK `.raw` input requires
+#'   `snp.matrix.ploidy = 2`. This argument is not used to infer ploidy from
+#'   sequence alignments.
 #' @param missing.loci.cutoff.lenient Numeric value between `0` and `1`, or
 #'   `NULL`. Loci with a proportion of missing data greater than this value are
 #'   removed in the first, lenient locus-level missing-data filter. Default is
@@ -7246,9 +7259,10 @@ plot.variable.importance.SOM <- function(SOM.output,
 #'   summary are printed. Default is `TRUE`.
 #'
 #' @return A data frame containing the processed SNP matrix, with samples in rows
-#'   and retained biallelic SNP variables in columns. Values are encoded as `0/1`
-#'   for haploid data or `0/1/2` for diploid data, with missing values retained
-#'   as `NA`.
+#'   and retained biallelic SNP variables in columns. Standard haploid data are
+#'   encoded as `0/1`, standard diploid genotype data are encoded as `0/1/2`, and
+#'   sequence alignment data are encoded as `0/1` or `0/0.5/1` depending on
+#'   `alignment.ambiguity.mode`. Missing values are retained as `NA`.
 #'
 #' @details
 #' The function applies the following general filtering order:
@@ -7261,13 +7275,23 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' 6. Optionally remove invariant loci.
 #'
 #' For diploid dosage data, singleton filtering is based on the minor allele
-#' count calculated from the alternate-allele dosage and the number of called
-#' chromosomes. For haploid sequence alignment data, singleton filtering is based
-#' on the minor sequence-state count among non-missing calls.
+#' count calculated from the retained allele-dosage coding and the number of called
+#' chromosomes. For haploid dosage data, singleton filtering is based on the
+#' minor sequence-state or allele count among non-missing calls.
 #'
-#' The function does not support multiallelic dosage expansion, polyploid data,
-#' mixed-ploidy data, or inference of diploid heterozygotes from ambiguous
-#' sequence alignment characters.
+#' For sequence alignment data with `alignment.ambiguity.mode = "heterozygote"`,
+#' biallelic-site detection includes both unambiguous nucleotide states and
+#' alleles implied by two-base IUPAC ambiguity codes. The ambiguity code is only
+#' encoded as `0.5` when it matches the two alleles at the retained biallelic
+#' site. For example, `R` is encoded as `0.5` at an A/G site, but not at a C/T
+#' site. Singleton filtering for this mode is calculated on a diploid allele
+#' count scale, so a `0.5` heterozygote contributes one alternate allele.
+#'
+#' Missing sequence symbols, gaps, `N`, and non-two-base ambiguity codes such as
+#' `B`, `D`, `H`, `V`, and `X` are treated as missing. Multiallelic sites are
+#' removed. The function does not support multiallelic dosage expansion,
+#' polyploid data, mixed-ploidy data, or automatic inference of whether sequence
+#' ambiguity codes represent true heterozygotes versus uncertain base calls.
 #'
 #' @examples
 #' \dontrun{
@@ -7280,9 +7304,19 @@ plot.variable.importance.SOM <- function(SOM.output,
 #'   missing.individuals.cutoff = 0.5
 #' )
 #'
-#' # Process an aligned FASTA file as haploid sequence-state SNPs
-#' fasta_layer <- process.SNP.data.SOM(
+#' # Process an aligned FASTA file and treat matching IUPAC ambiguity codes
+#' # as heterozygotes
+#' fasta_layer_heterozygote <- process.SNP.data.SOM(
 #'   fasta.path = "alignment.fasta",
+#'   alignment.ambiguity.mode = "heterozygote",
+#'   singleton.loci.filter = TRUE,
+#'   invariant.loci.filter = TRUE
+#' )
+#'
+#' # Process an aligned FASTA file and treat ambiguity codes as missing
+#' fasta_layer_missing <- process.SNP.data.SOM(
+#'   fasta.path = "alignment.fasta",
+#'   alignment.ambiguity.mode = "missing",
 #'   singleton.loci.filter = TRUE,
 #'   invariant.loci.filter = TRUE
 #' )
@@ -7299,6 +7333,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                  phylip.path = NULL, #optional path to PHYLIP alignment file
                                  phylip.format = "sequential", #PHYLIP format: sequential or interleaved
                                  plink.raw.metadata.columns = c("FID", "IID", "PAT", "MAT", "SEX", "PHENOTYPE"), #PLINK .raw metadata columns
+								 alignment.ambiguity.mode = c("heterozygote", "missing"), #treatment of two-base IUPAC ambiguity codes in alignments
                                  snp.matrix.ploidy = 2, #ploidy for numeric dosage inputs; must match genlight ploidy
                                  missing.loci.cutoff.lenient = 0.7, #remove loci with > this proportion missing (1st lenient filter)
                                  missing.loci.cutoff.final = 0.5, #remove loci with > this proportion missing (2nd final stringent filter)
@@ -7311,6 +7346,9 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
   # Set messages
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
+
+  # Set alignment ambiguity handling mode
+  alignment.ambiguity.mode <- match.arg(alignment.ambiguity.mode) 
   
   # Track whether any filtering message was printed
   filter.messages.printed <- FALSE
@@ -7357,8 +7395,9 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (anyDuplicated(plink.raw.metadata.columns)) stop("plink.raw.metadata.columns cannot contain duplicated column names") #validate
     if (!is.numeric(snp.matrix.ploidy) || length(snp.matrix.ploidy) != 1 || is.na(snp.matrix.ploidy) || !is.finite(snp.matrix.ploidy) || !(snp.matrix.ploidy %in% c(1, 2))) stop("snp.matrix.ploidy must be 1 or 2") #validate ploidy
     if (!is.null(vcf.path)) validate.file.path(vcf.path, "vcf.path") #check vcf path
-    if (!is.null(plink.raw.path)) validate.file.path(plink.raw.path, "plink.raw.path") #check PLINK .raw path
-    if (!is.null(nexus.path)) validate.file.path(nexus.path, "nexus.path") #check nexus path
+    if (!is.null(plink.raw.path)) validate.file.path(plink.raw.path, "plink.raw.path") #check PLINK .raw path    
+    if (!is.null(plink.raw.path) && snp.matrix.ploidy != 2) stop("PLINK .raw input requires snp.matrix.ploidy = 2 because PLINK .raw dosage columns are diploid 0/1/2 encodings") #validate PLINK dosage ploidy
+	if (!is.null(nexus.path)) validate.file.path(nexus.path, "nexus.path") #check nexus path
     if (!is.null(fasta.path)) validate.file.path(fasta.path, "fasta.path") #check fasta path
     if (!is.null(phylip.path)) validate.file.path(phylip.path, "phylip.path") #check phylip path
     if (!is.null(genlight.input) && !inherits(genlight.input, "genlight")) stop("genlight.input must be a genlight object") #check genlight input
@@ -7532,18 +7571,21 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (length(genlight.ploidy.values) != 1 || !(genlight.ploidy.values %in% c(1L, 2L))) stop("genlight.input must have one uniform haploid or diploid ploidy") #validate stored ploidy
 	if (genlight.ploidy.values != as.integer(snp.matrix.ploidy)) stop("snp.matrix.ploidy does not match the ploidy stored in genlight.input") #prevent incorrect allele counting
     if (!is.null(individual.names) && length(individual.names) > 0) {
-    if (nrow(snp.matrix) != length(individual.names) && ncol(snp.matrix) == length(individual.names)) {
-      snp.matrix <- t(snp.matrix) #transpose if orientation is loci x individuals
-    } else if (nrow(snp.matrix) == length(individual.names) && ncol(snp.matrix) == length(individual.names)) {
-      messager("Warning: genlight matrix is square (n_samples == n_loci) - orientation assumed correct from as.matrix(); verify manually if results are unexpected")
+      if (nrow(snp.matrix) != length(individual.names) && ncol(snp.matrix) == length(individual.names)) {
+        snp.matrix <- t(snp.matrix) #transpose if orientation is loci x individuals
+      } else if (nrow(snp.matrix) == length(individual.names) && ncol(snp.matrix) == length(individual.names)) {
+        messager("Warning: genlight matrix is square (n_samples == n_loci) - orientation assumed correct from as.matrix(); verify manually if results are unexpected")
+      } else if (nrow(snp.matrix) != length(individual.names)) {
+        stop("genlight.input matrix dimensions do not match the number of individuals in genlight.input") #prevent silent sample-name loss or wrong orientation
+      }
     }
-  }
     if (!is.null(individual.names) && length(individual.names) == nrow(snp.matrix)) rownames(snp.matrix) <- individual.names #set rownames
+    if (!is.null(locus.names) && length(locus.names) > 0 && length(locus.names) != ncol(snp.matrix)) stop("genlight.input locus names do not match the number of SNP columns after orientation check") #validate locus names
     if (!is.null(locus.names) && length(locus.names) == ncol(snp.matrix)) colnames(snp.matrix) <- locus.names #set colnames
     return(snp.matrix) #return matrix
   }
   
-    # Create function to count observed alleles per locus in genind object
+  # Create function to count observed alleles per locus in genind object
   count.observed.alleles.per.locus <- function(genind.object) {
     allele.count.matrix <- suppressMessages(suppressWarnings(adegenet::tab(genind.object, NA.method = "asis"))) #allele count matrix
     locus.names <- adegenet::locNames(genind.object) #locus names
@@ -7610,8 +7652,9 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     sequence.lengths <- vapply(sequence.list, function(single.sequence) nchar(paste0(single.sequence, collapse = "")), integer(1)) #sequence lengths
     if (any(sequence.lengths == 0)) stop("Empty sequences detected in ", file.type, " file") #empty sequence
     if (length(unique(sequence.lengths)) != 1) stop(file.type, " file is not aligned: sequences have different lengths") #not aligned
-    if (snp.matrix.ploidy == 2) messager("Note: ", file.type, " alignment input always produces haploid 0/1 dosages - heterozygotes cannot be represented from sequence alignments and snp.matrix.ploidy is ignored for this input type") #warn about dosage scale
-
+    if (identical(alignment.ambiguity.mode, "heterozygote")) messager("Note: ", file.type, " alignment input encodes unambiguous biallelic states as 0/1 and matching two-base IUPAC ambiguity codes as 0.5 heterozygote dosages") #warn about dosage scale
+    if (identical(alignment.ambiguity.mode, "missing")) messager("Note: ", file.type, " alignment input treats ambiguous IUPAC symbols as missing and encodes unambiguous biallelic states as haploid 0/1 sequence states") #warn about dosage scale
+	
 	# Convert sequences to samples-by-sites alignment matrix						   
     alignment.matrix <- t(sapply(sequence.list, function(single.sequence) strsplit(paste0(single.sequence, collapse = ""), "")[[1]])) #make samples × sites character matrix
     if (any(dim(alignment.matrix) == 0)) stop(file.type, " alignment matrix is empty or malformed") #check for empty matrix
@@ -7622,12 +7665,23 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
 	if (identical(file.type, "NEXUS")) alignment.matrix <- expand.nexus.match.characters(alignment.matrix = alignment.matrix, match.symbol = ".") #expand NEXUS match characters
 
 	# Standardize missing and ambiguous sequence states							 
-    missing.symbols <- c("?", "-", ".", "N", "R", "Y", "S", "W", "K", "M", "B", "D", "H", "V", "X") #define missing and ambiguous symbols
+    unambiguous.sequence.states <- c("A", "C", "G", "T") #unambiguous nucleotide states
+    heterozygote.iupac.codes <- c("R", "Y", "S", "W", "K", "M") #two-base IUPAC ambiguity codes
+    iupac.allele.lookup <- list(R = c("A", "G"), Y = c("C", "T"), S = c("C", "G"), W = c("A", "T"), K = c("G", "T"), M = c("A", "C")) #alleles represented by two-base IUPAC codes
+    missing.symbols <- c("?", "-", ".", "N", "B", "D", "H", "V", "X") #missing or non-biallelic ambiguity symbols
+    if (identical(alignment.ambiguity.mode, "missing")) missing.symbols <- c(missing.symbols, heterozygote.iupac.codes) #treat all IUPAC ambiguity codes as missing
     missing.value.matrix <- matrix(is.na(alignment.matrix) | alignment.matrix %in% missing.symbols, nrow = nrow(alignment.matrix), ncol = ncol(alignment.matrix)) #identify missing and ambiguous values
     alignment.matrix[missing.value.matrix] <- NA_character_ #standardize missing and ambiguous values
     observed.alleles.per.site <- lapply(seq_len(ncol(alignment.matrix)), function(locus.index) {
       locus.values <- alignment.matrix[, locus.index] #extract locus values
-      sort(unique(locus.values[!is.na(locus.values)])) #extract observed alleles
+      locus.values <- locus.values[!is.na(locus.values)] #remove missing values
+      unambiguous.alleles <- locus.values[locus.values %in% unambiguous.sequence.states] #observed unambiguous alleles
+      ambiguity.alleles <- character(0) #initialize alleles inferred from IUPAC ambiguity codes
+      if (identical(alignment.ambiguity.mode, "heterozygote")) {
+        heterozygote.values <- locus.values[locus.values %in% names(iupac.allele.lookup)] #two-base IUPAC codes at this locus
+        if (length(heterozygote.values) > 0) ambiguity.alleles <- unlist(iupac.allele.lookup[heterozygote.values], use.names = FALSE) #alleles implied by IUPAC codes
+      }
+      sort(unique(c(unambiguous.alleles, ambiguity.alleles))) #extract observed alleles
     })
     total.locus.count.before.filtering <- ncol(alignment.matrix) #total loci before filtering
     
@@ -7639,7 +7693,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
 
     # Initialize biallelic SNP matrix
     biallelic.alignment.matrix <- alignment.matrix[, biallelic.site.indices, drop = FALSE] #keep only biallelic sites
-    biallelic.snp.matrix <- matrix(NA_integer_,
+    biallelic.snp.matrix <- matrix(NA_real_,
                                    nrow = nrow(biallelic.alignment.matrix),
                                    ncol = ncol(biallelic.alignment.matrix),
                                    dimnames = list(rownames(biallelic.alignment.matrix), paste0("SNP", seq_len(ncol(biallelic.alignment.matrix))))) #initialize matrix
@@ -7651,8 +7705,14 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     ref.broadcast.matrix <- matrix(ref.alleles, nrow = nrow(biallelic.alignment.matrix), ncol = length(ref.alleles), byrow = TRUE) #broadcast ref alleles
     alt.broadcast.matrix <- matrix(alt.alleles, nrow = nrow(biallelic.alignment.matrix), ncol = length(alt.alleles), byrow = TRUE) #broadcast alt alleles
     non.missing.biallelic.matrix <- !is.na(biallelic.alignment.matrix) #identify observed sequence states
-    biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == ref.broadcast.matrix] <- 0L #assign reference
-    biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == alt.broadcast.matrix] <- 1L #assign alternate
+    biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == ref.broadcast.matrix] <- 0 #assign reference
+    biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == alt.broadcast.matrix] <- 1 #assign alternate
+    if (identical(alignment.ambiguity.mode, "heterozygote")) {
+      heterozygote.code.lookup <- c("A/C" = "M", "A/G" = "R", "A/T" = "W", "C/G" = "S", "C/T" = "Y", "G/T" = "K") #IUPAC code per biallelic allele pair
+      heterozygote.codes <- unname(heterozygote.code.lookup[paste(ref.alleles, alt.alleles, sep = "/")]) #matching heterozygote code per site
+      heterozygote.broadcast.matrix <- matrix(heterozygote.codes, nrow = nrow(biallelic.alignment.matrix), ncol = length(heterozygote.codes), byrow = TRUE) #broadcast heterozygote codes
+      biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == heterozygote.broadcast.matrix] <- 0.5 #assign heterozygotes
+    }
 
     # Initialize invariant-locus filter tracking variables
     invariant.loci.removed.total <- 0L #track total invariant loci removed
@@ -7680,9 +7740,15 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     if (isTRUE(singleton.loci.filter)) {
       locus.count.before.singleton.filter <- ncol(biallelic.snp.matrix) #loci before singleton filter
       called.counts <- colSums(!is.na(biallelic.snp.matrix)) #non-missing calls per locus
-      alternate.allele.sums <- colSums(biallelic.snp.matrix, na.rm = TRUE) #alternate allele counts
-      minor.allele.counts <- pmin(alternate.allele.sums, called.counts - alternate.allele.sums) #minor allele counts
-      keep.loci <- minor.allele.counts != 1L #remove only true singleton loci
+      if (identical(alignment.ambiguity.mode, "heterozygote")) {
+        alternate.allele.counts <- 2 * colSums(biallelic.snp.matrix, na.rm = TRUE) #alternate allele counts on diploid scale
+        called.chromosome.counts <- 2 * called.counts #called chromosomes on diploid scale
+        minor.allele.counts <- pmin(alternate.allele.counts, called.chromosome.counts - alternate.allele.counts) #minor allele counts
+      } else {
+        alternate.allele.counts <- colSums(biallelic.snp.matrix, na.rm = TRUE) #alternate allele counts on haploid scale
+        minor.allele.counts <- pmin(alternate.allele.counts, called.counts - alternate.allele.counts) #minor allele counts
+      }
+      keep.loci <- minor.allele.counts != 1 #remove only true singleton loci
       biallelic.snp.matrix <- biallelic.snp.matrix[, keep.loci, drop = FALSE] #filter loci
       loci.removed <- locus.count.before.singleton.filter - ncol(biallelic.snp.matrix) #number removed
       if (loci.removed > 0) print.filter.message(loci.removed, " of ", locus.count.before.singleton.filter, " singleton loci removed") #report
@@ -7714,7 +7780,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     # Summarize final biallelic SNP matrix
     biallelic.snp.matrix <- as.data.frame(biallelic.snp.matrix, stringsAsFactors = FALSE) #convert to data frame
     print.final.summary(biallelic.snp.matrix) #summary
-    return(biallelic.snp.matrix) #return binary SNP matrix
+    return(biallelic.snp.matrix) #return SNP matrix
   }								 
   
   # Validate arguments
