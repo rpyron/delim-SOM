@@ -86,7 +86,7 @@ Monticola71_residuals_mat <- sapply(colnames(Monticola71_filtered_log_traits)[co
 rownames(Monticola71_filtered_log_traits) <- Monticola71_data$Sample #set rownames for log-transformed traits
 rownames(Monticola71_residuals_mat) <- Monticola71_data$Sample #set rownames for residualized traits
 Monticola71_morphology <- as.data.frame(cbind(SVL = Monticola71_SVL, Monticola71_residuals_mat)) #combine log(SVL) and residuals
-ncol(Monticola71_morphology) #number of traits: 8
+ncol(Monticola71_morphology) #number of traits: 7
 nrow(Monticola71_morphology) #number of samples: 71
 
 
