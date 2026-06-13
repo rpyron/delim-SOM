@@ -1,7 +1,10 @@
 #### Set environment ###########################################################
 rm(list = ls()) #clear environment
 source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
-
+test.dir <- file.path(getwd(), "Test")
+created.test.dir <- !dir.exists(test.dir)
+if (created.test.dir) dir.create(test.dir, recursive = TRUE)
+setwd(test.dir)
 
 
 
@@ -156,15 +159,15 @@ head(SOM_multi_MORPH_ENV$train.SOM.args)
 
 ## Test cluster SOM function
 SOM_single_Alleles <- clustering.SOM(SOM_single_Alleles_unclustered, max.k = 5, clustering.method = "kmeans+BICelbow", save.SOM.results = FALSE)
-SOM_single_Binary <- clustering.SOM(SOM_single_Binary_unclustered, clustering.method = "kmeans+BICelbow", max.k = 5, save.SOM.results = FALSE)
+SOM_single_Binary <- clustering.SOM(SOM_single_Binary_unclustered, clustering.method = "kmeans+BICelbow", max.k = 5, save.SOM.results = TRUE)
 try(SOM_single_ENV <- clustering.SOM(SOM_single_ENV_unclustered, max.k = 20, clustering.method = "kmeans+BICelbow", save.SOM.results = FALSE)) #will fail with error
-SOM_single_ENV <- clustering.SOM(SOM_single_ENV_unclustered, max.k = 2, clustering.method = "kmeans+BICelbow", save.SOM.results = FALSE)
+SOM_single_ENV <- clustering.SOM(SOM_single_ENV_unclustered, max.k = 2, clustering.method = "kmeans+BICelbow", save.SOM.results = TRUE)
 SOM_single_k3 <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "kmeans+BICelbow", set.k = 3, save.SOM.results = FALSE)
-SOM_single_k3_2 <- clustering.SOM(SOM_single_k3_2_unclustered, clustering.method = "HDBSCAN", max.k = 15, save.SOM.results = FALSE)
+SOM_single_k3_2 <- clustering.SOM(SOM_single_k3_2_unclustered, clustering.method = "HDBSCAN", max.k = 15, save.SOM.results = TRUE)
 SOM_single_TestD <- clustering.SOM(SOM_single_TestD_unclustered, clustering.method = "kmeans+BICelbow", set.k = 2, save.SOM.results = FALSE)
 try(SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles_unclustered, clustering.method = "kmeans+BICelbow", save.SOM.results = FALSE)) #will fail with error
 SOM_multi_ENV_k3_Alleles <- clustering.SOM(SOM_multi_ENV_k3_Alleles_unclustered, clustering.method = "hierarchical+DB", max.k = 3, save.SOM.results = FALSE)
-SOM_multi_MORPH_ENV <- clustering.SOM(SOM_multi_MORPH_ENV_unclustered, clustering.method = "GMM+BICthreshold", set.k = 3, save.SOM.results = FALSE)
+SOM_multi_MORPH_ENV <- clustering.SOM(SOM_multi_MORPH_ENV_unclustered, clustering.method = "GMM+BICthreshold", set.k = 3, save.SOM.results = TRUE)
 SOM_multi_ENV_k3_Alleles_2 <- clustering.SOM(SOM_multi_ENV_k3_Alleles_2_unclustered, clustering.method = "OPTICS+Silhouette", max.k = 3, save.SOM.results = FALSE)
 
 
@@ -172,7 +175,7 @@ SOM_multi_ENV_k3_Alleles_2 <- clustering.SOM(SOM_multi_ENV_k3_Alleles_2_uncluste
 SOM_single_k3_OPTICS_auto <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "OPTICS+Silhouette", max.k = 5, save.SOM.results = FALSE)
 SOM_single_k3_GMM_auto <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "GMM+BICthreshold", max.k = 5, save.SOM.results = FALSE)
 try(SOM_single_k3_HDBSCAN_setk <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "HDBSCAN", max.k = 5, set.k = 3, save.SOM.results = FALSE))
-SOM_single_k3_soft <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "kmeans+BICelbow", set.k = 3, save.SOM.results = FALSE)
+SOM_single_k3_soft <- clustering.SOM(SOM_single_k3_unclustered, clustering.method = "kmeans+BICelbow", set.k = 3, save.SOM.results = TRUE)
 
 
 ## Check clustered SOM output consistency
@@ -275,17 +278,13 @@ plot.K.SOM(SOM_single_k3_GMM_auto)
 
 
 ## Test model plot
-plot.model.SOM(SOM_single_Alleles, replicate.mode = "average")
 plot.model.SOM(SOM_single_Alleles, replicate.mode = "first")
 plot.model.SOM(SOM_single_Alleles, replicate.mode = "representative")
 plot.model.SOM(SOM_single_ENV)
-plot.model.SOM(SOM_single_k3, point.col.clusters = "orange", cluster.shape.clusters = "round", 
-               replicate.mode = "average")
-plot.model.SOM(SOM_single_k3, replicate.mode = "representative")
+plot.model.SOM(SOM_single_k3, point.col.clusters = "orange", cluster.shape.clusters = "round", replicate.mode = "representative")
 plot.model.SOM(SOM_single_k3, replicate.mode = "first")
-plot.model.SOM(SOM_single_TestD, col.pal.neighbor.dist = viridis::mako, col.pal.clusters = viridis::magma, point.col.clusters =  "orange")
+plot.model.SOM(SOM_single_TestD, col.pal.neighbor.dist = viridis::mako, col.pal.clusters = viridis::magma, point.col.clusters = "orange")
 plot.model.SOM(SOM_multi_ENV_k3_Alleles)
-plot.model.SOM(SOM_multi_MORPH_ENV, replicate.mode = "average")
 plot.model.SOM(SOM_multi_MORPH_ENV, replicate.mode = "representative")
 plot.model.SOM(SOM_multi_MORPH_ENV, replicate.mode = "first")
 
@@ -295,7 +294,6 @@ try(plot.structure.SOM(SOM_single_Alleles, bottom.margin = 4)) #will fail with m
 plot.structure.SOM(SOM_single_TestD, Individual.labels.font.size = 5, bar.border.col = "orange")
 plot.structure.SOM(SOM_single_k3_2)
 plot.structure.SOM(SOM_single_k3_2, sort.by.col = 2)
-
 
 
 ## Plot maps
@@ -350,5 +348,9 @@ plot.layer.importance.varimp.SOM(SOM_multi_MORPH_ENV)
 try(plot.layer.importance.leaveoneout.SOM(SOM_single_Alleles)) #will fail because of single layer
 plot.layer.importance.leaveoneout.SOM(SOM_single_TestD)
 plot.layer.importance.leaveoneout.SOM(SOM_multi_ENV_k3_Alleles, 
-                                      add.points = F, col.pal = viridis::rocket, save = T)
+                                      add.points = F, col.pal = viridis::rocket, save = TRUE)
 plot.layer.importance.leaveoneout.SOM(SOM_multi_MORPH_ENV)
+
+
+## Remove intermediate files
+if (dir.exists(test.dir)) unlink(test.dir, recursive = TRUE, force = TRUE)
