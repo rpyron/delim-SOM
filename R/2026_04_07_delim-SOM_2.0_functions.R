@@ -7161,29 +7161,84 @@ plot.variable.importance.SOM <- function(SOM.output,
 			
 #' Preprocess SNP data for SOM analysis
 #'
-#' `process.SNP.data.SOM` reads, validates, filters, and converts genetic marker
-#' data into a numeric SNP matrix suitable for use as an input layer in SOM
-#' analyses. The function accepts exactly one genetic input source at a time:
-#' a VCF file, `genind` object, `genlight` object, numeric SNP dosage matrix,
-#' PLINK `.raw` file, or aligned NEXUS, FASTA, or PHYLIP sequence file.
+#' Read, process, and convert genetic marker data into a numeric SNP
+#' matrix for Self-Organizing Map (SOM) analysis. The function accepts exactly
+#' one genetic input source at a time: a VCF file, `genind` object, `genlight`
+#' object, numeric SNP dosage matrix, PLINK `.raw` file, or aligned NEXUS,
+#' FASTA, or PHYLIP sequence file.
 #'
-#' The output is a data frame with samples in rows and retained biallelic SNP
-#' variables in columns. For standard diploid genotype inputs, values are encoded
-#' as `0`, `1`, or `2`, representing the retained allele-dosage coding. For standard
+#' @param vcf.path Optional character string giving the path to a VCF file. 
+#'   Default: `NULL`.
+#' @param genind.input Optional `genind` object. Must contain codominant genetic
+#'   data with one uniform haploid or diploid ploidy value and valid unique
+#'   individual and locus names. Default: `NULL`.
+#' @param genlight.input Optional `genlight` object. Must contain one uniform
+#'   haploid or diploid ploidy value. Ploidy must match `snp.matrix.ploidy`.
+#'   Default: `NULL`.
+#' @param snp.matrix.input Optional numeric matrix or data frame containing SNP
+#'   dosages. Rows must represent samples and columns must represent SNP loci.
+#'   Values must be `0` and `1` for haploid data or `0`, `1`, and `2` for
+#'   diploid data, with missing values coded as `NA`. Default: `NULL`.
+#' @param plink.raw.path Optional character string giving the path to a PLINK
+#'   `.raw` dosage file. Default: `NULL`.
+#' @param nexus.path Optional character string giving the path to an aligned
+#'   NEXUS sequence file. Default: `NULL`.
+#' @param fasta.path Optional character string giving the path to an aligned
+#'   FASTA sequence file. Default: `NULL`.
+#' @param phylip.path Optional character string giving the path to an aligned
+#'   PHYLIP sequence file. Default: `NULL`.
+#' @param phylip.format A single character string specifying the PHYLIP format.
+#'   Supported values are `"sequential"` and `"interleaved"`. Default:
+#'   `"sequential"`.
+#' @param plink.raw.metadata.columns Character vector of column names to treat as
+#'   PLINK `.raw` metadata rather than SNP dosage columns. Default:
+#'   `c("FID", "IID", "PAT", "MAT", "SEX", "PHENOTYPE")`.
+#' @param alignment.ambiguity.mode A single character string specifying how
+#'   two-base IUPAC ambiguity codes in sequence alignments are handled.
+#'   Supported values are `"heterozygote"` and `"missing"`. Default:
+#'   `"heterozygote"`.
+#' @param snp.matrix.ploidy A single numeric value specifying the ploidy for
+#'   numeric dosage inputs. Must be `1` or `2`. For `genlight` input, this value
+#'   must match the ploidy stored in the object. PLINK `.raw` input requires
+#'   `snp.matrix.ploidy = 2`. This argument is not used to infer ploidy from
+#'   sequence alignments. Default: `2`.
+#' @param missing.loci.cutoff.lenient A single numeric value between `0` and `1`,
+#'   or `NULL`. Loci with a proportion of missing data greater than this value
+#'   are removed in the first, lenient locus-level missing-data filter. Default:
+#'   `0.7`.
+#' @param missing.loci.cutoff.final A single numeric value between `0` and `1`,
+#'   or `NULL`. Loci with a proportion of missing data greater than this value
+#'   are removed in the final, stricter locus-level missing-data filter. This
+#'   value must be less than or equal to `missing.loci.cutoff.lenient` when both
+#'   are not `NULL`. Default: `0.5`.
+#' @param missing.individuals.cutoff A single numeric value between `0` and `1`,
+#'   or `NULL`. Individuals with a proportion of missing data greater than this
+#'   value are removed. Default: `0.5`.
+#' @param singleton.loci.filter Logical; if `TRUE`, singleton loci are removed
+#'   using minor-allele count. Default: `TRUE`.
+#' @param invariant.loci.filter Logical; if `TRUE`, invariant loci are removed
+#'   after missing-data and singleton filtering. Default: `TRUE`.
+#' @param verbose Logical; if `TRUE`, filtering messages and a final matrix
+#'   summary are printed. Default: `TRUE`.
+#'
+#' @details
+#' The output contains samples in rows and retained biallelic SNP variables in
+#' columns. For standard diploid genotype inputs, values are encoded as `0`,
+#' `1`, or `2`, representing the retained allele-dosage coding. For standard
 #' haploid dosage inputs, values are encoded as `0` or `1`. For sequence
 #' alignment inputs, unambiguous biallelic sequence states are encoded as `0`
 #' and `1`; when `alignment.ambiguity.mode = "heterozygote"`, matching two-base
 #' IUPAC ambiguity codes are encoded as `0.5`. Missing genotypes or sequence
-#' states are retained as `NA` and can be filtered by locus- and individual-level
-#' missing-data thresholds.
+#' states are retained as `NA` and can be filtered by locus- and
+#' individual-level missing-data thresholds.
 #'
 #' The function is intentionally biallelic-only. Multiallelic loci are removed
 #' rather than expanded into K - 1 allele-dosage variables. This avoids
 #' reference-dependent multiallelic encodings and prevents one biological locus
 #' from contributing multiple SOM variables. This is important because K - 1
 #' encodings can distort distance calculations, especially Manhattan and
-#' Euclidean/sum-of-squares distances, and can also create reference-dependent
-#' behavior for binary/Tanimoto-style comparisons.
+#' Euclidean or sum-of-squares distances, and can also create
+#' reference-dependent behavior for binary or Tanimoto-style comparisons.
 #'
 #' Sequence alignment inputs are treated as sequence-state alignments, with an
 #' optional interpretation of two-base IUPAC ambiguity codes as diploid
@@ -7197,74 +7252,6 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' low-quality sequence reads, mixed templates, or unresolved consensus states
 #' rather than true heterozygosity.
 #'
-#' @param vcf.path Optional character string giving the path to a VCF file. VCF
-#'   input is first processed through a fast parser for single-base biallelic
-#'   diploid SNPs with standard genotype codes (`0/0`, `0/1`, `1/0`, `1/1`, and
-#'   missing genotypes). Unsupported genotype coding falls back to
-#'   `vcfR::vcfR2genind()` when possible.
-#' @param genind.input Optional `genind` object. Must contain codominant genetic
-#'   data with one uniform haploid or diploid ploidy value and valid unique
-#'   individual and locus names.
-#' @param genlight.input Optional `genlight` object. Must contain one uniform
-#'   haploid or diploid ploidy value, and that ploidy must match
-#'   `snp.matrix.ploidy`.
-#' @param snp.matrix.input Optional numeric matrix or data frame containing SNP
-#'   dosages. Rows must represent samples and columns must represent SNP loci.
-#'   Values must be `0` and `1` for haploid data or `0`, `1`, and `2` for
-#'   diploid data, with missing values coded as `NA`.
-#' @param plink.raw.path Optional character string giving the path to a PLINK
-#'   `.raw` dosage file. Standard PLINK metadata columns are removed before SNP
-#'   processing. The file must contain an `IID` column for sample names;
-#'   duplicated `IID` values are resolved with `FID_IID` when a valid `FID`
-#'   column is available.
-#' @param nexus.path Optional character string giving the path to an aligned
-#'   NEXUS sequence file.
-#' @param fasta.path Optional character string giving the path to an aligned
-#'   FASTA sequence file.
-#' @param phylip.path Optional character string giving the path to an aligned
-#'   PHYLIP sequence file.
-#' @param phylip.format Character string specifying the PHYLIP format. Must be
-#'   either `"sequential"` or `"interleaved"`. Default is `"sequential"`.
-#' @param plink.raw.metadata.columns Character vector of column names to treat as
-#'   PLINK `.raw` metadata rather than SNP dosage columns. Default is
-#'   `c("FID", "IID", "PAT", "MAT", "SEX", "PHENOTYPE")`.
-#' @param alignment.ambiguity.mode Character string specifying how two-base IUPAC
-#'   ambiguity codes in sequence alignments are handled. Must be either
-#'   `"heterozygote"` or `"missing"`. The default is `"heterozygote"`, which
-#'   encodes matching two-base IUPAC ambiguity codes as `0.5` at biallelic sites.
-#'   If `"missing"`, ambiguity codes `R`, `Y`, `S`, `W`, `K`, and `M` are treated
-#'   as missing values.
-#' @param snp.matrix.ploidy Numeric value specifying the ploidy for numeric
-#'   dosage inputs. Must be `1` or `2`. For `genlight` input, this value must
-#'   match the ploidy stored in the object. PLINK `.raw` input requires
-#'   `snp.matrix.ploidy = 2`. This argument is not used to infer ploidy from
-#'   sequence alignments.
-#' @param missing.loci.cutoff.lenient Numeric value between `0` and `1`, or
-#'   `NULL`. Loci with a proportion of missing data greater than this value are
-#'   removed in the first, lenient locus-level missing-data filter. Default is
-#'   `0.7`.
-#' @param missing.loci.cutoff.final Numeric value between `0` and `1`, or `NULL`.
-#'   Loci with a proportion of missing data greater than this value are removed
-#'   in the final, stricter locus-level missing-data filter. This value must be
-#'   less than or equal to `missing.loci.cutoff.lenient` when both are not `NULL`.
-#'   Default is `0.5`.
-#' @param missing.individuals.cutoff Numeric value between `0` and `1`, or
-#'   `NULL`. Individuals with a proportion of missing data greater than this
-#'   value are removed. Default is `0.5`.
-#' @param singleton.loci.filter Logical. If `TRUE`, singleton loci are removed
-#'   using minor-allele count. Default is `TRUE`.
-#' @param invariant.loci.filter Logical. If `TRUE`, invariant loci are removed
-#'   after missing-data and singleton filtering. Default is `TRUE`.
-#' @param verbose Logical. If `TRUE`, filtering messages and a final matrix
-#'   summary are printed. Default is `TRUE`.
-#'
-#' @return A data frame containing the processed SNP matrix, with samples in rows
-#'   and retained biallelic SNP variables in columns. Standard haploid data are
-#'   encoded as `0/1`, standard diploid genotype data are encoded as `0/1/2`, and
-#'   sequence alignment data are encoded as `0/1` or `0/0.5/1` depending on
-#'   `alignment.ambiguity.mode`. Missing values are retained as `NA`.
-#'
-#' @details
 #' The function applies the following general filtering order:
 #'
 #' 1. Remove non-biallelic loci.
@@ -7275,26 +7262,52 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' 6. Optionally remove invariant loci.
 #'
 #' For diploid dosage data, singleton filtering is based on the minor allele
-#' count calculated from the retained allele-dosage coding and the number of called
-#' chromosomes. For haploid dosage data, singleton filtering is based on the
-#' minor sequence-state or allele count among non-missing calls.
+#' count calculated from the retained allele-dosage coding and the number of
+#' called chromosomes. For haploid dosage data, singleton filtering is based on
+#' the minor sequence-state or allele count among non-missing calls. Invariant
+#' loci are removed only after missing-data and singleton filtering because
+#' earlier filtering steps can turn previously variable loci into invariant
+#' loci.
 #'
 #' For sequence alignment data with `alignment.ambiguity.mode = "heterozygote"`,
 #' biallelic-site detection includes both unambiguous nucleotide states and
-#' alleles implied by two-base IUPAC ambiguity codes. The ambiguity code is only
+#' alleles implied by two-base IUPAC ambiguity codes. An ambiguity code is only
 #' encoded as `0.5` when it matches the two alleles at the retained biallelic
 #' site. For example, `R` is encoded as `0.5` at an A/G site, but not at a C/T
 #' site. Singleton filtering for this mode is calculated on a diploid allele
 #' count scale, so a `0.5` heterozygote contributes one alternate allele.
 #'
 #' Missing sequence symbols, gaps, `N`, and non-two-base ambiguity codes such as
-#' `B`, `D`, `H`, `V`, and `X` are treated as missing. Multiallelic sites are
-#' removed. The function does not support multiallelic dosage expansion,
-#' polyploid data, mixed-ploidy data, or automatic inference of whether sequence
-#' ambiguity codes represent true heterozygotes versus uncertain base calls.
+#' `B`, `D`, `H`, `V`, and `X` are treated as missing. In NEXUS alignments,
+#' match characters are expanded from the first sequence before SNP encoding.
+#' Multiallelic sites are removed. The function does not support multiallelic
+#' dosage expansion, polyploid data, mixed-ploidy data, or automatic inference
+#' of whether sequence ambiguity codes represent true heterozygotes versus
+#' uncertain base calls.
+#'
+#' @return A data frame containing the processed SNP matrix, with samples in rows
+#'   and retained biallelic SNP variables in columns. Standard haploid data are
+#'   encoded as `0/1`, standard diploid genotype data are encoded as `0/1/2`, and
+#'   sequence alignment data are encoded as `0/1` or `0/0.5/1` depending on
+#'   `alignment.ambiguity.mode`. Missing values are retained as `NA`.
 #'
 #' @examples
 #' \dontrun{
+#' set.seed(1)
+#'
+#' # Create example diploid SNP dosage matrix
+#' snp_matrix <- matrix(
+#'   sample(c(0, 1, 2, NA),
+#'          50 * 100,
+#'          replace = TRUE,
+#'          prob = c(0.45, 0.25, 0.25, 0.05)),
+#'   nrow = 50,
+#'   ncol = 100
+#' )
+#'
+#' rownames(snp_matrix) <- paste0("sample_", seq_len(nrow(snp_matrix)))
+#' colnames(snp_matrix) <- paste0("snp_", seq_len(ncol(snp_matrix)))
+#'
 #' # Process a diploid SNP dosage matrix
 #' snp_layer <- process.SNP.data.SOM(
 #'   snp.matrix.input = snp_matrix,
@@ -7319,6 +7332,12 @@ plot.variable.importance.SOM <- function(SOM.output,
 #'   alignment.ambiguity.mode = "missing",
 #'   singleton.loci.filter = TRUE,
 #'   invariant.loci.filter = TRUE
+#' )
+#'
+#' # Process a PLINK .raw dosage file
+#' plink_layer <- process.SNP.data.SOM(
+#'   plink.raw.path = "genotypes.raw",
+#'   snp.matrix.ploidy = 2
 #' )
 #' }
 #'
