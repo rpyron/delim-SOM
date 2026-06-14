@@ -4907,8 +4907,7 @@ plot.K.SOM <- function(SOM.output,
   axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
   
   # Set fixed internal panel margins
-  between.plot.margin <- 2.5
-  half_between_plot_margin <- 0 / 2
+  half_between_plot_margin <- 2.5 / 2
   inner_left_margin <- 4.5
   inner_right_margin <- 1
   inner_bottom_margin_with_x_labels <- 2.6
@@ -9617,7 +9616,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   show.assignment.margin.plot <- any(is.finite(successful_replicate_matched_results_table$delta.mean.assignment.margin) & !is.na(successful_replicate_matched_results_table$delta.mean.assignment.margin))
   
   # Set fixed internal panel margins
-  half_between_plot_margin <- 0 / 2
+  half_between_plot_margin <- 1.5 / 2
   inner_bottom_margin <- 0
   inner_left_margin <- 5.5
   inner_top_margin <- 1
