@@ -6563,8 +6563,6 @@ plot.map.SOM <- function(SOM.output,
 #' @importFrom grDevices dev.cur dev.off svg png jpeg
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
-Use:
-
 #' @examples
 #' \dontrun{
 #' set.seed(1)
