@@ -3453,17 +3453,17 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Train and cluster a multi-layer SOM
+#' # Create multi-layer example data
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
-#'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
 #'
+#' # Train multi-layer SOM
 #' som_multi <- train.SOM(
 #'   input_data = list(
 #'     SNPs = snp_data,
@@ -3472,15 +3472,16 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 #'   )
 #' )
 #'
+#' # Cluster SOM
 #' som_clustered <- clustering.SOM(
 #'   SOM.output = som_multi,
 #'   clustering.method = "kmeans+BICelbow"
 #' )
 #'
-#' # Order samples by the first cluster-assignment coefficient
-#' plot.structure.SOM(SOM.output = som_clustered, sort.by.col = 1)
+#' # Plot structure-style assignment coefficients
+#' plot.structure.SOM(SOM.output = som_clustered)
 #'
-#' # Save the plot
+#' # Save structure-style plot
 #' plot.structure.SOM(
 #'   SOM.output = som_clustered,
 #'   save = TRUE,
@@ -3881,26 +3882,28 @@ plot.structure.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Train and plot a single-layer SOM
+#' # Create single-layer example data
 #' continuous_data <- matrix(rnorm(50 * 6), nrow = 50, ncol = 6)
 #' rownames(continuous_data) <- paste0("sample_", seq_len(nrow(continuous_data)))
 #' colnames(continuous_data) <- paste0("trait_", seq_len(ncol(continuous_data)))
 #'
+#' # Train single-layer SOM
 #' som_single <- train.SOM(input_data = continuous_data)
 #'
+#' # Plot single-layer learning trajectories
 #' plot.learning.SOM(SOM.output = som_single)
 #'
-#' # Train and plot a multi-layer SOM
+#' # Create multi-layer example data
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
-#'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
 #'
+#' # Train multi-layer SOM
 #' som_multi <- train.SOM(
 #'   input_data = list(
 #'     SNPs = snp_data,
@@ -3909,9 +3912,10 @@ plot.structure.SOM <- function(SOM.output,
 #'   )
 #' )
 #'
+#' # Plot multi-layer learning trajectories
 #' plot.learning.SOM(SOM.output = som_multi)
 #'
-#' # Save the learning-trajectory plot
+#' # Save learning-trajectory plot
 #' plot.learning.SOM(
 #'   SOM.output = som_multi,
 #'   save = TRUE,
@@ -4381,28 +4385,28 @@ plot.learning.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Train a multi-layer SOM
+#' # Create multi-layer example data
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
-#'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
-#'
 #' input_data_multi <- list(
 #'   SNPs = snp_data,
 #'   Morphology = morphology_data,
 #'   Environment = environment_data
 #' )
 #'
+#' # Train multi-layer SOM
 #' som_multi <- train.SOM(input_data = input_data_multi)
 #'
+#' # Plot layer distance scales
 #' plot.layer.distance.scale.SOM(SOM.output = som_multi)
 #'
-#' # Save the layer-distance-scale plot
+#' # Save layer-distance-scale plot
 #' plot.layer.distance.scale.SOM(
 #'   SOM.output = som_multi,
 #'   save = TRUE,
@@ -4411,7 +4415,7 @@ plot.learning.SOM <- function(SOM.output,
 #' )
 #' }
 #'
-#' @export			
+#' @export
 plot.layer.distance.scale.SOM <- function(SOM.output,
                                           col.pal = viridis::turbo, #color palette
                                           save = FALSE, #option to save plot
@@ -4697,30 +4701,31 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Train multi-layer SOM
+#' # Create multi-layer example data
 #' snp_data <- matrix(sample(0:2, 50 * 20, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 20)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
-#'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
-#'
 #' input_data_multi <- list(
 #'   SNPs = snp_data,
 #'   Morphology = morphology_data,
 #'   Environment = environment_data
 #' )
 #'
+#' # Train multi-layer SOM
 #' som_multi <- train.SOM(input_data = input_data_multi)
 #'
+#' # Cluster SOM
 #' som_clustered <- clustering.SOM(
 #'   SOM.output = som_multi,
 #'   clustering.method = "kmeans+BICthreshold"
 #' )
 #'
+#' # Plot K evaluation
 #' plot.K.SOM(SOM.output = som_clustered)
 #'
 #' # Save K-evaluation plot
@@ -6558,17 +6563,18 @@ plot.map.SOM <- function(SOM.output,
 #' @importFrom grDevices dev.cur dev.off svg png jpeg
 #' @importFrom viridis viridis magma plasma inferno cividis rocket mako turbo
 #'
+Use:
+
 #' @examples
 #' \dontrun{
 #' set.seed(1)
 #'
-#' # Train and cluster a multi-layer SOM
+#' # Create multi-layer example data
 #' snp_data <- matrix(sample(0:2, 50 * 200, replace = TRUE),
 #'                    nrow = 50,
 #'                    ncol = 200)
 #' morphology_data <- matrix(rnorm(50 * 5), nrow = 50, ncol = 5)
 #' environment_data <- matrix(rnorm(50 * 4), nrow = 50, ncol = 4)
-#'
 #' rownames(snp_data) <- paste0("sample_", seq_len(nrow(snp_data)))
 #' rownames(morphology_data) <- rownames(snp_data)
 #' rownames(environment_data) <- rownames(snp_data)
@@ -6579,12 +6585,13 @@ plot.map.SOM <- function(SOM.output,
 #'   Environment = environment_data
 #' )
 #'
+#' # Train multi-layer SOM
 #' som_multi <- train.SOM(input_data = input_data_multi)
 #'
+#' # Cluster SOM
 #' som_clustered <- clustering.SOM(
 #'   SOM.output = som_multi,
-#'   clustering.method = "kmeans+BICthreshold",
-#'   set.k = 3
+#'   clustering.method = "kmeans+BICthreshold"
 #' )
 #'
 #' # Plot cluster-separation importance
@@ -6599,7 +6606,7 @@ plot.map.SOM <- function(SOM.output,
 #'   mode = "Map.variance"
 #' )
 #'
-#' # Save the cluster-separation plot
+#' # Save cluster-separation plot
 #' plot.variable.importance.SOM(
 #'   SOM.output = som_clustered,
 #'   mode = "Cluster.separation",
@@ -7160,11 +7167,11 @@ plot.variable.importance.SOM <- function(SOM.output,
 			
 #' Preprocess SNP data for SOM analysis
 #'
-#' Read, process, and convert genetic marker data into a numeric SNP
+#' Read, filter, and process genetic marker data into a numeric SNP
 #' matrix for Self-Organizing Map (SOM) analysis. The function accepts exactly
-#' one genetic input source at a time: a VCF file, `genind` object, `genlight`
-#' object, numeric SNP dosage matrix, PLINK `.raw` file, or aligned NEXUS,
-#' FASTA, or PHYLIP sequence file.
+#' one genetic input source: a VCF file, `genind` object, `genlight` object,
+#' numeric SNP dosage matrix, PLINK `.raw` file, or aligned NEXUS, FASTA,
+#' or PHYLIP sequence file.
 #'
 #' @param vcf.path Optional character string giving the path to a VCF file. 
 #'   Default: `NULL`.
@@ -7187,38 +7194,33 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' @param phylip.path Optional character string giving the path to an aligned
 #'   PHYLIP sequence file. Default: `NULL`.
 #' @param phylip.format A single character string specifying the PHYLIP format.
-#'   Supported values are `"sequential"` and `"interleaved"`. Default:
-#'   `"sequential"`.
+#'   Supported: `"sequential"` and `"interleaved"`. Default: `"sequential"`.
 #' @param plink.raw.metadata.columns Character vector of column names to treat as
 #'   PLINK `.raw` metadata rather than SNP dosage columns. Default:
 #'   `c("FID", "IID", "PAT", "MAT", "SEX", "PHENOTYPE")`.
-#' @param alignment.ambiguity.mode A single character string specifying how
-#'   two-base IUPAC ambiguity codes in sequence alignments are handled.
-#'   Supported values are `"heterozygote"` and `"missing"`. Default:
-#'   `"heterozygote"`.
+#' @param alignment.ambiguity.mode A single character string specifying handling
+#'   of two-base IUPAC ambiguity codes in sequence alignments. Supported:
+#'   `"heterozygote"` and `"missing"`. Recommended default: `"heterozygote"`.
 #' @param snp.matrix.ploidy A single numeric value specifying the ploidy for
-#'   numeric dosage inputs. Must be `1` or `2`. For `genlight` input, this value
-#'   must match the ploidy stored in the object. PLINK `.raw` input requires
-#'   `snp.matrix.ploidy = 2`. This argument is not used to infer ploidy from
-#'   sequence alignments. Default: `2`.
+#'   numeric dosage inputs. Must be `1` or `2`. Default: `2`.
 #' @param missing.loci.cutoff.lenient A single numeric value between `0` and `1`,
 #'   or `NULL`. Loci with a proportion of missing data greater than this value
-#'   are removed in the first, lenient locus-level missing-data filter. Default:
-#'   `0.7`.
+#'   are removed in the first lenient locus-level missing-data filter. 
+#'   Recommended default: `0.7`.
 #' @param missing.loci.cutoff.final A single numeric value between `0` and `1`,
 #'   or `NULL`. Loci with a proportion of missing data greater than this value
-#'   are removed in the final, stricter locus-level missing-data filter. This
+#'   are removed in the final stricter locus-level missing-data filter. This
 #'   value must be less than or equal to `missing.loci.cutoff.lenient` when both
-#'   are not `NULL`. Default: `0.5`.
+#'   are not `NULL`. Recommended default: `0.5`.
 #' @param missing.individuals.cutoff A single numeric value between `0` and `1`,
 #'   or `NULL`. Individuals with a proportion of missing data greater than this
-#'   value are removed. Default: `0.5`.
+#'   value are removed. Recommended default: `0.5`.
 #' @param singleton.loci.filter Logical; if `TRUE`, singleton loci are removed
 #'   using minor-allele count. Default: `TRUE`.
 #' @param invariant.loci.filter Logical; if `TRUE`, invariant loci are removed
 #'   after missing-data and singleton filtering. Default: `TRUE`.
-#' @param verbose Logical; if `TRUE`, filtering messages and a final matrix
-#'   summary are printed. Default: `TRUE`.
+#' @param verbose Logical; if `TRUE`, filtering messages and summary are printed. 
+#'   Default: `TRUE`.
 #'
 #' @details
 #' The output contains samples in rows and retained biallelic SNP variables in
@@ -7226,30 +7228,45 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' `1`, or `2`, representing the retained allele-dosage coding. For standard
 #' haploid dosage inputs, values are encoded as `0` or `1`. For sequence
 #' alignment inputs, unambiguous biallelic sequence states are encoded as `0`
-#' and `1`; when `alignment.ambiguity.mode = "heterozygote"`, matching two-base
+#' and `1`. When `alignment.ambiguity.mode = "heterozygote"`, matching two-base
 #' IUPAC ambiguity codes are encoded as `0.5`. Missing genotypes or sequence
 #' states are retained as `NA` and can be filtered by locus- and
 #' individual-level missing-data thresholds.
+#'
+#' VCF input is first processed with a fast parser for standard single-base
+#' biallelic diploid SNPs. If the VCF genotype coding is not supported by the
+#' fast parser, the function falls back to genind conversion when possible.
+#' PLINK raw input is treated as diploid dosage data, so the declared SNP matrix
+#' ploidy must be diploid. Standard PLINK metadata columns are removed before SNP
+#' processing, and duplicated individual identifiers are resolved with
+#' family-plus-individual identifiers when valid family identifiers are available.
+#'
+#' For numeric SNP dosage matrices, row names are used as sample names and
+#' column names are used as SNP names. Missing names are generated
+#' automatically, but existing row and column names must be unique, non-missing,
+#' and non-empty. For genlight input, the stored ploidy must be uniformly
+#' haploid or diploid and must match the declared SNP matrix ploidy. For genind
+#' input, the object must contain codominant data with one uniform haploid or
+#' diploid ploidy value.
 #'
 #' The function is intentionally biallelic-only. Multiallelic loci are removed
 #' rather than expanded into K - 1 allele-dosage variables. This avoids
 #' reference-dependent multiallelic encodings and prevents one biological locus
 #' from contributing multiple SOM variables. This is important because K - 1
-#' encodings can distort distance calculations, especially Manhattan and
-#' Euclidean or sum-of-squares distances, and can also create
+#' encodings can distort distance calculations and can create
 #' reference-dependent behavior for binary or Tanimoto-style comparisons.
 #'
 #' Sequence alignment inputs are treated as sequence-state alignments, with an
 #' optional interpretation of two-base IUPAC ambiguity codes as diploid
-#' heterozygotes. With the default `alignment.ambiguity.mode = "heterozygote"`,
-#' the function assumes that `R`, `Y`, `S`, `W`, `K`, and `M` represent true
-#' heterozygous genotypes when they match the two alleles observed or implied at
-#' a biallelic site. For example, at an A/G site, `A` is encoded as `0`, `R` as
-#' `0.5`, and `G` as `1`. With `alignment.ambiguity.mode = "missing"`, these
-#' ambiguity codes are treated as missing values instead. The `"missing"` mode
-#' should be used when ambiguity codes represent uncertain base calls,
-#' low-quality sequence reads, mixed templates, or unresolved consensus states
-#' rather than true heterozygosity.
+#' heterozygotes. With `alignment.ambiguity.mode = "heterozygote"`, the function
+#' assumes that `R`, `Y`, `S`, `W`, `K`, and `M` represent true heterozygous
+#' genotypes when they match the two alleles observed or implied at a biallelic
+#' site. For example, at an A/G site, `A` is encoded as `0`, `R` as `0.5`, and
+#' `G` as `1`. With `alignment.ambiguity.mode = "missing"`, these ambiguity
+#' codes are treated as missing values instead. The `"missing"` mode should be
+#' used when ambiguity codes represent uncertain base calls, low-quality sequence
+#' reads, mixed templates, or unresolved consensus states rather than true
+#' heterozygosity.
 #'
 #' The function applies the following general filtering order:
 #'
@@ -7260,29 +7277,25 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' 5. Remove loci exceeding the final missing-data threshold.
 #' 6. Optionally remove invariant loci.
 #'
-#' For diploid dosage data, singleton filtering is based on the minor allele
-#' count calculated from the retained allele-dosage coding and the number of
-#' called chromosomes. For haploid dosage data, singleton filtering is based on
-#' the minor sequence-state or allele count among non-missing calls. Invariant
-#' loci are removed only after missing-data and singleton filtering because
-#' earlier filtering steps can turn previously variable loci into invariant
-#' loci.
+#' Singleton filtering uses minor allele or sequence-state counts among
+#' non-missing calls. Diploid dosage data are evaluated on the called-chromosome
+#' scale, whereas haploid dosage and sequence-state data are evaluated on the
+#' observed-call scale. Invariant loci are removed only after missing-data and
+#' singleton filtering because earlier filters can make previously variable loci
+#' invariant.
 #'
 #' For sequence alignment data with `alignment.ambiguity.mode = "heterozygote"`,
 #' biallelic-site detection includes both unambiguous nucleotide states and
-#' alleles implied by two-base IUPAC ambiguity codes. An ambiguity code is only
-#' encoded as `0.5` when it matches the two alleles at the retained biallelic
-#' site. For example, `R` is encoded as `0.5` at an A/G site, but not at a C/T
-#' site. Singleton filtering for this mode is calculated on a diploid allele
-#' count scale, so a `0.5` heterozygote contributes one alternate allele.
+#' alleles implied by two-base IUPAC ambiguity codes. An ambiguity code is
+#' encoded as `0.5` only when it matches the two alleles at the retained
+#' biallelic site. Singleton filtering in this mode uses a diploid allele-count
+#' scale, so a `0.5` heterozygote contributes one alternate allele.
 #'
 #' Missing sequence symbols, gaps, `N`, and non-two-base ambiguity codes such as
 #' `B`, `D`, `H`, `V`, and `X` are treated as missing. In NEXUS alignments,
 #' match characters are expanded from the first sequence before SNP encoding.
-#' Multiallelic sites are removed. The function does not support multiallelic
-#' dosage expansion, polyploid data, mixed-ploidy data, or automatic inference
-#' of whether sequence ambiguity codes represent true heterozygotes versus
-#' uncertain base calls.
+#' Multiallelic sites, polyploid data, mixed-ploidy data, and multiallelic
+#' dosage expansion are not supported.
 #'
 #' @return A data frame containing the processed SNP matrix, with samples in rows
 #'   and retained biallelic SNP variables in columns. Standard haploid data are
@@ -7303,41 +7316,22 @@ plot.variable.importance.SOM <- function(SOM.output,
 #'   nrow = 50,
 #'   ncol = 100
 #' )
-#'
 #' rownames(snp_matrix) <- paste0("sample_", seq_len(nrow(snp_matrix)))
 #' colnames(snp_matrix) <- paste0("snp_", seq_len(ncol(snp_matrix)))
 #'
-#' # Process a diploid SNP dosage matrix
+#' # Process diploid SNP dosage matrix
 #' snp_layer <- process.SNP.data.SOM(
 #'   snp.matrix.input = snp_matrix,
-#'   snp.matrix.ploidy = 2,
 #'   missing.loci.cutoff.lenient = 0.7,
 #'   missing.loci.cutoff.final = 0.5,
 #'   missing.individuals.cutoff = 0.5
 #' )
 #'
-#' # Process an aligned FASTA file and treat matching IUPAC ambiguity codes
-#' # as heterozygotes
-#' fasta_layer_heterozygote <- process.SNP.data.SOM(
-#'   fasta.path = "alignment.fasta",
-#'   alignment.ambiguity.mode = "heterozygote",
-#'   singleton.loci.filter = TRUE,
-#'   invariant.loci.filter = TRUE
-#' )
+#' # Process aligned FASTA file
+#' fasta_layer <- process.SNP.data.SOM(fasta.path = "alignment.fasta")
 #'
-#' # Process an aligned FASTA file and treat ambiguity codes as missing
-#' fasta_layer_missing <- process.SNP.data.SOM(
-#'   fasta.path = "alignment.fasta",
-#'   alignment.ambiguity.mode = "missing",
-#'   singleton.loci.filter = TRUE,
-#'   invariant.loci.filter = TRUE
-#' )
-#'
-#' # Process a PLINK .raw dosage file
-#' plink_layer <- process.SNP.data.SOM(
-#'   plink.raw.path = "genotypes.raw",
-#'   snp.matrix.ploidy = 2
-#' )
+#' # Process PLINK .raw dosage file
+#' plink_layer <- process.SNP.data.SOM(plink.raw.path = "genotypes.raw")
 #' }
 #'
 #' @export
