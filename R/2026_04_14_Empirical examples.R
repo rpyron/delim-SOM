@@ -114,7 +114,7 @@ Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #404.0min
                                                  clustering.method = "hierarchical+DB",
                                                  save.SOM.results.name = "Monticola71_SOM_hierarchicalDB.Rdata")
 Monticola71_SOM_hierarchicalDB$optim_k_summary #k2 74%, k10 26%
-Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #ca. 15min
+Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr,
                                                   clustering.method = "GMM+BICthreshold",
                                                   save.SOM.results.name = "Monticola71_SOM_GMMBICthreshold.Rdata")
 Monticola71_SOM_GMMBICthreshold$optim_k_summary #k3 53%, k2 46%
@@ -156,7 +156,7 @@ Monticola71_cluster_samples <- split(rownames(Monticola71_SOM$ancestry_matrix), 
 Monticola71_cluster1_data <- lapply(Monticola71_SOM$input_data, function(x) x[Monticola71_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
 Monticola71_cluster2_data <- lapply(Monticola71_SOM$input_data, function(x) x[Monticola71_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 
-Monticola71_SOM_tr_cluster1 <- train.SOM(Monticola71_cluster1_data, #49 samples
+Monticola71_SOM_tr_cluster1 <- train.SOM(Monticola71_cluster1_data, #48 samples
                                          grid.multiplier = 4,
                                          max.NA.row = 0.5,
                                          max.NA.col = 0.5)
@@ -164,7 +164,7 @@ Monticola71_SOM_cluster1 <- clustering.SOM(Monticola71_SOM_tr_cluster1,
                                            clustering.method = "kmeans+BICelbow",
                                            max.k = 5)
 Monticola71_SOM_cluster1$optim_k_summary #k1 100% support
-Monticola71_SOM_tr_cluster2 <- train.SOM(Monticola71_cluster2_data, #22 samples
+Monticola71_SOM_tr_cluster2 <- train.SOM(Monticola71_cluster2_data, #21 samples
                                          grid.multiplier = 4,
                                          max.NA.row = 0.5,
                                          max.NA.col = 0.5)
@@ -227,7 +227,7 @@ Pascagoula_environmental <- (NicheDiv::transform.skewed.variables(Pascagoula_env
 Pascagoula_environmental <- remove.lowCV.multicollinearity.SOM(Pascagoula_environmental, #remove highly correlated and low-variance variables
                                                                CV.threshold = 0.05,
                                                                cor.threshold = 0.9)
-ncol(Pascagoula_environmental) #number of variables: 56
+ncol(Pascagoula_environmental) #number of variables: 59
 nrow(Pascagoula_environmental) #number of samples: 22
 ncol(Pascagoula_watershed) #number of variables: 42
 nrow(Pascagoula_watershed) #number of samples: 22
@@ -247,7 +247,7 @@ Pascagoula_residuals_mat <- sapply(colnames(Pascagoula_filtered_log_traits)[coln
 rownames(Pascagoula_filtered_log_traits) <- Pascagoula_data$Sample #set rownames for log-transformed traits
 rownames(Pascagoula_residuals_mat) <- Pascagoula_data$Sample #set rownames for residualized traits
 Pascagoula_morphology <- as.data.frame(cbind(SVL = Pascagoula_SVL, Pascagoula_residuals_mat)) #combine log(SVL) and residuals
-ncol(Pascagoula_morphology) #number of traits: 11
+ncol(Pascagoula_morphology) #number of traits: 9
 nrow(Pascagoula_morphology) #number of samples: 22
 
 
@@ -257,21 +257,21 @@ Pascagoula_SOM_data <- list(Alleles = Pascagoula_SNP,
                             Environmental = Pascagoula_environmental,
                             Watershed = Pascagoula_watershed,
                             Morphology = Pascagoula_morphology)
-Pascagoula_SOM_tr <- train.SOM(input_data = Pascagoula_SOM_data, #22 samples
+Pascagoula_SOM_tr <- train.SOM(input_data = Pascagoula_SOM_data, #22 samples, 0.8min
                                max.NA.row = 0.5,
                                max.NA.col = 0.5,
-                               save.SOM.results = T,
+                               save.SOM.results = TRUE,
                                save.SOM.results.name = "Pascagoula_SOM_tr.Rdata",
-                              grid.multiplier = 4)
+                               grid.multiplier = 4)
 
-Pascagoula_SOM_kmeansBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 3min!
+Pascagoula_SOM_kmeansBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #7.9min
                                                     clustering.method = "kmeans+BICthreshold",
                                                     save.SOM.results.name = "Pascagoula_SOM_kmeansBICthreshold.Rdata")
-Pascagoula_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
-Pascagoula_SOM_HDBSCAN <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 5min!
+Pascagoula_SOM_kmeansBICthreshold$optim_k_summary #k2 99%
+Pascagoula_SOM_HDBSCAN <- clustering.SOM(Pascagoula_SOM_tr, #5.9min
                                          clustering.method = "HDBSCAN",
                                          save.SOM.results.name = "Pascagoula_SOM_HDBSCAN.Rdata")
-Pascagoula_SOM_HDBSCAN$optim_k_summary #k2 85%, k3 12%
+Pascagoula_SOM_HDBSCAN$optim_k_summary #k2 90%, k1 5%, k3 5%
 Pascagoula_SOM_hierarchicalDB <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 20min!
                                                 clustering.method = "hierarchical+DB",
                                                 save.SOM.results.name = "Pascagoula_SOM_hierarchicalDB.Rdata")
@@ -280,14 +280,14 @@ Pascagoula_SOM_GMMBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #ca. 15min
                                                  clustering.method = "GMM+BICthreshold",
                                                  save.SOM.results.name = "Pascagoula_SOM_GMMBICthreshold.Rdata")
 Pascagoula_SOM_GMMBICthreshold$optim_k_summary #k2 42%, k3 40%, k4 18%
-Pascagoula_SOM_OPTICSSilhouette <- clustering.SOM(Pascagoula_SOM_tr, #ca 5min
+Pascagoula_SOM_OPTICSSilhouette <- clustering.SOM(Pascagoula_SOM_tr, #3.0min
                                                   clustering.method = "OPTICS+Silhouette",
                                                   save.SOM.results.name = "Pascagoula_SOM_OPTICSSilhouette.Rdata")
-Pascagoula_SOM_OPTICSSilhouette$optim_k_summary #k1 57%, k2 42%
-Pascagoula_SOM_kmeansBICelbow <- clustering.SOM(Pascagoula_SOM_tr, #ca 3min
+Pascagoula_SOM_OPTICSSilhouette$optim_k_summary #k1 52%, k2 46%
+Pascagoula_SOM_kmeansBICelbow <- clustering.SOM(Pascagoula_SOM_tr, #5.0min
                                                 clustering.method = "kmeans+BICelbow",
                                                 save.SOM.results.name = "Pascagoula_SOM_kmeansBICelbow.Rdata")
-Pascagoula_SOM_kmeansBICelbow$optim_k_summary #k2 100%
+Pascagoula_SOM_kmeansBICelbow$optim_k_summary #k2 99%
 
 
 ## Evaluate and plot results
@@ -296,14 +296,13 @@ plot.learning.SOM(Pascagoula_SOM)
 plot.layer.distance.scale.SOM(Pascagoula_SOM)
 plot.K.SOM(Pascagoula_SOM)
 plot.model.SOM(Pascagoula_SOM, replicate.mode = "representative")
-plot.model.SOM(Pascagoula_SOM, replicate.mode = "average")
 plot.model.SOM(Pascagoula_SOM, replicate.mode = "first")
-plot.structure.SOM(Pascagoula_SOM, Individual.labels.font.size = 0.9)
+plot.structure.SOM(Pascagoula_SOM)
 plot.map.SOM(SOM.output = Pascagoula_SOM,
              Coordinates = Pascagoula_spatial[, c("Latitude", "Longitude")],
-             USA.add.counties = T,
+             USA.add.counties = TRUE,
              north.arrow.position = c(0.05, 0.9),
-             north.arrow.length = 0.4,
+             north.arrow.length = 0.35,
              north.arrow.N.position = 0.15,
              scale.position = c(0.79, 0.05))
 plot.variable.importance.SOM(Pascagoula_SOM,
