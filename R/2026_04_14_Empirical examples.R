@@ -272,11 +272,11 @@ Pascagoula_SOM_HDBSCAN <- clustering.SOM(Pascagoula_SOM_tr, #5.9min
                                          clustering.method = "HDBSCAN",
                                          save.SOM.results.name = "Pascagoula_SOM_HDBSCAN.Rdata")
 Pascagoula_SOM_HDBSCAN$optim_k_summary #k2 90%, k1 5%, k3 5%
-Pascagoula_SOM_hierarchicalDB <- clustering.SOM(Pascagoula_SOM_tr, #takes ca 20min!
+Pascagoula_SOM_hierarchicalDB <- clustering.SOM(Pascagoula_SOM_tr, #74.3min
                                                 clustering.method = "hierarchical+DB",
                                                 save.SOM.results.name = "Pascagoula_SOM_hierarchicalDB.Rdata")
-Pascagoula_SOM_hierarchicalDB$optim_k_summary #k10 95%, k9 5%
-Pascagoula_SOM_GMMBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #ca. 15min
+Pascagoula_SOM_hierarchicalDB$optim_k_summary #k10 94%, k9 6%
+Pascagoula_SOM_GMMBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #
                                                  clustering.method = "GMM+BICthreshold",
                                                  save.SOM.results.name = "Pascagoula_SOM_GMMBICthreshold.Rdata")
 Pascagoula_SOM_GMMBICthreshold$optim_k_summary #k2 42%, k3 40%, k4 18%
