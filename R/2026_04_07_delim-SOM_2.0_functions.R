@@ -469,7 +469,6 @@ for (pkg in CRAN_packages) {
 #' }
 #'
 #' @export
-
 train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dataframes provided as list()
                       N.steps = 100, #number of training iterations S for SOM
                       N.replicates = 110, #number of SOM runs R
@@ -7226,9 +7225,10 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' `1`, or `2`, representing the retained allele-dosage coding. For standard
 #' haploid dosage inputs, values are encoded as `0` or `1`. For sequence
 #' alignment inputs, unambiguous biallelic sequence states are encoded as `0`
-#' and `1`. When `alignment.ambiguity.mode = "heterozygote"`, matching two-base
-#' IUPAC ambiguity codes are encoded as `0.5`. Missing genotypes or sequence
-#' states are retained as `NA` and can be filtered by locus- and
+#' and `2` on the same SNP dosage scale. When
+#' `alignment.ambiguity.mode = "heterozygote"`, matching two-base IUPAC
+#' ambiguity codes are encoded as heterozygote dosage `1`. Missing genotypes or
+#' sequence states are retained as `NA` and can be filtered by locus- and
 #' individual-level missing-data thresholds.
 #'
 #' VCF input is first processed with a fast parser for standard single-base
@@ -7259,8 +7259,8 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' heterozygotes. With `alignment.ambiguity.mode = "heterozygote"`, the function
 #' assumes that `R`, `Y`, `S`, `W`, `K`, and `M` represent true heterozygous
 #' genotypes when they match the two alleles observed or implied at a biallelic
-#' site. For example, at an A/G site, `A` is encoded as `0`, `R` as `0.5`, and
-#' `G` as `1`. With `alignment.ambiguity.mode = "missing"`, these ambiguity
+#' site. For example, at an A/G site, `A` is encoded as `0`, `R` as `1`, and
+#' `G` as `2`. With `alignment.ambiguity.mode = "missing"`, these ambiguity
 #' codes are treated as missing values instead. The `"missing"` mode should be
 #' used when ambiguity codes represent uncertain base calls, low-quality sequence
 #' reads, mixed templates, or unresolved consensus states rather than true
@@ -7276,8 +7276,10 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' 6. Optionally remove invariant loci.
 #'
 #' Singleton filtering uses minor allele or sequence-state counts among
-#' non-missing calls. Diploid dosage data are evaluated on the called-chromosome
-#' scale, whereas haploid dosage and sequence-state data are evaluated on the
+#' non-missing calls. Diploid dosage data and sequence alignment data with
+#' `alignment.ambiguity.mode = "heterozygote"` are evaluated on the
+#' called-chromosome scale. Standard haploid dosage data and sequence alignment
+#' data with `alignment.ambiguity.mode = "missing"` are evaluated on the
 #' observed-call scale. Invariant loci are removed only after missing-data and
 #' singleton filtering because earlier filters can make previously variable loci
 #' invariant.
@@ -7285,9 +7287,9 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' For sequence alignment data with `alignment.ambiguity.mode = "heterozygote"`,
 #' biallelic-site detection includes both unambiguous nucleotide states and
 #' alleles implied by two-base IUPAC ambiguity codes. An ambiguity code is
-#' encoded as `0.5` only when it matches the two alleles at the retained
+#' encoded as `1` only when it matches the two alleles at the retained
 #' biallelic site. Singleton filtering in this mode uses a diploid allele-count
-#' scale, so a `0.5` heterozygote contributes one alternate allele.
+#' scale, so a `1` heterozygote contributes one alternate allele.
 #'
 #' Missing sequence symbols, gaps, `N`, and non-two-base ambiguity codes such as
 #' `B`, `D`, `H`, `V`, and `X` are treated as missing. In NEXUS alignments,
@@ -7298,8 +7300,8 @@ plot.variable.importance.SOM <- function(SOM.output,
 #' @return A data frame containing the processed SNP matrix, with samples in rows
 #'   and retained biallelic SNP variables in columns. Standard haploid data are
 #'   encoded as `0/1`, standard diploid genotype data are encoded as `0/1/2`, and
-#'   sequence alignment data are encoded as `0/1` or `0/0.5/1` depending on
-#'   `alignment.ambiguity.mode`. Missing values are retained as `NA`.
+#'   sequence alignment data are encoded on a `0/1/2` SNP dosage scale. Missing
+#'   values are retained as `NA`.
 #'
 #' @examples
 #' \dontrun{
@@ -7343,7 +7345,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
                                  phylip.path = NULL, #optional path to PHYLIP alignment file
                                  phylip.format = "sequential", #PHYLIP format: sequential or interleaved
                                  plink.raw.metadata.columns = c("FID", "IID", "PAT", "MAT", "SEX", "PHENOTYPE"), #PLINK .raw metadata columns
-								 alignment.ambiguity.mode = c("heterozygote", "missing"), #treatment of two-base IUPAC ambiguity codes in alignments
+                                 alignment.ambiguity.mode = c("heterozygote", "missing"), #treatment of two-base IUPAC ambiguity codes in alignments
                                  snp.matrix.ploidy = 2, #ploidy for numeric dosage inputs; must match genlight ploidy
                                  missing.loci.cutoff.lenient = 0.7, #remove loci with > this proportion missing (1st lenient filter)
                                  missing.loci.cutoff.final = 0.5, #remove loci with > this proportion missing (2nd final stringent filter)
@@ -7662,8 +7664,8 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
     sequence.lengths <- vapply(sequence.list, function(single.sequence) nchar(paste0(single.sequence, collapse = "")), integer(1)) #sequence lengths
     if (any(sequence.lengths == 0)) stop("Empty sequences detected in ", file.type, " file") #empty sequence
     if (length(unique(sequence.lengths)) != 1) stop(file.type, " file is not aligned: sequences have different lengths") #not aligned
-    if (identical(alignment.ambiguity.mode, "heterozygote")) messager("Note: ", file.type, " alignment input encodes unambiguous biallelic states as 0/1 and matching two-base IUPAC ambiguity codes as 0.5 heterozygote dosages") #warn about dosage scale
-    if (identical(alignment.ambiguity.mode, "missing")) messager("Note: ", file.type, " alignment input treats ambiguous IUPAC symbols as missing and encodes unambiguous biallelic states as haploid 0/1 sequence states") #warn about dosage scale
+    if (identical(alignment.ambiguity.mode, "heterozygote")) messager("Note: ", file.type, " alignment input encodes unambiguous biallelic states as 0/2 and matching two-base IUPAC ambiguity codes as 1 heterozygote dosages") #warn about dosage scale
+    if (identical(alignment.ambiguity.mode, "missing")) messager("Note: ", file.type, " alignment input treats ambiguous IUPAC symbols as missing and encodes unambiguous biallelic states as 0/2 dosage states") #warn about dosage scale
 	
 	# Convert sequences to samples-by-sites alignment matrix						   
     alignment.matrix <- t(sapply(sequence.list, function(single.sequence) strsplit(paste0(single.sequence, collapse = ""), "")[[1]])) #make samples × sites character matrix
@@ -7703,25 +7705,25 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
 
     # Initialize biallelic SNP matrix
     biallelic.alignment.matrix <- alignment.matrix[, biallelic.site.indices, drop = FALSE] #keep only biallelic sites
-    biallelic.snp.matrix <- matrix(NA_real_,
-                                   nrow = nrow(biallelic.alignment.matrix),
-                                   ncol = ncol(biallelic.alignment.matrix),
-                                   dimnames = list(rownames(biallelic.alignment.matrix), paste0("SNP", seq_len(ncol(biallelic.alignment.matrix))))) #initialize matrix
+	biallelic.snp.matrix <- matrix(NA_integer_,
+								   nrow = nrow(biallelic.alignment.matrix),
+								   ncol = ncol(biallelic.alignment.matrix),
+								   dimnames = list(rownames(biallelic.alignment.matrix), paste0("SNP", seq_len(ncol(biallelic.alignment.matrix))))) #initialize matrix
       
-    # Recode biallelic SNPs to 0/1
+    # Recode biallelic SNPs to 0/1/2 dosage scale
     alleles.at.biallelic.sites <- observed.alleles.per.site[biallelic.site.indices] #alleles at biallelic sites
     ref.alleles <- vapply(alleles.at.biallelic.sites, `[`, character(1L), 1L) #reference allele per site
     alt.alleles <- vapply(alleles.at.biallelic.sites, `[`, character(1L), 2L) #alternate allele per site
     ref.broadcast.matrix <- matrix(ref.alleles, nrow = nrow(biallelic.alignment.matrix), ncol = length(ref.alleles), byrow = TRUE) #broadcast ref alleles
     alt.broadcast.matrix <- matrix(alt.alleles, nrow = nrow(biallelic.alignment.matrix), ncol = length(alt.alleles), byrow = TRUE) #broadcast alt alleles
     non.missing.biallelic.matrix <- !is.na(biallelic.alignment.matrix) #identify observed sequence states
-    biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == ref.broadcast.matrix] <- 0 #assign reference
-    biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == alt.broadcast.matrix] <- 1 #assign alternate
+	biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == ref.broadcast.matrix] <- 0L #assign reference homozygote dosage
+	biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == alt.broadcast.matrix] <- 2L #assign alternate homozygote dosage
     if (identical(alignment.ambiguity.mode, "heterozygote")) {
       heterozygote.code.lookup <- c("A/C" = "M", "A/G" = "R", "A/T" = "W", "C/G" = "S", "C/T" = "Y", "G/T" = "K") #IUPAC code per biallelic allele pair
       heterozygote.codes <- unname(heterozygote.code.lookup[paste(ref.alleles, alt.alleles, sep = "/")]) #matching heterozygote code per site
       heterozygote.broadcast.matrix <- matrix(heterozygote.codes, nrow = nrow(biallelic.alignment.matrix), ncol = length(heterozygote.codes), byrow = TRUE) #broadcast heterozygote codes
-      biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == heterozygote.broadcast.matrix] <- 0.5 #assign heterozygotes
+	  biallelic.snp.matrix[non.missing.biallelic.matrix & biallelic.alignment.matrix == heterozygote.broadcast.matrix] <- 1L #assign heterozygote dosage
     }
 
     # Initialize invariant-locus filter tracking variables
@@ -7751,11 +7753,11 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
       locus.count.before.singleton.filter <- ncol(biallelic.snp.matrix) #loci before singleton filter
       called.counts <- colSums(!is.na(biallelic.snp.matrix)) #non-missing calls per locus
       if (identical(alignment.ambiguity.mode, "heterozygote")) {
-        alternate.allele.counts <- 2 * colSums(biallelic.snp.matrix, na.rm = TRUE) #alternate allele counts on diploid scale
+        alternate.allele.counts <- colSums(biallelic.snp.matrix, na.rm = TRUE) #alternate allele counts on diploid dosage scale
         called.chromosome.counts <- 2 * called.counts #called chromosomes on diploid scale
         minor.allele.counts <- pmin(alternate.allele.counts, called.chromosome.counts - alternate.allele.counts) #minor allele counts
       } else {
-        alternate.allele.counts <- colSums(biallelic.snp.matrix, na.rm = TRUE) #alternate allele counts on haploid scale
+        alternate.allele.counts <- colSums(biallelic.snp.matrix, na.rm = TRUE) / 2 #alternate allele counts on haploid-equivalent scale
         minor.allele.counts <- pmin(alternate.allele.counts, called.counts - alternate.allele.counts) #minor allele counts
       }
       keep.loci <- minor.allele.counts != 1 #remove only true singleton loci
