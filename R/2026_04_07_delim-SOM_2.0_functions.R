@@ -6459,7 +6459,7 @@ plot.map.SOM <- function(SOM.output,
 #'   `mode = "Map.variance"`.
 #' @param title.font.size A single positive numeric value giving the main plot
 #'   title font size in points. Default: `9.1`.
-#' @param layer.label.font.size A single positive numeric value giving the layer
+#' @param layer.labels.font.size A single positive numeric value giving the layer
 #'   title font size in points. Default: `9.1`.
 #' @param bar.label.font.size A single positive numeric value giving the variable
 #'   label font size in points. Default: `7`.
@@ -6636,7 +6636,7 @@ plot.variable.importance.SOM <- function(SOM.output,
                                          bars.threshold.N = 50, #threshold for leaving out bar labels
                                          x.axis.label = if (mode == "Cluster.separation") "Cluster separation (eta squared effect size)" else "Variance across SOM map", #shared x-axis title (NULL = no title)
                                          title.font.size = 9.1, #font size of title in points
-                                         layer.label.font.size = 9.1, #font size of matrix label(s) in points
+                                         layer.labels.font.size = 9.1, #font size of matrix label(s) in points
                                          bar.label.font.size = 7, #font size of bar labels in points
                                          axis.labels.font.size = 9.1, #font size of shared x-axis title in points
                                          axis.ticks.font.size = 7, #font size of x-axis numeric tick labels in points
@@ -6714,7 +6714,7 @@ plot.variable.importance.SOM <- function(SOM.output,
   if (!is.numeric(bars.threshold.N) || length(bars.threshold.N) != 1 || is.na(bars.threshold.N) || bars.threshold.N < 0 || bars.threshold.N %% 1 != 0) stop("Plotting aborted: bars.threshold.N must be a single non-negative integer")
   if (!is.null(x.axis.label) && (!is.character(x.axis.label) || length(x.axis.label) != 1 || is.na(x.axis.label))) stop("Plotting aborted: x.axis.label must be NULL or a single character string")
   if (!is.numeric(title.font.size) || length(title.font.size) != 1 || is.na(title.font.size) || title.font.size <= 0) stop("Plotting aborted: title.font.size must be a single positive number")
-  if (!is.numeric(layer.label.font.size) || length(layer.label.font.size) != 1 || is.na(layer.label.font.size) || layer.label.font.size <= 0) stop("Plotting aborted: layer.label.font.size must be a single positive number")
+  if (!is.numeric(layer.labels.font.size) || length(layer.labels.font.size) != 1 || is.na(layer.labels.font.size) || layer.labels.font.size <= 0) stop("Plotting aborted: layer.labels.font.size must be a single positive number")
   if (!is.numeric(bar.label.font.size) || length(bar.label.font.size) != 1 || is.na(bar.label.font.size) || bar.label.font.size <= 0) stop("Plotting aborted: bar.label.font.size must be a single positive number")
   if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
   if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive number")
@@ -7053,7 +7053,7 @@ plot.variable.importance.SOM <- function(SOM.output,
   # Convert point-size arguments to base R relative font sizes
   base_font_size <- par("ps")
   title_relative_font_size <- (title.font.size * svg_scaling_factor) / base_font_size
-  layer_label_relative_font_size <- (layer.label.font.size * svg_scaling_factor) / base_font_size
+  layer_label_relative_font_size <- (layer.labels.font.size * svg_scaling_factor) / base_font_size
   bar_label_relative_font_size <- (bar.label.font.size * svg_scaling_factor) / base_font_size
   axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
   axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
@@ -8067,10 +8067,6 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
 #'   y-axis numeric tick-label font size in points. Default: `7`.
 #' @param add.boxplot.whiskers Logical; if `TRUE`, boxplot whiskers and staples
 #'   are shown. Default: `TRUE`.
-#' @param point.cex A single positive numeric value controlling the size of the
-#'   jittered variable-level points. Default: `0.8`.
-#' @param point.alpha A single numeric value between 0 and 1 giving the
-#'   transparency of the jittered variable-level points. Default: `0.65`.
 #' @param sort.by.median Logical; if `TRUE`, layers are ordered from the highest
 #'   to the lowest median importance separately within each panel. Default:
 #'   `TRUE`.
@@ -8105,7 +8101,7 @@ process.SNP.data.SOM <- function(vcf.path = NULL, #optional path to VCF file
 #' according to their median variable-importance value. The layer order can
 #' therefore differ between the eta-squared and map-variance panels. Setting
 #' `add.boxplot.whiskers = FALSE` hides the whiskers and staples but retains the
-#' boxes and jittered points.
+#' boxes.
 #'
 #' If `file.name = NULL`, the default file name is
 #' `"SOM_variable_importance_layers_both_<input-layer-names>.<plot.type>"` when
@@ -8198,8 +8194,6 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
                                              axis.labels.font.size = 9.1, #font size of y-axis titles and x-axis layer labels in points
                                              axis.ticks.font.size = 7, #font size of y-axis numeric tick labels in points
                                              add.boxplot.whiskers = TRUE, #whether to show boxplot whiskers
-                                             point.cex = 0.8, #point size
-                                             point.alpha = 0.65, #point transparency
                                              sort.by.median = TRUE, #whether to sort layers by median importance
                                              verbose = TRUE #whether to print messages
 ) {
@@ -8222,8 +8216,6 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Plotting aborted: save must be TRUE or FALSE")
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Plotting aborted: overwrite must be TRUE or FALSE")
   if (!is.logical(add.boxplot.whiskers) || length(add.boxplot.whiskers) != 1 || is.na(add.boxplot.whiskers)) stop("Plotting aborted: add.boxplot.whiskers must be TRUE or FALSE")
-  if (!is.numeric(point.cex) || length(point.cex) != 1 || is.na(point.cex) || point.cex <= 0) stop("Plotting aborted: point.cex must be a single positive numeric value")
-  if (!is.numeric(point.alpha) || length(point.alpha) != 1 || is.na(point.alpha) || point.alpha < 0 || point.alpha > 1) stop("Plotting aborted: point.alpha must be a single numeric value between 0 and 1")
   if (!is.logical(sort.by.median) || length(sort.by.median) != 1 || is.na(sort.by.median)) stop("Plotting aborted: sort.by.median must be TRUE or FALSE")
   
   # Validate specified color palette
@@ -8449,21 +8441,6 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
     return(c(y_axis_limits[1] - y_axis_padding, y_axis_limits[2] + y_axis_padding))
   }
   
-# Add jittered variable-level median-importance points
-  add.jittered.layer.points.SOM <- function(plot_list) {
-    for (layer_index in seq_along(plot_list)) {
-      current_values <- plot_list[[layer_index]]
-      current_values <- current_values[is.finite(current_values) & !is.na(current_values)]
-      if (length(current_values) > 0) {
-        points(jitter(rep(layer_index, length(current_values)), amount = 0.15),
-               current_values,
-               pch = 16,
-               cex = point.cex,
-               col = adjustcolor(layer_colors[names(plot_list)[layer_index]], alpha.f = point.alpha))
-      }
-    }
-  }
-  
   # Plot variable-importance panel
   plot.variable.importance.panel.SOM <- function(plot_list,
                                                  panel_title,
@@ -8516,9 +8493,6 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
             font = 2,
             cex = plot_title_relative_font_size)
     }
-    
-    # Add jittered points
-    add.jittered.layer.points.SOM(plot_list)
 
     # Add box around plot
     box()
