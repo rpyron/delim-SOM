@@ -133,21 +133,18 @@ Monticola71_SOM <- Monticola71_SOM_kmeansBICelbow
 plot.learning.SOM(Monticola71_SOM)
 plot.layer.distance.scale.SOM(Monticola71_SOM)
 plot.K.SOM(Monticola71_SOM)
-plot.model.SOM(Monticola71_SOM, replicate.mode = "average")
 plot.model.SOM(Monticola71_SOM, replicate.mode = "representative")
 plot.model.SOM(Monticola71_SOM, replicate.mode = "first")
 plot.structure.SOM(Monticola71_SOM)
 plot.map.SOM(SOM.output = Monticola71_SOM,
              Coordinates = Monticola71_spatial[, c("Latitude", "Longitude")],
-             USA.add.counties = T,
+             USA.add.counties = TRUE,
              scale.position = c(0.78, 0.05))
-plot.variable.importance.SOM(Monticola71_SOM, mode = "Cluster.separation", 
-                             bars.threshold.N = 100, bar.label.font.size = 0.4)
-plot.variable.importance.SOM(Monticola71_SOM, mode = "Map.variance", 
-                             bars.threshold.N = 100, bar.label.font.size = 0.4)
-plot.layer.importance.varimp.SOM(Monticola71_SOM, bottom.margin = 6)
+plot.variable.importance.SOM(Monticola71_SOM, mode = "Cluster.separation")
+plot.variable.importance.SOM(Monticola71_SOM, mode = "Map.variance")
+plot.layer.importance.varimp.SOM(Monticola71_SOM, bottom.margin = 4, point.alpha = 0.2, point.cex = 0.4)
 plot.layer.importance.leaveoneout.SOM(Monticola71_SOM, 
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = "Monticola71_SOM_lolo.Rdata") #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 
