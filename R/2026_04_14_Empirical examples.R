@@ -110,10 +110,10 @@ Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #8.0min
                                           clustering.method = "HDBSCAN",
                                           save.SOM.results.name = "Monticola71_SOM_HDBSCAN.Rdata")
 Monticola71_SOM_HDBSCAN$optim_k_summary #k2 83%, k3 13%
-Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #takes ca 30min!
+Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #404.0min
                                                  clustering.method = "hierarchical+DB",
                                                  save.SOM.results.name = "Monticola71_SOM_hierarchicalDB.Rdata")
-Monticola71_SOM_hierarchicalDB$optim_k_summary #k2 49%, k10 47%
+Monticola71_SOM_hierarchicalDB$optim_k_summary #k2 74%, k10 26%
 Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #ca. 15min
                                                   clustering.method = "GMM+BICthreshold",
                                                   save.SOM.results.name = "Monticola71_SOM_GMMBICthreshold.Rdata")
