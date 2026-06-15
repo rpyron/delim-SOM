@@ -306,14 +306,12 @@ plot.map.SOM(SOM.output = Pascagoula_SOM,
              north.arrow.N.position = 0.15,
              scale.position = c(0.79, 0.05))
 plot.variable.importance.SOM(Pascagoula_SOM,
-                             mode = "Cluster.separation",
-                             left.margin = 5.8,
-                             bar.label.font.size = 0.4) 
+                             mode = "Cluster.separation", 
+                             bars.threshold.N = 15)
 plot.variable.importance.SOM(Pascagoula_SOM,
                              mode = "Map.variance",
-                             left.margin = 5.8,
-                             bar.label.font.size = 0.4)
-plot.layer.importance.varimp.SOM(Pascagoula_SOM, bottom.margin = 6)
+                             bars.threshold.N = 15)
+plot.layer.importance.varimp.SOM(Pascagoula_SOM, bottom.margin = 3.7)
 plot.layer.importance.leaveoneout.SOM(Pascagoula_SOM, #this will take 20min (running 2 x N replicates for train and clustering SOM)
                                       save.leave.one.layer.out.results = T,
                                       save.leave.one.layer.out.results.name = "Pascagoula_SOM_lolo.Rdata") 
@@ -326,10 +324,10 @@ table(Pascagoula_clusters)
 Pascagoula_cluster_samples <- split(rownames(Pascagoula_SOM$ancestry_matrix), Pascagoula_clusters)
 Pascagoula_cluster1_data <- lapply(Pascagoula_SOM$input_data, function(x) x[Pascagoula_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
 Pascagoula_cluster2_data <- lapply(Pascagoula_SOM$input_data, function(x) x[Pascagoula_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
-Pascagoula_SOM_tr_cluster1 <- train.SOM(Pascagoula_cluster1_data, grid.multiplier = 3)
+Pascagoula_SOM_tr_cluster1 <- train.SOM(Pascagoula_cluster1_data, grid.multiplier = 3) #12 samples
 Pascagoula_SOM_cluster1 <- clustering.SOM(Pascagoula_SOM_tr_cluster1, clustering.method = "kmeans+BICelbow", max.k = 5)
 Pascagoula_SOM_cluster1$optim_k_summary #k1 100%
-Pascagoula_SOM_tr_cluster2 <- train.SOM(Pascagoula_cluster2_data, grid.multiplier = 3)
+Pascagoula_SOM_tr_cluster2 <- train.SOM(Pascagoula_cluster2_data, grid.multiplier = 3) #10 samples
 Pascagoula_SOM_cluster2 <- clustering.SOM(Pascagoula_SOM_tr_cluster2, clustering.method = "kmeans+BICelbow", max.k = 5)
 Pascagoula_SOM_cluster2$optim_k_summary #k1 100%
 
@@ -876,15 +874,14 @@ nrow(Polygonia_SNP) #number of samples: 237
 
 ## Import and filter COI data
 Polygonia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Dupuis_et_al_2018/Polygonia_COI.nex",
-                                      make.biallelic = F,
                                       missing.loci.cutoff.lenient = 0.7, 
                                       missing.loci.cutoff.final = 0.5,
                                       missing.individuals.cutoff = 0.5)
 Polygonia_COI_numeric_rownames <- sub(".*?(\\d+)$", "\\1", rownames(Polygonia_COI)) #extract numeric code from each rowname (e.g., "pf_8301" -> "8301")
 Polygonia_COI <- Polygonia_COI[!duplicated(Polygonia_COI_numeric_rownames), , drop = FALSE] #keep only first occurrence for each numeric code (remove duplicates)
 rownames(Polygonia_COI) <- Polygonia_COI_numeric_rownames[!duplicated(Polygonia_COI_numeric_rownames)] #set rownames to unique numeric codes
-ncol(Polygonia_COI) #number of loci: 309
-nrow(Polygonia_COI) #number of samples: 315
+ncol(Polygonia_COI) #number of loci: 213
+nrow(Polygonia_COI) #number of samples: 255
 
 
 ## Import and process RGB values
@@ -956,7 +953,7 @@ Polygonia_morphology <- Polygonia_morphology[, !non.continuous.cols, drop = FALS
 Polygonia_morphology <- remove.lowCV.multicollinearity.SOM(Polygonia_morphology, #remove highly correlated and low-variance variables
                                                            CV.threshold = 0.05,
                                                            cor.threshold = 0.9)
-ncol(Polygonia_morphology) #number of variables: 16
+ncol(Polygonia_morphology) #number of variables: 15
 nrow(Polygonia_morphology) #number of samples: 217
 
 ncol(Polygonia_morphology_categorical) #number of variables 15
@@ -974,7 +971,7 @@ Polygonia_environmental <- (NicheDiv::transform.skewed.variables(Polygonia_envir
 Polygonia_environmental <- remove.lowCV.multicollinearity.SOM(Polygonia_environmental, #remove highly correlated and low-variance variables
                                                               CV.threshold = 0.05,
                                                               cor.threshold = 0.9)
-ncol(Polygonia_environmental) #number of variables: 103
+ncol(Polygonia_environmental) #number of variables: 125
 nrow(Polygonia_environmental) #number of samples: 265
 
 
@@ -1007,7 +1004,7 @@ Polygonia_COI <- Polygonia_COI2[rowSums(!is.na(Polygonia_COI2)) > 0, , drop = FA
 Polygonia_spatial <- Polygonia_spatial2[rowSums(!is.na(Polygonia_spatial2)) > 0, , drop = FALSE]
 Polygonia_environmental <- Polygonia_environmental2[rowSums(!is.na(Polygonia_environmental2)) > 0, , drop = FALSE]
 Polygonia_metadata <- Polygonia_metadata2[rowSums(!is.na(Polygonia_metadata2)) > 0, , drop = FALSE]
-nrow(Polygonia_metadata) #number of shared samples: 187
+nrow(Polygonia_metadata) #number of shared samples: 200
 
 
 ## Update rownames by adding species names to ID
@@ -1030,7 +1027,7 @@ Polygonia_all_data <- list(Morphology = Polygonia_morphology,
                            COI = Polygonia_COI,
                            Environmental = Polygonia_environmental,
                            Spatial = Polygonia_spatial)
-Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data, #186 samples
+Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data, #200 samples
                               save.SOM.results = T,
                               save.SOM.results.name = "Polygonia_SOM_tr.Rdata",
                               max.NA.row = 0.5,
