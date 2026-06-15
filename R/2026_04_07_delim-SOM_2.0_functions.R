@@ -8455,7 +8455,7 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
       current_values <- plot_list[[layer_index]]
       current_values <- current_values[is.finite(current_values) & !is.na(current_values)]
       if (length(current_values) > 0) {
-        points(jitter(rep(layer_index, length(current_values)), amount = 0.12),
+        points(jitter(rep(layer_index, length(current_values)), amount = 0.15),
                current_values,
                pch = 16,
                cex = point.cex,
