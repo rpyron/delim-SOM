@@ -21,6 +21,9 @@ for (package_name in required_packages) {
 
 
 #### Set main simulation parameters ############################################
+simulation_dir <- "Simulations/Simulation_set_1"
+if (!dir.exists(simulation_dir)) dir.create(simulation_dir)
+
 N_individuals <- 60 #number of individuals
 N_SNP_loci <- 1000 #number of SNP loci
 N_morph_traits <- 15 #number of morphological traits
@@ -558,10 +561,12 @@ run.SOM.benchmark <- function(input_data,
                               N.replicates = N_replicates_SOM,
                               max.NA.row = max_NA_row_SOM,
                               max.NA.col = max_NA_col_SOM,
+                              save.SOM.results = FALSE,
                               verbose = verbose)
       clustering_output <- clustering.SOM(SOM.output = som_output,
                                           max.k = max_k,
                                           BIC.thresh = BIC_threshold_SOM,
+                                          save.SOM.results = FALSE,
                                           clustering.method = clustering_method)
     })[["elapsed"]]
     list(som_models = som_output$som_models, clustering = clustering_output, elapsed = elapsed_time)
