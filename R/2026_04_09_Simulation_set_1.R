@@ -3,7 +3,7 @@
 ## Set environment
 rm(list = ls()) #clear environment
 setwd("./")
-#setwd("C:/Users/danie/Desktop/PhD research/SOM package")
+#setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
 source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
 
 
