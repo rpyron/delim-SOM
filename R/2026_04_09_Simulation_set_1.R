@@ -21,8 +21,8 @@ for (package_name in required_packages) {
 
 
 #### Set main simulation parameters ############################################
-simulation_dir <- "Simulations/Simulation_set_1"
-if (!dir.exists(simulation_dir)) dir.create(simulation_dir)
+simulation_dir <- file.path("Simulations", "Simulation_set_1")
+if (!dir.exists(simulation_dir)) dir.create(simulation_dir, recursive = TRUE)
 
 N_individuals <- 60 #number of individuals
 N_SNP_loci <- 1000 #number of SNP loci
@@ -39,7 +39,6 @@ max_NA_col_SOM <- 0.6
 verbose_SOM <- FALSE
 BIC_threshold_SOM <- 6
 learning_rate_tuning <- FALSE
-if (!dir.exists("Simulations")) dir.create("Simulations")
 
 SNP_target_Fst_range <- c(0.10, 0.20) #target average Fst range across all loci (overall divergence) - range reflects moderate divergence often observed among conspecific populations (Hasbún et al. 2016 https://doi.org/10.1155/2016/3654093; Haenel et al. 2021 https://doi.org/10.1038/s41467-021-25039-y; Hall 2022 https://doi.org/10.3390/ani12091115)
 SNP_differentiated_prop_range <- c(0.15, 0.4) #proportion of loci with between-cluster differentiation
@@ -629,9 +628,9 @@ max_k_SOM <- 10
 
 
 ## File paths for saving/loading
-sim_data_clustering_methods_file <- "Simulations/Sim_data_clustering_methods.rds"
-sim_failed_clustering_methods_csv <- "Simulations/Sim_data_clustering_methods_failed_simulations.csv"
-sim_results_clustering_methods_csv <- "Simulations/Sim_results_clustering_methods.csv"
+sim_data_clustering_methods_file <- file.path(simulation_dir, "Sim_data_clustering_methods.rds")
+sim_failed_clustering_methods_csv <- file.path(simulation_dir, "Sim_data_clustering_methods_failed_simulations.csv")
+sim_results_clustering_methods_csv <- file.path(simulation_dir, "Sim_results_clustering_methods.csv")
 
 
 ## Load saved results or simulate/run as needed
@@ -725,8 +724,8 @@ clustering_method <- "kmeans+BICelbow"
 
 
 ## File paths for saving/loading
-sim_data_N_steps_file <- "Simulations/Sim_data_N_steps.rds"
-sim_results_N_steps_csv <- "Simulations/Sim_results_N_steps.csv"
+sim_data_N_steps_file <- file.path(simulation_dir, "Sim_data_N_steps.rds")
+sim_results_N_steps_csv <- file.path(simulation_dir, "Sim_results_N_steps.csv")
 
 
 ## Load saved results or simulate/run as needed
@@ -832,8 +831,8 @@ missing_data_props <- c(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7)
 
 
 ## File paths for saving/loading
-sim_data_NA_file <- "Simulations/Sim_data_NA.rds"
-sim_results_NA_csv <- "Simulations/Sim_results_NA.csv"
+sim_data_NA_file <- file.path(simulation_dir, "Sim_data_NA.rds")
+sim_results_NA_csv <- file.path(simulation_dir, "Sim_results_NA.csv")
 
 
 ## Load saved results or simulate/run as needed
@@ -938,8 +937,8 @@ neighborhoods <- c("gaussian", "bubble")
 
 
 ## File paths for saving/loading
-sim_data_neighborhoods_file <- "Simulations/Sim_data_neighborhoods.rds"
-sim_results_neighborhoods_csv <- "Simulations/Sim_results_neighborhoods.csv"
+sim_data_neighborhoods_file <- file.path(simulation_dir, "Sim_data_neighborhoods.rds")
+sim_results_neighborhoods_csv <- file.path(simulation_dir, "Sim_results_neighborhoods.csv")
 
 
 ## Load saved results or simulate/run as needed
