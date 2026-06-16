@@ -1,6 +1,4 @@
-################################################################################
-#### Set environment and install/load packages
-################################################################################
+#### Set environment and install/load packages #################################
 
 ## Set environment
 rm(list = ls()) #clear environment
@@ -21,11 +19,8 @@ for (package_name in required_packages) {
 
 
 
-################################################################################
-#### Simulate data
-################################################################################
 
-## Set main simulation parameters
+#### Set main simulation parameters ############################################
 N_individuals <- 60 #number of individuals
 N_SNP_loci <- 1000 #number of SNP loci
 N_morph_traits <- 15 #number of morphological traits
@@ -36,15 +31,16 @@ SNP_target_Fst_range <- c(0.10, 0.20) #target average Fst range across all loci 
 SNP_differentiated_prop_range <- c(0.15, 0.4) #proportion of loci with between-cluster differentiation
 SNP_differentiated_Fst_range <- c(0.85, 1) #Fst range for differentiated loci (D) with very strong structure
 SNP_random_prop_range <- c(0.01, 0.06) #proportion of random loci (R) representing drift and sequencing/genotyping noise (Pompanon et al. 2005 https://doi.org/10.1038/nrg1707; Helyar et al. 2011 https://doi.org/10.1111/j.1755-0998.2010.02943.x; Mastretta-Yanes et al. 2015 https://doi.org/10.1111/1755-0998.12291)
-
 morph_trait_distance_range <- c(1.0, 1.8) #derived distance among cluster means for differentiated morphological traits in standardized multivariate trait space (Leinonen et al. 2008 https://doi.org/10.1111/j.1420-9101.2007.01445.x; De Kort et al. 2013 https://doi.org/10.1007/s10682-012-9624-9; Siefert et al. 2015 https://doi.org/10.1111/ele.12508; Westerband et al. 2021 https://doi.org/10.1093/aob/mcab011; Opedal et al. 2023 https://doi.org/10.1073/pnas.2203228120
 morph_trait_sd_range <- c(0.7, 1.2) #derived standard deviation range for morphological traits in standardized trait units (Siefert et al. 2015 https://doi.org/10.1111/ele.12508; Westerband et al. 2021 https://doi.org/10.1093/aob/mcab011
-
 climate_variables_distance_range <- c(1.0, 1.8) #derived distance among cluster means for differentiated climate variables in standardized environmental space (Broennimann et al. 2012 https://doi.org/10.1111/j.1466-8238.2011.00698.x; Liu et al. 2020 https://doi.org/10.1073/pnas.2004289117; Bates & Bertelsmeier 2021 https://doi.org/10.1016/j.cub.2021.08.035
 climate_variables_sd_range <- c(0.7, 1.2) #derived standard deviation range for climate variables in standardized environmental units (Liu et al. 2020 https://doi.org/10.1073/pnas.2004289117; Carscadden et al. 2020 https://doi.org/10.1086/710388; Bates & Bertelsmeier 2021 https://doi.org/10.1016/j.cub.2021.08.035
-
 host_dominant_prop_range <- c(0.7, 0.96) #proportion of individuals per cluster assigned to that cluster's dominant host (Ramírez-Martínez & Tlapaya-Romero 2023 https://doi.org/10.1016/j.ijppaw.2023.05.001; Feder et al. 1994 https://doi.org/10.1073/pnas.91.17.7990; Wehmeyer et al. 2024 https://doi.org/10.1186/s13071-024-06439-7
 
+
+
+
+#### Create functions #############################################################
 
 ## Create function to simulate data
 simulate.data <- function(N_clusters, missing_data_prop = 0.2, sim_id = NULL) {
@@ -53,11 +49,7 @@ simulate.data <- function(N_clusters, missing_data_prop = 0.2, sim_id = NULL) {
   if (!is.null(sim_id)) message("Running simulation replicate: ", sim_id)
   
   # Basic checks
-  stopifnot(is.numeric(N_clusters),
-            length(N_clusters) == 1,
-            !is.na(N_clusters),
-            N_clusters >= 1,
-            N_clusters %% 1 == 0)
+  stopifnot(is.numeric(N_clusters), length(N_clusters) == 1, !is.na(N_clusters), N_clusters >= 1, N_clusters %% 1 == 0)
   stopifnot(is.numeric(missing_data_prop),
             length(missing_data_prop) == 1,
             !is.na(missing_data_prop),
@@ -564,10 +556,7 @@ simulate.standard.datasets <- function(N.simulations,
   successful_simulation_index <- 1
   seed_index <- 1
   while (successful_simulation_index <= N.simulations) {
-    if (seed_index > length(simulation_seeds)) {
-      stop("Ran out of simulation seeds before obtaining ", N.simulations,
-           " successful simulations. Increase simulation_seeds or relax the Fst constraint.")
-    }
+    if (seed_index > length(simulation_seeds)) stop("Ran out of simulation seeds before obtaining ", N.simulations, " successful simulations - increase simulation_seeds or relax the Fst constraint")
     set.seed(simulation_seeds[seed_index])
     simulation_output <- tryCatch({
       simulate.data(N_clusters = N.clusters,
