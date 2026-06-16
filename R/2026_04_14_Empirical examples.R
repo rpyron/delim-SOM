@@ -1028,20 +1028,20 @@ Polygonia_all_data <- list(Morphology = Polygonia_morphology,
                            Environmental = Polygonia_environmental,
                            Spatial = Polygonia_spatial)
 Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data, #200 samples
-                              save.SOM.results = T,
+                              save.SOM.results = TRUE,
                               save.SOM.results.name = "Polygonia_SOM_tr.Rdata",
                               max.NA.row = 0.5,
                               max.NA.col = 0.5)
 
-Polygonia_SOM_kmeansBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #takes ca 8min!
+Polygonia_SOM_kmeansBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #
                                                    clustering.method = "kmeans+BICthreshold",
                                                    save.SOM.results.name = "Polygonia_SOM_kmeansBICthreshold.Rdata")
 Polygonia_SOM_kmeansBICthreshold$optim_k_summary #k5 46%, k6 36%, k7 15%
-Polygonia_SOM_HDBSCAN <- clustering.SOM(Polygonia_SOM_tr, #takes ca 10min!
+Polygonia_SOM_HDBSCAN <- clustering.SOM(Polygonia_SOM_tr, #
                                         clustering.method = "HDBSCAN",
                                         save.SOM.results.name = "Polygonia_SOM_HDBSCAN.Rdata")
 Polygonia_SOM_HDBSCAN$optim_k_summary #k3 82%, k4 10%, k2 8%
-Polygonia_SOM_hierarchicalDB <- clustering.SOM(Polygonia_SOM_tr, #takes ca 45min!
+Polygonia_SOM_hierarchicalDB <- clustering.SOM(Polygonia_SOM_tr, #
                                                clustering.method = "hierarchical+DB",
                                                save.SOM.results.name = "Polygonia_SOM_hierarchicalDB.Rdata")
 Polygonia_SOM_hierarchicalDB$optim_k_summary #k3 76%, k4 10%, k5 6%
