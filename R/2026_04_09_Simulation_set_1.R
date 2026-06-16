@@ -564,6 +564,7 @@ run.SOM.benchmark <- function(input_data,
                               verbose = verbose)
       clustering_output <- clustering.SOM(SOM.output = som_output,
                                           max.k = max_k,
+                                          verbose = verbose,
                                           BIC.thresh = BIC_threshold_SOM,
                                           save.SOM.results = FALSE,
                                           clustering.method = clustering_method)
