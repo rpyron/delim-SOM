@@ -11,8 +11,10 @@ if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
 remotes::install_github("Daniel-1232/NicheDiv") #import (NicheDiv::transform.skewed.variables function from my other package (under development)
 source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
 
-#setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
 
+## Set directories
+#setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
+intermediate_files_folder <- "Empirical_examples/Intermediate_files"
 
 
 
@@ -24,7 +26,7 @@ source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2
 ## Updated environmental data
 
 ## Import sample data
-Monticola71_data <- read.csv(file = "../Empirical_examples/Pyron_2023/monticola71.csv",
+Monticola71_data <- read.csv(file = "Empirical_examples/Pyron_2023/monticola71.csv",
                              row.names = 1,
                              header = TRUE,
                              colClasses = c(huc2 = "character",
@@ -36,7 +38,7 @@ Monticola71_data <- read.csv(file = "../Empirical_examples/Pyron_2023/monticola7
 
 
 ## Import and process genetic SNP data
-Monticola71_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_2023/Monticola71.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
+Monticola71_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Pyron_2023/Monticola71.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
                                         missing.loci.cutoff.lenient = 0.7,
                                         missing.loci.cutoff.final = 0.5,
                                         missing.individuals.cutoff = 0.6)
@@ -54,7 +56,7 @@ nrow(Monticola71_spatial) #number of samples: 71
 
 
 ## Create environmental dataset and binary watershed variables (other variables extracted and processed by separate R script based on coordinates)
-Monticola71_environmental <- read.csv("Test data/Pyron_2023/Monticola71_environmental.csv", header = TRUE) #read CSV
+Monticola71_environmental <- read.csv("Empirical_examples/Pyron_2023/Monticola71_environmental.csv", header = TRUE) #read CSV
 rownames(Monticola71_environmental) <- Monticola71_environmental$Sample
 Monticola71_environmental <- Monticola71_environmental[, !names(Monticola71_environmental) %in% c("Sample", "ID")] #remove ID columns
 Monticola71_environmental <- Monticola71_environmental[, !names(Monticola71_environmental) %in% c("Latitude", "Longitude", "Elevation")] #remove spatial variables
@@ -96,35 +98,48 @@ Monticola71_SOM_data <- list(SNP = Monticola71_SNP,
                              Environmental = Monticola71_environmental,
                              Watershed = Monticola71_watershed,
                              Morphology = Monticola71_morphology)
-Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples, 19.6min
-                                save.SOM.results = TRUE,
-                                save.SOM.results.name = "Monticola71_SOM_tr.Rdata",
-                                max.NA.row = 0.6,
-                                max.NA.col = 0.5)
-
+print(unname(round(system.time({
+Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples, 25.1min
+                                  save.SOM.results = TRUE,
+                                  save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_tr.Rdata"),
+                                  max.NA.row = 0.6,
+                                  max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #14.3min
                                                      clustering.method = "kmeans+BICthreshold", 
-                                                     save.SOM.results.name = "Monticola71_SOM_kmeansBICthreshold.Rdata")
+                                                     save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_kmeansBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Monticola71_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
+print(unname(round(system.time({
 Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #8.0min
                                           clustering.method = "HDBSCAN",
-                                          save.SOM.results.name = "Monticola71_SOM_HDBSCAN.Rdata")
+                                          save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_HDBSCAN.Rdata"))
+})[3] / 60, 1)))
 Monticola71_SOM_HDBSCAN$optim_k_summary #k2 83%, k3 13%
+print(unname(round(system.time({
 Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #404.0min
                                                  clustering.method = "hierarchical+DB",
-                                                 save.SOM.results.name = "Monticola71_SOM_hierarchicalDB.Rdata")
+                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_hierarchicalDB.Rdata"))
+})[3] / 60, 1)))
 Monticola71_SOM_hierarchicalDB$optim_k_summary #k2 74%, k10 26%
+print(unname(round(system.time({
 Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr,
                                                   clustering.method = "GMM+BICthreshold",
-                                                  save.SOM.results.name = "Monticola71_SOM_GMMBICthreshold.Rdata")
+                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_GMMBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Monticola71_SOM_GMMBICthreshold$optim_k_summary #k3 53%, k2 46%
+print(unname(round(system.time({
 Monticola71_SOM_OPTICSSilhouette <- clustering.SOM(Monticola71_SOM_tr, #3.1min
                                                    clustering.method = "OPTICS+Silhouette",
-                                                   save.SOM.results.name = "Monticola71_SOM_OPTICSSilhouette.Rdata")
+                                                   save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_OPTICSSilhouette.Rdata"))
+})[3] / 60, 1)))
 Monticola71_SOM_OPTICSSilhouette$optim_k_summary #k1 80%, k2 20%
+print(unname(round(system.time({
 Monticola71_SOM_kmeansBICelbow <- clustering.SOM(Monticola71_SOM_tr, #15.8min
                                                  clustering.method = "kmeans+BICelbow",
-                                                 save.SOM.results.name = "Monticola71_SOM_kmeansBICelbow.Rdata")
+                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_kmeansBICelbow.Rdata"))
+})[3] / 60, 1)))
 Monticola71_SOM_kmeansBICelbow$optim_k_summary #k2 100%
 
 
@@ -145,7 +160,7 @@ plot.variable.importance.SOM(Monticola71_SOM, mode = "Map.variance")
 plot.layer.importance.varimp.SOM(Monticola71_SOM, bottom.margin = 4, point.alpha = 0.2, point.cex = 0.4)
 plot.layer.importance.leaveoneout.SOM(Monticola71_SOM, 
                                       save.leave.one.layer.out.results = TRUE,
-                                      save.leave.one.layer.out.results.name = "Monticola71_SOM_lolo.Rdata") #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 
 ## Hierarchical analyses based on recovered clusters
@@ -156,26 +171,34 @@ Monticola71_cluster_samples <- split(rownames(Monticola71_SOM$ancestry_matrix), 
 Monticola71_cluster1_data <- lapply(Monticola71_SOM$input_data, function(x) x[Monticola71_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
 Monticola71_cluster2_data <- lapply(Monticola71_SOM$input_data, function(x) x[Monticola71_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 
+print(unname(round(system.time({
 Monticola71_SOM_tr_cluster1 <- train.SOM(Monticola71_cluster1_data, #48 samples
                                          grid.multiplier = 4,
                                          max.NA.row = 0.5,
                                          max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Monticola71_SOM_cluster1 <- clustering.SOM(Monticola71_SOM_tr_cluster1,
                                            clustering.method = "kmeans+BICelbow",
                                            max.k = 5)
+})[3] / 60, 1)))
 Monticola71_SOM_cluster1$optim_k_summary #k1 100% support
+print(unname(round(system.time({
 Monticola71_SOM_tr_cluster2 <- train.SOM(Monticola71_cluster2_data, #21 samples
                                          grid.multiplier = 4,
                                          max.NA.row = 0.5,
                                          max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Monticola71_SOM_cluster2 <- clustering.SOM(Monticola71_SOM_tr_cluster2,
                                            clustering.method = "kmeans+BICelbow",
                                            max.k = 5)
+})[3] / 60, 1)))
 Monticola71_SOM_cluster2$optim_k_summary #k1 100% support
 
 
 
-                                    
+
 #### Desmognathus salamanders in Alabama/Mississippi (Pyron et al. 2022) #######
 
 ## https://doi.org/10.11646/zootaxa.5133.1.3
@@ -185,7 +208,7 @@ Monticola71_SOM_cluster2$optim_k_summary #k1 100% support
 ## k2 example (Desmognathus valentinei and D. pascagoula sp. nov.)
 
 ## Read in sample data
-Pascagoula_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2022/pascagoula22.csv",
+Pascagoula_data <- read.csv(file = "Empirical_examples/Pyron_et_al_2022/pascagoula22.csv",
                             row.names = 1,
                             header = T, 
                             colClasses = c(huc2 = "character",
@@ -197,7 +220,7 @@ Pascagoula_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2022/pasca
 
 
 ## Import and process genetic SNP data
-Pascagoula_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_et_al_2022/pascagoula22.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
+Pascagoula_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Pyron_et_al_2022/pascagoula22.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
                                        missing.loci.cutoff.lenient = 0.7,
                                        missing.loci.cutoff.final = 0.5,
                                        missing.individuals.cutoff = 0.5)
@@ -214,7 +237,7 @@ nrow(Pascagoula_spatial) #number of samples: 22
 
 
 ## Create environmental dataset and binary watershed variables (other variables extracted and processed by separate R script based on coordinates)
-Pascagoula_environmental <- read.csv("Test data/Pyron_et_al_2022/Pascagoula22_environmental.csv", header = TRUE) #read CSV
+Pascagoula_environmental <- read.csv("Empirical_examples/Pyron_et_al_2022/Pascagoula22_environmental.csv", header = TRUE) #read CSV
 rownames(Pascagoula_environmental) <- Pascagoula_environmental$Sample
 Pascagoula_environmental <- Pascagoula_environmental[, !names(Pascagoula_environmental) %in% c("Sample", "ID")] #remove ID columns
 Pascagoula_environmental <- Pascagoula_environmental[, !names(Pascagoula_environmental) %in% c("Latitude", "Longitude", "Elevation")] #remove spatial variables
@@ -257,36 +280,50 @@ Pascagoula_SOM_data <- list(Alleles = Pascagoula_SNP,
                             Environmental = Pascagoula_environmental,
                             Watershed = Pascagoula_watershed,
                             Morphology = Pascagoula_morphology)
+print(unname(round(system.time({
 Pascagoula_SOM_tr <- train.SOM(input_data = Pascagoula_SOM_data, #22 samples, 0.8min
                                max.NA.row = 0.5,
                                max.NA.col = 0.5,
                                save.SOM.results = TRUE,
-                               save.SOM.results.name = "Pascagoula_SOM_tr.Rdata",
+                               save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_tr.Rdata"),
                                grid.multiplier = 4)
+})[3] / 60, 1)))
 
+print(unname(round(system.time({
 Pascagoula_SOM_kmeansBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #7.9min
                                                     clustering.method = "kmeans+BICthreshold",
-                                                    save.SOM.results.name = "Pascagoula_SOM_kmeansBICthreshold.Rdata")
+                                                    save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_kmeansBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Pascagoula_SOM_kmeansBICthreshold$optim_k_summary #k2 99%
+print(unname(round(system.time({
 Pascagoula_SOM_HDBSCAN <- clustering.SOM(Pascagoula_SOM_tr, #5.9min
                                          clustering.method = "HDBSCAN",
-                                         save.SOM.results.name = "Pascagoula_SOM_HDBSCAN.Rdata")
+                                         save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_HDBSCAN.Rdata"))
+})[3] / 60, 1)))
 Pascagoula_SOM_HDBSCAN$optim_k_summary #k2 90%, k1 5%, k3 5%
+print(unname(round(system.time({
 Pascagoula_SOM_hierarchicalDB <- clustering.SOM(Pascagoula_SOM_tr, #74.3min
                                                 clustering.method = "hierarchical+DB",
-                                                save.SOM.results.name = "Pascagoula_SOM_hierarchicalDB.Rdata")
+                                                save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_hierarchicalDB.Rdata"))
+})[3] / 60, 1)))
 Pascagoula_SOM_hierarchicalDB$optim_k_summary #k10 94%, k9 6%
+print(unname(round(system.time({
 Pascagoula_SOM_GMMBICthreshold <- clustering.SOM(Pascagoula_SOM_tr, #
                                                  clustering.method = "GMM+BICthreshold",
-                                                 save.SOM.results.name = "Pascagoula_SOM_GMMBICthreshold.Rdata")
+                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_GMMBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Pascagoula_SOM_GMMBICthreshold$optim_k_summary #k2 42%, k3 40%, k4 18%
+print(unname(round(system.time({
 Pascagoula_SOM_OPTICSSilhouette <- clustering.SOM(Pascagoula_SOM_tr, #3.0min
                                                   clustering.method = "OPTICS+Silhouette",
-                                                  save.SOM.results.name = "Pascagoula_SOM_OPTICSSilhouette.Rdata")
+                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_OPTICSSilhouette.Rdata"))
+})[3] / 60, 1)))
 Pascagoula_SOM_OPTICSSilhouette$optim_k_summary #k1 52%, k2 46%
+print(unname(round(system.time({
 Pascagoula_SOM_kmeansBICelbow <- clustering.SOM(Pascagoula_SOM_tr, #5.0min
                                                 clustering.method = "kmeans+BICelbow",
-                                                save.SOM.results.name = "Pascagoula_SOM_kmeansBICelbow.Rdata")
+                                                save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_kmeansBICelbow.Rdata"))
+})[3] / 60, 1)))
 Pascagoula_SOM_kmeansBICelbow$optim_k_summary #k2 99%
 
 
@@ -314,7 +351,7 @@ plot.variable.importance.SOM(Pascagoula_SOM,
 plot.layer.importance.varimp.SOM(Pascagoula_SOM, bottom.margin = 3.7)
 plot.layer.importance.leaveoneout.SOM(Pascagoula_SOM, #this will take 20min (running 2 x N replicates for train and clustering SOM)
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Pascagoula_SOM_lolo.Rdata") 
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_lolo.Rdata")) 
 
 
 ## Hierarchical analyses based on recovered clusters
@@ -324,11 +361,19 @@ table(Pascagoula_clusters)
 Pascagoula_cluster_samples <- split(rownames(Pascagoula_SOM$ancestry_matrix), Pascagoula_clusters)
 Pascagoula_cluster1_data <- lapply(Pascagoula_SOM$input_data, function(x) x[Pascagoula_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
 Pascagoula_cluster2_data <- lapply(Pascagoula_SOM$input_data, function(x) x[Pascagoula_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
+print(unname(round(system.time({
 Pascagoula_SOM_tr_cluster1 <- train.SOM(Pascagoula_cluster1_data, grid.multiplier = 3) #12 samples
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Pascagoula_SOM_cluster1 <- clustering.SOM(Pascagoula_SOM_tr_cluster1, clustering.method = "kmeans+BICelbow", max.k = 5)
+})[3] / 60, 1)))
 Pascagoula_SOM_cluster1$optim_k_summary #k1 100%
+print(unname(round(system.time({
 Pascagoula_SOM_tr_cluster2 <- train.SOM(Pascagoula_cluster2_data, grid.multiplier = 3) #10 samples
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Pascagoula_SOM_cluster2 <- clustering.SOM(Pascagoula_SOM_tr_cluster2, clustering.method = "kmeans+BICelbow", max.k = 5)
+})[3] / 60, 1)))
 Pascagoula_SOM_cluster2$optim_k_summary #k1 100%
 
 
@@ -342,7 +387,7 @@ Pascagoula_SOM_cluster2$optim_k_summary #k1 100%
 ## One species consisting of three structured lineages)
 
 ## Read in sample data
-Aeneus_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2024/aeneus56.csv",
+Aeneus_data <- read.csv(file = "Empirical_examples/Pyron_et_al_2024/aeneus56.csv",
                         row.names = 1,
                         header = T, 
                         colClasses = c(huc2 = "character",
@@ -353,7 +398,7 @@ Aeneus_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2024/aeneus56.
 
 
 ## Import and process genetic SNP data
-Aeneus_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_et_al_2024/aeneus56.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
+Aeneus_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Pyron_et_al_2024/aeneus56.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
                                    missing.loci.cutoff.lenient = 0.7,
                                    missing.loci.cutoff.final = 0.5,
                                    missing.individuals.cutoff = 0.5)
@@ -370,7 +415,7 @@ nrow(Aeneus_spatial) #number of samples: 56
 
 
 ## Create environmental dataset and binary watershed variables (other variables extracted and processed by separate R script based on coordinates)
-Aeneus_environmental <- read.csv("../Empirical_examples/Pyron_et_al_2024/Aeneus_environmental.csv", row.names = 1, header = TRUE) #read CSV with rownames
+Aeneus_environmental <- read.csv("Empirical_examples/Pyron_et_al_2024/Aeneus_environmental.csv", row.names = 1, header = TRUE) #read CSV with rownames
 Aeneus_environmental <- Aeneus_environmental[, !names(Aeneus_environmental) %in% c("Latitude", "Longitude", "Elevation")] #remove spatial variables
 Aeneus_environmental <- as.data.frame(lapply(Aeneus_environmental, as.numeric)) #ensure numeric
 rownames(Aeneus_environmental) <- Aeneus_data$Sample #assign rownames
@@ -416,35 +461,49 @@ Aeneus_SOM_data <- list(Alleles = Aeneus_SNP,
                         Environmental = Aeneus_environmental,
                         Watershed = Aeneus_watershed,
                         Morphology = Aeneus_morphology)
+print(unname(round(system.time({
 Aeneus_SOM_tr <- train.SOM(input_data = Aeneus_SOM_data, #40 samples
                            save.SOM.results = T,
-                           save.SOM.results.name = "Aeneus_SOM_tr.Rdata",
+                           save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_tr.Rdata"),
                            max.NA.row = 0.5,
                            max.NA.col = 0.5)
+})[3] / 60, 1)))
 
+print(unname(round(system.time({
 Aeneus_SOM_kmeansBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #takes ca 3min!
                                                 clustering.method = "kmeans+BICthreshold",
-                                                save.SOM.results.name = "Aeneus_SOM_kmeansBICthreshold.Rdata")
+                                                save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_kmeansBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Aeneus_SOM_kmeansBICthreshold$optim_k_summary #k1 100%
+print(unname(round(system.time({
 Aeneus_SOM_HDBSCAN <- clustering.SOM(Aeneus_SOM_tr, #takes ca 5min!
                                      clustering.method = "HDBSCAN",
-                                     save.SOM.results.name = "Aeneus_SOM_HDBSCAN.Rdata")
+                                     save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_HDBSCAN.Rdata"))
+})[3] / 60, 1)))
 Aeneus_SOM_HDBSCAN$optim_k_summary #k2 68%, k1 16%, k3 15%
+print(unname(round(system.time({
 Aeneus_SOM_hierarchicalDB <- clustering.SOM(Aeneus_SOM_tr, #takes ca 25min!
                                             clustering.method = "hierarchical+DB",
-                                            save.SOM.results.name = "Aeneus_SOM_hierarchicalDB.Rdata")
+                                            save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_hierarchicalDB.Rdata"))
+})[3] / 60, 1)))
 Aeneus_SOM_hierarchicalDB$optim_k_summary #k10 95%, k9 4%
+print(unname(round(system.time({
 Aeneus_SOM_GMMBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #ca. 15min
                                              clustering.method = "GMM+BICthreshold",
-                                             save.SOM.results.name = "Aeneus_SOM_GMMBICthreshold.Rdata")
+                                             save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_GMMBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Aeneus_SOM_GMMBICthreshold$optim_k_summary #k3 37%, k2 32%, k4 17%, k5 7%, k6 5%
+print(unname(round(system.time({
 Aeneus_SOM_OPTICSSilhouette <- clustering.SOM(Aeneus_SOM_tr, #ca 5min
                                               clustering.method = "OPTICS+Silhouette",
-                                              save.SOM.results.name = "Aeneus_SOM_OPTICSSilhouette.Rdata")
+                                              save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_OPTICSSilhouette.Rdata"))
+})[3] / 60, 1)))
 Aeneus_SOM_OPTICSSilhouette$optim_k_summary #k1 86%, k2 14%
+print(unname(round(system.time({
 Aeneus_SOM_kmeansBICelbow <- clustering.SOM(Aeneus_SOM_tr, #ca 3min
                                             clustering.method = "kmeans+BICelbow",
-                                            save.SOM.results.name = "Aeneus_SOM_kmeansBICelbow.Rdata")
+                                            save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_kmeansBICelbow.Rdata"))
+})[3] / 60, 1)))
 Aeneus_SOM_kmeansBICelbow$optim_k_summary #k1 100%
 
 
@@ -454,8 +513,6 @@ plot.learning.SOM(Aeneus_SOM)
 plot.layer.distance.scale.SOM(Aeneus_SOM)
 plot.K.SOM(Aeneus_SOM)
 plot.model.SOM(Aeneus_SOM, replicate.mode = "first")
-plot.model.SOM(Aeneus_SOM, replicate.mode = "average")
-plot.model.SOM(Aeneus_SOM, replicate.mode = "average", set.k = 2)
 plot.model.SOM(Aeneus_SOM, replicate.mode = "representative")
 plot.model.SOM(Aeneus_SOM, replicate.mode = "representative", set.k = 2)
 plot.structure.SOM(Aeneus_SOM, Individual.labels.font.size = 0.8)
@@ -477,7 +534,7 @@ plot.variable.importance.SOM(Aeneus_SOM,
 plot.layer.importance.varimp.SOM(Aeneus_SOM, bottom.margin = 6)
 plot.layer.importance.leaveoneout.SOM(Aeneus_SOM, #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Aeneus_SOM_lolo.Rdata")
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_lolo.Rdata"))
 
 
 
@@ -494,8 +551,8 @@ plot.layer.importance.leaveoneout.SOM(Aeneus_SOM, #this will take 10-20min (runn
 ## 13 species strongly supported by all approaches (while six could represent either undescribed or nominal species that have been synonymised incorrectly)
 
 ## Import and process genetic data
-Pocillopora_vcf_file <- "../Empirical_examples/Oury_et_al_2023/Pocillopora_361ADN_1559SNP.vcf" #VCF file path
-Pocillopora_gds_file <- "../Empirical_examples/Oury_et_al_2023/Pocillopora.gds" #GDS file path
+Pocillopora_vcf_file <- "Empirical_examples/Oury_et_al_2023/Pocillopora_361ADN_1559SNP.vcf" #VCF file path
+Pocillopora_gds_file <- "Empirical_examples/Oury_et_al_2023/Pocillopora.gds" #GDS file path
 SeqArray::seqVCF2GDS(Pocillopora_vcf_file, Pocillopora_gds_file, storage.option = "LZ4_RA.max", verbose = FALSE) #convert VCF to GDS
 Pocillopora_gds <- SeqArray::seqOpen(Pocillopora_gds_file) #open GDS file
 Pocillopora_geno <- SeqArray::seqGetData(Pocillopora_gds, "genotype") #get genotype array
@@ -515,7 +572,7 @@ ncol(Pocillopora_SNP) #number of loci: 1559
 
 
 ## Import and process morphology dataset
-Pocillopora_morphology <- readr::read_delim(file = "../Empirical_examples/Oury_et_al_2023/Micromorphometry_Pocillopora_170ind.csv", #import csv
+Pocillopora_morphology <- readr::read_delim(file = "Empirical_examples/Oury_et_al_2023/Micromorphometry_Pocillopora_170ind.csv", #import csv
                                             delim = ";",
                                             quote = "\"",
                                             escape_double = TRUE,
@@ -563,7 +620,7 @@ nrow(Pocillopora_morphology) #number of samples: 175
 
 
 ## Import csv file with multiple traits and meta data
-Pocillopora_multiple_traits <- readr::read_delim(file = "../Empirical_examples/Oury_et_al_2023/DB_Pocillopora_genomic_364ind.csv",
+Pocillopora_multiple_traits <- readr::read_delim(file = "Empirical_examples/Oury_et_al_2023/DB_Pocillopora_genomic_364ind.csv",
                                                  delim = ";",
                                                  quote = "\"",
                                                  escape_double = TRUE,
@@ -694,41 +751,55 @@ Pocillopora_SOM_data <- list(SNP = Pocillopora_SNP,
                              Morphology_binary = Pocillopora_morphology_binary,
                              Biogeography = Pocillopora_biogeography,
                              Symbiosis_haplotypes = Pocillopora_symbiosis_haplotypes)
+print(unname(round(system.time({
 Pocillopora_SOM_tr <- train.SOM(input_data = Pocillopora_SOM_data, #76 samples
                                 max.NA.row = 0.5,
                                 max.NA.col = 0.5,
                                 save.SOM.results = T,
-                                save.SOM.results.name = "Pocillopora_SOM_tr.Rdata")
+                                save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_tr.Rdata"))
+})[3] / 60, 1)))
 
+print(unname(round(system.time({
 Pocillopora_SOM_kmeansBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, #ca 12min
                                                      max.k = 35,
                                                      clustering.method = "kmeans+BICthreshold",
-                                                     save.SOM.results.name = "Pocillopora_SOM_kmeansBICthreshold.Rdata")
+                                                     save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_kmeansBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Pocillopora_SOM_kmeansBICthreshold$optim_k_summary #k3 88%, k4 7%
+print(unname(round(system.time({
 Pocillopora_SOM_HDBSCAN <- clustering.SOM(Pocillopora_SOM_tr, #ca 13 min
                                           max.k = 35,
                                           clustering.method = "HDBSCAN",
-                                          save.SOM.results.name = "Pocillopora_SOM_HDBSCAN.Rdata")
+                                          save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_HDBSCAN.Rdata"))
+})[3] / 60, 1)))
 Pocillopora_SOM_HDBSCAN$optim_k_summary #k2 35%, k3 27%, k4 15%, k5 13%, k6 9%
+print(unname(round(system.time({
 Pocillopora_SOM_kmeansBICelbow <- clustering.SOM(Pocillopora_SOM_tr, #ca. 20min
                                                  max.k = 35,
                                                  clustering.method = "kmeans+BICelbow",
-                                                 save.SOM.results.name = "Pocillopora_SOM_kmeansBICelbow.Rdata")
+                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_kmeansBICelbow.Rdata"))
+})[3] / 60, 1)))
 Pocillopora_SOM_kmeansBICelbow$optim_k_summary #k3 51%, k35 31%, k34 7%
+print(unname(round(system.time({
 Pocillopora_SOM_OPTICSSilhouette <- clustering.SOM(Pocillopora_SOM_tr, # ca. 52min
                                                    max.k = 35,
                                                    clustering.method = "OPTICS+Silhouette",
-                                                   save.SOM.results.name = "Pocillopora_SOM_OPTICSSilhouette.Rdata")
+                                                   save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_OPTICSSilhouette.Rdata"))
+})[3] / 60, 1)))
 Pocillopora_SOM_OPTICSSilhouette$optim_k_summary #k2 50%, k1 32%, k3 18%
+print(unname(round(system.time({
 Pocillopora_SOM_GMMBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, # ca. 15min
                                                   max.k = 35,
                                                   clustering.method = "GMM+BICthreshold",
-                                                  save.SOM.results.name = "Pocillopora_SOM_GMMBICthreshold.Rdata")
+                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_GMMBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Pocillopora_SOM_GMMBICthreshold$optim_k_summary #k9 17%, k10 16%, k8 13%, k11 10%, k7 9%, k2 7%, k6 7% etc
+print(unname(round(system.time({
 Pocillopora_SOM_hierarchicalDB <- clustering.SOM(Pocillopora_SOM_tr, # ca. 25min
                                                  max.k = 35,
                                                  clustering.method = "hierarchical+DB",
-                                                 save.SOM.results.name = "Pocillopora_SOM_hierarchicalDB.Rdata")
+                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_hierarchicalDB.Rdata"))
+})[3] / 60, 1)))
 Pocillopora_SOM_hierarchicalDB$optim_k_summary #k35 99%
 
 
@@ -739,22 +810,21 @@ plot.learning.SOM(Pocillopora_SOM)
 plot.layer.distance.scale.SOM(Pocillopora_SOM)
 plot.K.SOM(Pocillopora_SOM)
 plot.model.SOM(Pocillopora_SOM, replicate.mode = "first")
-plot.model.SOM(Pocillopora_SOM, replicate.mode = "average")
-plot.model.SOM(Pocillopora_SOM, replicate.mode = "average", set.k = 3)
-plot.model.SOM(Pocillopora_SOM, replicate.mode = "average", set.k = 35)
 plot.model.SOM(Pocillopora_SOM, replicate.mode = "representative")
 plot.model.SOM(Pocillopora_SOM, replicate.mode = "representative", set.k = 3)
 plot.model.SOM(Pocillopora_SOM, replicate.mode = "representative", set.k = 35)
 plot.structure.SOM(Pocillopora_SOM, Individual.labels.font.size = 0.7)
+print(unname(round(system.time({
 Pocillopora_SOM_kmeansBICelbow_k3 <- clustering.SOM(Pocillopora_SOM, set.k = 3,
                                                     clustering.method = "kmeans+BICelbow")
+})[3] / 60, 1)))
 plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3, Individual.labels.font.size = 0.7)
 plot.variable.importance.SOM(Pocillopora_SOM, left.margin = 9.5)
 plot.layer.importance.varimp.SOM(Pocillopora_SOM)
 plot.layer.importance.leaveoneout.SOM(Pocillopora_SOM, 
                                       bottom.margin = 9,
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Pocillopora_SOM_lolo.Rdata")
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_lolo.Rdata"))
 
 
 ## Compare results with species assignments of study
@@ -830,17 +900,29 @@ Pocillopora_cluster_samples_k3 <- split(rownames(Pocillopora_SOM_ancestry_matrix
 Pocillopora_cluster1_data_k3 <- lapply(Pocillopora_SOM_kmeansBICelbow_k3$input_data, function(x) x[Pocillopora_cluster_samples_k3$Cluster_1, , drop = FALSE]) #cluster 1 subset
 Pocillopora_cluster2_data_k3 <- lapply(Pocillopora_SOM_kmeansBICelbow_k3$input_data, function(x) x[Pocillopora_cluster_samples_k3$Cluster_2, , drop = FALSE]) #cluster 2 subset
 Pocillopora_cluster3_data_k3 <- lapply(Pocillopora_SOM_kmeansBICelbow_k3$input_data, function(x) x[Pocillopora_cluster_samples_k3$Cluster_3, , drop = FALSE]) #cluster 3 subset
+print(unname(round(system.time({
 SOM_Pocillopora_cluster1_k3 <- train.SOM(Pocillopora_cluster1_data_k3, 
                                          max.NA.row = 0.5, max.NA.col = 0.5, grid.multiplier = 4) #25 samples
+})[3] / 60, 1)))
+print(unname(round(system.time({
 SOM_Pocillopora_cluster1_k3 <- clustering.SOM(SOM_Pocillopora_cluster1_k3, clustering.method = "kmeans+BICelbow", max.k = 15)
+})[3] / 60, 1)))
 SOM_Pocillopora_cluster1_k3$optim_k_summary #k1 100%
+print(unname(round(system.time({
 SOM_Pocillopora_cluster2_k3 <- train.SOM(Pocillopora_cluster2_data_k3, 
                                          max.NA.row = 0.5, max.NA.col = 0.5, grid.multiplier = 4) #26 samples
+})[3] / 60, 1)))
+print(unname(round(system.time({
 SOM_Pocillopora_cluster2_k3 <- clustering.SOM(SOM_Pocillopora_cluster2_k3, clustering.method = "kmeans+BICelbow", max.k = 15)
+})[3] / 60, 1)))
 SOM_Pocillopora_cluster2_k3$optim_k_summary #k1 48%, k5 20%, k15 17%
+print(unname(round(system.time({
 SOM_Pocillopora_cluster3_k3 <- train.SOM(Pocillopora_cluster3_data_k3, 
                                          max.NA.row = 0.5, max.NA.col = 0.55, grid.multiplier = 4) #25 samples
+})[3] / 60, 1)))
+print(unname(round(system.time({
 SOM_Pocillopora_cluster3_k3 <- clustering.SOM(SOM_Pocillopora_cluster3_k3, clustering.method = "kmeans+BICelbow", max.k = 15)
+})[3] / 60, 1)))
 SOM_Pocillopora_cluster3_k3$optim_k_summary #k1 99%
 
 
@@ -851,7 +933,7 @@ plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3_updated, bottom.margin = 8.
 
 
 
-                                       
+
 #### Polygonia anglewing butterflies in Western Canada (Dupuis et al. 2018) ####
 
 ## https://doi.org/10.1093/zoolinnean/zlx081
@@ -863,7 +945,7 @@ plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3_updated, bottom.margin = 8.
 ## Categorical/binary and continuous morphological data (wing color, categorical color scores and morphotype)
 
 ## Import and process genetic SNP data
-Polygonia_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Dupuis_et_al_2018/Polygonia_961SNPs.vcf", #filter loci and individuals and create SNP matrix dataframe
+Polygonia_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Dupuis_et_al_2018/Polygonia_961SNPs.vcf", #filter loci and individuals and create SNP matrix dataframe
                                       missing.loci.cutoff.lenient = 0.7,
                                       missing.loci.cutoff.final = 0.5,
                                       missing.individuals.cutoff = 0.5)
@@ -873,7 +955,7 @@ nrow(Polygonia_SNP) #number of samples: 237
 
 
 ## Import and filter COI data
-Polygonia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Dupuis_et_al_2018/Polygonia_COI.nex",
+Polygonia_COI <- process.SNP.data.SOM(nexus.path = "Empirical_examples/Dupuis_et_al_2018/Polygonia_COI.nex",
                                       missing.loci.cutoff.lenient = 0.7, 
                                       missing.loci.cutoff.final = 0.5,
                                       missing.individuals.cutoff = 0.5)
@@ -885,13 +967,13 @@ nrow(Polygonia_COI) #number of samples: 255
 
 
 ## Import and process RGB values
-Polygonia_RGB <- read.delim("../Empirical_examples/Dupuis_et_al_2018/Polygonia_RGB_characters.txt", stringsAsFactors = FALSE)
+Polygonia_RGB <- read.delim("Empirical_examples/Dupuis_et_al_2018/Polygonia_RGB_characters.txt", stringsAsFactors = FALSE)
 rownames(Polygonia_RGB) <- Polygonia_RGB$Species
 Polygonia_RGB <- magrittr::`%>%`(Polygonia_RGB, dplyr::select(-Name, -Species)) #remove columns
 
 
 ## Import and process wing character scores
-Polygonia_wing_scores <- read.delim("../Empirical_examples/Dupuis_et_al_2018/Polygonia_visually_scored.txt", stringsAsFactors = FALSE)
+Polygonia_wing_scores <- read.delim("Empirical_examples/Dupuis_et_al_2018/Polygonia_visually_scored.txt", stringsAsFactors = FALSE)
 rownames(Polygonia_wing_scores) <- Polygonia_wing_scores$Name
 Polygonia_wing_scores <- Polygonia_wing_scores |>
   dplyr::select(-Name, -Species) |> #remove columns
@@ -913,7 +995,7 @@ Polygonia_wing_scores$Wing_character_8 <- NULL
 
 
 ## Import and process meta data with spatial data, species names and morphotype
-Polygonia_metadata <- read.csv("../Empirical_examples/Dupuis_et_al_2018/Polygonia_metadata.csv",header = T, sep = ";")
+Polygonia_metadata <- read.csv("Empirical_examples/Dupuis_et_al_2018/Polygonia_metadata.csv",header = T, sep = ";")
 rownames(Polygonia_metadata) <- Polygonia_metadata$ID
 nrow(Polygonia_metadata) #number of samples: 265
 
@@ -961,7 +1043,7 @@ nrow(Polygonia_morphology_categorical) #number of samples: 217
 
 
 ## Import and process environmental dataset (variables extracted and processed by separate R script based on coordinates)
-Polygonia_environmental <- read.csv("../Empirical_examples/Dupuis_et_al_2018/Polygonia_environmental.csv",
+Polygonia_environmental <- read.csv("Empirical_examples/Dupuis_et_al_2018/Polygonia_environmental.csv",
                                     row.names = 1, header = TRUE)
 Polygonia_environmental <- dplyr::select(Polygonia_environmental, -Latitude, -Longitude, -Elevation)
 Polygonia_environmental_rownames <- rownames(Polygonia_environmental) #save rownames
@@ -1027,35 +1109,49 @@ Polygonia_all_data <- list(Morphology = Polygonia_morphology,
                            COI = Polygonia_COI,
                            Environmental = Polygonia_environmental,
                            Spatial = Polygonia_spatial)
+print(unname(round(system.time({
 Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data, #200 samples
                               save.SOM.results = TRUE,
-                              save.SOM.results.name = "Polygonia_SOM_tr.Rdata",
+                              save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_tr.Rdata"),
                               max.NA.row = 0.5,
                               max.NA.col = 0.5)
+})[3] / 60, 1)))
 
+print(unname(round(system.time({
 Polygonia_SOM_kmeansBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #
                                                    clustering.method = "kmeans+BICthreshold",
-                                                   save.SOM.results.name = "Polygonia_SOM_kmeansBICthreshold.Rdata")
+                                                   save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Polygonia_SOM_kmeansBICthreshold$optim_k_summary #k5 46%, k6 36%, k7 15%
+print(unname(round(system.time({
 Polygonia_SOM_HDBSCAN <- clustering.SOM(Polygonia_SOM_tr, #
                                         clustering.method = "HDBSCAN",
-                                        save.SOM.results.name = "Polygonia_SOM_HDBSCAN.Rdata")
+                                        save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_HDBSCAN.Rdata"))
+})[3] / 60, 1)))
 Polygonia_SOM_HDBSCAN$optim_k_summary #k3 82%, k4 10%, k2 8%
+print(unname(round(system.time({
 Polygonia_SOM_hierarchicalDB <- clustering.SOM(Polygonia_SOM_tr, #
                                                clustering.method = "hierarchical+DB",
-                                               save.SOM.results.name = "Polygonia_SOM_hierarchicalDB.Rdata")
+                                               save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_hierarchicalDB.Rdata"))
+})[3] / 60, 1)))
 Polygonia_SOM_hierarchicalDB$optim_k_summary #k3 76%, k4 10%, k5 6%
+print(unname(round(system.time({
 Polygonia_SOM_GMMBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #ca. 15min
                                                 clustering.method = "GMM+BICthreshold",
-                                                save.SOM.results.name = "Polygonia_SOM_GMMBICthreshold.Rdata")
+                                                save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_GMMBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Polygonia_SOM_GMMBICthreshold$optim_k_summary #k4 32%, k2 28%, k5 21%, k6 10%
+print(unname(round(system.time({
 Polygonia_SOM_OPTICSSilhouette <- clustering.SOM(Polygonia_SOM_tr, #ca 5min
                                                  clustering.method = "OPTICS+Silhouette",
-                                                 save.SOM.results.name = "Polygonia_SOM_OPTICSSilhouette.Rdata")
+                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_OPTICSSilhouette.Rdata"))
+})[3] / 60, 1)))
 Polygonia_SOM_OPTICSSilhouette$optim_k_summary #k3 94%, k4 6%
+print(unname(round(system.time({
 Polygonia_SOM_kmeansBICelbow <- clustering.SOM(Polygonia_SOM_tr, #ca 3min
                                                clustering.method = "kmeans+BICelbow",
-                                               save.SOM.results.name = "Polygonia_SOM_kmeansBICelbow.Rdata")
+                                               save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICelbow.Rdata"))
+})[3] / 60, 1)))
 Polygonia_SOM_kmeansBICelbow$optim_k_summary #k3 83%, k4 16%
 
 
@@ -1068,9 +1164,6 @@ plot.model.SOM(Polygonia_SOM, replicate.mode = "representative")
 plot.model.SOM(Polygonia_SOM, replicate.mode = "representative", set.k = 3)
 plot.model.SOM(Polygonia_SOM, replicate.mode = "representative", set.k = 4)
 plot.model.SOM(Polygonia_SOM, replicate.mode = "first")
-plot.model.SOM(Polygonia_SOM, replicate.mode = "average")
-plot.model.SOM(Polygonia_SOM, replicate.mode = "average", set.k = 3)
-plot.model.SOM(Polygonia_SOM, replicate.mode = "average", set.k = 4)
 plot.map.SOM(Polygonia_SOM,
              Coordinates = Polygonia_spatial[, c(1:2)],
              lat.buffer.range = 1,
@@ -1088,7 +1181,7 @@ plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 6.5)
 plot.layer.importance.leaveoneout.SOM(Polygonia_SOM, 
                                       bottom.margin = 9,
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Poligonia_SOM_lolo.Rdata")
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Poligonia_SOM_lolo.Rdata"))
 
 
 ## Evaluate variable importance
@@ -1135,30 +1228,41 @@ Polygonia_cluster1_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygo
 Polygonia_cluster2_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 Polygonia_cluster3_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 
+print(unname(round(system.time({
 Polygonia_SOM_tr_cluster1 <- train.SOM(Polygonia_cluster1_data, #75 samples
                                        max.NA.row = 0.5,
                                        max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Polygonia_SOM_cluster1 <- clustering.SOM(Polygonia_SOM_tr_cluster1,
                                          clustering.method = "kmeans+BICelbow")
+})[3] / 60, 1)))
 Polygonia_SOM_cluster1$optim_k_summary #k1 100%
 
+print(unname(round(system.time({
 Polygonia_SOM_tr_cluster2 <- train.SOM(Polygonia_cluster2_data,
                                        max.NA.row = 0.5,
                                        max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Polygonia_SOM_cluster2 <- clustering.SOM(Polygonia_SOM_tr_cluster2, #39 samples
                                          clustering.method = "kmeans+BICelbow")
+})[3] / 60, 1)))
 Polygonia_SOM_cluster2$optim_k_summary #k1 100%
 
+print(unname(round(system.time({
 Polygonia_SOM_tr_cluster3 <- train.SOM(Polygonia_cluster3_data, #72 samples
                                        max.NA.row = 0.5,
                                        max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Polygonia_SOM_cluster3 <- clustering.SOM(Polygonia_SOM_tr_cluster3,
                                          clustering.method = "kmeans+BICelbow")
+})[3] / 60, 1)))
 Polygonia_SOM_cluster3$optim_k_summary #k2 100%
 
 
 plot.model.SOM(Polygonia_SOM_cluster3, replicate.mode = "representative")
-plot.model.SOM(Polygonia_SOM_cluster3, replicate.mode = "average")
 plot.model.SOM(Polygonia_SOM_cluster3, replicate.mode = "first")
 plot.structure.SOM(Polygonia_SOM_cluster3, bottom.margin = 8)
 plot.K.SOM(Polygonia_SOM_cluster3)
@@ -1182,7 +1286,7 @@ plot.variable.importance.SOM(Polygonia_SOM_cluster3,
 plot.layer.importance.varimp.SOM(Polygonia_SOM_cluster3, bottom.margin = 6)
 plot.layer.importance.leaveoneout.SOM(Polygonia_SOM_cluster3, 
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Polygonia_SOM_cluster3_lolo.Rdata") #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_cluster3_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Polygonia_ancestry_SOM_cluster3 <- as.data.frame(Polygonia_SOM_cluster3$ancestry_matrix)
 Polygonia_ancestry_SOM_cluster3$Species <- Polygonia_metadata$Species[match(rownames(Polygonia_SOM_cluster3$ancestry_matrix), rownames(Polygonia_metadata))]
@@ -1192,7 +1296,7 @@ length(unique(Polygonia_ancestry_SOM_cluster3$Species_revised)) #number of propo
 table(Polygonia_ancestry_SOM_cluster3$Species)
 table(Polygonia_ancestry_SOM_cluster3$Species_revised)
 
-                                  
+
 ## Calculate pairwise Weir and Cockerham Fst among species
 SNP.ids <- rownames(Polygonia_SNP)
 metadata.ids <- as.character(Polygonia_metadata$ID)
@@ -1302,7 +1406,7 @@ calculate.pairwise.Fst <- function(genind.object) {
 Polygonia_pairwise_Fst <- calculate.pairwise.Fst(Polygonia_genind)
 Polygonia_pairwise_Fst$Fst_matrix
 Polygonia_pairwise_Fst$Fst_table
-    
+
 
 
 
@@ -1317,7 +1421,7 @@ Polygonia_pairwise_Fst$Fst_table
 
 
 ## Import and process genetic SNP data
-Viburnum_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Spriggs_et_al_2018/nudum-c88-d6-min50.vcf.gz",
+Viburnum_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Spriggs_et_al_2018/nudum-c88-d6-min50.vcf.gz",
                                      missing.loci.cutoff.lenient = 0.7,
                                      missing.loci.cutoff.final = 0.5,
                                      missing.individuals.cutoff = 0.5)
@@ -1327,7 +1431,7 @@ nrow(Viburnum_SNP) #number of samples: 65
 
 
 ## Import and process morphological dataset
-Viburnum_morphology <- read.delim("../Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
+Viburnum_morphology <- read.delim("Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
 Viburnum_morphology <- Viburnum_morphology[!duplicated(Viburnum_morphology$Individual), ] #remove duplicate IDs
 rownames(Viburnum_morphology) <- Viburnum_morphology$Individual #add rownames
 Viburnum_morphology$Individual <- NULL
@@ -1371,7 +1475,7 @@ nrow(Viburnum_morphology) #number of samples: 145
 
 
 ## Import and process metadata
-Viburnum_metadata <- read.delim("../Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
+Viburnum_metadata <- read.delim("Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
 Viburnum_metadata <- Viburnum_metadata[!duplicated(Viburnum_metadata$Individual), ] #remove duplicate IDs
 rownames(Viburnum_metadata) <- Viburnum_metadata$Individual #add rownames
 Viburnum_metadata <- Viburnum_metadata[, c("State", "County"), drop = FALSE] #only keep State and County columns
@@ -1412,35 +1516,49 @@ nrow(Viburnum_metadata) #shared number of samples: 52
 ## Train and cluster SOM
 Viburnum_SOM_data <- list(Morphology = Viburnum_morphology, 
                           SNP = Viburnum_SNP)
+print(unname(round(system.time({
 Viburnum_SOM_tr <- train.SOM(Viburnum_SOM_data, #46 samples
                              max.NA.row = 0.5,
                              max.NA.col = 0.5,
-                             save.SOM.results.name = "Viburnum_SOM_tr.Rdata",
+                             save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_tr.Rdata"),
                              save.SOM.results = T)
+})[3] / 60, 1)))
 
+print(unname(round(system.time({
 Viburnum_SOM_kmeansBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #takes ca 2min!
                                                   clustering.method = "kmeans+BICthreshold",
-                                                  save.SOM.results.name = "Viburnum_SOM_kmeansBICthreshold.Rdata")
+                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_kmeansBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Viburnum_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
+print(unname(round(system.time({
 Viburnum_SOM_HDBSCAN <- clustering.SOM(Viburnum_SOM_tr, #takes ca 2min!
                                        clustering.method = "HDBSCAN",
-                                       save.SOM.results.name = "Viburnum_SOM_HDBSCAN.Rdata")
+                                       save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_HDBSCAN.Rdata"))
+})[3] / 60, 1)))
 Viburnum_SOM_HDBSCAN$optim_k_summary #k2 97%
+print(unname(round(system.time({
 Viburnum_SOM_hierarchicalDB <- clustering.SOM(Viburnum_SOM_tr, #takes ca 45min!
                                               clustering.method = "hierarchical+DB",
-                                              save.SOM.results.name = "Viburnum_SOM_hierarchicalDB.Rdata")
+                                              save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_hierarchicalDB.Rdata"))
+})[3] / 60, 1)))
 Viburnum_SOM_hierarchicalDB$optim_k_summary #k2 100%
+print(unname(round(system.time({
 Viburnum_SOM_GMMBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #ca. 15min
                                                clustering.method = "GMM+BICthreshold",
-                                               save.SOM.results.name = "Viburnum_SOM_GMMBICthreshold.Rdata")
+                                               save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_GMMBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Viburnum_SOM_GMMBICthreshold$optim_k_summary #k2 52%, k3 44%
+print(unname(round(system.time({
 Viburnum_SOM_OPTICSSilhouette <- clustering.SOM(Viburnum_SOM_tr, #ca 5min
                                                 clustering.method = "OPTICS+Silhouette",
-                                                save.SOM.results.name = "Viburnum_SOM_OPTICSSilhouette.Rdata")
+                                                save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_OPTICSSilhouette.Rdata"))
+})[3] / 60, 1)))
 Viburnum_SOM_OPTICSSilhouette$optim_k_summary #k2 100%
+print(unname(round(system.time({
 Viburnum_SOM_kmeansBICelbow <- clustering.SOM(Viburnum_SOM_tr, #ca 3min
                                               clustering.method = "kmeans+BICelbow",
-                                              save.SOM.results.name = "Viburnum_SOM_kmeansBICelbow.Rdata")
+                                              save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_kmeansBICelbow.Rdata"))
+})[3] / 60, 1)))
 Viburnum_SOM_kmeansBICelbow$optim_k_summary #k2 100%
 
 
@@ -1451,7 +1569,6 @@ plot.learning.SOM(Viburnum_SOM)
 plot.layer.distance.scale.SOM(Viburnum_SOM)
 plot.K.SOM(Viburnum_SOM)
 plot.model.SOM(Viburnum_SOM)
-plot.model.SOM(Viburnum_SOM, replicate.mode = "average")
 plot.model.SOM(Viburnum_SOM, replicate.mode = "first")
 plot.variable.importance.SOM(Viburnum_SOM,mode = "Cluster.separation",
                              left.margin = 5.5,
@@ -1463,7 +1580,7 @@ plot.structure.SOM(Viburnum_SOM, Individual.labels.font.size = 0.8)
 plot.layer.importance.leaveoneout.SOM(Viburnum_SOM, 
                                       bottom.margin = 6.5,
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Viburnum_SOM_lolo.Rdata")
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_lolo.Rdata"))
 plot.layer.importance.varimp.SOM(Viburnum_SOM, bottom.margin = 5.5)
 
 Viburnum_SOM_species_state_vector <- c(ELS002 = "cassinoides, NY", #create named character vector with species and state info based on Figure 4 in Spriggs et al. 2018
@@ -1527,31 +1644,39 @@ Viburnum_cluster_samples <- split(rownames(Viburnum_SOM$ancestry_matrix), Viburn
 Viburnum_cluster1_data <- lapply(Viburnum_SOM$input_data, function(x) x[Viburnum_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
 Viburnum_cluster2_data <- lapply(Viburnum_SOM$input_data, function(x) x[Viburnum_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 
+print(unname(round(system.time({
 Viburnum_SOM_tr_cluster1 <- train.SOM(Viburnum_cluster1_data, #25 samples
                                       grid.multiplier = 4,
                                       max.NA.row = 0.5,
                                       max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Viburnum_SOM_cluster1 <- clustering.SOM(Viburnum_SOM_tr_cluster1,
                                         clustering.method = "kmeans+BICelbow")
+})[3] / 60, 1)))
 Viburnum_SOM_cluster1$optim_k_summary #k1 100%
 
+print(unname(round(system.time({
 Viburnum_SOM_tr_cluster2 <- train.SOM(Viburnum_cluster2_data, #21 samples
                                       grid.multiplier = 4,
                                       max.NA.row = 0.5,
                                       max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Viburnum_SOM_cluster2 <- clustering.SOM(Viburnum_SOM_tr_cluster2,
                                         clustering.method = "kmeans+BICelbow")
+})[3] / 60, 1)))
 Viburnum_SOM_cluster2$optim_k_summary #k1 100%
 
 
 
-                                 
+
 #### Microcebus lemurs dataset - Madagaskar (van Elst et al 2024) #######
 library(dplyr)
 
 ## Import and process genetic SNP data
 Microcebus_SNP <- process.SNP.data.SOM(
-  vcf.path = "../Empirical_examples/van_Elst_et_al_2024/allScaffolds.annot.SNP.minInd.DP.mac.GATKfilt-hard.maxmiss0.05.thinned.vcf.gz", #VCF file path
+  vcf.path = "Empirical_examples/van_Elst_et_al_2024/allScaffolds.annot.SNP.minInd.DP.mac.GATKfilt-hard.maxmiss0.05.thinned.vcf.gz", #VCF file path
   missing.loci.cutoff.lenient = 0.7,
   missing.loci.cutoff.final = 0.5,
   missing.individuals.cutoff = 0.5)
@@ -1562,7 +1687,7 @@ nrow(Microcebus_SNP) #number of samples: 213
 
 
 ## Import and process multiple data dataset 2 containing range of data types
-Microcebus_multiple_data2 <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/01_Microcebus_morphological_data.csv", 
+Microcebus_multiple_data2 <- utils::read.csv("Empirical_examples/van_Elst_et_al_2024/01_Microcebus_morphological_data.csv", 
                                              stringsAsFactors = FALSE, header = T, sep = ";")
 Microcebus_multiple_data2 <- Microcebus_multiple_data2 %>% #only keep individuals that are Rad sequenced (have SNP data)
   dplyr::filter(RADSeq.available != "no" & !is.na(RADSeq.available))
@@ -1570,7 +1695,7 @@ rownames(Microcebus_multiple_data2) <- Microcebus_multiple_data2$Individual.ID
 
 
 ## Import and process multiple data dataset containing range of data types
-Microcebus_multiple_data <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/data.csv", 
+Microcebus_multiple_data <- utils::read.csv("Empirical_examples/van_Elst_et_al_2024/data.csv", 
                                             stringsAsFactors = FALSE, header = T, sep = ";")
 Microcebus_multiple_data <- Microcebus_multiple_data[!duplicated(Microcebus_multiple_data$Individual.ID), ] #remove duplicate IDs
 Microcebus_multiple_data <- Microcebus_multiple_data[!is.na(Microcebus_multiple_data$Individual.ID) & Microcebus_multiple_data$Individual.ID != "", ] # drop rows where Individual.ID is NA or empty-string
@@ -1866,7 +1991,7 @@ nrow(Microcebus_metadata) #number of samples: 73
 
 
 ## Import and process environmental dataset (variables extracted and processed by separate R script based on coordinates)
-Microcebus_environmental <- utils::read.csv("Test data/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
+Microcebus_environmental <- utils::read.csv("Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
 Microcebus_environmental_rownames <- Microcebus_environmental$Individual.ID #save IDs for later
 Microcebus_environmental <- Microcebus_environmental %>% 
   dplyr::select(-Latitude, -Longitude, -Elevation, -Individual.ID)
@@ -1884,7 +2009,7 @@ nrow(Microcebus_environmental) #number of samples: 73
 Microcebus_spatial <- Microcebus_multiple_data_combined %>% 
   dplyr::select(latitude, longitude) %>% #add Latitude and Longitude
   dplyr::rename(Latitude = latitude, Longitude = longitude)
-Microcebus_environmental_spatial <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
+Microcebus_environmental_spatial <- utils::read.csv("Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
 Microcebus_environmental_spatial <- Microcebus_environmental_spatial %>% dplyr::select(Elevation)
 Microcebus_spatial$Elevation <- Microcebus_environmental_spatial[rownames(Microcebus_spatial), "Elevation"]
 Microcebus_spatial$Elevation <- Microcebus_environmental_spatial[rownames(Microcebus_spatial), "Elevation"]
@@ -1904,35 +2029,49 @@ Microcebus_SOM_full_data <- list(SNP = Microcebus_SNP,
                                  Morphology = Microcebus_morphology,
                                  Environmental = Microcebus_environmental,
                                  Spatial = Microcebus_spatial)
+print(unname(round(system.time({
 Microcebus_SOM_tr <- train.SOM(Microcebus_SOM_full_data, #?? samples
                                max.NA.row = 0.5,
                                max.NA.col = 0.5,
-                               save.SOM.results.name = "Microcebus_SOM_tr.Rdata",
+                               save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_tr.Rdata"),
                                save.SOM.results = T)
+})[3] / 60, 1)))
 
- Microcebus_SOM_kmeansBICelbow <- clustering.SOM(Microcebus_SOM_tr, max.k = 20,
+print(unname(round(system.time({
+Microcebus_SOM_kmeansBICelbow <- clustering.SOM(Microcebus_SOM_tr, max.k = 20,
                                                 clustering.method = "kmeans+BICelbow",
-                                                save.SOM.results.name = "Microcebus_SOM_kmeansBICelbow.Rdata")
+                                                save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow.Rdata"))
+})[3] / 60, 1)))
 Microcebus_SOM_kmeansBICelbow$optim_k_summary #k3 93%
+print(unname(round(system.time({
 Microcebus_SOM_kmeansBICthreshold <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #takes ca 2min!
                                                     clustering.method = "kmeans+BICthreshold",
-                                                    save.SOM.results.name = "Microcebus_SOM_kmeansBICthreshold.Rdata")
+                                                    save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Microcebus_SOM_kmeansBICthreshold$optim_k_summary #k3 99%
+print(unname(round(system.time({
 Microcebus_SOM_HDBSCAN <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #takes ca 2min!
                                          clustering.method = "HDBSCAN",
-                                         save.SOM.results.name = "Microcebus_SOM_HDBSCAN.Rdata")
+                                         save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_HDBSCAN.Rdata"))
+})[3] / 60, 1)))
 Microcebus_SOM_HDBSCAN$optim_k_summary #k3 31%, k2 29%, k4 22%, k5 10%
+print(unname(round(system.time({
 Microcebus_SOM_hierarchicalDB <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #takes ca 45min!
                                                 clustering.method = "hierarchical+DB",
-                                                save.SOM.results.name = "Microcebus_SOM_hierarchicalDB.Rdata")
+                                                save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_hierarchicalDB.Rdata"))
+})[3] / 60, 1)))
 Microcebus_SOM_hierarchicalDB$optim_k_summary #k20 81%, k19 10%
+print(unname(round(system.time({
 Microcebus_SOM_GMMBICthreshold <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #ca. 20min
                                                  clustering.method = "GMM+BICthreshold",
-                                                 save.SOM.results.name = "Microcebus_SOM_GMMBICthreshold.Rdata")
+                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_GMMBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Microcebus_SOM_GMMBICthreshold$optim_k_summary #k2 22%, k7 14%, k10 10%, k3 9%, k5 8%, k8 8%, k12 7%
+print(unname(round(system.time({
 Microcebus_SOM_OPTICSSilhouette <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #ca 5min
                                                   clustering.method = "OPTICS+Silhouette",
-                                                  save.SOM.results.name = "Microcebus_SOM_OPTICSSilhouette.Rdata")
+                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_OPTICSSilhouette.Rdata"))
+})[3] / 60, 1)))
 Microcebus_SOM_OPTICSSilhouette$optim_k_summary #k3 49%, k2 38%, k4 7%
 
 
@@ -1944,7 +2083,6 @@ plot.learning.SOM(Microcebus_SOM)
 plot.layer.weights.SOM(Microcebus_SOM_full)
 plot.K.SOM(Microcebus_SOM)
 plot.model.SOM(Microcebus_SOM, replicate.mode = "representative")
-plot.model.SOM(Microcebus_SOM, replicate.mode = "average")
 plot.model.SOM(Microcebus_SOM, replicate.mode = "first")
 plot.variable.importance.SOM(Microcebus_SOM, 
                              mode = "Cluster.separation",
@@ -1970,7 +2108,7 @@ plot.layer.importance.varimp.SOM(Microcebus_SOM, bottom.margin = 6.5)
 plot.layer.importance.leaveoneout.SOM(Microcebus_SOM, 
                                       bottom.margin = 6.5,
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Microcebus_SOM_lolo.Rdata")
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_lolo.Rdata"))
 
 
 
@@ -2012,36 +2150,47 @@ Microcebus_cluster1_data <- lapply(Microcebus_SOM$input_data, function(x) x[Micr
 Microcebus_cluster2_data <- lapply(Microcebus_SOM$input_data, function(x) x[Microcebus_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 Microcebus_cluster3_data <- lapply(Microcebus_SOM$input_data, function(x) x[Microcebus_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 
+print(unname(round(system.time({
 Microcebus_SOM_tr_cluster1 <- train.SOM(Microcebus_cluster1_data, #?? samples
                                         grid.multiplier = 3,
                                         max.NA.row = 0.5,
                                         max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Microcebus_SOM_cluster1 <- clustering.SOM(Microcebus_SOM_tr_cluster1
                                           ,max.k = 5,
                                           clustering.method = "kmeans+BICelbow")
+})[3] / 60, 1)))
 Microcebus_SOM_cluster1$optim_k_summary #k1 99%
 
+print(unname(round(system.time({
 Microcebus_SOM_tr_cluster2 <- train.SOM(Microcebus_cluster2_data, #? samples
                                         grid.multiplier = 5,
                                         max.NA.row = 0.5,
                                         max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Microcebus_SOM_cluster2 <- clustering.SOM(Microcebus_SOM_tr_cluster2,
                                           clustering.method = "kmeans+BICelbow",
                                           max.k = 10)
+})[3] / 60, 1)))
 Microcebus_SOM_cluster2$optim_k_summary #k1 98%
 
+print(unname(round(system.time({
 Microcebus_SOM_tr_cluster3 <- train.SOM(Microcebus_cluster3_data, #?? samples
                                         grid.multiplier = 3,
                                         max.NA.row = 0.5,
                                         max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Microcebus_SOM_cluster3 <- clustering.SOM(Microcebus_SOM_tr_cluster3,
                                           clustering.method = "kmeans+BICelbow",
                                           max.k = 10)
+})[3] / 60, 1)))
 Microcebus_SOM_cluster3$optim_k_summary #k2 89%, k10 11%
 
 
 plot.model.SOM(Microcebus_SOM_cluster3, replicate.mode = "representative")
-plot.model.SOM(Microcebus_SOM_cluster3, replicate.mode = "average")
 plot.model.SOM(Microcebus_SOM_cluster3, replicate.mode = "first")
 plot.structure.SOM(Microcebus_SOM_cluster3)
 plot.K.SOM(Microcebus_SOM_cluster3)
@@ -2065,7 +2214,7 @@ plot.variable.importance.SOM(Microcebus_SOM_cluster3,
 plot.layer.importance.varimp.SOM(Microcebus_SOM_cluster3, bottom.margin = 6)
 plot.layer.importance.leaveoneout.SOM(Microcebus_SOM_cluster3, 
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Microcebus_SOM_cluster3_lolo.Rdata") #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_cluster3_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Microcebus_ancestry_SOM_cluster3 <- as.data.frame(Microcebus_SOM_cluster3$ancestry_matrix)
 Microcebus_ancestry_SOM_cluster3$Species <- Microcebus_metadata$Species[match(rownames(Microcebus_SOM_cluster3$ancestry_matrix), rownames(Microcebus_metadata))]
@@ -2077,11 +2226,11 @@ table(Microcebus_ancestry_SOM_cluster3$Species_revised)
 
 
 
-                                   
+
 #### Elysia sea slugs from the Western Atlantic (Krug et al. 2026) #############
 
 ## Import and filter mitochondrial DNA data
-Elysia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Krug_et_al_2026/Elysia_mtDNA_expanded.nex",
+Elysia_COI <- process.SNP.data.SOM(nexus.path = "Empirical_examples/Krug_et_al_2026/Elysia_mtDNA_expanded.nex",
                                    missing.loci.cutoff.lenient = 0.7,
                                    missing.loci.cutoff.final = 0.5,
                                    missing.individuals.cutoff = 0.5)
@@ -2090,7 +2239,7 @@ nrow(Elysia_COI) #number of samples: 282
 
 
 ## Import meta data
-Elysia_metadata <- read.csv("../Empirical_examples/Krug_et_al_2026/Elysia_metadata_updated.csv",
+Elysia_metadata <- read.csv("Empirical_examples/Krug_et_al_2026/Elysia_metadata_updated.csv",
                             header = TRUE,
                             stringsAsFactors = FALSE,
                             check.names = FALSE)
@@ -2105,7 +2254,7 @@ nrow(Elysia_spatial) #number of samples: 282
 
 
 ## Import environmental data (obtained via geodata::bio_oracle)
-Elysia_environmental <- read.csv("../Empirical_examples/Krug_et_al_2026/Elysia_environmental.csv",
+Elysia_environmental <- read.csv("Empirical_examples/Krug_et_al_2026/Elysia_environmental.csv",
                                  header = TRUE,
                                  stringsAsFactors = FALSE,
                                  row.names = 1)
@@ -2187,44 +2336,57 @@ Elysia_all_data <- list(mtDNA = Elysia_COI,
                         Host_development = Elysia_host_development,
                         Environmental = Elysia_environmental,
                         Spatial = Elysia_spatial)
+print(unname(round(system.time({
 Elysia_SOM_tr <- train.SOM(input_data = Elysia_all_data, #?? samples
                            max.NA.row = 0.5,
                            max.NA.col = 0.5,
                            save.SOM.results = TRUE,
-                           save.SOM.results.name = "Elysia_SOM_tr.Rdata")
+                           save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_tr.Rdata"))
+})[3] / 60, 1)))
 
+print(unname(round(system.time({
 Elysia_SOM_kmeansBICelbow <- clustering.SOM(Elysia_SOM_tr, max.k = 10,
                                             clustering.method = "kmeans+BICelbow",
-                                            save.SOM.results.name = "Elysia_SOM_kmeansBICelbow.Rdata")
+                                            save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow.Rdata"))
+})[3] / 60, 1)))
 Elysia_SOM_kmeansBICelbow$optim_k_summary #k4 96%
+print(unname(round(system.time({
 Elysia_SOM_kmeansBICthreshold <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #takes ca 2min!
                                                 clustering.method = "kmeans+BICthreshold",
-                                                save.SOM.results.name = "Elysia_SOM_kmeansBICthreshold.Rdata")
+                                                save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Elysia_SOM_kmeansBICthreshold$optim_k_summary #k8 43%, k7 34%, k9 10%, k6 8%
+print(unname(round(system.time({
 Elysia_SOM_HDBSCAN <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #takes ca 2min!
                                      clustering.method = "HDBSCAN",
-                                     save.SOM.results.name = "Elysia_SOM_HDBSCAN.Rdata")
+                                     save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_HDBSCAN.Rdata"))
+})[3] / 60, 1)))
 Elysia_SOM_HDBSCAN$optim_k_summary #k3 39%, k4 39%, k5 12%, k6 7%
+print(unname(round(system.time({
 Elysia_SOM_hierarchicalDB <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #takes ca 45min!
                                             clustering.method = "hierarchical+DB",
-                                            save.SOM.results.name = "Elysia_SOM_hierarchicalDB.Rdata")
+                                            save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_hierarchicalDB.Rdata"))
+})[3] / 60, 1)))
 Elysia_SOM_hierarchicalDB$optim_k_summary #k5 39%, k4 38%, k6 8%, k15 8%
+print(unname(round(system.time({
 Elysia_SOM_GMMBICthreshold <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #ca. 15min
                                              clustering.method = "GMM+BICthreshold",
-                                             save.SOM.results.name = "Elysia_SOM_GMMBICthreshold.Rdata")
+                                             save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_GMMBICthreshold.Rdata"))
+})[3] / 60, 1)))
 Elysia_SOM_GMMBICthreshold$optim_k_summary #k7 23%, k9 21%, k8 16%, k6 7%
+print(unname(round(system.time({
 Elysia_SOM_OPTICSSilhouette <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #ca 5min
                                               clustering.method = "OPTICS+Silhouette",
-                                              save.SOM.results.name = "Elysia_SOM_OPTICSSilhouette.Rdata")
+                                              save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_OPTICSSilhouette.Rdata"))
+})[3] / 60, 1)))
 Elysia_SOM_OPTICSSilhouette$optim_k_summary #k4 84%, k3 10%
-                                   
+
 Elysia_SOM <- Elysia_SOM_kmeansBICelbow
 plot.structure.SOM(Elysia_SOM, bottom.margin = 7, Individual.labels.font.size = 0.2)
 plot.learning.SOM(Elysia_SOM)
 plot.layer.distance.scale.SOM(Elysia_SOM)
 plot.K.SOM(Elysia_SOM)
 plot.model.SOM(Elysia_SOM, replicate.mode = "representative")
-plot.model.SOM(Elysia_SOM, replicate.mode = "average")
 plot.model.SOM(Elysia_SOM, replicate.mode = "first")
 plot.variable.importance.SOM(Elysia_SOM, left.margin = 12)
 plot.variable.importance.SOM(Elysia_SOM, left.margin = 12, mode = "Map.variance")
@@ -2240,7 +2402,7 @@ Elysia_SOM$clustering.SOM.args
 plot.layer.importance.leaveoneout.SOM(Elysia_SOM, 
                                       bottom.margin = 6.5,
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Elysia_SOM_SOM_lolo.Rdata")
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Elysia_SOM_SOM_lolo.Rdata"))
 plot.layer.importance.varimp.SOM(Elysia_SOM, bottom.margin = 7.5)
 
 
@@ -2279,46 +2441,61 @@ Elysia_cluster2_data <- lapply(Elysia_SOM$input_data, function(x) x[Elysia_clust
 Elysia_cluster3_data <- lapply(Elysia_SOM$input_data, function(x) x[Elysia_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 Elysia_cluster4_data <- lapply(Elysia_SOM$input_data, function(x) x[Elysia_cluster_samples$cluster4, , drop = FALSE]) #cluster 4 subset
 
+print(unname(round(system.time({
 Elysia_SOM_tr_cluster1 <- train.SOM(Elysia_cluster1_data, #? samples
                                     grid.multiplier = 4,
                                     max.NA.row = 0.5,
                                     max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Elysia_SOM_cluster1 <- clustering.SOM(Elysia_SOM_tr_cluster1,
                                       clustering.method = "kmeans+BICelbow",
                                       max.k = 5)
+})[3] / 60, 1)))
 Elysia_SOM_cluster1$optim_k_summary #k3 84%, k4 11%
 
+print(unname(round(system.time({
 Elysia_SOM_tr_cluster2 <- train.SOM(Elysia_cluster2_data, #63 samples
                                     grid.multiplier = 5,
                                     max.NA.row = 0.5,
                                     max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Elysia_SOM_cluster2 <- clustering.SOM(Elysia_SOM_tr_cluster2,
                                       clustering.method = "kmeans+BICelbow",
                                       max.k = 10)
+})[3] / 60, 1)))
 Elysia_SOM_cluster2$optim_k_summary #k4 68%, k5 27%
 
+print(unname(round(system.time({
 Elysia_SOM_tr_cluster3 <- train.SOM(Elysia_cluster3_data[names(Elysia_cluster3_data) != "Host_development"],
                                     grid.multiplier = 5, #50 samples
                                     max.NA.row = 0.5,
                                     max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Elysia_SOM_cluster3 <- clustering.SOM(Elysia_SOM_tr_cluster3,
                                       clustering.method = "kmeans+BICelbow",
                                       max.k = 10)
+})[3] / 60, 1)))
 Elysia_SOM_cluster3$optim_k_summary #k1 85%, k3 6%
 
+print(unname(round(system.time({
 Elysia_SOM_tr_cluster4 <- train.SOM(Elysia_cluster4_data[names(Elysia_cluster4_data) != "Host_development"],
                                     grid.multiplier = 5, #131 samples
                                     max.NA.row = 0.5,
                                     max.NA.col = 0.5)
+})[3] / 60, 1)))
+print(unname(round(system.time({
 Elysia_SOM_cluster4 <- clustering.SOM(Elysia_SOM_tr_cluster4,
                                       clustering.method = "kmeans+BICelbow",
                                       max.k = 25)
+})[3] / 60, 1)))
 Elysia_SOM_cluster4$optim_k_summary #k2 65%, k4 13%
 
 
 ## Cluster 1
 plot.model.SOM(Elysia_SOM_cluster1, replicate.mode = "representative")
-plot.model.SOM(Elysia_SOM_cluster1, replicate.mode = "average")
 plot.model.SOM(Elysia_SOM_cluster1, replicate.mode = "first")
 plot.structure.SOM(Elysia_SOM_cluster1)
 plot.K.SOM(Elysia_SOM_cluster1)
@@ -2342,7 +2519,7 @@ plot.variable.importance.SOM(Elysia_SOM_cluster1,
 plot.layer.importance.varimp.SOM(Elysia_SOM_cluster1, bottom.margin = 8)
 plot.layer.importance.leaveoneout.SOM(Elysia_SOM_cluster1, 
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Elysia_SOM_cluster1_lolo.Rdata") #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Elysia_SOM_cluster1_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Elysia_ancestry_SOM_cluster1 <- as.data.frame(Elysia_SOM_cluster1$ancestry_matrix)
 Elysia_cluster1_major_cluster_index <- apply(Elysia_SOM_cluster1$ancestry_matrix, 1, which.max) #assign each sample to cluster with highest ancestry proportion
@@ -2360,7 +2537,6 @@ table(Elysia_ancestry_SOM_cluster1$Major_cluster, Elysia_ancestry_SOM_cluster1$S
 
 ## Cluster 2
 plot.model.SOM(Elysia_SOM_cluster2, replicate.mode = "representative")
-plot.model.SOM(Elysia_SOM_cluster2, replicate.mode = "average")
 plot.model.SOM(Elysia_SOM_cluster2, replicate.mode = "first")
 plot.structure.SOM(Elysia_SOM_cluster2, bottom.margin = 9)
 plot.K.SOM(Elysia_SOM_cluster2)
@@ -2384,7 +2560,7 @@ plot.variable.importance.SOM(Elysia_SOM_cluster2,
 plot.layer.importance.varimp.SOM(Elysia_SOM_cluster2, bottom.margin = 8)
 plot.layer.importance.leaveoneout.SOM(Elysia_SOM_cluster2, 
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Elysia_SOM_cluster2_lolo.Rdata") #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Elysia_SOM_cluster2_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Elysia_ancestry_SOM_cluster2 <- as.data.frame(Elysia_SOM_cluster2$ancestry_matrix)
 Elysia_cluster2_major_cluster_index <- apply(Elysia_SOM_cluster2$ancestry_matrix, 1, which.max) #assign each sample to cluster with highest ancestry proportion
@@ -2401,11 +2577,12 @@ table(Elysia_ancestry_SOM_cluster2$Major_cluster, Elysia_ancestry_SOM_cluster2$S
 
 
 ## Cluster 4
+print(unname(round(system.time({
 Elysia_SOM_cluster4_k2_k2 <- clustering.SOM(Elysia_SOM_tr_cluster4,
                                             set.k = 2,
                                             clustering.method = "kmeans+BICelbow")
+})[3] / 60, 1)))
 plot.model.SOM(Elysia_SOM_cluster4_k2, replicate.mode = "representative")
-plot.model.SOM(Elysia_SOM_cluster4_k2, replicate.mode = "average")
 plot.model.SOM(Elysia_SOM_cluster4_k2, replicate.mode = "first")
 plot.structure.SOM(Elysia_SOM_cluster4_k2, bottom.margin = 9)
 plot.K.SOM(Elysia_SOM_cluster4_k2)
@@ -2429,7 +2606,7 @@ plot.variable.importance.SOM(Elysia_SOM_cluster4_k2,
 plot.layer.importance.varimp.SOM(Elysia_SOM_cluster4_k2, bottom.margin = 8)
 plot.layer.importance.leaveoneout.SOM(Elysia_SOM_cluster4_k2, 
                                       save.leave.one.layer.out.results = T,
-                                      save.leave.one.layer.out.results.name = "Elysia_SOM_cluster4_k2_lolo.Rdata") #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Elysia_SOM_cluster4_k2_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Elysia_ancestry_SOM_cluster4 <- as.data.frame(Elysia_SOM_cluster4_k2$ancestry_matrix)
 Elysia_cluster4_major_cluster_index <- apply(Elysia_SOM_cluster4_k2$ancestry_matrix, 1, which.max) #assign each sample to cluster with highest ancestry proportion
