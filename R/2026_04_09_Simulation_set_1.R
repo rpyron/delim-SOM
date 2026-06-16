@@ -2,14 +2,16 @@
 
 ## Set environment
 rm(list = ls()) #clear environment
-setwd("./")
-#setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
+#setwd("./")
+setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
 source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
 
 
 ## Install and load required R packages
 required_packages <- c("clue",
+                       "kohonen",
                        "MASS",
+                       "mclust",
                        "sn",
                        "tidyverse")
 for (package_name in required_packages) {
@@ -24,18 +26,18 @@ for (package_name in required_packages) {
 simulation_dir <- file.path("Simulations", "Simulation_set_1")
 if (!dir.exists(simulation_dir)) dir.create(simulation_dir, recursive = TRUE)
 
-N_individuals <- 60 #number of individuals
+N_individuals <- 50 #number of individuals
 N_SNP_loci <- 1000 #number of SNP loci
 N_morph_traits <- 15 #number of morphological traits
 N_climate_variables <- 30 #number of climatic variables
 N_hosts <- 12 #number of host categories
 
-overwrite <- TRUE
-N_simulations <- 3
-N_steps_SOM <- 10
-N_replicates_SOM <- 20
-max_NA_row_SOM <- 0.3
-max_NA_col_SOM <- 0.6
+overwrite <- FALSE
+N_simulations <- 50
+N_steps_SOM <- 100
+N_replicates_SOM <- 100
+max_NA_row_SOM <- 0.8
+max_NA_col_SOM <- 0.8
 verbose_SOM <- FALSE
 BIC_threshold_SOM <- 6
 learning_rate_tuning <- FALSE
@@ -57,9 +59,6 @@ host_dominant_prop_range <- c(0.7, 0.96) #proportion of individuals per cluster 
 
 ## Create function to simulate data
 simulate.data <- function(N_clusters, missing_data_prop = 0.2, sim_id = NULL) {
-  
-  # Print current simulation replicate
-  if (!is.null(sim_id)) message("Running simulation replicate: ", sim_id)
   
   # Basic checks
   stopifnot(is.numeric(N_clusters), length(N_clusters) == 1, !is.na(N_clusters), N_clusters >= 1, N_clusters %% 1 == 0)
@@ -366,6 +365,37 @@ simulate.data <- function(N_clusters, missing_data_prop = 0.2, sim_id = NULL) {
 }
 
 
+## Create function to add missing values to an already simulated complete dataset
+add.missing.data.to.simulation <- function(simulation_data,
+                                           missing_data_prop,
+                                           missing_seed = 1) {
+  add.NA <- function(input_matrix, missing_prop, seed_offset = 0) {
+    input_matrix <- as.matrix(input_matrix)
+    non_missing_indices <- which(!is.na(input_matrix), arr.ind = TRUE)
+    N_missing_cells <- floor(missing_prop * nrow(non_missing_indices))
+    if (N_missing_cells > 0) {
+      set.seed(missing_seed + seed_offset)
+      selected_missing_indices <- non_missing_indices[sample(seq_len(nrow(non_missing_indices)), N_missing_cells), , drop = FALSE]
+      for (missing_index in seq_len(nrow(selected_missing_indices))) {
+        input_matrix[selected_missing_indices[missing_index, 1], selected_missing_indices[missing_index, 2]] <- NA
+      }
+    }
+    as.data.frame(input_matrix)
+  }
+  simulation_data_missing <- simulation_data
+  simulation_data_missing$SNP <- add.NA(simulation_data$SNP, missing_data_prop, seed_offset = 1)
+  simulation_data_missing$Morphology <- add.NA(simulation_data$Morphology, missing_data_prop, seed_offset = 2)
+  simulation_data_missing$Climate <- add.NA(simulation_data$Climate, missing_data_prop, seed_offset = 3)
+  simulation_data_missing$Host <- add.NA(simulation_data$Host, missing_data_prop, seed_offset = 4)
+  rownames(simulation_data_missing$SNP) <- rownames(simulation_data$SNP)
+  rownames(simulation_data_missing$Morphology) <- rownames(simulation_data$Morphology)
+  rownames(simulation_data_missing$Climate) <- rownames(simulation_data$Climate)
+  rownames(simulation_data_missing$Host) <- rownames(simulation_data$Host)
+  simulation_data_missing$sim_stats$missing_data_prop <- missing_data_prop
+  simulation_data_missing
+}
+
+
 ## Create function to extract mean QE and TE across all layers for SOM model replicate
 extract.QE.TE <- function(som.model) {
   codebook_layers <- kohonen::getCodes(som.model)
@@ -522,6 +552,7 @@ simulate.standard.datasets <- function(N.simulations,
       next
     }
     simulation_results[[successful_simulation_index]] <- simulation_output
+    message("Successfully simulated dataset ", successful_simulation_index, " of ", N.simulations)
     successful_simulation_index <- successful_simulation_index + 1
     seed_index <- seed_index + 1
   }
@@ -564,8 +595,8 @@ run.SOM.benchmark <- function(input_data,
                               verbose = verbose)
       clustering_output <- clustering.SOM(SOM.output = som_output,
                                           max.k = max_k,
-                                          verbose = verbose,
                                           BIC.thresh = BIC_threshold_SOM,
+                                          verbose = verbose,
                                           save.SOM.results = FALSE,
                                           clustering.method = clustering_method)
     })[["elapsed"]]
@@ -574,7 +605,7 @@ run.SOM.benchmark <- function(input_data,
     message("SOM/clustering failed for ", group_column_name, " = ", group_value, ": ", conditionMessage(error_message))
     NULL
   })
-if (is.null(benchmark_output) || is.null(benchmark_output$som_models) || length(benchmark_output$som_models) == 0 || is.null(benchmark_output$clustering) || is.null(benchmark_output$clustering$cluster_assignment)) return(make.failed.stats.df(group_column_name = group_column_name, group_value = group_value, sim_stats_row = sim_stats_row))
+  if (is.null(benchmark_output) || is.null(benchmark_output$som_models) || length(benchmark_output$som_models) == 0 || is.null(benchmark_output$clustering) || is.null(benchmark_output$clustering$cluster_assignment)) return(make.failed.stats.df(group_column_name = group_column_name, group_value = group_value, sim_stats_row = sim_stats_row))
   som_models <- benchmark_output$som_models
   clustering_output <- benchmark_output$clustering
   total_time <- benchmark_output$elapsed
@@ -589,12 +620,12 @@ if (is.null(benchmark_output) || is.null(benchmark_output$som_models) || length(
       Acc <- if (K_inferred == true_K) get.accuracy(true_labels, predicted_labels) else NA_real_
       K_correct <- (K_inferred == true_K)
       K_far_off <- (abs(K_inferred - true_K) >= 2)
-stats_df <- data.frame(Time = time_per_replicate, K_inferred = K_inferred, ARI = ARI, Acc = Acc, K_correct = K_correct, K_far_off = K_far_off, QE = QE_TE$QE, TE = QE_TE$TE, stringsAsFactors = FALSE)
+      stats_df <- data.frame(Time = time_per_replicate, K_inferred = K_inferred, ARI = ARI, Acc = Acc, K_correct = K_correct, K_far_off = K_far_off, QE = QE_TE$QE, TE = QE_TE$TE, stringsAsFactors = FALSE)
       stats_df[[group_column_name]] <- group_value
       stats_df <- stats_df[, c(group_column_name, setdiff(colnames(stats_df), group_column_name)), drop = FALSE]
       stats_df
     }, error = function(error_message) {
-stats_df <- data.frame(Time = time_per_replicate, K_inferred = NA_real_, ARI = NA_real_, Acc = NA_real_, K_correct = NA, K_far_off = NA, QE = QE_TE$QE, TE = QE_TE$TE, stringsAsFactors = FALSE)
+      stats_df <- data.frame(Time = time_per_replicate, K_inferred = NA_real_, ARI = NA_real_, Acc = NA_real_, K_correct = NA, K_far_off = NA, QE = QE_TE$QE, TE = QE_TE$TE, stringsAsFactors = FALSE)
       stats_df[[group_column_name]] <- group_value
       stats_df <- stats_df[, c(group_column_name, setdiff(colnames(stats_df), group_column_name)), drop = FALSE]
       stats_df
@@ -609,7 +640,39 @@ stats_df <- data.frame(Time = time_per_replicate, K_inferred = NA_real_, ARI = N
 
 
 
-#### Test effect of clustering method ##################### ####################
+#### Create/load simulations ###################################################
+
+## Set shared simulation parameters
+N_clusters <- 3
+training_neighborhoods_SOM <- "gaussian"
+max_k_SOM <- 10
+
+
+## File paths for saving/loading shared complete simulations
+sim_data_base_file <- file.path(simulation_dir, "Sim_data_base_complete.rds")
+sim_failed_base_csv <- file.path(simulation_dir, "Sim_data_base_complete_failed_simulations.csv")
+
+
+## Load saved complete base simulations or simulate once
+if (file.exists(sim_data_base_file) && !overwrite) {
+  simulation_results_base <- readRDS(sim_data_base_file)
+  message("Loaded shared complete base simulation data from RDS")
+} else {
+  set.seed(1)
+  simulation_seeds <- sample(1:1e8, N_simulations * 100)
+  simulation_results_base <- simulate.standard.datasets(N.simulations = N_simulations,
+                                                        N.clusters = N_clusters,
+                                                        missing_data_prop = 0,
+                                                        simulation_seeds = simulation_seeds)
+  failed_simulations <- attr(simulation_results_base, "failed_simulations")
+  if (!is.null(failed_simulations)) write.csv(failed_simulations, sim_failed_base_csv, row.names = FALSE)
+  saveRDS(simulation_results_base, sim_data_base_file)
+  message("Simulations completed and saved to file")
+}
+
+
+
+#### Test effect of clustering method ##########################################
 
 ## Set clustering methods to test
 clustering_methods <- c(
@@ -634,23 +697,12 @@ sim_failed_clustering_methods_csv <- file.path(simulation_dir, "Sim_data_cluster
 sim_results_clustering_methods_csv <- file.path(simulation_dir, "Sim_results_clustering_methods.csv")
 
 
-## Load saved results or simulate/run as needed
+## Load saved results or run as needed
 if (file.exists(sim_results_clustering_methods_csv) && !overwrite) {
   full_sim_stats_clustering_methods <- read.csv(sim_results_clustering_methods_csv)
   message("Loaded clustering methods simulation results from CSV, skipping run")
 } else {
-  if (file.exists(sim_data_clustering_methods_file) && !overwrite) {
-    simulation_results <- readRDS(sim_data_clustering_methods_file)
-    message("Loaded clustering methods simulation data from RDS")
-  } else {
-    set.seed(1)
-    simulation_seeds <- sample(1:1e8, N_simulations * 1e7)
-    simulation_results <- simulate.standard.datasets(N.simulations = N_simulations, N.clusters = N_clusters, simulation_seeds = simulation_seeds)
-    failed_simulations <- attr(simulation_results, "failed_simulations")
-    if (!is.null(failed_simulations)) write.csv(failed_simulations, sim_failed_clustering_methods_csv, row.names = FALSE)
-    saveRDS(simulation_results, sim_data_clustering_methods_file)
-    message("Clustering-method simulations completed and saved to file")
-  }
+  simulation_results <- simulation_results_base
   all_results_clustering_methods <- list()
   for (clustering_method_name in clustering_methods) {
     cat("Running for clustering method:", clustering_method_name, "\n")
@@ -715,13 +767,16 @@ ggplot(full_sim_stats_clustering_methods, aes(x = factor(clustering_method), y =
   labs(x = "Clustering method", y = "Time (seconds)")
 
 
-                                                                          
+
 
 #### Test effect of N.steps ####################################################
 
 ## Set parameters                                                                 
 N_steps_values <- c(20, 50, 100, 200, 500, 1000, 2000)
 clustering_method <- "kmeans+BICelbow"
+N_clusters <- 3
+training_neighborhoods_SOM <- "gaussian"
+max_k_SOM <- 10
 
 
 ## File paths for saving/loading
@@ -729,21 +784,12 @@ sim_data_N_steps_file <- file.path(simulation_dir, "Sim_data_N_steps.rds")
 sim_results_N_steps_csv <- file.path(simulation_dir, "Sim_results_N_steps.csv")
 
 
-## Load saved results or simulate/run as needed
+## Load saved results or run as needed
 if (file.exists(sim_results_N_steps_csv) && !overwrite) {
   full_sim_stats_N_steps <- read.csv(sim_results_N_steps_csv)
   message("Loaded N.steps simulation results from CSV, skipping run")
 } else {
-  if (file.exists(sim_data_N_steps_file) && !overwrite) {
-    simulation_results <- readRDS(sim_data_N_steps_file)
-    message("Loaded N.steps simulation data from RDS")
-  } else {
-    set.seed(1)
-    simulation_seeds <- sample(1:1e8, N_simulations * 1e7)
-    simulation_results <- simulate.standard.datasets(N.simulations = N_simulations, N.clusters = N_clusters, simulation_seeds = simulation_seeds)
-    saveRDS(simulation_results, sim_data_N_steps_file)
-    message("N.steps simulations completed and saved to file")
-  }
+  simulation_results <- simulation_results_base
   all_results_N_steps <- list()
   original_N_steps_SOM <- N_steps_SOM
   for (N_steps_value in N_steps_values) {
@@ -823,12 +869,15 @@ ggplot(full_sim_stats_N_steps, aes(x = factor(N_steps), y = Time)) +
 
 
 
-                                                    
+
 #### Test effect of missing data proportion ####################################
 
 ## Set parameters
 clustering_method <- "kmeans+BICelbow"
 missing_data_props <- c(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7)
+N_clusters <- 3
+training_neighborhoods_SOM <- "gaussian"
+max_k_SOM <- 10
 
 
 ## File paths for saving/loading
@@ -836,23 +885,23 @@ sim_data_NA_file <- file.path(simulation_dir, "Sim_data_NA.rds")
 sim_results_NA_csv <- file.path(simulation_dir, "Sim_results_NA.csv")
 
 
-## Load saved results or simulate/run as needed
+## Load saved results or create missing-data copies/run as needed
 if (file.exists(sim_results_NA_csv) && !overwrite) {
   full_sim_stats_NA <- read.csv(sim_results_NA_csv)
   message("Loaded missing-data simulation results from CSV, skipping run")
 } else {
   if (file.exists(sim_data_NA_file) && !overwrite) {
     simulation_results_all <- readRDS(sim_data_NA_file)
-    message("Loaded missing-data simulation data from RDS")
   } else {
-    set.seed(1)
-    simulation_seeds <- sample(1:1e8, N_simulations * 1e7)
     simulation_results_all <- list()
     for (missing_prop in missing_data_props) {
-      simulation_results_all[[as.character(missing_prop)]] <- simulate.standard.datasets(N.simulations = N_simulations, N.clusters = N_clusters, missing_data_prop = as.numeric(missing_prop), simulation_seeds = simulation_seeds)
+      simulation_results_all[[as.character(missing_prop)]] <- lapply(seq_along(simulation_results_base), function(simulation_index) {
+        add.missing.data.to.simulation(simulation_data = simulation_results_base[[simulation_index]],
+                                       missing_data_prop = as.numeric(missing_prop),
+                                       missing_seed = 100000 + simulation_index)
+      })
     }
     saveRDS(simulation_results_all, sim_data_NA_file)
-    message("Missing-data simulations completed and saved to file")
   }
   all_results_NA <- list()
   for (missing_prop in names(simulation_results_all)) {
@@ -930,11 +979,13 @@ ggplot(full_sim_stats_NA, aes(x = factor(missing_data_prop), y = Time)) +
 
 
 
-                                          
+
 #### Test effect of neighborhood function ######################################
 
 ## Set neighborhood functions to test
 neighborhoods <- c("gaussian", "bubble")
+N_clusters <- 3
+max_k_SOM <- 10
 
 
 ## File paths for saving/loading
@@ -942,21 +993,12 @@ sim_data_neighborhoods_file <- file.path(simulation_dir, "Sim_data_neighborhoods
 sim_results_neighborhoods_csv <- file.path(simulation_dir, "Sim_results_neighborhoods.csv")
 
 
-## Load saved results or simulate/run as needed
+## Load saved results or run as needed
 if (file.exists(sim_results_neighborhoods_csv) && !overwrite) {
   full_sim_stats_neighborhood <- read.csv(sim_results_neighborhoods_csv)
   message("Loaded neighborhood-function simulation results from CSV, skipping run")
 } else {
-  if (file.exists(sim_data_neighborhoods_file) && !overwrite) {
-    simulation_results <- readRDS(sim_data_neighborhoods_file)
-    message("Loaded neighborhood-function simulation data from RDS")
-  } else {
-    set.seed(1)
-    simulation_seeds <- sample(1:1e8, N_simulations * 1e7)
-    simulation_results <- simulate.standard.datasets(N.simulations = N_simulations, N.clusters = N_clusters, simulation_seeds = simulation_seeds)
-    saveRDS(simulation_results, sim_data_neighborhoods_file)
-    message("Neighborhood-function simulations completed and saved to file")
-  }
+  simulation_results <- simulation_results_base
   all_results_neigh <- list()
   for (neighborhood_function_name in neighborhoods) {
     cat("Running for neighborhood function:", neighborhood_function_name, "\n")
@@ -1030,4 +1072,3 @@ ggplot(full_sim_stats_neighborhood, aes(x = factor(neighborhood_function), y = T
   geom_boxplot(fill = "#fc9192", outlier.size = 0.7) +
   theme_classic() +
   labs(x = "Neighborhood function", y = "Time (seconds)")
-                                                
