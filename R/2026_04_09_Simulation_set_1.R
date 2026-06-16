@@ -652,7 +652,7 @@ if (file.exists(sim_results_clustering_methods_csv) && !overwrite) {
     stats_list <- vector("list", length(simulation_results))
     for (simulation_index in seq_along(simulation_results)) {
       simulation_data <- simulation_results[[simulation_index]]
-      som_input <- list(SNP = simulation_data$SNP, Morphology = simulation_data$Morphology, Climate = simulation_data$Climate)
+      som_input <- list(SNP = simulation_data$SNP, Morphology = simulation_data$Morphology, Climate = simulation_data$Climate, Host = simulation_data$Host)
       stats_list[[simulation_index]] <- run.SOM.benchmark(input_data = som_input,
                                                           true_labels = simulation_data$Cluster,
                                                           group_column_name = "clustering_method",
@@ -747,7 +747,7 @@ if (file.exists(sim_results_N_steps_csv) && !overwrite) {
     stats_list <- vector("list", length(simulation_results))
     for (simulation_index in seq_along(simulation_results)) {
       simulation_data <- simulation_results[[simulation_index]]
-      som_input <- list(SNP = simulation_data$SNP, Morphology = simulation_data$Morphology, Climate = simulation_data$Climate)
+      som_input <- list(SNP = simulation_data$SNP, Morphology = simulation_data$Morphology, Climate = simulation_data$Climate, Host = simulation_data$Host)
       stats_list[[simulation_index]] <- run.SOM.benchmark(input_data = som_input,
                                                           true_labels = simulation_data$Cluster,
                                                           group_column_name = "N_steps",
@@ -855,7 +855,7 @@ if (file.exists(sim_results_NA_csv) && !overwrite) {
     stats_list <- vector("list", length(simulation_results))
     for (simulation_index in seq_along(simulation_results)) {
       simulation_data <- simulation_results[[simulation_index]]
-      som_input <- list(SNP = simulation_data$SNP, Morphology = simulation_data$Morphology, Climate = simulation_data$Climate)
+      som_input <- list(SNP = simulation_data$SNP, Morphology = simulation_data$Morphology, Climate = simulation_data$Climate, Host = simulation_data$Host)
       stats_list[[simulation_index]] <- run.SOM.benchmark(input_data = som_input,
                                                           true_labels = simulation_data$Cluster,
                                                           group_column_name = "missing_data_prop",
@@ -958,7 +958,7 @@ if (file.exists(sim_results_neighborhoods_csv) && !overwrite) {
     stats_list <- vector("list", length(simulation_results))
     for (simulation_index in seq_along(simulation_results)) {
       simulation_data <- simulation_results[[simulation_index]]
-      som_input <- list(SNP = simulation_data$SNP, Morphology = simulation_data$Morphology, Climate = simulation_data$Climate)
+      som_input <- list(SNP = simulation_data$SNP, Morphology = simulation_data$Morphology, Climate = simulation_data$Climate, Host = simulation_data$Host)
       stats_list[[simulation_index]] <- run.SOM.benchmark(input_data = som_input,
                                                           true_labels = simulation_data$Cluster,
                                                           group_column_name = "neighborhood_function",
