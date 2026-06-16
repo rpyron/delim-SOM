@@ -99,26 +99,26 @@ Monticola71_SOM_data <- list(SNP = Monticola71_SNP,
                              Watershed = Monticola71_watershed,
                              Morphology = Monticola71_morphology)
 print(unname(round(system.time({
-Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples, 25.1min
+Monticola71_SOM_tr <- train.SOM(input_data = Monticola71_SOM_data, #71 samples, 14.7min
                                   save.SOM.results = TRUE,
                                   save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_tr.Rdata"),
                                   max.NA.row = 0.6,
                                   max.NA.col = 0.5)
 })[3] / 60, 1)))
 print(unname(round(system.time({
-Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #14.3min
+Monticola71_SOM_kmeansBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #17.7min
                                                      clustering.method = "kmeans+BICthreshold", 
                                                      save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_kmeansBICthreshold.Rdata"))
 })[3] / 60, 1)))
 Monticola71_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
 print(unname(round(system.time({
-Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #8.0min
+Monticola71_SOM_HDBSCAN <- clustering.SOM(Monticola71_SOM_tr, #7.6min
                                           clustering.method = "HDBSCAN",
                                           save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_HDBSCAN.Rdata"))
 })[3] / 60, 1)))
 Monticola71_SOM_HDBSCAN$optim_k_summary #k2 83%, k3 13%
 print(unname(round(system.time({
-Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #404.0min
+Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #222.0min
                                                  clustering.method = "hierarchical+DB",
                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_hierarchicalDB.Rdata"))
 })[3] / 60, 1)))
