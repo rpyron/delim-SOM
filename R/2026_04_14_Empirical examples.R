@@ -14,7 +14,7 @@ source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2
 
 ## Set directories
 #setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
-intermediate_files_folder <- "../Empirical_examples/Intermediate_files"
+intermediate_files_folder <- "Empirical_examples/Intermediate_files"
 
 
 
@@ -124,8 +124,9 @@ Monticola71_SOM_hierarchicalDB <- clustering.SOM(Monticola71_SOM_tr, #222.0min
 })[3] / 60, 1)))
 Monticola71_SOM_hierarchicalDB$optim_k_summary #k2 74%, k10 26%
 print(unname(round(system.time({
-Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr,
+Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #568.7min
                                                   clustering.method = "GMM+BICthreshold",
+                                                  essage.N.replicates = 1,
                                                   save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
 Monticola71_SOM_GMMBICthreshold$optim_k_summary #k3 53%, k2 46%
@@ -155,9 +156,9 @@ plot.map.SOM(SOM.output = Monticola71_SOM,
              Coordinates = Monticola71_spatial[, c("Latitude", "Longitude")],
              USA.add.counties = TRUE,
              scale.position = c(0.78, 0.05))
-plot.variable.importance.SOM(Monticola71_SOM, mode = "Cluster.separation")
-plot.variable.importance.SOM(Monticola71_SOM, mode = "Map.variance")
-plot.layer.importance.varimp.SOM(Monticola71_SOM, bottom.margin = 4, point.alpha = 0.2, point.cex = 0.4)
+plot.variable.importance.SOM(Monticola71_SOM, mode = "Cluster.separation", left.margin = 1.5)
+plot.variable.importance.SOM(Monticola71_SOM, mode = "Map.variance", left.margin = 1.5)
+plot.layer.importance.varimp.SOM(Monticola71_SOM, bottom.margin = 3.5
 plot.layer.importance.leaveoneout.SOM(Monticola71_SOM, 
                                       save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
