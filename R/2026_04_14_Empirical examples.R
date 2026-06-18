@@ -415,7 +415,7 @@ nrow(Aeneus_spatial) #number of samples: 56
 
 
 ## Create environmental dataset and binary watershed variables (other variables extracted and processed by separate R script based on coordinates)
-Aeneus_environmental <- read.csv("Empirical_examples/Pyron_et_al_2024/Aeneus_environmental.csv", row.names = 1, header = TRUE) #read CSV with rownames
+Aeneus_environmental <- read.csv("Empirical_examples/Pyron_et_al_2024/Aeneus56_environmental.csv", row.names = 1, header = TRUE) #read CSV with rownames
 Aeneus_environmental <- Aeneus_environmental[, !names(Aeneus_environmental) %in% c("Latitude", "Longitude", "Elevation")] #remove spatial variables
 Aeneus_environmental <- as.data.frame(lapply(Aeneus_environmental, as.numeric)) #ensure numeric
 rownames(Aeneus_environmental) <- Aeneus_data$Sample #assign rownames
