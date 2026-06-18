@@ -392,6 +392,7 @@ Aeneus_data <- read.csv(file = "Empirical_examples/Pyron_et_al_2024/aeneus56.csv
                         header = T, 
                         colClasses = c(huc2 = "character",
                                        huc4 = "character",
+                                       huc6 = "character",
                                        huc8 = "character",
                                        huc10 = "character",
                                        huc12 = "character"))
