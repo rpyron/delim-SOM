@@ -14,7 +14,7 @@ source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2
 
 ## Set directories
 #setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
-intermediate_files_folder <- "Empirical_examples/Intermediate_files"
+intermediate_files_folder <- "../Empirical_examples/Intermediate_files"
 
 
 
@@ -26,7 +26,7 @@ intermediate_files_folder <- "Empirical_examples/Intermediate_files"
 ## Updated environmental data
 
 ## Import sample data
-Monticola71_data <- read.csv(file = "Empirical_examples/Pyron_2023/monticola71.csv",
+Monticola71_data <- read.csv(file = "../Empirical_examples/Pyron_2023/monticola71.csv",
                              row.names = 1,
                              header = TRUE,
                              colClasses = c(huc2 = "character",
@@ -38,7 +38,7 @@ Monticola71_data <- read.csv(file = "Empirical_examples/Pyron_2023/monticola71.c
 
 
 ## Import and process genetic SNP data
-Monticola71_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Pyron_2023/Monticola71.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
+Monticola71_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_2023/Monticola71.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
                                         missing.loci.cutoff.lenient = 0.7,
                                         missing.loci.cutoff.final = 0.5,
                                         missing.individuals.cutoff = 0.6)
@@ -56,7 +56,7 @@ nrow(Monticola71_spatial) #number of samples: 71
 
 
 ## Create environmental dataset and binary watershed variables (other variables extracted and processed by separate R script based on coordinates)
-Monticola71_environmental <- read.csv("Empirical_examples/Pyron_2023/Monticola71_environmental.csv", header = TRUE) #read CSV
+Monticola71_environmental <- read.csv("../Empirical_examples/Pyron_2023/Monticola71_environmental.csv", header = TRUE) #read CSV
 rownames(Monticola71_environmental) <- Monticola71_environmental$Sample
 Monticola71_environmental <- Monticola71_environmental[, !names(Monticola71_environmental) %in% c("Sample", "ID")] #remove ID columns
 Monticola71_environmental <- Monticola71_environmental[, !names(Monticola71_environmental) %in% c("Latitude", "Longitude", "Elevation")] #remove spatial variables
@@ -208,7 +208,7 @@ Monticola71_SOM_cluster2$optim_k_summary #k1 100% support
 ## k2 example (Desmognathus valentinei and D. pascagoula sp. nov.)
 
 ## Read in sample data
-Pascagoula_data <- read.csv(file = "Empirical_examples/Pyron_et_al_2022/pascagoula22.csv",
+Pascagoula_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2022/pascagoula22.csv",
                             row.names = 1,
                             header = T, 
                             colClasses = c(huc2 = "character",
@@ -220,7 +220,7 @@ Pascagoula_data <- read.csv(file = "Empirical_examples/Pyron_et_al_2022/pascagou
 
 
 ## Import and process genetic SNP data
-Pascagoula_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Pyron_et_al_2022/pascagoula22.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
+Pascagoula_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_et_al_2022/pascagoula22.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
                                        missing.loci.cutoff.lenient = 0.7,
                                        missing.loci.cutoff.final = 0.5,
                                        missing.individuals.cutoff = 0.5)
@@ -237,7 +237,7 @@ nrow(Pascagoula_spatial) #number of samples: 22
 
 
 ## Create environmental dataset and binary watershed variables (other variables extracted and processed by separate R script based on coordinates)
-Pascagoula_environmental <- read.csv("Empirical_examples/Pyron_et_al_2022/Pascagoula22_environmental.csv", header = TRUE) #read CSV
+Pascagoula_environmental <- read.csv("../Empirical_examples/Pyron_et_al_2022/Pascagoula22_environmental.csv", header = TRUE) #read CSV
 rownames(Pascagoula_environmental) <- Pascagoula_environmental$Sample
 Pascagoula_environmental <- Pascagoula_environmental[, !names(Pascagoula_environmental) %in% c("Sample", "ID")] #remove ID columns
 Pascagoula_environmental <- Pascagoula_environmental[, !names(Pascagoula_environmental) %in% c("Latitude", "Longitude", "Elevation")] #remove spatial variables
@@ -387,7 +387,7 @@ Pascagoula_SOM_cluster2$optim_k_summary #k1 100%
 ## One species consisting of three structured lineages)
 
 ## Read in sample data
-Aeneus_data <- read.csv(file = "Empirical_examples/Pyron_et_al_2024/aeneus56.csv",
+Aeneus_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2024/aeneus56.csv",
                         row.names = 1,
                         header = T, 
                         colClasses = c(huc2 = "character",
@@ -399,7 +399,7 @@ Aeneus_data <- read.csv(file = "Empirical_examples/Pyron_et_al_2024/aeneus56.csv
 
 
 ## Import and process genetic SNP data
-Aeneus_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Pyron_et_al_2024/aeneus56.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
+Aeneus_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Pyron_et_al_2024/aeneus56.vcf.gz", #filter loci and individuals and create SNP matrix dataframe
                                    missing.loci.cutoff.lenient = 0.7,
                                    missing.loci.cutoff.final = 0.5,
                                    missing.individuals.cutoff = 0.5)
@@ -416,7 +416,7 @@ nrow(Aeneus_spatial) #number of samples: 56
 
 
 ## Create environmental dataset and binary watershed variables (other variables extracted and processed by separate R script based on coordinates)
-Aeneus_environmental <- read.csv("Empirical_examples/Pyron_et_al_2024/Aeneus56_environmental.csv", row.names = 1, header = TRUE) #read CSV with rownames
+Aeneus_environmental <- read.csv("../Empirical_examples/Pyron_et_al_2024/Aeneus56_environmental.csv", row.names = 1, header = TRUE) #read CSV with rownames
 Aeneus_environmental <- Aeneus_environmental[, !names(Aeneus_environmental) %in% c("Latitude", "Longitude", "Elevation")] #remove spatial variables
 Aeneus_environmental <- as.data.frame(lapply(Aeneus_environmental, as.numeric)) #ensure numeric
 rownames(Aeneus_environmental) <- Aeneus_data$Sample #assign rownames
@@ -552,8 +552,8 @@ plot.layer.importance.leaveoneout.SOM(Aeneus_SOM, #this will take 10-20min (runn
 ## 13 species strongly supported by all approaches (while six could represent either undescribed or nominal species that have been synonymised incorrectly)
 
 ## Import and process genetic data
-Pocillopora_vcf_file <- "Empirical_examples/Oury_et_al_2023/Pocillopora_361ADN_1559SNP.vcf" #VCF file path
-Pocillopora_gds_file <- "Empirical_examples/Oury_et_al_2023/Pocillopora.gds" #GDS file path
+Pocillopora_vcf_file <- "../Empirical_examples/Oury_et_al_2023/Pocillopora_361ADN_1559SNP.vcf" #VCF file path
+Pocillopora_gds_file <- "../Empirical_examples/Oury_et_al_2023/Pocillopora.gds" #GDS file path
 SeqArray::seqVCF2GDS(Pocillopora_vcf_file, Pocillopora_gds_file, storage.option = "LZ4_RA.max", verbose = FALSE) #convert VCF to GDS
 Pocillopora_gds <- SeqArray::seqOpen(Pocillopora_gds_file) #open GDS file
 Pocillopora_geno <- SeqArray::seqGetData(Pocillopora_gds, "genotype") #get genotype array
@@ -573,7 +573,7 @@ ncol(Pocillopora_SNP) #number of loci: 1559
 
 
 ## Import and process morphology dataset
-Pocillopora_morphology <- readr::read_delim(file = "Empirical_examples/Oury_et_al_2023/Micromorphometry_Pocillopora_170ind.csv", #import csv
+Pocillopora_morphology <- readr::read_delim(file = "../Empirical_examples/Oury_et_al_2023/Micromorphometry_Pocillopora_170ind.csv", #import csv
                                             delim = ";",
                                             quote = "\"",
                                             escape_double = TRUE,
@@ -621,7 +621,7 @@ nrow(Pocillopora_morphology) #number of samples: 175
 
 
 ## Import csv file with multiple traits and meta data
-Pocillopora_multiple_traits <- readr::read_delim(file = "Empirical_examples/Oury_et_al_2023/DB_Pocillopora_genomic_364ind.csv",
+Pocillopora_multiple_traits <- readr::read_delim(file = "../Empirical_examples/Oury_et_al_2023/DB_Pocillopora_genomic_364ind.csv",
                                                  delim = ";",
                                                  quote = "\"",
                                                  escape_double = TRUE,
@@ -946,7 +946,7 @@ plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3_updated, bottom.margin = 8.
 ## Categorical/binary and continuous morphological data (wing color, categorical color scores and morphotype)
 
 ## Import and process genetic SNP data
-Polygonia_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Dupuis_et_al_2018/Polygonia_961SNPs.vcf", #filter loci and individuals and create SNP matrix dataframe
+Polygonia_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Dupuis_et_al_2018/Polygonia_961SNPs.vcf", #filter loci and individuals and create SNP matrix dataframe
                                       missing.loci.cutoff.lenient = 0.7,
                                       missing.loci.cutoff.final = 0.5,
                                       missing.individuals.cutoff = 0.5)
@@ -956,7 +956,7 @@ nrow(Polygonia_SNP) #number of samples: 237
 
 
 ## Import and filter COI data
-Polygonia_COI <- process.SNP.data.SOM(nexus.path = "Empirical_examples/Dupuis_et_al_2018/Polygonia_COI.nex",
+Polygonia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Dupuis_et_al_2018/Polygonia_COI.nex",
                                       missing.loci.cutoff.lenient = 0.7, 
                                       missing.loci.cutoff.final = 0.5,
                                       missing.individuals.cutoff = 0.5)
@@ -968,13 +968,13 @@ nrow(Polygonia_COI) #number of samples: 255
 
 
 ## Import and process RGB values
-Polygonia_RGB <- read.delim("Empirical_examples/Dupuis_et_al_2018/Polygonia_RGB_characters.txt", stringsAsFactors = FALSE)
+Polygonia_RGB <- read.delim("../Empirical_examples/Dupuis_et_al_2018/Polygonia_RGB_characters.txt", stringsAsFactors = FALSE)
 rownames(Polygonia_RGB) <- Polygonia_RGB$Species
 Polygonia_RGB <- magrittr::`%>%`(Polygonia_RGB, dplyr::select(-Name, -Species)) #remove columns
 
 
 ## Import and process wing character scores
-Polygonia_wing_scores <- read.delim("Empirical_examples/Dupuis_et_al_2018/Polygonia_visually_scored.txt", stringsAsFactors = FALSE)
+Polygonia_wing_scores <- read.delim("../Empirical_examples/Dupuis_et_al_2018/Polygonia_visually_scored.txt", stringsAsFactors = FALSE)
 rownames(Polygonia_wing_scores) <- Polygonia_wing_scores$Name
 Polygonia_wing_scores <- Polygonia_wing_scores |>
   dplyr::select(-Name, -Species) |> #remove columns
@@ -996,7 +996,7 @@ Polygonia_wing_scores$Wing_character_8 <- NULL
 
 
 ## Import and process meta data with spatial data, species names and morphotype
-Polygonia_metadata <- read.csv("Empirical_examples/Dupuis_et_al_2018/Polygonia_metadata.csv",header = T, sep = ";")
+Polygonia_metadata <- read.csv("../Empirical_examples/Dupuis_et_al_2018/Polygonia_metadata.csv",header = T, sep = ";")
 rownames(Polygonia_metadata) <- Polygonia_metadata$ID
 nrow(Polygonia_metadata) #number of samples: 265
 
@@ -1044,7 +1044,7 @@ nrow(Polygonia_morphology_categorical) #number of samples: 217
 
 
 ## Import and process environmental dataset (variables extracted and processed by separate R script based on coordinates)
-Polygonia_environmental <- read.csv("Empirical_examples/Dupuis_et_al_2018/Polygonia_environmental.csv",
+Polygonia_environmental <- read.csv("../Empirical_examples/Dupuis_et_al_2018/Polygonia_environmental.csv",
                                     row.names = 1, header = TRUE)
 Polygonia_environmental <- dplyr::select(Polygonia_environmental, -Latitude, -Longitude, -Elevation)
 Polygonia_environmental_rownames <- rownames(Polygonia_environmental) #save rownames
@@ -1422,7 +1422,7 @@ Polygonia_pairwise_Fst$Fst_table
 
 
 ## Import and process genetic SNP data
-Viburnum_SNP <- process.SNP.data.SOM(vcf.path = "Empirical_examples/Spriggs_et_al_2018/nudum-c88-d6-min50.vcf.gz",
+Viburnum_SNP <- process.SNP.data.SOM(vcf.path = "../Empirical_examples/Spriggs_et_al_2018/nudum-c88-d6-min50.vcf.gz",
                                      missing.loci.cutoff.lenient = 0.7,
                                      missing.loci.cutoff.final = 0.5,
                                      missing.individuals.cutoff = 0.5)
@@ -1432,7 +1432,7 @@ nrow(Viburnum_SNP) #number of samples: 65
 
 
 ## Import and process morphological dataset
-Viburnum_morphology <- read.delim("Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
+Viburnum_morphology <- read.delim("../Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
 Viburnum_morphology <- Viburnum_morphology[!duplicated(Viburnum_morphology$Individual), ] #remove duplicate IDs
 rownames(Viburnum_morphology) <- Viburnum_morphology$Individual #add rownames
 Viburnum_morphology$Individual <- NULL
@@ -1476,7 +1476,7 @@ nrow(Viburnum_morphology) #number of samples: 145
 
 
 ## Import and process metadata
-Viburnum_metadata <- read.delim("Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
+Viburnum_metadata <- read.delim("../Empirical_examples/Spriggs_et_al_2018/morphological_trait_data2.txt", stringsAsFactors = FALSE)
 Viburnum_metadata <- Viburnum_metadata[!duplicated(Viburnum_metadata$Individual), ] #remove duplicate IDs
 rownames(Viburnum_metadata) <- Viburnum_metadata$Individual #add rownames
 Viburnum_metadata <- Viburnum_metadata[, c("State", "County"), drop = FALSE] #only keep State and County columns
@@ -1677,7 +1677,7 @@ library(dplyr)
 
 ## Import and process genetic SNP data
 Microcebus_SNP <- process.SNP.data.SOM(
-  vcf.path = "Empirical_examples/van_Elst_et_al_2024/allScaffolds.annot.SNP.minInd.DP.mac.GATKfilt-hard.maxmiss0.05.thinned.vcf.gz", #VCF file path
+  vcf.path = "../Empirical_examples/van_Elst_et_al_2024/allScaffolds.annot.SNP.minInd.DP.mac.GATKfilt-hard.maxmiss0.05.thinned.vcf.gz", #VCF file path
   missing.loci.cutoff.lenient = 0.7,
   missing.loci.cutoff.final = 0.5,
   missing.individuals.cutoff = 0.5)
@@ -1688,7 +1688,7 @@ nrow(Microcebus_SNP) #number of samples: 213
 
 
 ## Import and process multiple data dataset 2 containing range of data types
-Microcebus_multiple_data2 <- utils::read.csv("Empirical_examples/van_Elst_et_al_2024/01_Microcebus_morphological_data.csv", 
+Microcebus_multiple_data2 <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/01_Microcebus_morphological_data.csv", 
                                              stringsAsFactors = FALSE, header = T, sep = ";")
 Microcebus_multiple_data2 <- Microcebus_multiple_data2 %>% #only keep individuals that are Rad sequenced (have SNP data)
   dplyr::filter(RADSeq.available != "no" & !is.na(RADSeq.available))
@@ -1696,7 +1696,7 @@ rownames(Microcebus_multiple_data2) <- Microcebus_multiple_data2$Individual.ID
 
 
 ## Import and process multiple data dataset containing range of data types
-Microcebus_multiple_data <- utils::read.csv("Empirical_examples/van_Elst_et_al_2024/data.csv", 
+Microcebus_multiple_data <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/data.csv", 
                                             stringsAsFactors = FALSE, header = T, sep = ";")
 Microcebus_multiple_data <- Microcebus_multiple_data[!duplicated(Microcebus_multiple_data$Individual.ID), ] #remove duplicate IDs
 Microcebus_multiple_data <- Microcebus_multiple_data[!is.na(Microcebus_multiple_data$Individual.ID) & Microcebus_multiple_data$Individual.ID != "", ] # drop rows where Individual.ID is NA or empty-string
@@ -1992,7 +1992,7 @@ nrow(Microcebus_metadata) #number of samples: 73
 
 
 ## Import and process environmental dataset (variables extracted and processed by separate R script based on coordinates)
-Microcebus_environmental <- utils::read.csv("Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
+Microcebus_environmental <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
 Microcebus_environmental_rownames <- Microcebus_environmental$Individual.ID #save IDs for later
 Microcebus_environmental <- Microcebus_environmental %>% 
   dplyr::select(-Latitude, -Longitude, -Elevation, -Individual.ID)
@@ -2010,7 +2010,7 @@ nrow(Microcebus_environmental) #number of samples: 73
 Microcebus_spatial <- Microcebus_multiple_data_combined %>% 
   dplyr::select(latitude, longitude) %>% #add Latitude and Longitude
   dplyr::rename(Latitude = latitude, Longitude = longitude)
-Microcebus_environmental_spatial <- utils::read.csv("Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
+Microcebus_environmental_spatial <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/Microcebus_environmental.csv", row.names = 1, stringsAsFactors = FALSE)
 Microcebus_environmental_spatial <- Microcebus_environmental_spatial %>% dplyr::select(Elevation)
 Microcebus_spatial$Elevation <- Microcebus_environmental_spatial[rownames(Microcebus_spatial), "Elevation"]
 Microcebus_spatial$Elevation <- Microcebus_environmental_spatial[rownames(Microcebus_spatial), "Elevation"]
@@ -2231,7 +2231,7 @@ table(Microcebus_ancestry_SOM_cluster3$Species_revised)
 #### Elysia sea slugs from the Western Atlantic (Krug et al. 2026) #############
 
 ## Import and filter mitochondrial DNA data
-Elysia_COI <- process.SNP.data.SOM(nexus.path = "Empirical_examples/Krug_et_al_2026/Elysia_mtDNA_expanded.nex",
+Elysia_COI <- process.SNP.data.SOM(nexus.path = "../Empirical_examples/Krug_et_al_2026/Elysia_mtDNA_expanded.nex",
                                    missing.loci.cutoff.lenient = 0.7,
                                    missing.loci.cutoff.final = 0.5,
                                    missing.individuals.cutoff = 0.5)
@@ -2240,7 +2240,7 @@ nrow(Elysia_COI) #number of samples: 282
 
 
 ## Import meta data
-Elysia_metadata <- read.csv("Empirical_examples/Krug_et_al_2026/Elysia_metadata_updated.csv",
+Elysia_metadata <- read.csv("../Empirical_examples/Krug_et_al_2026/Elysia_metadata_updated.csv",
                             header = TRUE,
                             stringsAsFactors = FALSE,
                             check.names = FALSE)
@@ -2255,7 +2255,7 @@ nrow(Elysia_spatial) #number of samples: 282
 
 
 ## Import environmental data (obtained via geodata::bio_oracle)
-Elysia_environmental <- read.csv("Empirical_examples/Krug_et_al_2026/Elysia_environmental.csv",
+Elysia_environmental <- read.csv("../Empirical_examples/Krug_et_al_2026/Elysia_environmental.csv",
                                  header = TRUE,
                                  stringsAsFactors = FALSE,
                                  row.names = 1)
