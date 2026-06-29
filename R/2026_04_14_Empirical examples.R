@@ -126,7 +126,7 @@ Monticola71_SOM_hierarchicalDB$optim_k_summary #k2 74%, k10 26%
 print(unname(round(system.time({
 Monticola71_SOM_GMMBICthreshold <- clustering.SOM(Monticola71_SOM_tr, #568.7min
                                                   clustering.method = "GMM+BICthreshold",
-                                                  essage.N.replicates = 1,
+                                                  message.N.replicates = 1,
                                                   save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
 Monticola71_SOM_GMMBICthreshold$optim_k_summary #k3 53%, k2 46%
@@ -158,8 +158,9 @@ plot.map.SOM(SOM.output = Monticola71_SOM,
              scale.position = c(0.78, 0.05))
 plot.variable.importance.SOM(Monticola71_SOM, mode = "Cluster.separation", left.margin = 1.5)
 plot.variable.importance.SOM(Monticola71_SOM, mode = "Map.variance", left.margin = 1.5)
-plot.layer.importance.varimp.SOM(Monticola71_SOM, bottom.margin = 3.5
+plot.layer.importance.varimp.SOM(Monticola71_SOM, bottom.margin = 3.5)
 plot.layer.importance.leaveoneout.SOM(Monticola71_SOM, 
+                                      bottom.margin = 6.5,
                                       save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
@@ -416,7 +417,7 @@ Aeneus_environmental <- (NicheDiv::transform.skewed.variables(Aeneus_environment
 Aeneus_environmental <- remove.lowCV.multicollinearity.SOM(Aeneus_environmental, #remove highly correlated and low-variance variables
                                                            CV.threshold = 0.05,
                                                            cor.threshold = 0.9)
-ncol(Aeneus_environmental) #number of variables: 48
+ncol(Aeneus_environmental) #number of variables: 53
 nrow(Aeneus_environmental) #number of samples: 56
 ncol(Aeneus_watershed) #number of variables: 98
 nrow(Aeneus_watershed) #number of samples: 56
@@ -451,45 +452,45 @@ Aeneus_SOM_data <- list(Alleles = Aeneus_SNP,
                         Watershed = Aeneus_watershed,
                         Morphology = Aeneus_morphology)
 print(unname(round(system.time({
-Aeneus_SOM_tr <- train.SOM(input_data = Aeneus_SOM_data, #40 samples
-                           save.SOM.results = T,
+Aeneus_SOM_tr <- train.SOM(input_data = Aeneus_SOM_data, #40 samples, 2.8min
+                           save.SOM.results = TRUE,
                            save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_tr.Rdata"),
                            max.NA.row = 0.5,
                            max.NA.col = 0.5)
 })[3] / 60, 1)))
 
 print(unname(round(system.time({
-Aeneus_SOM_kmeansBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #takes ca 3min!
+Aeneus_SOM_kmeansBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #
                                                 clustering.method = "kmeans+BICthreshold",
                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_kmeansBICthreshold.Rdata"))
 })[3] / 60, 1)))
 Aeneus_SOM_kmeansBICthreshold$optim_k_summary #k1 100%
 print(unname(round(system.time({
-Aeneus_SOM_HDBSCAN <- clustering.SOM(Aeneus_SOM_tr, #takes ca 5min!
+Aeneus_SOM_HDBSCAN <- clustering.SOM(Aeneus_SOM_tr, #
                                      clustering.method = "HDBSCAN",
                                      save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_HDBSCAN.Rdata"))
 })[3] / 60, 1)))
 Aeneus_SOM_HDBSCAN$optim_k_summary #k2 68%, k1 16%, k3 15%
 print(unname(round(system.time({
-Aeneus_SOM_hierarchicalDB <- clustering.SOM(Aeneus_SOM_tr, #takes ca 25min!
+Aeneus_SOM_hierarchicalDB <- clustering.SOM(Aeneus_SOM_tr, #
                                             clustering.method = "hierarchical+DB",
                                             save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_hierarchicalDB.Rdata"))
 })[3] / 60, 1)))
 Aeneus_SOM_hierarchicalDB$optim_k_summary #k10 95%, k9 4%
 print(unname(round(system.time({
-Aeneus_SOM_GMMBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #ca. 15min
+Aeneus_SOM_GMMBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #
                                              clustering.method = "GMM+BICthreshold",
                                              save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
 Aeneus_SOM_GMMBICthreshold$optim_k_summary #k3 37%, k2 32%, k4 17%, k5 7%, k6 5%
 print(unname(round(system.time({
-Aeneus_SOM_OPTICSSilhouette <- clustering.SOM(Aeneus_SOM_tr, #ca 5min
+Aeneus_SOM_OPTICSSilhouette <- clustering.SOM(Aeneus_SOM_tr, #
                                               clustering.method = "OPTICS+Silhouette",
                                               save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_OPTICSSilhouette.Rdata"))
 })[3] / 60, 1)))
 Aeneus_SOM_OPTICSSilhouette$optim_k_summary #k1 86%, k2 14%
 print(unname(round(system.time({
-Aeneus_SOM_kmeansBICelbow <- clustering.SOM(Aeneus_SOM_tr, #ca 3min
+Aeneus_SOM_kmeansBICelbow <- clustering.SOM(Aeneus_SOM_tr, #
                                             clustering.method = "kmeans+BICelbow",
                                             save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_kmeansBICelbow.Rdata"))
 })[3] / 60, 1)))
