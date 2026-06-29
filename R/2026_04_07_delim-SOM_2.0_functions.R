@@ -9580,9 +9580,37 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   axis_labels_relative_font_size <- (axis.labels.font.size * svg_scaling_factor) / base_font_size
   axis_ticks_relative_font_size <- (axis.ticks.font.size * svg_scaling_factor) / base_font_size
   
-  # Determine whether assignment margin change can be shown
+    # Determine whether assignment margin change can be shown
   show.assignment.margin.plot <- any(is.finite(successful_replicate_matched_results_table$delta.mean.assignment.margin) & !is.na(successful_replicate_matched_results_table$delta.mean.assignment.margin))
   
+  # Message why assignment-margin points are missing for layers with no finite values
+  assignment_margin_missing_layer_names <- SOM_layer_names[sapply(SOM_layer_names, function(current_layer_name) {
+    current_layer_results_table <- successful_replicate_matched_results_table[successful_replicate_matched_results_table$layer == current_layer_name, , drop = FALSE]
+    if (nrow(current_layer_results_table) == 0) return(FALSE)
+    current_delta_values <- current_layer_results_table$delta.mean.assignment.margin
+    return(!any(is.finite(current_delta_values) & !is.na(current_delta_values)))
+  })]
+  if (length(assignment_margin_missing_layer_names) > 0) {
+    for (current_layer_name in assignment_margin_missing_layer_names) {
+      current_layer_results_table <- successful_replicate_matched_results_table[successful_replicate_matched_results_table$layer == current_layer_name, , drop = FALSE]
+      N.successful.current.layer <- nrow(current_layer_results_table)
+      N.leave.one.layer.out.k.less.than.two <- sum(is.finite(current_layer_results_table$leave.one.layer.out.modal.k) & current_layer_results_table$leave.one.layer.out.modal.k < 2)
+      N.baseline.k.less.than.two <- sum(is.finite(current_layer_results_table$baseline.modal.k) & current_layer_results_table$baseline.modal.k < 2)
+      N.missing.baseline.assignment.margin <- sum(!is.finite(current_layer_results_table$baseline.mean.assignment.margin) | is.na(current_layer_results_table$baseline.mean.assignment.margin))
+      N.missing.leave.one.layer.out.assignment.margin <- sum(!is.finite(current_layer_results_table$leave.one.layer.out.mean.assignment.margin) | is.na(current_layer_results_table$leave.one.layer.out.mean.assignment.margin))
+      if (N.leave.one.layer.out.k.less.than.two > 0) {
+        assignment.margin.missing.reason <- paste0("leave-one-layer-out K < 2 in ", N.leave.one.layer.out.k.less.than.two, " of ", N.successful.current.layer, " successful replicates; assignment margin requires K >= 2, and no finite assignment-margin changes remained for this layer")
+      } else if (N.baseline.k.less.than.two > 0) {
+        assignment.margin.missing.reason <- paste0("baseline K < 2 in ", N.baseline.k.less.than.two, " of ", N.successful.current.layer, " successful replicates; assignment margin requires K >= 2, and no finite assignment-margin changes remained for this layer")
+      } else if (N.missing.baseline.assignment.margin == N.successful.current.layer || N.missing.leave.one.layer.out.assignment.margin == N.successful.current.layer) {
+        assignment.margin.missing.reason <- "comparable replicate-specific soft assignment probabilities were unavailable for all successful replicates"
+      } else {
+        assignment.margin.missing.reason <- "all assignment-margin changes were NA or non-finite"
+      }
+      messager("Assignment margin points omitted for layer '", current_layer_name, "' because ", assignment.margin.missing.reason, ".")
+    }
+  }
+												   
   # Set fixed internal panel margins
   half_between_plot_margin <- 1.5 / 2
   inner_bottom_margin <- 0
