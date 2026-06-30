@@ -460,37 +460,37 @@ Aeneus_SOM_tr <- train.SOM(input_data = Aeneus_SOM_data, #40 samples, 2.8min
 })[3] / 60, 1)))
 
 print(unname(round(system.time({
-Aeneus_SOM_kmeansBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #
+Aeneus_SOM_kmeansBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #4.2min
                                                 clustering.method = "kmeans+BICthreshold",
                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_kmeansBICthreshold.Rdata"))
 })[3] / 60, 1)))
 Aeneus_SOM_kmeansBICthreshold$optim_k_summary #k1 100%
 print(unname(round(system.time({
-Aeneus_SOM_HDBSCAN <- clustering.SOM(Aeneus_SOM_tr, #
+Aeneus_SOM_HDBSCAN <- clustering.SOM(Aeneus_SOM_tr, #3.3min
                                      clustering.method = "HDBSCAN",
                                      save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_HDBSCAN.Rdata"))
 })[3] / 60, 1)))
-Aeneus_SOM_HDBSCAN$optim_k_summary #k2 68%, k1 16%, k3 15%
+Aeneus_SOM_HDBSCAN$optim_k_summary #k2 64%, k1 23%, k3 13%
 print(unname(round(system.time({
-Aeneus_SOM_hierarchicalDB <- clustering.SOM(Aeneus_SOM_tr, #
+Aeneus_SOM_hierarchicalDB <- clustering.SOM(Aeneus_SOM_tr, #68.7min
                                             clustering.method = "hierarchical+DB",
                                             save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_hierarchicalDB.Rdata"))
 })[3] / 60, 1)))
-Aeneus_SOM_hierarchicalDB$optim_k_summary #k10 95%, k9 4%
+Aeneus_SOM_hierarchicalDB$optim_k_summary #k10 91%, k9 9%
 print(unname(round(system.time({
-Aeneus_SOM_GMMBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #
+Aeneus_SOM_GMMBICthreshold <- clustering.SOM(Aeneus_SOM_tr, #208.6min
                                              clustering.method = "GMM+BICthreshold",
                                              save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Aeneus_SOM_GMMBICthreshold$optim_k_summary #k3 37%, k2 32%, k4 17%, k5 7%, k6 5%
+Aeneus_SOM_GMMBICthreshold$optim_k_summary #k2 47%, k3 42%, k4 8%
 print(unname(round(system.time({
-Aeneus_SOM_OPTICSSilhouette <- clustering.SOM(Aeneus_SOM_tr, #
+Aeneus_SOM_OPTICSSilhouette <- clustering.SOM(Aeneus_SOM_tr, #1.6min
                                               clustering.method = "OPTICS+Silhouette",
                                               save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_OPTICSSilhouette.Rdata"))
 })[3] / 60, 1)))
-Aeneus_SOM_OPTICSSilhouette$optim_k_summary #k1 86%, k2 14%
+Aeneus_SOM_OPTICSSilhouette$optim_k_summary #k1 93%, k2 7%
 print(unname(round(system.time({
-Aeneus_SOM_kmeansBICelbow <- clustering.SOM(Aeneus_SOM_tr, #
+Aeneus_SOM_kmeansBICelbow <- clustering.SOM(Aeneus_SOM_tr, #3.9min
                                             clustering.method = "kmeans+BICelbow",
                                             save.SOM.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_kmeansBICelbow.Rdata"))
 })[3] / 60, 1)))
@@ -504,8 +504,6 @@ plot.layer.distance.scale.SOM(Aeneus_SOM)
 plot.K.SOM(Aeneus_SOM)
 plot.model.SOM(Aeneus_SOM, replicate.mode = "first")
 plot.model.SOM(Aeneus_SOM, replicate.mode = "representative")
-plot.model.SOM(Aeneus_SOM, replicate.mode = "representative", set.k = 2)
-plot.structure.SOM(Aeneus_SOM, Individual.labels.font.size = 0.8)
 plot.map.SOM(Aeneus_SOM,
              Coordinates = Aeneus_spatial[, c("Latitude", "Longitude")],
              USA.add.counties = T,
