@@ -204,7 +204,7 @@ Monticola71_SOM_cluster2$optim_k_summary #k1 100% support
 ## Read in sample data
 Pascagoula_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2022/pascagoula22.csv",
                             row.names = 1,
-                            header = T, 
+                            header = TRUE, 
                             colClasses = c(huc2 = "character",
                                            huc4 = "character",
                                            huc6 = "character",
@@ -378,7 +378,7 @@ Pascagoula_SOM_cluster2$optim_k_summary #k1 100%
 ## Read in sample data
 Aeneus_data <- read.csv(file = "../Empirical_examples/Pyron_et_al_2024/aeneus56.csv",
                         row.names = 1,
-                        header = T, 
+                        header = TRUE, 
                         colClasses = c(huc2 = "character",
                                        huc4 = "character",
                                        huc6 = "character",
@@ -506,7 +506,7 @@ plot.model.SOM(Aeneus_SOM, replicate.mode = "first")
 plot.model.SOM(Aeneus_SOM, replicate.mode = "representative")
 plot.map.SOM(Aeneus_SOM,
              Coordinates = Aeneus_spatial[, c("Latitude", "Longitude")],
-             USA.add.counties = T,
+             USA.add.counties = TRUE,
              north.arrow.position = c(0.05, 0.9),
              north.arrow.length = 0.4,
              north.arrow.N.position = 0.15,
@@ -521,7 +521,8 @@ plot.variable.importance.SOM(Aeneus_SOM,
                              bar.label.font.size = 0.4)
 plot.layer.importance.varimp.SOM(Aeneus_SOM, bottom.margin = 6)
 plot.layer.importance.leaveoneout.SOM(Aeneus_SOM, #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
+                                      bottom.margin = 6.5,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Aeneus_SOM_lolo.Rdata"))
 
 
@@ -743,7 +744,7 @@ print(unname(round(system.time({
 Pocillopora_SOM_tr <- train.SOM(input_data = Pocillopora_SOM_data, #76 samples
                                 max.NA.row = 0.5,
                                 max.NA.col = 0.5,
-                                save.SOM.results = T,
+                                save.SOM.results = TRUE,
                                 save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_tr.Rdata"))
 })[3] / 60, 1)))
 
@@ -811,7 +812,7 @@ plot.variable.importance.SOM(Pocillopora_SOM, left.margin = 9.5)
 plot.layer.importance.varimp.SOM(Pocillopora_SOM)
 plot.layer.importance.leaveoneout.SOM(Pocillopora_SOM, 
                                       bottom.margin = 9,
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_lolo.Rdata"))
 
 
@@ -983,7 +984,7 @@ Polygonia_wing_scores$Wing_character_8 <- NULL
 
 
 ## Import and process meta data with spatial data, species names and morphotype
-Polygonia_metadata <- read.csv("../Empirical_examples/Dupuis_et_al_2018/Polygonia_metadata.csv",header = T, sep = ";")
+Polygonia_metadata <- read.csv("../Empirical_examples/Dupuis_et_al_2018/Polygonia_metadata.csv", header = TRUE, sep = ";")
 rownames(Polygonia_metadata) <- Polygonia_metadata$ID
 nrow(Polygonia_metadata) #number of samples: 265
 
@@ -1168,7 +1169,7 @@ plot.structure.SOM(Polygonia_SOM, Individual.labels.font.size = 0.25)
 plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 6.5)
 plot.layer.importance.leaveoneout.SOM(Polygonia_SOM, 
                                       bottom.margin = 9,
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Poligonia_SOM_lolo.Rdata"))
 
 
@@ -1273,7 +1274,7 @@ plot.variable.importance.SOM(Polygonia_SOM_cluster3,
                              bar.label.font.size = 0.4)
 plot.layer.importance.varimp.SOM(Polygonia_SOM_cluster3, bottom.margin = 6)
 plot.layer.importance.leaveoneout.SOM(Polygonia_SOM_cluster3, 
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_cluster3_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Polygonia_ancestry_SOM_cluster3 <- as.data.frame(Polygonia_SOM_cluster3$ancestry_matrix)
@@ -1567,7 +1568,7 @@ plot.variable.importance.SOM(Viburnum_SOM,mode = "Map.variance",
 plot.structure.SOM(Viburnum_SOM, Individual.labels.font.size = 0.8)
 plot.layer.importance.leaveoneout.SOM(Viburnum_SOM, 
                                       bottom.margin = 6.5,
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_lolo.Rdata"))
 plot.layer.importance.varimp.SOM(Viburnum_SOM, bottom.margin = 5.5)
 
@@ -1676,7 +1677,7 @@ nrow(Microcebus_SNP) #number of samples: 213
 
 ## Import and process multiple data dataset 2 containing range of data types
 Microcebus_multiple_data2 <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/01_Microcebus_morphological_data.csv", 
-                                             stringsAsFactors = FALSE, header = T, sep = ";")
+                                             stringsAsFactors = FALSE, header = TRUE, sep = ";")
 Microcebus_multiple_data2 <- Microcebus_multiple_data2 %>% #only keep individuals that are Rad sequenced (have SNP data)
   dplyr::filter(RADSeq.available != "no" & !is.na(RADSeq.available))
 rownames(Microcebus_multiple_data2) <- Microcebus_multiple_data2$Individual.ID
@@ -1684,7 +1685,7 @@ rownames(Microcebus_multiple_data2) <- Microcebus_multiple_data2$Individual.ID
 
 ## Import and process multiple data dataset containing range of data types
 Microcebus_multiple_data <- utils::read.csv("../Empirical_examples/van_Elst_et_al_2024/data.csv", 
-                                            stringsAsFactors = FALSE, header = T, sep = ";")
+                                            stringsAsFactors = FALSE, header = TRUE, sep = ";")
 Microcebus_multiple_data <- Microcebus_multiple_data[!duplicated(Microcebus_multiple_data$Individual.ID), ] #remove duplicate IDs
 Microcebus_multiple_data <- Microcebus_multiple_data[!is.na(Microcebus_multiple_data$Individual.ID) & Microcebus_multiple_data$Individual.ID != "", ] # drop rows where Individual.ID is NA or empty-string
 rownames(Microcebus_multiple_data) <- Microcebus_multiple_data$Individual.ID
@@ -2095,7 +2096,7 @@ plot.layer.distance.scale.SOM(Microcebus_SOM)
 plot.layer.importance.varimp.SOM(Microcebus_SOM, bottom.margin = 6.5)
 plot.layer.importance.leaveoneout.SOM(Microcebus_SOM, 
                                       bottom.margin = 6.5,
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_lolo.Rdata"))
 
 
@@ -2201,7 +2202,7 @@ plot.variable.importance.SOM(Microcebus_SOM_cluster3,
                              bar.label.font.size = 0.4)
 plot.layer.importance.varimp.SOM(Microcebus_SOM_cluster3, bottom.margin = 6)
 plot.layer.importance.leaveoneout.SOM(Microcebus_SOM_cluster3, 
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_cluster3_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Microcebus_ancestry_SOM_cluster3 <- as.data.frame(Microcebus_SOM_cluster3$ancestry_matrix)
@@ -2389,7 +2390,7 @@ plot.map.SOM(SOM.output = Elysia_SOM,
 Elysia_SOM$clustering.SOM.args
 plot.layer.importance.leaveoneout.SOM(Elysia_SOM, 
                                       bottom.margin = 6.5,
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Elysia_SOM_SOM_lolo.Rdata"))
 plot.layer.importance.varimp.SOM(Elysia_SOM, bottom.margin = 7.5)
 
@@ -2506,7 +2507,7 @@ plot.variable.importance.SOM(Elysia_SOM_cluster1,
                              bar.label.font.size = 0.6)
 plot.layer.importance.varimp.SOM(Elysia_SOM_cluster1, bottom.margin = 8)
 plot.layer.importance.leaveoneout.SOM(Elysia_SOM_cluster1, 
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Elysia_SOM_cluster1_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Elysia_ancestry_SOM_cluster1 <- as.data.frame(Elysia_SOM_cluster1$ancestry_matrix)
@@ -2547,7 +2548,7 @@ plot.variable.importance.SOM(Elysia_SOM_cluster2,
                              bar.label.font.size = 0.6)
 plot.layer.importance.varimp.SOM(Elysia_SOM_cluster2, bottom.margin = 8)
 plot.layer.importance.leaveoneout.SOM(Elysia_SOM_cluster2, 
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Elysia_SOM_cluster2_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Elysia_ancestry_SOM_cluster2 <- as.data.frame(Elysia_SOM_cluster2$ancestry_matrix)
@@ -2593,7 +2594,7 @@ plot.variable.importance.SOM(Elysia_SOM_cluster4_k2,
                              bar.label.font.size = 0.6)
 plot.layer.importance.varimp.SOM(Elysia_SOM_cluster4_k2, bottom.margin = 8)
 plot.layer.importance.leaveoneout.SOM(Elysia_SOM_cluster4_k2, 
-                                      save.leave.one.layer.out.results = T,
+                                      save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Elysia_SOM_cluster4_k2_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
 Elysia_ancestry_SOM_cluster4 <- as.data.frame(Elysia_SOM_cluster4_k2$ancestry_matrix)
