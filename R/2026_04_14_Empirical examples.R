@@ -645,7 +645,7 @@ ncol(Pocillopora_microsatellites) #number of variables: 26
 nrow(Pocillopora_microsatellites) #number of samples: 367
 
 
-##Extract and process haplotype markers (ORF and PocHistone) for symbiosis as binary
+## Extract and process haplotype markers (ORF and PocHistone) for symbiosis as binary
 Pocillopora_symbiosis_haplotypes <- Pocillopora_multiple_traits #copy original
 Pocillopora_symbiosis_haplotypes <- dplyr::mutate(Pocillopora_symbiosis_haplotypes, dplyr::across(c(ORF, PocHistone), function(marker_values) dplyr::na_if(marker_values, "-"))) #replace "-" with NA
 Pocillopora_symbiosis_haplotypes <- dplyr::mutate(Pocillopora_symbiosis_haplotypes, dplyr::across(c(ORF, PocHistone), function(marker_values) dplyr::na_if(marker_values, "?"))) #replace "?" with NA
@@ -741,7 +741,7 @@ Pocillopora_SOM_data <- list(SNP = Pocillopora_SNP,
                              Biogeography = Pocillopora_biogeography,
                              Symbiosis_haplotypes = Pocillopora_symbiosis_haplotypes)
 print(unname(round(system.time({
-Pocillopora_SOM_tr <- train.SOM(input_data = Pocillopora_SOM_data, #76 samples
+Pocillopora_SOM_tr <- train.SOM(input_data = Pocillopora_SOM_data, #80 samples
                                 max.NA.row = 0.5,
                                 max.NA.col = 0.5,
                                 save.SOM.results = TRUE,
@@ -749,42 +749,42 @@ Pocillopora_SOM_tr <- train.SOM(input_data = Pocillopora_SOM_data, #76 samples
 })[3] / 60, 1)))
 
 print(unname(round(system.time({
-Pocillopora_SOM_kmeansBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, #ca 12min
+Pocillopora_SOM_kmeansBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, #
                                                      max.k = 35,
                                                      clustering.method = "kmeans+BICthreshold",
                                                      save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_kmeansBICthreshold.Rdata"))
 })[3] / 60, 1)))
 Pocillopora_SOM_kmeansBICthreshold$optim_k_summary #k3 88%, k4 7%
 print(unname(round(system.time({
-Pocillopora_SOM_HDBSCAN <- clustering.SOM(Pocillopora_SOM_tr, #ca 13 min
+Pocillopora_SOM_HDBSCAN <- clustering.SOM(Pocillopora_SOM_tr, #
                                           max.k = 35,
                                           clustering.method = "HDBSCAN",
                                           save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_HDBSCAN.Rdata"))
 })[3] / 60, 1)))
 Pocillopora_SOM_HDBSCAN$optim_k_summary #k2 35%, k3 27%, k4 15%, k5 13%, k6 9%
 print(unname(round(system.time({
-Pocillopora_SOM_kmeansBICelbow <- clustering.SOM(Pocillopora_SOM_tr, #ca. 20min
+Pocillopora_SOM_kmeansBICelbow <- clustering.SOM(Pocillopora_SOM_tr, #
                                                  max.k = 35,
                                                  clustering.method = "kmeans+BICelbow",
                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_kmeansBICelbow.Rdata"))
 })[3] / 60, 1)))
 Pocillopora_SOM_kmeansBICelbow$optim_k_summary #k3 51%, k35 31%, k34 7%
 print(unname(round(system.time({
-Pocillopora_SOM_OPTICSSilhouette <- clustering.SOM(Pocillopora_SOM_tr, # ca. 52min
+Pocillopora_SOM_OPTICSSilhouette <- clustering.SOM(Pocillopora_SOM_tr, #
                                                    max.k = 35,
                                                    clustering.method = "OPTICS+Silhouette",
                                                    save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_OPTICSSilhouette.Rdata"))
 })[3] / 60, 1)))
 Pocillopora_SOM_OPTICSSilhouette$optim_k_summary #k2 50%, k1 32%, k3 18%
 print(unname(round(system.time({
-Pocillopora_SOM_GMMBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, # ca. 15min
+Pocillopora_SOM_GMMBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, #
                                                   max.k = 35,
                                                   clustering.method = "GMM+BICthreshold",
                                                   save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
 Pocillopora_SOM_GMMBICthreshold$optim_k_summary #k9 17%, k10 16%, k8 13%, k11 10%, k7 9%, k2 7%, k6 7% etc
 print(unname(round(system.time({
-Pocillopora_SOM_hierarchicalDB <- clustering.SOM(Pocillopora_SOM_tr, # ca. 25min
+Pocillopora_SOM_hierarchicalDB <- clustering.SOM(Pocillopora_SOM_tr, #
                                                  max.k = 35,
                                                  clustering.method = "hierarchical+DB",
                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_hierarchicalDB.Rdata"))
