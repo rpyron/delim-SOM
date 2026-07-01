@@ -749,47 +749,47 @@ Pocillopora_SOM_tr <- train.SOM(input_data = Pocillopora_SOM_data, #80 samples
 })[3] / 60, 1)))
 
 print(unname(round(system.time({
-Pocillopora_SOM_kmeansBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, #
+Pocillopora_SOM_kmeansBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, #6.5min
                                                      max.k = 35,
                                                      clustering.method = "kmeans+BICthreshold",
                                                      save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_kmeansBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Pocillopora_SOM_kmeansBICthreshold$optim_k_summary #k3 88%, k4 7%
+Pocillopora_SOM_kmeansBICthreshold$optim_k_summary #k3 87%, k4 13%
 print(unname(round(system.time({
-Pocillopora_SOM_HDBSCAN <- clustering.SOM(Pocillopora_SOM_tr, #
+Pocillopora_SOM_HDBSCAN <- clustering.SOM(Pocillopora_SOM_tr, #2.0min
                                           max.k = 35,
                                           clustering.method = "HDBSCAN",
                                           save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_HDBSCAN.Rdata"))
 })[3] / 60, 1)))
-Pocillopora_SOM_HDBSCAN$optim_k_summary #k2 35%, k3 27%, k4 15%, k5 13%, k6 9%
+Pocillopora_SOM_HDBSCAN$optim_k_summary #k2 43%, k3 22%, k5 12%, k4 11%, k6 6%
 print(unname(round(system.time({
-Pocillopora_SOM_kmeansBICelbow <- clustering.SOM(Pocillopora_SOM_tr, #
+Pocillopora_SOM_kmeansBICelbow <- clustering.SOM(Pocillopora_SOM_tr, #6.5min
                                                  max.k = 35,
                                                  clustering.method = "kmeans+BICelbow",
                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_kmeansBICelbow.Rdata"))
 })[3] / 60, 1)))
-Pocillopora_SOM_kmeansBICelbow$optim_k_summary #k3 51%, k35 31%, k34 7%
+Pocillopora_SOM_kmeansBICelbow$optim_k_summary #k3 78%, k4 14%
 print(unname(round(system.time({
-Pocillopora_SOM_OPTICSSilhouette <- clustering.SOM(Pocillopora_SOM_tr, #
+Pocillopora_SOM_OPTICSSilhouette <- clustering.SOM(Pocillopora_SOM_tr, #1.6min
                                                    max.k = 35,
                                                    clustering.method = "OPTICS+Silhouette",
                                                    save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_OPTICSSilhouette.Rdata"))
 })[3] / 60, 1)))
-Pocillopora_SOM_OPTICSSilhouette$optim_k_summary #k2 50%, k1 32%, k3 18%
+Pocillopora_SOM_OPTICSSilhouette$optim_k_summary #k2 50%, k1 26%, k3 16%, k4 7%
 print(unname(round(system.time({
-Pocillopora_SOM_GMMBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, #
+Pocillopora_SOM_GMMBICthreshold <- clustering.SOM(Pocillopora_SOM_tr, #76.6min
                                                   max.k = 35,
                                                   clustering.method = "GMM+BICthreshold",
                                                   save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Pocillopora_SOM_GMMBICthreshold$optim_k_summary #k9 17%, k10 16%, k8 13%, k11 10%, k7 9%, k2 7%, k6 7% etc
+Pocillopora_SOM_GMMBICthreshold$optim_k_summary #k3 37%, k4 12%, k11 8%, k2 7%, k9 6%, k13 5%, k8 5%
 print(unname(round(system.time({
-Pocillopora_SOM_hierarchicalDB <- clustering.SOM(Pocillopora_SOM_tr, #
+Pocillopora_SOM_hierarchicalDB <- clustering.SOM(Pocillopora_SOM_tr, #22.7min
                                                  max.k = 35,
                                                  clustering.method = "hierarchical+DB",
                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_hierarchicalDB.Rdata"))
 })[3] / 60, 1)))
-Pocillopora_SOM_hierarchicalDB$optim_k_summary #k35 99%
+Pocillopora_SOM_hierarchicalDB$optim_k_summary #k35 95%
 
 
 
@@ -802,14 +802,13 @@ plot.model.SOM(Pocillopora_SOM, replicate.mode = "first")
 plot.model.SOM(Pocillopora_SOM, replicate.mode = "representative")
 plot.model.SOM(Pocillopora_SOM, replicate.mode = "representative", set.k = 3)
 plot.model.SOM(Pocillopora_SOM, replicate.mode = "representative", set.k = 35)
-plot.structure.SOM(Pocillopora_SOM, Individual.labels.font.size = 0.7)
-print(unname(round(system.time({
-Pocillopora_SOM_kmeansBICelbow_k3 <- clustering.SOM(Pocillopora_SOM, set.k = 3,
-                                                    clustering.method = "kmeans+BICelbow")
-})[3] / 60, 1)))
-plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3, Individual.labels.font.size = 0.7)
-plot.variable.importance.SOM(Pocillopora_SOM, left.margin = 9.5)
-plot.layer.importance.varimp.SOM(Pocillopora_SOM)
+plot.structure.SOM(Pocillopora_SOM)
+Pocillopora_SOM_kmeansBICelbow_k3 <- clustering.SOM(Pocillopora_SOM, 
+                                                    set.k = 3,
+                                                      clustering.method = "kmeans+BICelbow")
+plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3)
+plot.variable.importance.SOM(Pocillopora_SOM, left.margin = 7.5)
+plot.layer.importance.varimp.SOM(Pocillopora_SOM, bottom.margin = 6)
 plot.layer.importance.leaveoneout.SOM(Pocillopora_SOM, 
                                       bottom.margin = 9,
                                       save.leave.one.layer.out.results = TRUE,
@@ -1176,7 +1175,7 @@ plot.layer.importance.leaveoneout.SOM(Polygonia_SOM,
 ## Evaluate variable importance
 plot.variable.importance.SOM(Polygonia_SOM, mode = "Cluster.separation")
 plot.variable.importance.SOM(Polygonia_SOM, mode = "Map.variance")
-sort(roundPolygonia_SOM$median_etasquared_variable_importance[[1]], decreasing = T)
+sort(round(Polygonia_SOM$median_etasquared_variable_importance[[1]], decreasing = TRUE)
 head(round(sort(Polygonia_SOM$median_etasquared_variable_importance[[1]], decreasing = T), 2), 10)
 head(round(sort(Polygonia_SOM$median_etasquared_variable_importance[[2]], decreasing = T), 2), 20)
 head(round(sort(Polygonia_SOM$median_etasquared_variable_importance[[3]], decreasing = T), 2), 500)
