@@ -1013,7 +1013,6 @@ Polygonia_morphology <- merge(Polygonia_RGB_wing_scores,
                               all = FALSE)
 rownames(Polygonia_morphology) <- Polygonia_morphology$Row.names
 Polygonia_morphology$Row.names <- NULL
-Polygonia_morphology$Morphotype
 Polygonia_morphology <- make.cols.binary.SOM(Polygonia_morphology, #convert Morphotype to binary columns and remove original
                                              make.binary.cols = "Morphotype",
                                              append.to.original = TRUE)
@@ -1098,7 +1097,7 @@ Polygonia_all_data <- list(Morphology = Polygonia_morphology,
                            Environmental = Polygonia_environmental,
                            Spatial = Polygonia_spatial)
 print(unname(round(system.time({
-Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data, #200 samples
+Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data, #200 samples, 4.1min
                               save.SOM.results = TRUE,
                               save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_tr.Rdata"),
                               max.NA.row = 0.5,
@@ -1106,11 +1105,11 @@ Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data, #200 samples
 })[3] / 60, 1)))
 
 print(unname(round(system.time({
-Polygonia_SOM_kmeansBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #
+Polygonia_SOM_kmeansBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #3.1 min
                                                    clustering.method = "kmeans+BICthreshold",
                                                    save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Polygonia_SOM_kmeansBICthreshold$optim_k_summary #k5 46%, k6 36%, k7 15%
+Polygonia_SOM_kmeansBICthreshold$optim_k_summary #k6 46%, k5 45%, k4 7%
 print(unname(round(system.time({
 Polygonia_SOM_HDBSCAN <- clustering.SOM(Polygonia_SOM_tr, #
                                         clustering.method = "HDBSCAN",
@@ -1118,29 +1117,29 @@ Polygonia_SOM_HDBSCAN <- clustering.SOM(Polygonia_SOM_tr, #
 })[3] / 60, 1)))
 Polygonia_SOM_HDBSCAN$optim_k_summary #k3 82%, k4 10%, k2 8%
 print(unname(round(system.time({
-Polygonia_SOM_hierarchicalDB <- clustering.SOM(Polygonia_SOM_tr, #
+Polygonia_SOM_hierarchicalDB <- clustering.SOM(Polygonia_SOM_tr, #2.5min
                                                clustering.method = "hierarchical+DB",
                                                save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_hierarchicalDB.Rdata"))
 })[3] / 60, 1)))
-Polygonia_SOM_hierarchicalDB$optim_k_summary #k3 76%, k4 10%, k5 6%
+Polygonia_SOM_hierarchicalDB$optim_k_summary #k3 81%, k4 16
 print(unname(round(system.time({
-Polygonia_SOM_GMMBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #ca. 15min
+Polygonia_SOM_GMMBICthreshold <- clustering.SOM(Polygonia_SOM_tr, #24.9min
                                                 clustering.method = "GMM+BICthreshold",
                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Polygonia_SOM_GMMBICthreshold$optim_k_summary #k4 32%, k2 28%, k5 21%, k6 10%
+Polygonia_SOM_GMMBICthreshold$optim_k_summary #k3 91%, k4 6%
 print(unname(round(system.time({
-Polygonia_SOM_OPTICSSilhouette <- clustering.SOM(Polygonia_SOM_tr, #ca 5min
+Polygonia_SOM_OPTICSSilhouette <- clustering.SOM(Polygonia_SOM_tr, #5.9min
                                                  clustering.method = "OPTICS+Silhouette",
                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_OPTICSSilhouette.Rdata"))
 })[3] / 60, 1)))
-Polygonia_SOM_OPTICSSilhouette$optim_k_summary #k3 94%, k4 6%
+Polygonia_SOM_OPTICSSilhouette$optim_k_summary #k3 97%
 print(unname(round(system.time({
-Polygonia_SOM_kmeansBICelbow <- clustering.SOM(Polygonia_SOM_tr, #ca 3min
+Polygonia_SOM_kmeansBICelbow <- clustering.SOM(Polygonia_SOM_tr, #3.0min
                                                clustering.method = "kmeans+BICelbow",
                                                save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICelbow.Rdata"))
 })[3] / 60, 1)))
-Polygonia_SOM_kmeansBICelbow$optim_k_summary #k3 83%, k4 16%
+Polygonia_SOM_kmeansBICelbow$optim_k_summary #k3 90%, k4 10%
 
 
 ## Evaluate and plot results
@@ -1156,26 +1155,27 @@ plot.map.SOM(Polygonia_SOM,
              Coordinates = Polygonia_spatial[, c(1:2)],
              lat.buffer.range = 1,
              lon.buffer.range = 2,
-             north.arrow.position = c(0.01, 0.92), #position (x, y) of north arrow relative to map
+             north.arrow.position = c(0.04, 0.87), #position (x, y) of north arrow relative to map
              north.arrow.length = 0.7, #length of north arrow
              north.arrow.N.position = 0.3, #position of north arrow "N"
              north.arrow.N.size = 1, #size of north arrow "N"
-             scale.position = c(0.78, 0.02)) #relative position (x, y) of scale
-plot.structure.SOM(Polygonia_SOM, Individual.labels.font.size = 0.25)
+             scale.position = c(0.75, 0.05)) #relative position (x, y) of scale
+plot.structure.SOM(Polygonia_SOM, bottom.margin = 7, Individual.labels.font.size = 4.2)
 
 
 ## Evaluate layer importance
-plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 6.5)
+plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 4)
 plot.layer.importance.leaveoneout.SOM(Polygonia_SOM, 
-                                      bottom.margin = 9,
+                                      bottom.margin = 6.5,
                                       save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Poligonia_SOM_lolo.Rdata"))
 
 
+
 ## Evaluate variable importance
-plot.variable.importance.SOM(Polygonia_SOM, mode = "Cluster.separation")
-plot.variable.importance.SOM(Polygonia_SOM, mode = "Map.variance")
-sort(round(Polygonia_SOM$median_etasquared_variable_importance[[1]], decreasing = TRUE)
+plot.variable.importance.SOM(Polygonia_SOM, mode = "Cluster.separation", left.margin = 5)
+plot.variable.importance.SOM(Polygonia_SOM, mode = "Map.variance", left.margin = 5)
+round(sort(Polygonia_SOM$median_etasquared_variable_importance[[1]], decreasing = TRUE), 2)
 head(round(sort(Polygonia_SOM$median_etasquared_variable_importance[[1]], decreasing = T), 2), 10)
 head(round(sort(Polygonia_SOM$median_etasquared_variable_importance[[2]], decreasing = T), 2), 20)
 head(round(sort(Polygonia_SOM$median_etasquared_variable_importance[[3]], decreasing = T), 2), 500)
@@ -1206,7 +1206,6 @@ Polygonia_ancestry <- merge(Polygonia_metadata, Polygonia_ancestry, by = "ID") #
 table(Polygonia_ancestry$Species)
 
 
-
 ## Hierarchical analyses based on recovered clusters
 Polygonia_clusters <- apply(Polygonia_SOM$ancestry_matrix, 1, which.max) #assign each sample to cluster with highest ancestry proportion
 Polygonia_clusters <- paste0("cluster", Polygonia_clusters) #rename clusters
@@ -1216,73 +1215,63 @@ Polygonia_cluster1_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygo
 Polygonia_cluster2_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 Polygonia_cluster3_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 
-print(unname(round(system.time({
-Polygonia_SOM_tr_cluster1 <- train.SOM(Polygonia_cluster1_data, #75 samples
+Polygonia_SOM_tr_cluster1 <- train.SOM(Polygonia_cluster1_data, #79 samples
                                        max.NA.row = 0.5,
                                        max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
-Polygonia_SOM_cluster1 <- clustering.SOM(Polygonia_SOM_tr_cluster1,
+
+Polygonia_SOM_cluster1 <- clustering.SOM(Polygonia_SOM_tr_cluster1, 
+                                         save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICelbow_cluster1.Rdata"),
                                          clustering.method = "kmeans+BICelbow")
-})[3] / 60, 1)))
 Polygonia_SOM_cluster1$optim_k_summary #k1 100%
-
-print(unname(round(system.time({
-Polygonia_SOM_tr_cluster2 <- train.SOM(Polygonia_cluster2_data,
+Polygonia_SOM_tr_cluster2 <- train.SOM(Polygonia_cluster2_data, #75 samples
                                        max.NA.row = 0.5,
                                        max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
-Polygonia_SOM_cluster2 <- clustering.SOM(Polygonia_SOM_tr_cluster2, #39 samples
+Polygonia_SOM_cluster2 <- clustering.SOM(Polygonia_SOM_tr_cluster2, 
+                                         save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICelbow_cluster2.Rdata"),
                                          clustering.method = "kmeans+BICelbow")
-})[3] / 60, 1)))
-Polygonia_SOM_cluster2$optim_k_summary #k1 100%
+Polygonia_SOM_cluster2$optim_k_summary #k2 100%
 
-print(unname(round(system.time({
-Polygonia_SOM_tr_cluster3 <- train.SOM(Polygonia_cluster3_data, #72 samples
+Polygonia_SOM_tr_cluster3 <- train.SOM(Polygonia_cluster3_data, #46 samples
                                        max.NA.row = 0.5,
                                        max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
 Polygonia_SOM_cluster3 <- clustering.SOM(Polygonia_SOM_tr_cluster3,
+                                         save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICelbow_cluster3.Rdata"),
                                          clustering.method = "kmeans+BICelbow")
-})[3] / 60, 1)))
 Polygonia_SOM_cluster3$optim_k_summary #k2 100%
 
 
-plot.model.SOM(Polygonia_SOM_cluster3, replicate.mode = "representative")
-plot.model.SOM(Polygonia_SOM_cluster3, replicate.mode = "first")
-plot.structure.SOM(Polygonia_SOM_cluster3, bottom.margin = 8)
-plot.K.SOM(Polygonia_SOM_cluster3)
-plot.map.SOM(SOM.output = Polygonia_SOM_cluster3,
+plot.model.SOM(Polygonia_SOM_cluster2, replicate.mode = "representative")
+plot.model.SOM(Polygonia_SOM_cluster2, replicate.mode = "first")
+plot.structure.SOM(Polygonia_SOM_cluster2, bottom.margin = 9.5)
+plot.K.SOM(Polygonia_SOM_cluster2)
+plot.map.SOM(SOM.output = Polygonia_SOM_cluster2,
              Coordinates = Polygonia_spatial[, c("Latitude", "Longitude")],
              lat.buffer.range = 5, #add coordinates as buffer range around latitude coordinates
              lon.buffer.range = 5, #add coordinates as buffer range around longitude coordinates
-             pie.size = 2.5, #pie chart size
-             north.arrow.position = c(0.04, 0.9), #position (x, y) of north arrow relative to map
+             pie.size = 1.5, #pie chart size
+             north.arrow.position = c(0.04, 0.89), #position (x, y) of north arrow relative to map
              north.arrow.length = 1, #length of north arrow
              north.arrow.N.position = 0.3, #position of north arrow "N"
              north.arrow.N.size = 1) #size of north arrow "N"
-plot.variable.importance.SOM(Polygonia_SOM_cluster3,
+plot.variable.importance.SOM(Polygonia_SOM_cluster2,
                              mode = "Cluster.separation", 
-                             left.margin = 6.5,
-                             bar.label.font.size = 0.4)
-plot.variable.importance.SOM(Polygonia_SOM_cluster3, 
+                             left.margin = 5)
+plot.variable.importance.SOM(Polygonia_SOM_cluster2, 
                              mode = "Map.variance", 
-                             left.margin = 6.5,
-                             bar.label.font.size = 0.4)
-plot.layer.importance.varimp.SOM(Polygonia_SOM_cluster3, bottom.margin = 6)
-plot.layer.importance.leaveoneout.SOM(Polygonia_SOM_cluster3, 
+                             left.margin = 5)
+plot.layer.importance.varimp.SOM(Polygonia_SOM_cluster2, bottom.margin = 3.5)
+plot.layer.importance.leaveoneout.SOM(Polygonia_SOM_cluster2, 
+                                      bottom.margin = 6.5,
                                       save.leave.one.layer.out.results = TRUE,
-                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_cluster3_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_cluster2_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
 
-Polygonia_ancestry_SOM_cluster3 <- as.data.frame(Polygonia_SOM_cluster3$ancestry_matrix)
-Polygonia_ancestry_SOM_cluster3$Species <- Polygonia_metadata$Species[match(rownames(Polygonia_SOM_cluster3$ancestry_matrix), rownames(Polygonia_metadata))]
-Polygonia_ancestry_SOM_cluster3$Species_revised <- Polygonia_metadata$Species[match(rownames(Polygonia_SOM_cluster3$ancestry_matrix), rownames(Polygonia_metadata))]
-length(unique(Polygonia_ancestry_SOM_cluster3$Species)) #number of species present in data
-length(unique(Polygonia_ancestry_SOM_cluster3$Species_revised)) #number of proposed species present in data
-table(Polygonia_ancestry_SOM_cluster3$Species)
-table(Polygonia_ancestry_SOM_cluster3$Species_revised)
+Polygonia_ancestry_SOM_cluster2 <- as.data.frame(Polygonia_SOM_cluster2$ancestry_matrix)
+Polygonia_ancestry_SOM_cluster2$Species <- Polygonia_metadata$Species[match(rownames(Polygonia_SOM_cluster2$ancestry_matrix), rownames(Polygonia_metadata))]
+Polygonia_ancestry_SOM_cluster2$Species_revised <- Polygonia_metadata$Species[match(rownames(Polygonia_SOM_cluster2$ancestry_matrix), rownames(Polygonia_metadata))]
+length(unique(Polygonia_ancestry_SOM_cluster2$Species)) #number of species present in data
+length(unique(Polygonia_ancestry_SOM_cluster2$Species_revised)) #number of proposed species present in data
+table(Polygonia_ancestry_SOM_cluster2$Species)
+table(Polygonia_ancestry_SOM_cluster2$Species_revised)
 
 
 ## Calculate pairwise Weir and Cockerham Fst among species
