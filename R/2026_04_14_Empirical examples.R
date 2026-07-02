@@ -188,6 +188,7 @@ Monticola71_SOM_tr_cluster2 <- train.SOM(Monticola71_cluster2_data, #21 samples
                                          grid.multiplier = 4,
                                          max.NA.row = 0.5,
                                          max.NA.col = 0.5,
+                                         save.SOM.results = TRUE,
                                          save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_tr_cluster2.Rdata"))
 Monticola71_SOM_cluster2 <- clustering.SOM(Monticola71_SOM_tr_cluster2,
                                            clustering.method = "kmeans+BICelbow",
