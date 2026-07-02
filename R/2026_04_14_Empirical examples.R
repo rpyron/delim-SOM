@@ -907,29 +907,41 @@ Pocillopora_cluster_samples_k3 <- split(rownames(Pocillopora_SOM_ancestry_matrix
 Pocillopora_cluster1_data_k3 <- lapply(Pocillopora_SOM_kmeansBICelbow_k3$input_data, function(x) x[Pocillopora_cluster_samples_k3$Cluster_1, , drop = FALSE]) #cluster 1 subset
 Pocillopora_cluster2_data_k3 <- lapply(Pocillopora_SOM_kmeansBICelbow_k3$input_data, function(x) x[Pocillopora_cluster_samples_k3$Cluster_2, , drop = FALSE]) #cluster 2 subset
 Pocillopora_cluster3_data_k3 <- lapply(Pocillopora_SOM_kmeansBICelbow_k3$input_data, function(x) x[Pocillopora_cluster_samples_k3$Cluster_3, , drop = FALSE]) #cluster 3 subset
-print(unname(round(system.time({
-SOM_Pocillopora_cluster1_k3 <- train.SOM(Pocillopora_cluster1_data_k3, 
-                                         max.NA.row = 0.5, max.NA.col = 0.5, grid.multiplier = 4) #25 samples
-})[3] / 60, 1)))
-print(unname(round(system.time({
-SOM_Pocillopora_cluster1_k3 <- clustering.SOM(SOM_Pocillopora_cluster1_k3, clustering.method = "kmeans+BICelbow", max.k = 15)
-})[3] / 60, 1)))
+
+ SOM_Pocillopora_cluster1_k3 <- train.SOM(Pocillopora_cluster1_data_k3, 
+                                         max.NA.row = 0.5,
+                                         max.NA.col = 0.5,
+                                         grid.multiplier = 4,
+                                         save.SOM.results = TRUE,
+                                         save.SOM.results.name = file.path(intermediate_files_folder, "SOM_Pocillopora_tr_cluster1_k3.Rdata")) #25 samples
+SOM_Pocillopora_cluster1_k3 <- clustering.SOM(SOM_Pocillopora_cluster1_k3,
+                                              clustering.method = "kmeans+BICelbow",
+                                              max.k = 15,
+                                              save.SOM.results.name = file.path(intermediate_files_folder, "SOM_Pocillopora_kmeansBICelbow_cluster1_k3.Rdata"))
 SOM_Pocillopora_cluster1_k3$optim_k_summary #k1 100%
-print(unname(round(system.time({
+
 SOM_Pocillopora_cluster2_k3 <- train.SOM(Pocillopora_cluster2_data_k3, 
-                                         max.NA.row = 0.5, max.NA.col = 0.5, grid.multiplier = 4) #26 samples
-})[3] / 60, 1)))
-print(unname(round(system.time({
-SOM_Pocillopora_cluster2_k3 <- clustering.SOM(SOM_Pocillopora_cluster2_k3, clustering.method = "kmeans+BICelbow", max.k = 15)
-})[3] / 60, 1)))
+                                         max.NA.row = 0.5,
+                                         max.NA.col = 0.5,
+                                         grid.multiplier = 4,
+                                         save.SOM.results = TRUE,
+                                         save.SOM.results.name = file.path(intermediate_files_folder, "SOM_Pocillopora_tr_cluster2_k3.Rdata")) #26 samples
+SOM_Pocillopora_cluster2_k3 <- clustering.SOM(SOM_Pocillopora_cluster2_k3,
+                                              clustering.method = "kmeans+BICelbow",
+                                              max.k = 15,
+                                              save.SOM.results.name = file.path(intermediate_files_folder, "SOM_Pocillopora_kmeansBICelbow_cluster2_k3.Rdata"))
 SOM_Pocillopora_cluster2_k3$optim_k_summary #k1 48%, k5 20%, k15 17%
-print(unname(round(system.time({
+
 SOM_Pocillopora_cluster3_k3 <- train.SOM(Pocillopora_cluster3_data_k3, 
-                                         max.NA.row = 0.5, max.NA.col = 0.55, grid.multiplier = 4) #25 samples
-})[3] / 60, 1)))
-print(unname(round(system.time({
-SOM_Pocillopora_cluster3_k3 <- clustering.SOM(SOM_Pocillopora_cluster3_k3, clustering.method = "kmeans+BICelbow", max.k = 15)
-})[3] / 60, 1)))
+                                         max.NA.row = 0.5,
+                                         max.NA.col = 0.55,
+                                         grid.multiplier = 4,
+                                         save.SOM.results = TRUE,
+                                         save.SOM.results.name = file.path(intermediate_files_folder, "SOM_Pocillopora_tr_cluster3_k3.Rdata")) #25 samples
+SOM_Pocillopora_cluster3_k3 <- clustering.SOM(SOM_Pocillopora_cluster3_k3,
+                                              clustering.method = "kmeans+BICelbow",
+                                              max.k = 15,
+                                              save.SOM.results.name = file.path(intermediate_files_folder, "SOM_Pocillopora_kmeansBICelbow_cluster3_k3.Rdata"))
 SOM_Pocillopora_cluster3_k3$optim_k_summary #k1 99%
 
 
