@@ -176,18 +176,23 @@ Monticola71_cluster2_data <- lapply(Monticola71_SOM$input_data, function(x) x[Mo
 Monticola71_SOM_tr_cluster1 <- train.SOM(Monticola71_cluster1_data, #48 samples
                                          grid.multiplier = 4,
                                          max.NA.row = 0.5,
-                                         max.NA.col = 0.5)
+                                         max.NA.col = 0.5,
+                                         save.SOM.results = TRUE,
+                                        save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_tr_cluster1.Rdata"))
 Monticola71_SOM_cluster1 <- clustering.SOM(Monticola71_SOM_tr_cluster1,
                                            clustering.method = "kmeans+BICelbow",
-                                           max.k = 5)
+                                           max.k = 5,
+                                           save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_kmeansBICelbow_cluster1.Rdata"))
 Monticola71_SOM_cluster1$optim_k_summary #k1 100% support
 Monticola71_SOM_tr_cluster2 <- train.SOM(Monticola71_cluster2_data, #21 samples
                                          grid.multiplier = 4,
                                          max.NA.row = 0.5,
-                                         max.NA.col = 0.5)
+                                         max.NA.col = 0.5,
+                                         save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_tr_cluster2.Rdata"))
 Monticola71_SOM_cluster2 <- clustering.SOM(Monticola71_SOM_tr_cluster2,
                                            clustering.method = "kmeans+BICelbow",
-                                           max.k = 5)
+                                           max.k = 5,
+                                           save.SOM.results.name = file.path(intermediate_files_folder, "Monticola71_SOM_kmeansBICelbow_cluster2.Rdata"))
 Monticola71_SOM_cluster2$optim_k_summary #k1 100% support
 
 
@@ -357,16 +362,29 @@ Pascagoula_cluster_samples <- split(rownames(Pascagoula_SOM$ancestry_matrix), Pa
 Pascagoula_cluster1_data <- lapply(Pascagoula_SOM$input_data, function(x) x[Pascagoula_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
 Pascagoula_cluster2_data <- lapply(Pascagoula_SOM$input_data, function(x) x[Pascagoula_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 
-Pascagoula_SOM_tr_cluster1 <- train.SOM(Pascagoula_cluster1_data, grid.multiplier = 3) #10 samples
-Pascagoula_SOM_cluster1 <- clustering.SOM(Pascagoula_SOM_tr_cluster1, clustering.method = "kmeans+BICelbow", max.k = 5)
+Pascagoula_SOM_tr_cluster1 <- train.SOM(Pascagoula_cluster1_data, #10 samples
+                                        grid.multiplier = 3,
+                                        save.SOM.results = TRUE,
+                                        save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_tr_cluster1.Rdata"))
+Pascagoula_SOM_cluster1 <- clustering.SOM(Pascagoula_SOM_tr_cluster1,
+                                          clustering.method = "kmeans+BICelbow",
+                                          max.k = 5,
+                                          save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_kmeansBICelbow_cluster1.Rdata"))
 Pascagoula_SOM_cluster1$optim_k_summary #k1 100%
 
-Pascagoula_SOM_tr_cluster2 <- train.SOM(Pascagoula_cluster2_data, grid.multiplier = 3) #12 samples
-Pascagoula_SOM_cluster2 <- clustering.SOM(Pascagoula_SOM_tr_cluster2, clustering.method = "kmeans+BICelbow", max.k = 5)
+Pascagoula_SOM_tr_cluster2 <- train.SOM(Pascagoula_cluster2_data, #12 samples
+                                        grid.multiplier = 3,
+                                        save.SOM.results = TRUE,
+                                        save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_tr_cluster2.Rdata"))
+Pascagoula_SOM_cluster2 <- clustering.SOM(Pascagoula_SOM_tr_cluster2,
+                                          clustering.method = "kmeans+BICelbow",
+                                          max.k = 5,
+                                          save.SOM.results.name = file.path(intermediate_files_folder, "Pascagoula_SOM_kmeansBICelbow_cluster2.Rdata"))
 Pascagoula_SOM_cluster2$optim_k_summary #k1 100%
 
 
 
+                                   
 #### Desmognathus seepage salamanders in southeastern US (Pyron et al. 2024) ####
 
 ## www.https://doi.org/10.1111/mec.17219
