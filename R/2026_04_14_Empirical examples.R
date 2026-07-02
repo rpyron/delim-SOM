@@ -824,7 +824,8 @@ plot.model.SOM(Pocillopora_SOM, replicate.mode = "representative", set.k = 35)
 plot.structure.SOM(Pocillopora_SOM)
 Pocillopora_SOM_kmeansBICelbow_k3 <- clustering.SOM(Pocillopora_SOM, 
                                                     set.k = 3,
-                                                      clustering.method = "kmeans+BICelbow")
+                                                    clustering.method = "kmeans+BICelbow",
+                                                    save.SOM.results.name = file.path(intermediate_files_folder, "Pocillopora_SOM_kmeansBICelbow_k3.Rdata"))
 plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3)
 plot.variable.importance.SOM(Pocillopora_SOM, left.margin = 7.5)
 plot.layer.importance.varimp.SOM(Pocillopora_SOM, bottom.margin = 6)
@@ -930,7 +931,7 @@ SOM_Pocillopora_cluster2_k3 <- clustering.SOM(SOM_Pocillopora_cluster2_k3,
                                               clustering.method = "kmeans+BICelbow",
                                               max.k = 15,
                                               save.SOM.results.name = file.path(intermediate_files_folder, "SOM_Pocillopora_kmeansBICelbow_cluster2_k3.Rdata"))
-SOM_Pocillopora_cluster2_k3$optim_k_summary #k1 48%, k5 20%, k15 17%
+SOM_Pocillopora_cluster2_k3$optim_k_summary #k1 64%, k15 17%, k4 6%, k5 5%
 
 SOM_Pocillopora_cluster3_k3 <- train.SOM(Pocillopora_cluster3_data_k3, 
                                          max.NA.row = 0.5,
@@ -942,13 +943,13 @@ SOM_Pocillopora_cluster3_k3 <- clustering.SOM(SOM_Pocillopora_cluster3_k3,
                                               clustering.method = "kmeans+BICelbow",
                                               max.k = 15,
                                               save.SOM.results.name = file.path(intermediate_files_folder, "SOM_Pocillopora_kmeansBICelbow_cluster3_k3.Rdata"))
-SOM_Pocillopora_cluster3_k3$optim_k_summary #k1 99%
+SOM_Pocillopora_cluster3_k3$optim_k_summary #k1 98%
 
 
 ## Add GSH to sample names in ancestry matrix
 Pocillopora_SOM_kmeansBICelbow_k3_updated <- Pocillopora_SOM_kmeansBICelbow_k3
 rownames(Pocillopora_SOM_kmeansBICelbow_k3_updated$ancestry_matrix) <- paste0(rownames(Pocillopora_SOM_kmeansBICelbow_k3_updated$ancestry_matrix), "_", Pocillopora_SOM_ancestry_matrix_k3[rownames(Pocillopora_SOM_kmeansBICelbow_k3_updated$ancestry_matrix), "Genomic_species_hypothesis"])
-plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3_updated, bottom.margin = 8.5, Individual.labels.font.size = 0.65)
+plot.structure.SOM(Pocillopora_SOM_kmeansBICelbow_k3_updated, bottom.margin = 8.5)
 
 
 
@@ -1484,7 +1485,7 @@ Viburnum_morphology <- remove.lowCV.multicollinearity.SOM(Viburnum_morphology, #
                                                           exclude.cols = c("Leaf_glossy_surface",
                                                                            "Leaf_dark_coloration",
                                                                            "Leaf_margin_type"))
-ncol(Viburnum_morphology) #number of traits: 8
+ncol(Viburnum_morphology) #number of traits: 9
 nrow(Viburnum_morphology) #number of samples: 145
 
 
@@ -1531,21 +1532,21 @@ nrow(Viburnum_metadata) #shared number of samples: 52
 Viburnum_SOM_data <- list(Morphology = Viburnum_morphology, 
                           SNP = Viburnum_SNP)
 print(unname(round(system.time({
-Viburnum_SOM_tr <- train.SOM(Viburnum_SOM_data, #46 samples
+Viburnum_SOM_tr <- train.SOM(Viburnum_SOM_data, #46 samples, 8.4min
                              max.NA.row = 0.5,
                              max.NA.col = 0.5,
                              save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_tr.Rdata"),
-                             save.SOM.results = T)
+                             save.SOM.results = TRUE)
 })[3] / 60, 1)))
 
 print(unname(round(system.time({
-Viburnum_SOM_kmeansBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #takes ca 2min!
+Viburnum_SOM_kmeansBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #23.5min
                                                   clustering.method = "kmeans+BICthreshold",
                                                   save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_kmeansBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Viburnum_SOM_kmeansBICthreshold$optim_k_summary #k2 100%
+Viburnum_SOM_kmeansBICthreshold$optim_k_summary #k2 91%, k3 9%
 print(unname(round(system.time({
-Viburnum_SOM_HDBSCAN <- clustering.SOM(Viburnum_SOM_tr, #takes ca 2min!
+Viburnum_SOM_HDBSCAN <- clustering.SOM(Viburnum_SOM_tr, ###########################################
                                        clustering.method = "HDBSCAN",
                                        save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_HDBSCAN.Rdata"))
 })[3] / 60, 1)))
