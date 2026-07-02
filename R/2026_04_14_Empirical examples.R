@@ -1248,15 +1248,19 @@ Polygonia_cluster3_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygo
 
 Polygonia_SOM_tr_cluster1 <- train.SOM(Polygonia_cluster1_data, #79 samples
                                        max.NA.row = 0.5,
-                                       max.NA.col = 0.5)
-
+                                       max.NA.col = 0.5,
+                                       save.SOM.results = TRUE,
+                                       save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_tr_cluster1.Rdata"))
 Polygonia_SOM_cluster1 <- clustering.SOM(Polygonia_SOM_tr_cluster1, 
                                          save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICelbow_cluster1.Rdata"),
                                          clustering.method = "kmeans+BICelbow")
 Polygonia_SOM_cluster1$optim_k_summary #k1 100%
+
 Polygonia_SOM_tr_cluster2 <- train.SOM(Polygonia_cluster2_data, #75 samples
                                        max.NA.row = 0.5,
-                                       max.NA.col = 0.5)
+                                       max.NA.col = 0.5,
+                                       save.SOM.results = TRUE,
+                                       save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_tr_cluster2.Rdata"))
 Polygonia_SOM_cluster2 <- clustering.SOM(Polygonia_SOM_tr_cluster2, 
                                          save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICelbow_cluster2.Rdata"),
                                          clustering.method = "kmeans+BICelbow")
@@ -1264,7 +1268,9 @@ Polygonia_SOM_cluster2$optim_k_summary #k2 100%
 
 Polygonia_SOM_tr_cluster3 <- train.SOM(Polygonia_cluster3_data, #46 samples
                                        max.NA.row = 0.5,
-                                       max.NA.col = 0.5)
+                                       max.NA.col = 0.5,
+                                       save.SOM.results = TRUE,
+                                       save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_tr_cluster3.Rdata"))
 Polygonia_SOM_cluster3 <- clustering.SOM(Polygonia_SOM_tr_cluster3,
                                          save.SOM.results.name = file.path(intermediate_files_folder, "Polygonia_SOM_kmeansBICelbow_cluster3.Rdata"),
                                          clustering.method = "kmeans+BICelbow")
@@ -1652,28 +1658,26 @@ Viburnum_cluster_samples <- split(rownames(Viburnum_SOM$ancestry_matrix), Viburn
 Viburnum_cluster1_data <- lapply(Viburnum_SOM$input_data, function(x) x[Viburnum_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
 Viburnum_cluster2_data <- lapply(Viburnum_SOM$input_data, function(x) x[Viburnum_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 
-print(unname(round(system.time({
 Viburnum_SOM_tr_cluster1 <- train.SOM(Viburnum_cluster1_data, #25 samples
                                       grid.multiplier = 4,
                                       max.NA.row = 0.5,
-                                      max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
+                                      max.NA.col = 0.5,
+                                      save.SOM.results = TRUE,
+                                      save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_tr_cluster1.Rdata"))
 Viburnum_SOM_cluster1 <- clustering.SOM(Viburnum_SOM_tr_cluster1,
-                                        clustering.method = "kmeans+BICelbow")
-})[3] / 60, 1)))
+                                        clustering.method = "kmeans+BICelbow",
+                                        save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_kmeansBICelbow_cluster1.Rdata"))
 Viburnum_SOM_cluster1$optim_k_summary #k1 100%
 
-print(unname(round(system.time({
 Viburnum_SOM_tr_cluster2 <- train.SOM(Viburnum_cluster2_data, #21 samples
                                       grid.multiplier = 4,
                                       max.NA.row = 0.5,
-                                      max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
+                                      max.NA.col = 0.5,
+                                      save.SOM.results = TRUE,
+                                      save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_tr_cluster2.Rdata"))
 Viburnum_SOM_cluster2 <- clustering.SOM(Viburnum_SOM_tr_cluster2,
-                                        clustering.method = "kmeans+BICelbow")
-})[3] / 60, 1)))
+                                        clustering.method = "kmeans+BICelbow",
+                                        save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_kmeansBICelbow_cluster2.Rdata"))
 Viburnum_SOM_cluster2$optim_k_summary #k1 100%
 
 
@@ -2158,43 +2162,40 @@ Microcebus_cluster1_data <- lapply(Microcebus_SOM$input_data, function(x) x[Micr
 Microcebus_cluster2_data <- lapply(Microcebus_SOM$input_data, function(x) x[Microcebus_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 Microcebus_cluster3_data <- lapply(Microcebus_SOM$input_data, function(x) x[Microcebus_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 
-print(unname(round(system.time({
 Microcebus_SOM_tr_cluster1 <- train.SOM(Microcebus_cluster1_data, #?? samples
                                         grid.multiplier = 3,
                                         max.NA.row = 0.5,
-                                        max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
-Microcebus_SOM_cluster1 <- clustering.SOM(Microcebus_SOM_tr_cluster1
-                                          ,max.k = 5,
-                                          clustering.method = "kmeans+BICelbow")
-})[3] / 60, 1)))
+                                        max.NA.col = 0.5,
+                                        save.SOM.results = TRUE,
+                                        save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_tr_cluster1.Rdata"))
+Microcebus_SOM_cluster1 <- clustering.SOM(Microcebus_SOM_tr_cluster1,
+                                          max.k = 5,
+                                          clustering.method = "kmeans+BICelbow",
+                                          save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow_cluster1.Rdata"))
 Microcebus_SOM_cluster1$optim_k_summary #k1 99%
 
-print(unname(round(system.time({
 Microcebus_SOM_tr_cluster2 <- train.SOM(Microcebus_cluster2_data, #? samples
                                         grid.multiplier = 5,
                                         max.NA.row = 0.5,
-                                        max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
+                                        max.NA.col = 0.5,
+                                        save.SOM.results = TRUE,
+                                        save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_tr_cluster2.Rdata"))
 Microcebus_SOM_cluster2 <- clustering.SOM(Microcebus_SOM_tr_cluster2,
                                           clustering.method = "kmeans+BICelbow",
-                                          max.k = 10)
-})[3] / 60, 1)))
+                                          max.k = 10,
+                                          save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow_cluster2.Rdata"))
 Microcebus_SOM_cluster2$optim_k_summary #k1 98%
 
-print(unname(round(system.time({
 Microcebus_SOM_tr_cluster3 <- train.SOM(Microcebus_cluster3_data, #?? samples
                                         grid.multiplier = 3,
                                         max.NA.row = 0.5,
-                                        max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
+                                        max.NA.col = 0.5,
+                                        save.SOM.results = TRUE,
+                                        save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_tr_cluster3.Rdata"))
 Microcebus_SOM_cluster3 <- clustering.SOM(Microcebus_SOM_tr_cluster3,
                                           clustering.method = "kmeans+BICelbow",
-                                          max.k = 10)
-})[3] / 60, 1)))
+                                          max.k = 10,
+                                          save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow_cluster3.Rdata"))
 Microcebus_SOM_cluster3$optim_k_summary #k2 89%, k10 11%
 
 
@@ -2449,56 +2450,52 @@ Elysia_cluster2_data <- lapply(Elysia_SOM$input_data, function(x) x[Elysia_clust
 Elysia_cluster3_data <- lapply(Elysia_SOM$input_data, function(x) x[Elysia_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 Elysia_cluster4_data <- lapply(Elysia_SOM$input_data, function(x) x[Elysia_cluster_samples$cluster4, , drop = FALSE]) #cluster 4 subset
 
-print(unname(round(system.time({
 Elysia_SOM_tr_cluster1 <- train.SOM(Elysia_cluster1_data, #? samples
                                     grid.multiplier = 4,
                                     max.NA.row = 0.5,
-                                    max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
+                                    max.NA.col = 0.5,
+                                    save.SOM.results = TRUE,
+                                    save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_tr_cluster1.Rdata"))
 Elysia_SOM_cluster1 <- clustering.SOM(Elysia_SOM_tr_cluster1,
                                       clustering.method = "kmeans+BICelbow",
-                                      max.k = 5)
-})[3] / 60, 1)))
+                                      max.k = 5,
+                                      save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow_cluster1.Rdata"))
 Elysia_SOM_cluster1$optim_k_summary #k3 84%, k4 11%
 
-print(unname(round(system.time({
 Elysia_SOM_tr_cluster2 <- train.SOM(Elysia_cluster2_data, #63 samples
                                     grid.multiplier = 5,
                                     max.NA.row = 0.5,
-                                    max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
+                                    max.NA.col = 0.5,
+                                    save.SOM.results = TRUE,
+                                    save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_tr_cluster2.Rdata"))
 Elysia_SOM_cluster2 <- clustering.SOM(Elysia_SOM_tr_cluster2,
                                       clustering.method = "kmeans+BICelbow",
-                                      max.k = 10)
-})[3] / 60, 1)))
+                                      max.k = 10,
+                                      save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow_cluster2.Rdata"))
 Elysia_SOM_cluster2$optim_k_summary #k4 68%, k5 27%
 
-print(unname(round(system.time({
 Elysia_SOM_tr_cluster3 <- train.SOM(Elysia_cluster3_data[names(Elysia_cluster3_data) != "Host_development"],
                                     grid.multiplier = 5, #50 samples
                                     max.NA.row = 0.5,
-                                    max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
+                                    max.NA.col = 0.5,
+                                    save.SOM.results = TRUE,
+                                    save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_tr_cluster3.Rdata"))
 Elysia_SOM_cluster3 <- clustering.SOM(Elysia_SOM_tr_cluster3,
                                       clustering.method = "kmeans+BICelbow",
-                                      max.k = 10)
-})[3] / 60, 1)))
+                                      max.k = 10,
+                                      save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow_cluster3.Rdata"))
 Elysia_SOM_cluster3$optim_k_summary #k1 85%, k3 6%
 
-print(unname(round(system.time({
 Elysia_SOM_tr_cluster4 <- train.SOM(Elysia_cluster4_data[names(Elysia_cluster4_data) != "Host_development"],
                                     grid.multiplier = 5, #131 samples
                                     max.NA.row = 0.5,
-                                    max.NA.col = 0.5)
-})[3] / 60, 1)))
-print(unname(round(system.time({
+                                    max.NA.col = 0.5,
+                                    save.SOM.results = TRUE,
+                                    save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_tr_cluster4.Rdata"))
 Elysia_SOM_cluster4 <- clustering.SOM(Elysia_SOM_tr_cluster4,
                                       clustering.method = "kmeans+BICelbow",
-                                      max.k = 25)
-})[3] / 60, 1)))
+                                      max.k = 25,
+                                      save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow_cluster4.Rdata"))
 Elysia_SOM_cluster4$optim_k_summary #k2 65%, k4 13%
 
 
@@ -2585,11 +2582,10 @@ table(Elysia_ancestry_SOM_cluster2$Major_cluster, Elysia_ancestry_SOM_cluster2$S
 
 
 ## Cluster 4
-print(unname(round(system.time({
 Elysia_SOM_cluster4_k2_k2 <- clustering.SOM(Elysia_SOM_tr_cluster4,
                                             set.k = 2,
-                                            clustering.method = "kmeans+BICelbow")
-})[3] / 60, 1)))
+                                            clustering.method = "kmeans+BICelbow",
+                                            save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow_cluster4_k2.Rdata"))
 plot.model.SOM(Elysia_SOM_cluster4_k2, replicate.mode = "representative")
 plot.model.SOM(Elysia_SOM_cluster4_k2, replicate.mode = "first")
 plot.structure.SOM(Elysia_SOM_cluster4_k2, bottom.margin = 9)
