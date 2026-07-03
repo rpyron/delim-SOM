@@ -1546,13 +1546,13 @@ Viburnum_SOM_kmeansBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #23.5min
 })[3] / 60, 1)))
 Viburnum_SOM_kmeansBICthreshold$optim_k_summary #k2 91%, k3 9%
 print(unname(round(system.time({
-Viburnum_SOM_HDBSCAN <- clustering.SOM(Viburnum_SOM_tr, ###########################################
+Viburnum_SOM_HDBSCAN <- clustering.SOM(Viburnum_SOM_tr, #10.2min
                                        clustering.method = "HDBSCAN",
                                        save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_HDBSCAN.Rdata"))
 })[3] / 60, 1)))
-Viburnum_SOM_HDBSCAN$optim_k_summary #k2 97%
+Viburnum_SOM_HDBSCAN$optim_k_summary #k2 98%
 print(unname(round(system.time({
-Viburnum_SOM_hierarchicalDB <- clustering.SOM(Viburnum_SOM_tr, #takes ca 45min!
+Viburnum_SOM_hierarchicalDB <- clustering.SOM(Viburnum_SOM_tr, #230.4min
                                               clustering.method = "hierarchical+DB",
                                               save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_hierarchicalDB.Rdata"))
 })[3] / 60, 1)))
