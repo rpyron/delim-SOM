@@ -1560,6 +1560,7 @@ Viburnum_SOM_hierarchicalDB$optim_k_summary #k2 100%
 print(unname(round(system.time({
 Viburnum_SOM_GMMBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #ca. 15min
                                                clustering.method = "GMM+BICthreshold",
+                                               message.N.replicates = 1,
                                                save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
 Viburnum_SOM_GMMBICthreshold$optim_k_summary #k2 52%, k3 44%
