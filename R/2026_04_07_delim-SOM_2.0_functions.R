@@ -2568,7 +2568,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
         }
         if (!found_finite_BIC_for_k) { #try mid tier only if stable tier failed completely
           for (modelNames_set in modelNames_mid) { #try mid tier
-            mclust_BIC_set <- try(mclustBIC(som_codes, G = k_value, modelNames = modelNames_set), silent = TRUE) #fit GMM BIC for this K and model set
+            mclust_BIC_set <- try(mclustBIC(som_codes, G = k_value, modelNames = modelNames_set, verbose = FALSE), silent = TRUE) #fit GMM BIC for this K and model set
             if (inherits(mclust_BIC_set, "try-error")) next
             mclust_BIC_set <- as.matrix(mclust_BIC_set) #ensure matrix
             if (nrow(mclust_BIC_set) > 1) {
@@ -2593,7 +2593,7 @@ compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
         }
         if (!found_finite_BIC_for_k) { #try expand tier only if stable+mid tiers failed completely
           for (modelNames_set in modelNames_expand) { #try expand tier
-            mclust_BIC_set <- try(mclustBIC(som_codes, G = k_value, modelNames = modelNames_set), silent = TRUE) #fit GMM BIC for this K and model set
+            mclust_BIC_set <- try(mclustBIC(som_codes, G = k_value, modelNames = modelNames_set, verbose = FALSE), silent = TRUE) #fit GMM BIC for this K and model set
             if (inherits(mclust_BIC_set, "try-error")) next
             mclust_BIC_set <- as.matrix(mclust_BIC_set) #ensure matrix
             if (nrow(mclust_BIC_set) > 1) {
