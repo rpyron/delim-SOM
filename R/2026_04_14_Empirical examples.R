@@ -1558,20 +1558,20 @@ Viburnum_SOM_hierarchicalDB <- clustering.SOM(Viburnum_SOM_tr, #230.4min
 })[3] / 60, 1)))
 Viburnum_SOM_hierarchicalDB$optim_k_summary #k2 100%
 print(unname(round(system.time({
-Viburnum_SOM_GMMBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #ca. 15min
+Viburnum_SOM_GMMBICthreshold <- clustering.SOM(Viburnum_SOM_tr, #1321.2min
                                                clustering.method = "GMM+BICthreshold",
                                                message.N.replicates = 1,
                                                save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Viburnum_SOM_GMMBICthreshold$optim_k_summary #k2 52%, k3 44%
+Viburnum_SOM_GMMBICthreshold$optim_k_summary #k3 98%, k4 7%
 print(unname(round(system.time({
-Viburnum_SOM_OPTICSSilhouette <- clustering.SOM(Viburnum_SOM_tr, #ca 5min
+Viburnum_SOM_OPTICSSilhouette <- clustering.SOM(Viburnum_SOM_tr, #7.4min
                                                 clustering.method = "OPTICS+Silhouette",
                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_OPTICSSilhouette.Rdata"))
 })[3] / 60, 1)))
-Viburnum_SOM_OPTICSSilhouette$optim_k_summary #k2 100%
+Viburnum_SOM_OPTICSSilhouette$optim_k_summary #k2 95%
 print(unname(round(system.time({
-Viburnum_SOM_kmeansBICelbow <- clustering.SOM(Viburnum_SOM_tr, #ca 3min
+Viburnum_SOM_kmeansBICelbow <- clustering.SOM(Viburnum_SOM_tr, #21.7min
                                               clustering.method = "kmeans+BICelbow",
                                               save.SOM.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_kmeansBICelbow.Rdata"))
 })[3] / 60, 1)))
@@ -1587,17 +1587,15 @@ plot.K.SOM(Viburnum_SOM)
 plot.model.SOM(Viburnum_SOM)
 plot.model.SOM(Viburnum_SOM, replicate.mode = "first")
 plot.variable.importance.SOM(Viburnum_SOM,mode = "Cluster.separation",
-                             left.margin = 5.5,
-                             bar.label.font.size = 0.4)
+                             left.margin = 7)
 plot.variable.importance.SOM(Viburnum_SOM,mode = "Map.variance",
-                             left.margin = 5.5,
-                             bar.label.font.size = 0.4)
-plot.structure.SOM(Viburnum_SOM, Individual.labels.font.size = 0.8)
+                             left.margin = 7)
+plot.structure.SOM(Viburnum_SOM)
 plot.layer.importance.leaveoneout.SOM(Viburnum_SOM, 
-                                      bottom.margin = 6.5,
+                                      bottom.margin = 6,
                                       save.leave.one.layer.out.results = TRUE,
                                       save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Viburnum_SOM_lolo.Rdata"))
-plot.layer.importance.varimp.SOM(Viburnum_SOM, bottom.margin = 5.5)
+plot.layer.importance.varimp.SOM(Viburnum_SOM, bottom.margin = 3)
 
 Viburnum_SOM_species_state_vector <- c(ELS002 = "cassinoides, NY", #create named character vector with species and state info based on Figure 4 in Spriggs et al. 2018
                                        ELS003 = "nitidum, FL",
@@ -1914,7 +1912,7 @@ rownames(Microcebus_morphology) <- Microcebus_row_names #restore original rownam
 Microcebus_morphology <- remove.lowCV.multicollinearity.SOM(Microcebus_morphology, #remove highly correlated and low-variance variables
                                                             CV.threshold = 0.05,
                                                             cor.threshold = 0.9)
-ncol(Microcebus_morphology) #number of  traits: 17
+ncol(Microcebus_morphology) #number of traits: 18
 nrow(Microcebus_morphology) #number of samples: 73
 
 
@@ -2015,7 +2013,7 @@ Microcebus_environmental <- (NicheDiv::transform.skewed.variables(Microcebus_env
 Microcebus_environmental <- remove.lowCV.multicollinearity.SOM(Microcebus_environmental, #remove highly correlated and low-variance variables
                                                                CV.threshold = 0.05,
                                                                cor.threshold = 0.9)
-ncol(Microcebus_environmental) #number of variables: 56
+ncol(Microcebus_environmental) #number of variables: 55
 nrow(Microcebus_environmental) #number of samples: 73
 
 
@@ -2044,11 +2042,11 @@ Microcebus_SOM_full_data <- list(SNP = Microcebus_SNP,
                                  Environmental = Microcebus_environmental,
                                  Spatial = Microcebus_spatial)
 print(unname(round(system.time({
-Microcebus_SOM_tr <- train.SOM(Microcebus_SOM_full_data, #?? samples
+Microcebus_SOM_tr <- train.SOM(Microcebus_SOM_full_data, #56 samples
                                max.NA.row = 0.5,
                                max.NA.col = 0.5,
                                save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_tr.Rdata"),
-                               save.SOM.results = T)
+                               save.SOM.results = TRUE)
 })[3] / 60, 1)))
 
 print(unname(round(system.time({
