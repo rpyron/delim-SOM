@@ -2386,35 +2386,36 @@ Elysia_SOM_tr <- train.SOM(input_data = Elysia_all_data, #276 samples, 1.7min
 })[3] / 60, 1)))
 
 print(unname(round(system.time({
-Elysia_SOM_kmeansBICelbow <- clustering.SOM(Elysia_SOM_tr, max.k = 10,
+Elysia_SOM_kmeansBICelbow <- clustering.SOM(Elysia_SOM_tr, #1.7min
+                                            max.k = 10,
                                             clustering.method = "kmeans+BICelbow",
                                             save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow.Rdata"))
 })[3] / 60, 1)))
-Elysia_SOM_kmeansBICelbow$optim_k_summary #k4 96%
+Elysia_SOM_kmeansBICelbow$optim_k_summary #k4 68%, k2 29%
 print(unname(round(system.time({
-Elysia_SOM_kmeansBICthreshold <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #takes ca 2min!
+Elysia_SOM_kmeansBICthreshold <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #1.7min
                                                 clustering.method = "kmeans+BICthreshold",
                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Elysia_SOM_kmeansBICthreshold$optim_k_summary #k8 43%, k7 34%, k9 10%, k6 8%
+Elysia_SOM_kmeansBICthreshold$optim_k_summary #k8 48%, k7 39%, k9 7%
 print(unname(round(system.time({
-Elysia_SOM_HDBSCAN <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #takes ca 2min!
+Elysia_SOM_HDBSCAN <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #1.6min
                                      clustering.method = "HDBSCAN",
                                      save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_HDBSCAN.Rdata"))
 })[3] / 60, 1)))
-Elysia_SOM_HDBSCAN$optim_k_summary #k3 39%, k4 39%, k5 12%, k6 7%
+Elysia_SOM_HDBSCAN$optim_k_summary #k4 51%, k3 23%, k5 16%, k2 5%
 print(unname(round(system.time({
-Elysia_SOM_hierarchicalDB <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #takes ca 45min!
+Elysia_SOM_hierarchicalDB <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #5.5min
                                             clustering.method = "hierarchical+DB",
                                             save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_hierarchicalDB.Rdata"))
 })[3] / 60, 1)))
-Elysia_SOM_hierarchicalDB$optim_k_summary #k5 39%, k4 38%, k6 8%, k15 8%
+Elysia_SOM_hierarchicalDB$optim_k_summary #k4 35%, k8 20%, k9 13%, k10 11%, k3 7%, k2 6%
 print(unname(round(system.time({
-Elysia_SOM_GMMBICthreshold <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #ca. 15min
+Elysia_SOM_GMMBICthreshold <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #1.9min
                                              clustering.method = "GMM+BICthreshold",
                                              save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Elysia_SOM_GMMBICthreshold$optim_k_summary #k7 23%, k9 21%, k8 16%, k6 7%
+Elysia_SOM_GMMBICthreshold$optim_k_summary #k10 37%, k9 23%, k2 20%, k8 10%
 print(unname(round(system.time({
 Elysia_SOM_OPTICSSilhouette <- clustering.SOM(Elysia_SOM_tr, max.k = 10, #ca 5min
                                               clustering.method = "OPTICS+Silhouette",
