@@ -2042,7 +2042,7 @@ Microcebus_SOM_full_data <- list(SNP = Microcebus_SNP,
                                  Environmental = Microcebus_environmental,
                                  Spatial = Microcebus_spatial)
 print(unname(round(system.time({
-Microcebus_SOM_tr <- train.SOM(Microcebus_SOM_full_data, #56 samples
+Microcebus_SOM_tr <- train.SOM(Microcebus_SOM_full_data, #56 samples, 2.0min
                                max.NA.row = 0.5,
                                max.NA.col = 0.5,
                                save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_tr.Rdata"),
@@ -2050,41 +2050,41 @@ Microcebus_SOM_tr <- train.SOM(Microcebus_SOM_full_data, #56 samples
 })[3] / 60, 1)))
 
 print(unname(round(system.time({
-Microcebus_SOM_kmeansBICelbow <- clustering.SOM(Microcebus_SOM_tr, max.k = 20,
+Microcebus_SOM_kmeansBICelbow <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #5.9min
                                                 clustering.method = "kmeans+BICelbow",
                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow.Rdata"))
 })[3] / 60, 1)))
-Microcebus_SOM_kmeansBICelbow$optim_k_summary #k3 93%
+Microcebus_SOM_kmeansBICelbow$optim_k_summary #k3 42%, k4 28%, k5 20%, k6 5%
 print(unname(round(system.time({
-Microcebus_SOM_kmeansBICthreshold <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #takes ca 2min!
+Microcebus_SOM_kmeansBICthreshold <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #5.8min
                                                     clustering.method = "kmeans+BICthreshold",
                                                     save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Microcebus_SOM_kmeansBICthreshold$optim_k_summary #k3 99%
+Microcebus_SOM_kmeansBICthreshold$optim_k_summary #k3 74%, k4 26%
 print(unname(round(system.time({
-Microcebus_SOM_HDBSCAN <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #takes ca 2min!
+Microcebus_SOM_HDBSCAN <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #2.5min
                                          clustering.method = "HDBSCAN",
                                          save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_HDBSCAN.Rdata"))
 })[3] / 60, 1)))
-Microcebus_SOM_HDBSCAN$optim_k_summary #k3 31%, k2 29%, k4 22%, k5 10%
+Microcebus_SOM_HDBSCAN$optim_k_summary #k2 39%, k3 35%, k4 15%, k5 11%
 print(unname(round(system.time({
-Microcebus_SOM_hierarchicalDB <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #takes ca 45min!
+Microcebus_SOM_hierarchicalDB <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #42.0min
                                                 clustering.method = "hierarchical+DB",
                                                 save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_hierarchicalDB.Rdata"))
 })[3] / 60, 1)))
-Microcebus_SOM_hierarchicalDB$optim_k_summary #k20 81%, k19 10%
+Microcebus_SOM_hierarchicalDB$optim_k_summary #k20 75%, k19 13%, k18 6%
 print(unname(round(system.time({
-Microcebus_SOM_GMMBICthreshold <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #ca. 20min
+Microcebus_SOM_GMMBICthreshold <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #62.7min
                                                  clustering.method = "GMM+BICthreshold",
                                                  save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_GMMBICthreshold.Rdata"))
 })[3] / 60, 1)))
-Microcebus_SOM_GMMBICthreshold$optim_k_summary #k2 22%, k7 14%, k10 10%, k3 9%, k5 8%, k8 8%, k12 7%
+Microcebus_SOM_GMMBICthreshold$optim_k_summary #k2 23%, k3 14%, k9 14%, k8 10%, k10 9%, k7 9%, k11 6%, k6 5%
 print(unname(round(system.time({
-Microcebus_SOM_OPTICSSilhouette <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #ca 5min
+Microcebus_SOM_OPTICSSilhouette <- clustering.SOM(Microcebus_SOM_tr, max.k = 20, #2.1min
                                                   clustering.method = "OPTICS+Silhouette",
                                                   save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_OPTICSSilhouette.Rdata"))
 })[3] / 60, 1)))
-Microcebus_SOM_OPTICSSilhouette$optim_k_summary #k3 49%, k2 38%, k4 7%
+Microcebus_SOM_OPTICSSilhouette$optim_k_summary #k2 46%, k3 29%, k4 14%, k5 7%, k1 5%
 
 
 
@@ -2092,19 +2092,17 @@ Microcebus_SOM_OPTICSSilhouette$optim_k_summary #k3 49%, k2 38%, k4 7%
 ## Evaluate and plot results for full data
 Microcebus_SOM <- Microcebus_SOM_kmeansBICelbow
 plot.learning.SOM(Microcebus_SOM)
-plot.layer.weights.SOM(Microcebus_SOM_full)
 plot.K.SOM(Microcebus_SOM)
 plot.model.SOM(Microcebus_SOM, replicate.mode = "representative")
+plot.model.SOM(Microcebus_SOM, replicate.mode = "representative", set.k = 4)
 plot.model.SOM(Microcebus_SOM, replicate.mode = "first")
 plot.variable.importance.SOM(Microcebus_SOM, 
                              mode = "Cluster.separation",
-                             left.margin = 5.8,
-                             bar.label.font.size = 0.4)
+                             left.margin = 5)
 plot.variable.importance.SOM(Microcebus_SOM, 
                              mode = "Map.variance",
-                             left.margin = 5.8,
-                             bar.label.font.size = 0.4)
-plot.structure.SOM(Microcebus_SOM, sort.by.col = 2)
+                             left.margin = 5)
+plot.structure.SOM(Microcebus_SOM)
 plot.map.SOM(SOM.output = Microcebus_SOM, 
              Coordinates = Microcebus_spatial[, c("Latitude", "Longitude")],
              lat.buffer.range = 1, #add coordinates as buffer range around latitude coordinates
@@ -2116,7 +2114,7 @@ plot.map.SOM(SOM.output = Microcebus_SOM,
              north.arrow.N.size = 1) #size of north arrow "N"
 
 plot.layer.distance.scale.SOM(Microcebus_SOM)
-plot.layer.importance.varimp.SOM(Microcebus_SOM, bottom.margin = 6.5)
+plot.layer.importance.varimp.SOM(Microcebus_SOM, bottom.margin = 3.5)
 plot.layer.importance.leaveoneout.SOM(Microcebus_SOM, 
                                       bottom.margin = 6.5,
                                       save.leave.one.layer.out.results = TRUE,
@@ -2162,20 +2160,20 @@ Microcebus_cluster1_data <- lapply(Microcebus_SOM$input_data, function(x) x[Micr
 Microcebus_cluster2_data <- lapply(Microcebus_SOM$input_data, function(x) x[Microcebus_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
 Microcebus_cluster3_data <- lapply(Microcebus_SOM$input_data, function(x) x[Microcebus_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
 
-Microcebus_SOM_tr_cluster1 <- train.SOM(Microcebus_cluster1_data, #?? samples
-                                        grid.multiplier = 3,
+Microcebus_SOM_tr_cluster1 <- train.SOM(Microcebus_cluster1_data, #28 samples
+                                        grid.multiplier = 5,
                                         max.NA.row = 0.5,
                                         max.NA.col = 0.5,
                                         save.SOM.results = TRUE,
                                         save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_tr_cluster1.Rdata"))
 Microcebus_SOM_cluster1 <- clustering.SOM(Microcebus_SOM_tr_cluster1,
-                                          max.k = 5,
+                                          max.k = 10,
                                           clustering.method = "kmeans+BICelbow",
                                           save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow_cluster1.Rdata"))
-Microcebus_SOM_cluster1$optim_k_summary #k1 99%
+Microcebus_SOM_cluster1$optim_k_summary #k2 94%
 
-Microcebus_SOM_tr_cluster2 <- train.SOM(Microcebus_cluster2_data, #? samples
-                                        grid.multiplier = 5,
+Microcebus_SOM_tr_cluster2 <- train.SOM(Microcebus_cluster2_data, #13 samples
+                                        grid.multiplier = 3,
                                         max.NA.row = 0.5,
                                         max.NA.col = 0.5,
                                         save.SOM.results = TRUE,
@@ -2184,10 +2182,10 @@ Microcebus_SOM_cluster2 <- clustering.SOM(Microcebus_SOM_tr_cluster2,
                                           clustering.method = "kmeans+BICelbow",
                                           max.k = 10,
                                           save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow_cluster2.Rdata"))
-Microcebus_SOM_cluster2$optim_k_summary #k1 98%
+Microcebus_SOM_cluster2$optim_k_summary #k2 55%, k10 45%
 
-Microcebus_SOM_tr_cluster3 <- train.SOM(Microcebus_cluster3_data, #?? samples
-                                        grid.multiplier = 3,
+Microcebus_SOM_tr_cluster3 <- train.SOM(Microcebus_cluster3_data, #15 samples
+                                        grid.multiplier = 4,
                                         max.NA.row = 0.5,
                                         max.NA.col = 0.5,
                                         save.SOM.results = TRUE,
@@ -2196,42 +2194,76 @@ Microcebus_SOM_cluster3 <- clustering.SOM(Microcebus_SOM_tr_cluster3,
                                           clustering.method = "kmeans+BICelbow",
                                           max.k = 10,
                                           save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow_cluster3.Rdata"))
-Microcebus_SOM_cluster3$optim_k_summary #k2 89%, k10 11%
+Microcebus_SOM_cluster3$optim_k_summary #k1 66%, k2 31%
 
 
-plot.model.SOM(Microcebus_SOM_cluster3, replicate.mode = "representative")
-plot.model.SOM(Microcebus_SOM_cluster3, replicate.mode = "first")
-plot.structure.SOM(Microcebus_SOM_cluster3)
-plot.K.SOM(Microcebus_SOM_cluster3)
-plot.map.SOM(SOM.output = Microcebus_SOM_cluster3,
+plot.model.SOM(Microcebus_SOM_cluster1, replicate.mode = "representative")
+plot.model.SOM(Microcebus_SOM_cluster1, replicate.mode = "first")
+plot.structure.SOM(Microcebus_SOM_cluster1, bottom.margin = 6.5)
+plot.K.SOM(Microcebus_SOM_cluster1)
+plot.map.SOM(SOM.output = Microcebus_SOM_cluster1,
              Coordinates = Microcebus_spatial[, c("Latitude", "Longitude")],
-             lat.buffer.range = 0.1, #add coordinates as buffer range around latitude coordinates
+             lat.buffer.range = 0.3, #add coordinates as buffer range around latitude coordinates
              lon.buffer.range = 0.3, #add coordinates as buffer range around longitude coordinates
-             pie.size = 2.5, #pie chart size
-             north.arrow.position = c(0.04, 0.85), #position (x, y) of north arrow relative to map
+             pie.size = 2, #pie chart size
+             north.arrow.position = c(0.04, 0.90), #position (x, y) of north arrow relative to map
              north.arrow.length = 0.1, #length of north arrow
              north.arrow.N.position = 0.05, #position of north arrow "N"
              north.arrow.N.size = 1) #size of north arrow "N"
-plot.variable.importance.SOM(Microcebus_SOM_cluster3,
+plot.variable.importance.SOM(Microcebus_SOM_cluster1,
                              mode = "Cluster.separation", 
-                             left.margin = 6.5,
-                             bar.label.font.size = 0.4)
-plot.variable.importance.SOM(Microcebus_SOM_cluster3, 
+                             left.margin = 5)
+plot.variable.importance.SOM(Microcebus_SOM_cluster1, 
                              mode = "Map.variance", 
-                             left.margin = 6.5,
-                             bar.label.font.size = 0.4)
-plot.layer.importance.varimp.SOM(Microcebus_SOM_cluster3, bottom.margin = 6)
-plot.layer.importance.leaveoneout.SOM(Microcebus_SOM_cluster3, 
+                             left.margin = 5)
+plot.layer.importance.varimp.SOM(Microcebus_SOM_cluster1, bottom.margin = 3.5)
+plot.layer.importance.leaveoneout.SOM(Microcebus_SOM_cluster1, 
+                                      bottom.margin = 6.5,
                                       save.leave.one.layer.out.results = TRUE,
-                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_cluster3_lolo.Rdata")) #this will take 10-20min (running 2 x N replicates for train and clustering SOM)
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_cluster1_lolo.Rdata"))
+Microcebus_ancestry_SOM_cluster1 <- as.data.frame(Microcebus_SOM_cluster1$ancestry_matrix)
+Microcebus_ancestry_SOM_cluster1$Species <- Microcebus_metadata$Species[match(rownames(Microcebus_SOM_cluster1$ancestry_matrix), rownames(Microcebus_metadata))]
+Microcebus_ancestry_SOM_cluster1$Species_revised <- Microcebus_metadata$Species[match(rownames(Microcebus_SOM_cluster1$ancestry_matrix), rownames(Microcebus_metadata))]
+length(unique(Microcebus_ancestry_SOM_cluster1$Species)) #number of species present in data
+length(unique(Microcebus_ancestry_SOM_cluster1$Species_revised)) #number of proposed species present in data
+table(Microcebus_ancestry_SOM_cluster1$Species)
+table(Microcebus_ancestry_SOM_cluster1$Species_revised)
 
-Microcebus_ancestry_SOM_cluster3 <- as.data.frame(Microcebus_SOM_cluster3$ancestry_matrix)
-Microcebus_ancestry_SOM_cluster3$Species <- Microcebus_metadata$Species[match(rownames(Microcebus_SOM_cluster3$ancestry_matrix), rownames(Microcebus_metadata))]
-Microcebus_ancestry_SOM_cluster3$Species_revised <- Microcebus_metadata$Species[match(rownames(Microcebus_SOM_cluster3$ancestry_matrix), rownames(Microcebus_metadata))]
-length(unique(Microcebus_ancestry_SOM_cluster3$Species)) #number of species present in data
-length(unique(Microcebus_ancestry_SOM_cluster3$Species_revised)) #number of proposed species present in data
-table(Microcebus_ancestry_SOM_cluster3$Species)
-table(Microcebus_ancestry_SOM_cluster3$Species_revised)
+
+Microcebus_SOM_cluster2_k2 <- clustering.SOM(Microcebus_SOM_tr_cluster2_k2,
+                                             clustering.method = "kmeans+BICelbow",
+                                             set.k = 2,
+                                             save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow_cluster2_k2.Rdata"))
+plot.model.SOM(Microcebus_SOM_cluster2_k2, replicate.mode = "representative")
+plot.model.SOM(Microcebus_SOM_cluster2_k2, replicate.mode = "first")
+plot.structure.SOM(Microcebus_SOM_cluster2_k2, bottom.margin = 5)
+plot.map.SOM(SOM.output = Microcebus_SOM_cluster2_k2,
+             Coordinates = Microcebus_spatial[, c("Latitude", "Longitude")],
+             lat.buffer.range = 0.3, #add coordinates as buffer range around latitude coordinates
+             lon.buffer.range = 0.5, #add coordinates as buffer range around longitude coordinates
+             pie.size = 2, #pie chart size
+             north.arrow.position = c(0.04, 0.88), #position (x, y) of north arrow relative to map
+             north.arrow.length = 0.1, #length of north arrow
+             north.arrow.N.position = 0.05, #position of north arrow "N"
+             north.arrow.N.size = 1) #size of north arrow "N"
+plot.variable.importance.SOM(Microcebus_SOM_cluster2_k2,
+                             mode = "Cluster.separation", 
+                             left.margin = 8)
+plot.variable.importance.SOM(Microcebus_SOM_cluster2_k2, 
+                             mode = "Map.variance", 
+                             left.margin = 8)
+plot.layer.importance.varimp.SOM(Microcebus_SOM_cluster2_k2, bottom.margin = 3.5)
+plot.layer.importance.leaveoneout.SOM(Microcebus_SOM_cluster2_k2, 
+                                      bottom.margin = 6.5,
+                                      save.leave.one.layer.out.results = TRUE,
+                                      save.leave.one.layer.out.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_cluster2_k2_lolo.Rdata"))
+Microcebus_ancestry_SOM_cluster2_k2 <- as.data.frame(Microcebus_SOM_cluster2_k2$ancestry_matrix)
+Microcebus_ancestry_SOM_cluster2_k2$Species <- Microcebus_metadata$Species[match(rownames(Microcebus_SOM_cluster2_k2$ancestry_matrix), rownames(Microcebus_metadata))]
+Microcebus_ancestry_SOM_cluster2_k2$Species_revised <- Microcebus_metadata$Species[match(rownames(Microcebus_SOM_cluster2_k2$ancestry_matrix), rownames(Microcebus_metadata))]
+length(unique(Microcebus_ancestry_SOM_cluster2_k2$Species)) #number of species present in data
+length(unique(Microcebus_ancestry_SOM_cluster2_k2$Species_revised)) #number of proposed species present in data
+table(Microcebus_ancestry_SOM_cluster2_k2$Species)
+table(Microcebus_ancestry_SOM_cluster2_k2$Species_revised)
 
 
 
@@ -2346,7 +2378,7 @@ Elysia_all_data <- list(mtDNA = Elysia_COI,
                         Environmental = Elysia_environmental,
                         Spatial = Elysia_spatial)
 print(unname(round(system.time({
-Elysia_SOM_tr <- train.SOM(input_data = Elysia_all_data, #?? samples
+Elysia_SOM_tr <- train.SOM(input_data = Elysia_all_data, #276 samples, 1.7min
                            max.NA.row = 0.5,
                            max.NA.col = 0.5,
                            save.SOM.results = TRUE,
