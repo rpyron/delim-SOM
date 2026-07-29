@@ -2230,7 +2230,7 @@ table(Microcebus_ancestry_SOM_cluster1$Species)
 table(Microcebus_ancestry_SOM_cluster1$Species_revised)
 
 
-Microcebus_SOM_cluster2_k2 <- clustering.SOM(Microcebus_SOM_tr_cluster2_k2,
+Microcebus_SOM_cluster2_k2 <- clustering.SOM(Microcebus_SOM_cluster2,
                                              clustering.method = "kmeans+BICelbow",
                                              set.k = 2,
                                              save.SOM.results.name = file.path(intermediate_files_folder, "Microcebus_SOM_kmeansBICelbow_cluster2_k2.Rdata"))
