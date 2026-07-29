@@ -2495,6 +2495,7 @@ Elysia_SOM_cluster1 <- clustering.SOM(Elysia_SOM_tr_cluster1,
                                       save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow_cluster1.Rdata"))
 Elysia_SOM_cluster1$optim_k_summary #k3 84%, k4 11%
 
+Elysia_cluster2_data$Host_development <- NULL
 Elysia_SOM_tr_cluster2 <- train.SOM(Elysia_cluster2_data, #63 samples
                                     grid.multiplier = 5,
                                     max.NA.row = 0.5,
@@ -2520,14 +2521,14 @@ Elysia_SOM_cluster3 <- clustering.SOM(Elysia_SOM_tr_cluster3,
 Elysia_SOM_cluster3$optim_k_summary #k1 85%, k3 6%
 
 Elysia_SOM_tr_cluster4 <- train.SOM(Elysia_cluster4_data[names(Elysia_cluster4_data) != "Host_development"],
-                                    grid.multiplier = 5, #131 samples
+                                    grid.multiplier = 4, #131 samples
                                     max.NA.row = 0.5,
                                     max.NA.col = 0.5,
                                     save.SOM.results = TRUE,
                                     save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_tr_cluster4.Rdata"))
 Elysia_SOM_cluster4 <- clustering.SOM(Elysia_SOM_tr_cluster4,
                                       clustering.method = "kmeans+BICelbow",
-                                      max.k = 25,
+                                      max.k = 14,
                                       save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow_cluster4.Rdata"))
 Elysia_SOM_cluster4$optim_k_summary #k2 65%, k4 13%
 
@@ -2615,7 +2616,7 @@ table(Elysia_ancestry_SOM_cluster2$Major_cluster, Elysia_ancestry_SOM_cluster2$S
 
 
 ## Cluster 4
-Elysia_SOM_cluster4_k2_k2 <- clustering.SOM(Elysia_SOM_tr_cluster4,
+Elysia_SOM_cluster4_k2 <- clustering.SOM(Elysia_SOM_tr_cluster4,
                                             set.k = 2,
                                             clustering.method = "kmeans+BICelbow",
                                             save.SOM.results.name = file.path(intermediate_files_folder, "Elysia_SOM_kmeansBICelbow_cluster4_k2.Rdata"))
