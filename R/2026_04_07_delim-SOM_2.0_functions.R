@@ -3607,12 +3607,16 @@ plot.structure.SOM <- function(SOM.output,
   
   # Order rows of ancestry_matrix
   if (!is.null(sort.by.col)) {
-    sample_order <- order(ancestry_matrix[, sort.by.col])
+    dominant_cluster <- max.col(ancestry_matrix, ties.method = "first")
+    cluster_order <- c(seq.int(sort.by.col, ncol(ancestry_matrix)), if (sort.by.col > 1) seq_len(sort.by.col - 1))
+    dominant_cluster_order <- match(dominant_cluster, cluster_order)
+    dominant_assignment <- ancestry_matrix[cbind(seq_len(nrow(ancestry_matrix)), dominant_cluster)]
+    sample_order <- order(dominant_cluster_order, -dominant_assignment)
   } else {
     sample_order <- stats::hclust(stats::dist(ancestry_matrix), method = "single")$order
   }
   SOM_ancestry_proportions <- ancestry_matrix[sample_order, , drop = FALSE]
-  
+    
   # Generate cluster colors
   cluster_colors <- col.pal(ncol(SOM_ancestry_proportions))
   
