@@ -3376,10 +3376,10 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 #'   y-axis-title font size in points. Default: `9.1`.
 #' @param axis.ticks.font.size A single positive numeric value giving the
 #'   y-axis numeric tick-label font size in points. Default: `7`.
-#' @param sort.by.col Optional positive integer giving the cluster column used
-#'   to order samples by increasing assignment coefficient. If `NULL`, samples
-#'   are ordered by single-linkage hierarchical clustering of their complete 
-#' 	 assignment profiles. Default: `1`.
+#' @param sort.by.col Optional positive integer specifying the first dominant
+#'   cluster in the sample ordering. If `NULL`, samples are ordered by
+#'   single-linkage hierarchical clustering of their complete assignment
+#'   profiles. Default: `1`.
 #' @param bar.border.col Optional character string giving the color of vertical
 #'   separation lines between samples. If `NULL`, no separation lines are
 #'   drawn. Default: `NULL`.
@@ -3406,13 +3406,14 @@ names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 #' or conflicting signals among data layers. The plot is not produced for K = 1
 #' because all samples would have an assignment coefficient of one for the same cluster.
 #'
-#' If `sort.by.col` is supplied, samples are ordered from the smallest to the
-#' largest assignment coefficient for the selected cluster. This can make gradual
-#' transitions between strongly and intermediately assigned samples easier to
-#' visualize. If `sort.by.col = NULL`, Euclidean distances are calculated among
-#' the complete assignment-coefficient profiles, and samples are ordered using
-#' single-linkage hierarchical clustering. Cluster colors follow the column order of 
-#' `ancestry_matrix`.
+#' If `sort.by.col` is supplied, samples are grouped by their dominant cluster,
+#' beginning with the specified cluster and continuing through the remaining
+#' clusters in column order. Within each group, samples are ordered from highest
+#' to lowest assignment coefficient for that cluster. For example, with three
+#' clusters, `sort.by.col = 2` produces Cluster 2, Cluster 3, and Cluster 1. If
+#' `sort.by.col = NULL`, Euclidean distances are calculated among complete
+#' assignment profiles, and samples are ordered using single-linkage hierarchical
+#' clustering. Cluster colors follow the column order of `ancestry_matrix`.
 #'
 #' Sample names are displayed vertically below the bars. For datasets containing
 #' many samples or long sample names, increasing `width` or `bottom.margin`, or
