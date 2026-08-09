@@ -3817,7 +3817,8 @@ plot.structure.SOM <- function(SOM.output,
 #' @param legend.position A single character string specifying the legend
 #'   position. Supported values are `"topright"`, `"topleft"`,
 #'   `"bottomright"`, `"bottomleft"`, `"right"`, `"left"`, `"top"`,
-#'   `"bottom"`, and `"center"`. Default: `"topright"`.
+#'   `"bottom"`, `"center"`, and `"none"`. If `"none"`, no legend is shown.
+#'   Default: `"topright"`.
 #' @param legend.lines.thickness A single positive numeric value giving the line
 #'   width used in the legend. Default: `3`.
 #' @param legend.text.font.size A single positive numeric value giving the
@@ -4045,7 +4046,7 @@ plot.learning.SOM <- function(SOM.output,
   if (!is.numeric(axis.ticks.font.size) || length(axis.ticks.font.size) != 1 || is.na(axis.ticks.font.size) || axis.ticks.font.size <= 0) stop("Plotting aborted: axis.ticks.font.size must be a single positive numeric value")
   
   # Validate legend arguments
-  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center")
+  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center", "none")
   if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) || !(legend.position %in% allowed.legend.positions)) stop(paste0("Plotting aborted: legend.position must be one of ", paste(allowed.legend.positions, collapse = ", ")))
   if (!is.null(legend.title) && (!is.character(legend.title) || length(legend.title) != 1 || is.na(legend.title))) stop("Plotting aborted: legend.title must be NULL or single character string")
   if (!is.numeric(legend.lines.thickness) || length(legend.lines.thickness) != 1 || is.na(legend.lines.thickness) || legend.lines.thickness <= 0) stop("Plotting aborted: legend.lines.thickness must be a single positive numeric value")
@@ -4275,6 +4276,7 @@ plot.learning.SOM <- function(SOM.output,
   }
   
   # Add legend
+if (legend.position != "none") {										  
   add.learning.legend.SOM(legend.position = legend.position,
                           legend.title = legend_title_to_plot,
                           legend.labels = layer_names,
@@ -4283,6 +4285,7 @@ plot.learning.SOM <- function(SOM.output,
                           legend.title.relative.font.size = legend_title_relative_font_size,
                           legend.lines.thickness = legend.lines.thickness,
                           legend.box = legend.box)
+  }	
   
   # Close graphics device
   if (save) {
@@ -5799,7 +5802,8 @@ plot.model.SOM <- function(SOM.output,
 #' @param legend.position A single character string specifying the legend
 #'   position. Supported values are `"topright"`, `"topleft"`,
 #'   `"bottomright"`, `"bottomleft"`, `"right"`, `"left"`, `"top"`,
-#'   `"bottom"`, and `"center"`. Default: `"topright"`.
+#'   `"bottom"`, `"center"`, and `"none"`. If `"none"`, no legend is shown.
+#'   Default: `"topright"`.
 #' @param legend.title Optional character string giving the legend title. If
 #'   `NULL`, no legend title is shown. Default: `"Cluster"`.
 #' @param legend.cluster.names Optional character vector giving custom cluster
@@ -6032,7 +6036,7 @@ plot.map.SOM <- function(SOM.output,
   if (!is.numeric(axis.labels.font.size) || length(axis.labels.font.size) != 1 || is.na(axis.labels.font.size) || axis.labels.font.size <= 0) stop("Plotting aborted: axis.labels.font.size must be a single positive number")
   
   # Validate legend arguments
-  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center")
+  allowed.legend.positions <- c("topright", "topleft", "bottomright", "bottomleft", "right", "left", "top", "bottom", "center", "none")
   if (!is.character(legend.position) || length(legend.position) != 1 || is.na(legend.position) || !(legend.position %in% allowed.legend.positions)) stop(paste0("Plotting aborted: legend.position must be one of ", paste(allowed.legend.positions, collapse = ", ")))
   if (!is.null(legend.title) && (!is.character(legend.title) || length(legend.title) != 1 || is.na(legend.title))) stop("Plotting aborted: legend.title must be NULL or a single character string")
   if (!is.null(legend.cluster.names)) {
@@ -6408,16 +6412,18 @@ plot.map.SOM <- function(SOM.output,
   }
   
   # Add legend
-  add.map.legend.SOM(legend.position = legend.position,
-                     legend.title = legend.title,
-                     legend.labels = legend_labels,
-                     legend.colors = cluster_colors,
-                     legend.text.relative.font.size = legend_text_relative_font_size,
-                     legend.title.relative.font.size = legend_title_relative_font_size,
-                     legend.text.font = legend_text_font,
-                     legend.symbol.size = legend.symbol.size,
-                     legend.box = legend.box)
-  
+  if (legend.position != "none") {
+    add.map.legend.SOM(legend.position = legend.position,
+                       legend.title = legend.title,
+                       legend.labels = legend_labels,
+                       legend.colors = cluster_colors,
+                       legend.text.relative.font.size = legend_text_relative_font_size,
+                       legend.title.relative.font.size = legend_title_relative_font_size,
+                       legend.text.font = legend_text_font,
+                       legend.symbol.size = legend.symbol.size,
+                       legend.box = legend.box)
+  }
+	  
   # Add scale
   scale_position_longitude <- scale.position[1] * (longitude_maximum - longitude_minimum) + longitude_minimum
   scale_position_latitude <- scale.position[2] * (latitude_maximum - latitude_minimum) + latitude_minimum
