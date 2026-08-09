@@ -5113,7 +5113,8 @@ plot.K.SOM <- function(SOM.output,
   if (support_available && support_is_BIC && max_k > 2) {
     
     # Plot support, delta-BIC, and K-frequency panels
-    par(mfrow = c(3, 1), bty = "n", oma = outer_margins)
+    layout(matrix(1:3, ncol = 1), heights = c(1, 1, 1.3))
+    par(bty = "n", oma = outer_margins)
     par(cex = 1, cex.axis = 1, cex.lab = 1, cex.main = 1)
     par(mar = top_panel_margins)
     support_panel_plotted <- plot.support.panel(values_matrix = support_values, y.axis.label = support_label)
