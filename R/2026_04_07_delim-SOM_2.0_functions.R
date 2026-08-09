@@ -4659,7 +4659,8 @@ plot.layer.distance.scale.SOM <- function(SOM.output,
 #' @param right.margin A single non-negative numeric value giving the right outer
 #'   plot margin in lines. Default: `0`.
 #' @param plot.title Optional character string giving the main plot title. If
-#'   `NULL`, no title is shown. Default: `"Number of clusters (K)"`.
+#'   `"auto"`, the title is generated from the support measure. If `NULL`, no
+#'   title is shown. Default: `"auto"`.
 #' @param plot.title.font.size A single positive numeric value giving the plot
 #'   title font size in points. Default: `9.1`.
 #' @param axis.labels.font.size A single positive numeric value giving the
@@ -4758,7 +4759,7 @@ plot.K.SOM <- function(SOM.output,
                        left.margin = 0.5, #left outer margin
                        top.margin = 2, #top outer margin
                        right.margin = 0, #right outer margin
-                       plot.title = "Number of clusters (K)", #plot title (NULL = no title)
+                       plot.title = "auto", #plot title ("auto" = support measure; NULL = no title)
                        plot.title.font.size = 9.1, #font size of plot title in points
                        axis.labels.font.size = 9.1, #font size of y-axis titles and bottom x-axis K labels in points
                        axis.ticks.font.size = 7 #font size of y-axis numeric tick labels in points
@@ -4873,6 +4874,16 @@ plot.K.SOM <- function(SOM.output,
   if (support_label %in% c("Negative mclust BIC", "Inverted mclust BIC")) support_label <- "BIC"
   support_available <- !is.null(support_values)
   support_is_BIC <- isTRUE(support_label == "BIC")
+
+  # Set automatic plot title
+  plot_title_to_plot <- plot.title
+  if (identical(plot.title, "auto")) {
+    if (support_available) {
+      plot_title_to_plot <- paste0(support_label, " support")
+    } else {
+      plot_title_to_plot <- "Cluster selection frequency"
+    }
+  }
   
   # Extract BIC values for delta-BIC panel
   BIC_values <- NULL
@@ -4922,7 +4933,7 @@ plot.K.SOM <- function(SOM.output,
   half_between_plot_margin <- 2.5 / 2
   inner_left_margin <- 4.5
   inner_right_margin <- 1
-  inner_bottom_margin_with_x_labels <- 2.6
+  inner_bottom_margin_with_x_labels <- 4
   
   # Set panel-specific internal margins
   top_panel_margins <- c(half_between_plot_margin, inner_left_margin, half_between_plot_margin, inner_right_margin)
@@ -5057,6 +5068,13 @@ plot.K.SOM <- function(SOM.output,
           side = 1,
           at = bar_midpoints,
           line = 1,
+          font = 1,
+          cex = axis_labels_relative_font_size)
+
+    # Add x-axis title
+    mtext("Number of clusters (K)",
+          side = 1,
+          line = 2.7,
           font = 2,
           cex = axis_labels_relative_font_size)
     
@@ -5076,8 +5094,8 @@ plot.K.SOM <- function(SOM.output,
   
   # Add outer plot title
   add.outer.plot.title <- function() {
-    if (!is.null(plot.title) && plot.title != "") {
-      mtext(plot.title,
+    if (!is.null(plot_title_to_plot) && plot_title_to_plot != "") {
+      mtext(plot_title_to_plot,
             side = 3,
             outer = TRUE,
             line = 0,
