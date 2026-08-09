@@ -4874,12 +4874,16 @@ plot.K.SOM <- function(SOM.output,
   if (support_label %in% c("Negative mclust BIC", "Inverted mclust BIC")) support_label <- "BIC"
   support_available <- !is.null(support_values)
   support_is_BIC <- isTRUE(support_label == "BIC")
-
-  # Set automatic plot title
+  
+# Set automatic plot title
   plot_title_to_plot <- plot.title
   if (identical(plot.title, "auto")) {
     if (support_available) {
-      plot_title_to_plot <- paste0(support_label, " support")
+      if (support_label == "Support value") {
+        plot_title_to_plot <- "Support"
+      } else {
+        plot_title_to_plot <- paste0(support_label, " support")
+      }
     } else {
       plot_title_to_plot <- "Cluster selection frequency"
     }
