@@ -3707,7 +3707,7 @@ plot.structure.SOM <- function(SOM.output,
                       plotting_assignment_coefficients[cluster_index + 1, individual_index]),
                 col = cluster.colors[cluster_index],
                 border = cluster.colors[cluster_index],
-                lwd = 0.1)
+                lwd = 0.3)
       }
     }
     
