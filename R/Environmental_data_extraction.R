@@ -13,7 +13,7 @@ invisible(gc())
 
 
 ## Set base directory
-base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Test data/Pyron_2023"
+base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Empirical_examples/Pyron_2023"
 setwd(base_dir)
 
 
@@ -72,7 +72,7 @@ invisible(gc())
 
 
 ## Set base directory
-base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Test data/Pyron_et_al_2022"
+base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Empirical_examples/Pyron_et_al_2022"
 setwd(base_dir)
 
 
@@ -130,7 +130,7 @@ invisible(gc())
 
 
 ## Set base directory
-base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Test data/Pyron_et_al_2024"
+base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Empirical_examples/Pyron_et_al_2024"
 setwd(base_dir)
 
 
@@ -187,7 +187,7 @@ invisible(gc())
 
 
 ## Set base directory
-base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Test data/Dupuis_et_al_2018"
+base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Empirical_examples/Dupuis_et_al_2018"
 setwd(base_dir)
 
 
@@ -239,7 +239,8 @@ head(Env_data_occurrences)
 
 #### van Elst et al 2024 ##########################################################
 if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
-remotes::install_github("Daniel-1232/NicheDiv", force = T, upgrade = "never")
+remotes::install_github("Daniel-1232/NicheDiv", force = TRUE, upgrade = "never")
+
 
 ## Clear environment
 rm(list = ls())
@@ -247,7 +248,7 @@ invisible(gc())
 
 
 ## Set base directory
-base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Test data/van_Elst_et_al_2024"
+base_dir <- "C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/Empirical_examples/van_Elst_et_al_2024"
 setwd(base_dir)
 
 
@@ -257,20 +258,22 @@ intermediate_files_dir_name <- "Intermediate_files"
 
 
 ## Set main input parameters
-occurrence_data_file <- "Microcebus_multiple_data_combined.csv"
+occurrence_data_file <- "data_modified_v2.csv"
 csv_occurrence_out_file <- "Microcebus_environmental.csv"
 
 Latitude_col <- "latitude"
 Longitude_col <- "longitude"
-ID_column <- "Individual.ID"
+ID_column <- "SNP_ID"
 buffer_km <- 5
 
 
 
 ## Import occurrences
-occurrence_data <- read.csv(occurrence_data_file)
+occurrence_data <- read.csv(occurrence_data_file, stringsAsFactors = FALSE, header = TRUE, sep = ";")
+occurrence_data <- occurrence_data[!is.na(occurrence_data[[ID_column]]) & trimws(occurrence_data[[ID_column]]) != "" &
+                                     !is.na(occurrence_data[[Latitude_col]]) & !is.na(occurrence_data[[Longitude_col]]), ]
 occurrence_data <- occurrence_data[, c(ID_column, Latitude_col, Longitude_col)]
-
+rownames(occurrence_data) <- occurrence_data[[ID_column]]
 
 
 ## Extract environmental data and background
@@ -292,4 +295,3 @@ NicheDiv::extract.env.and.background(occurrence.data = occurrence_data, #input d
 Env_data_occurrences <- read.csv(file.path(results_dir, csv_occurrence_out_file))
 dim(Env_data_occurrences)
 head(Env_data_occurrences)
-
