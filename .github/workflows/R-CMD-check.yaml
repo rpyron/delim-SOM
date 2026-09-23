@@ -45,6 +45,16 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      - name: Configure OpenMP and reinstall kohonen on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install libomp
+          OMP_PREFIX="$(brew --prefix libomp)"
+          mkdir -p ~/.R
+          echo "CPPFLAGS += -Xclang -fopenmp -I${OMP_PREFIX}/include" >> ~/.R/Makevars
+          echo "LDFLAGS += -L${OMP_PREFIX}/lib -lomp" >> ~/.R/Makevars
+          Rscript -e 'install.packages("kohonen", repos = "https://cloud.r-project.org", type = "source")'
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
