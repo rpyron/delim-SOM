@@ -1,32 +1,27 @@
-# delimSOM
+# Fully integrative species delimitation with the *delimSOM* 2.0 *R* package
 
-[![R-CMD-check](https://github.com/rpyron/delim-SOM/actions/workflows/R-CMD-check.yaml/badge.svg?branch=dev2.0)](https://github.com/rpyron/delim-SOM/actions/workflows/R-CMD-check.yaml)
-
-`delimSOM` is an R package for fully integrative species delimitation using single-layer and multilayer self-organizing maps (SOMs).
-
-The framework jointly analyzes heterogeneous biological data while retaining different data types as separate SOM layers. Genomic, morphological, ecological, spatial, behavioral, host-association, and other quantitative data can therefore contribute to the same unsupervised analysis without requiring predefined species assignments.
-
-The workflow has two main stages. First, `train.SOM()` learns topology-preserving SOM codebook vectors that summarize multivariate structure across individuals and data layers. Second, `clustering.SOM()` clusters those codebook vectors to infer candidate lineages and evaluates support for alternative numbers of clusters (`K`) across replicate SOMs.
+`delimSOM` is an R package for fully integrative species delimitation using single- and multilayer self-organizing maps (SOMs). 
+The framework jointly analyzes multiple heterogeneous data types in a single unsupervised analysis while retaining different data types as separate SOM layers. 
+Any kind of continuous, binary, or categorical data can be used, including genomic, phenotypic, environmental, and spatial data.
 
 ## Main advantages of the approach
 
-- Jointly analyzes multiple heterogeneous data types in one unsupervised framework.
-- Does not require predefined species assignments during SOM training or clustering.
-- Supports single-layer and multilayer analyses.
-- Handles numeric continuous, binary, dosage/count-like, spatial, ecological, morphological, and genomic data.
-- Includes preprocessing functions for SNP/sequence data, categorical variables, and low-variation/high-correlation filtering.
-- Retains partially incomplete individuals and variables through missing-data-aware SOM training.
+- Does not require predefined species assignments.
+- Robust to missing data because it retains partially incomplete individuals and variables through missing-data-aware SOM training.
 - Automatically normalizes variables and balances contributions among SOM layers through layer-specific distance normalization.
-- Supports user-defined layer distance functions and manual layer weights when needed.
+- Supports user-defined layer weights .
 - Trains replicate SOMs to quantify stability and support for inferred lineage structure.
-- Allows `K = 1`, so a dataset is not forced to contain multiple candidate species.
-- Provides six clustering and `K`-selection approaches.
-- Includes diagnostics for SOM learning, map quality, `K` support, replicate-consensus assignments, variable importance, and layer importance.
-- Includes geographic and STRUCTURE-like visualizations of candidate-lineage assignments.
+- Explicitly allows `K = 1`, so a dataset is not forced to contain multiple candidate species.
+- Includes preprocessing functions for SNP/sequence data, categorical variables, and low-variation/high-correlation filtering.
+- Provides six alternative clustering and `K`-selection approaches.
+- Includes diagnostics and visualizations for SOM learning, map quality, `K` support, replicate-consensus assignments, variable importance, and layer importance.
+
 
 ## Development status
 
-Version 2.0 is currently under development on the `dev2.0` branch.
+We have now released version 2.0 of this method!
+
+The framework is described in a preprint (xxx) and the manuscript is currently in review.
 
 Current R package version: `2.0.0.9000`
 
@@ -36,28 +31,16 @@ For bug reports, feedback, or questions, please contact Daniel Schönberger: dan
 
 ## Installation
 
-Install the current development version from GitHub:
+Install and load the *delimSOM* *R* package:
 
 ```r
 if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
-
-remotes::install_github(
-  "rpyron/delim-SOM",
-  ref = "dev2.0"
-)
+remotes::install_github("rpyron/delim-SOM", ref = "dev2.0")
 
 library(delimSOM)
-
 packageVersion("delimSOM")
 ```
 
-Detailed help for every exported function is available directly in R:
-
-```r
-?train.SOM
-?clustering.SOM
-?plot.K.SOM
-```
 
 ## Input data
 
@@ -994,10 +977,8 @@ SOM_tr <- train.SOM(
 
 #### Cluster SOM ###############################################################
 
-SOM_results <- clustering.SOM(
-  SOM.output = SOM_tr,
-  clustering.method = "kmeans+BICelbow"
-)
+SOM_results <- clustering.SOM(SOM.output = SOM_tr,
+                              clustering.method = "kmeans+BICelbow")
 
 
 
@@ -1005,22 +986,16 @@ SOM_results <- clustering.SOM(
 
 SOM_results$optim_k_summary
 
-plot.learning.SOM(
-  SOM_results
-)
+plot.learning.SOM(SOM_results)
 
-plot.K.SOM(
-  SOM_results
-)
+plot.K.SOM(SOM_results)
 
 plot.model.SOM(
   SOM_results,
   replicate.mode = "representative"
 )
 
-plot.structure.SOM(
-  SOM_results
-)
+plot.structure.SOM(SOM_results)
 ```
 
 Important considerations:
@@ -1028,7 +1003,6 @@ Important considerations:
 - Use the same biological individuals across data layers whenever possible.
 - Ensure that row names uniquely identify individuals.
 - Encode missing values as `NA`.
-- Consider the biological meaning of each layer when choosing or verifying distance functions.
 - Inspect training convergence and model-quality diagnostics.
 - Inspect support across alternative values of `K`, not only the modal solution.
 - Treat inferred clusters as candidate-lineage hypotheses rather than definitive taxonomic conclusions.
@@ -1068,17 +1042,10 @@ plot.layer.importance.leaveoneout.SOM()
 
 # Citation
 
-To obtain the current package citation:
+Please cite the *delimSOM* framework as follows
 
-```r
-citation("delimSOM")
-```
+Schönberger, D., Pyron, R. A., & Dupuis, J. R. *delim-SOM 2.0*: Fully integrative species delimitation with machine learning and flexible diverse data types of biological and other data. *bioRxiv*
 
-The package currently reports:
-
-> Schönberger D, Pyron R, Dupuis J (2026). *delimSOM: Self-Organizing Maps for Integrative Species Delimitation*. R package version 2.0.0.9000.
-
-The citation will be updated when the accompanying software manuscript receives its final bibliographic information.
 
 # References
 
@@ -1088,6 +1055,6 @@ Kohonen, T. (1998). The self-organizing map. *Neurocomputing*.
 
 Kohonen, T. (2014). *MATLAB Implementations and Applications of the Self-Organizing Map*.
 
-Pyron, R. A. (2023). Multilayer self-organizing maps for integrative species delimitation.
+Pyron, R. A. (2023). Unsupervised machine learning for species delimitation, integrative taxonomy, and biodiversity conservation. *Molecular Phylogenetics and Evolution*, 189, 107939. https://doi.org/10.1016/j.ympev.2023.107939
 
-Pyron, R. A. et al. (2023). Individual-based self-organizing maps for species delimitation.
+Pyron, R. A., O’Connell, K. A., Duncan, S. C., Burbrink, F. T., & Beamer, D. A. (2023). Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for seal salamanders (*Desmognathus monticola*). *Systematic Biology*, 72(1), 179–197. https://doi.org/10.1093/sysbio/syac065
