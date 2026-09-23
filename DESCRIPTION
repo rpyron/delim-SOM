@@ -1,0 +1,56 @@
+Package: delimSOM
+Type: Package
+Title: Self-Organizing Maps for Integrative Species Delimitation
+Version: 2.0.0.9000
+Authors@R: c(
+    person(
+        given = "Daniel",
+        family = "Schönberger",
+        email = "daniel.schoenberger@uky.edu",
+        role = c("aut", "cre")
+    ),
+    person(
+        given = "R. Alexander",
+        family = "Pyron",
+        role = "aut"
+    ),
+    person(
+        given = "Julian R.",
+        family = "Dupuis",
+        role = "aut"
+    )
+    )
+Description: Tools for integrative species delimitation using single-layer
+    and multi-layer self-organizing maps.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.0
+Imports:
+    adegenet,
+    ape,
+    clue,
+    cluster,
+    clusterCrit,
+    dbscan,
+    doRNG,
+    doSNOW,
+    FactoMineR,
+    foreach,
+    graphics,
+    grDevices,
+    kohonen,
+    maps,
+    matrixStats,
+    mclust,
+    parallel,
+    stats,
+    tools,
+    utils,
+    vcfR,
+    viridis
+URL: https://github.com/rpyron/delim-SOM
+BugReports: https://github.com/rpyron/delim-SOM/issues
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
