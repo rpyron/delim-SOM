@@ -1,5 +1,7 @@
 # delimSOM
 
+[![R-CMD-check](https://github.com/rpyron/delim-SOM/actions/workflows/R-CMD-check.yaml/badge.svg?branch=dev2.0)](https://github.com/rpyron/delim-SOM/actions/workflows/R-CMD-check.yaml)
+
 `delimSOM` implements Self-Organizing Maps (SOMs) for integrative species delimitation using single-layer and multi-layer biological datasets.
 
 The package can jointly analyze heterogeneous data such as genomic, morphological, environmental, spatial, binary, categorical, count, and other multivariate data while retaining individual datasets as separate SOM layers.
