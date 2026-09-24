@@ -1,4 +1,4 @@
-# Fully integrative species delimitation with the *delimSOM* 2.0 *R* package
+# Fully integrative species delimitation with the *delimSOM* 2.0
 
 *delimSOM* is an *R* package for fully integrative species delimitation using single- and multilayer self-organizing maps (SOMs). 
 
@@ -12,9 +12,9 @@ Because the observations are summarized by a smaller set of codebook vectors, SO
 After SOM training, the codebook vectors are clustered into groups that are interpreted as candidate lineages (Pyron et al. 2023).
 
 The framework does not require predefined species assignments and explicitly permits `K = 1`, so subdivision is only inferred when supported (Janes et al. 2017; Pyron et al. 2023).
-Multiple SOM replicates quantify support for alternative K values and the stability of individual assignments
+Multiple SOM replicates quantify support for alternative K values and the stability of individual assignments.
 Data layers are automatically balanced so that no single layer dominates the analysis.
-The method is robust to missing data, because individual matching and codebook-vector updates use only observed variables, allowing partially incomplete individuals to contribute to training without global imputation (Samad & Harp 1992).
+The method is robust to missing data, because individual matching and codebook-vector updates use only observed variables, allowing the contribution of incomplete individuals without global imputation (Samad & Harp 1992).
 This allows heterogeneous evidence to be analyzed jointly within a single framework, incorporating multiple dimensions of ecological and evolutionary divergence to delimit candidate lineages.
 *delimSOM* relies heavily on the R package *kohonen* (Wehrens & Buydens 2007; Wehrens & Kruisselbrink 2018).
 
