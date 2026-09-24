@@ -6,16 +6,16 @@ SOMs are unsupervised machine-learning models that organize high-dimensional dat
 Different sources of information, such as genomic, morphological, environmental, host, or spatial data, are retained as separate layers while jointly contributing to the same map.
 Any data that can be represented quantitatively for a common set of individuals can be incorporated, including continuous, binary, categorical, and count data.
 Each cell in the grid is represented by a codebook vector that summarizes the local multivariate "average" of the individuals mapped to it.
-During training, each individual is repeatedly matched to the most similar grid cell, and that cell together with its neighbors is updated toward the individual's measurements.
-Over many training steps, this produces an organized map in which similar individuals occupy nearby regions and more dissimilar individuals are separated across the grid.
-Because the original observations are summarized by a smaller set of representative codebook vectors, SOMs can reduce sensitivity to individual-level noise and reveal broader structure in complex, high-dimensional datasets (Kohonen 1998).
-After SOM training, the codebook vectors are clustered to identify major groups that are interpreted as candidate lineages (Pyron et al. 2023).
+During training, individuals are repeatedly matched to the most similar grid cell, and that cell and its neighbors are updated toward their measurements.
+Over many training steps, this produces an organized map where similar individuals become represented in nearby regions and dissimilar individuals farther apart.
+Because the observations are summarized by a smaller set of codebook vectors, SOMs can reduce sensitivity to  noise and reveal broader structure in complex datasets (Kohonen 1998).
+After SOM training, the codebook vectors are clustered into groups that are interpreted as candidate lineages (Pyron et al. 2023).
 
-The framework does not require predefined species assignments and explicitly permits `K = 1`, so subdivision is only inferred when supported by the data (Janes et al. 2017; Pyron et al. 2023).
-Multiple independent SOM replicates are trained because both SOM initialization and clustering can vary among runs, allowing support for alternative numbers of clusters (K) and the stability of individual assignments to be quantified across replicates.
-Different data types are automatically balanced so that no single layer dominates the analysis, while users can also give some layers more or less weight if desired.
-Furthermore, the method is relative robust to missing data, as distances and codebook-vector updates are calculated only across observed variables, allowing partially incomplete individuals to contribute to SOM training without requiring global imputation (Samad & Harp 1992).
-This allows heterogeneous evidence to be analyzed jointly within a single framework, incorporating multiple dimensions of ecological and evolutionary divergence to delimit candidate lineages and support integrative taxonomy.
+The framework does not require predefined species assignments and explicitly permits `K = 1`, so subdivision is only inferred when supported (Janes et al. 2017; Pyron et al. 2023).
+Multiple SOM replicates quantify support for alternative K values and the stability of individual assignments
+Data layers are automatically balanced so that no single layer dominates the analysis.
+The method is robust to missing data, because individual matching and codebook-vector updates use only observed variables, allowing partially incomplete individuals to contribute to training without global imputation (Samad & Harp 1992).
+This allows heterogeneous evidence to be analyzed jointly within a single framework, incorporating multiple dimensions of ecological and evolutionary divergence to delimit candidate lineages.
 *delimSOM* relies heavily on the R package *kohonen* (Wehrens & Buydens 2007; Wehrens & Kruisselbrink 2018).
 
 
@@ -61,24 +61,23 @@ packageVersion("delimSOM")
 
 ## Input data
 
-The basic SOM input is either:
-
-1. one numeric matrix/data frame for a single-layer analysis, or
-2. a named list of numeric matrices/data frames for a multilayer analysis.
-
-Rows represent individuals and columns represent variables.
-
-For multilayer analyses, use individual identifiers as row names in every layer. `train.SOM()` identifies the shared individuals across layers and retains the common set in matching order.
-
+SOM input is either one or multiple numeric matrices or data frames.
+Rows should represent individuals and columns variables.
+For multilayer analyses, use individual identifiers as row names in every layer.
 Missing values should be represented as `NA`.
 
-A simple multilayer input therefore looks like:
+Single-layer example input:
+
+```r
+SOM_data <- genomic_matrix
+```
+
+Multilayer example input (requires a list):
 
 ```r
 SOM_data <- list(
   Genomic = genomic_matrix,
   Morphology = morphology_matrix,
-  Environmental = environmental_matrix,
   Spatial = spatial_matrix
 )
 ```
