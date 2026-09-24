@@ -1,33 +1,48 @@
 # Fully integrative species delimitation with the *delimSOM* 2.0 *R* package
 
-`delimSOM` is an *R* package for fully integrative species delimitation using single- and multilayer self-organizing maps (SOMs). 
+*delimSOM* is an *R* package for fully integrative species delimitation using single- and multilayer self-organizing maps (SOMs). 
 
-SOMs are unsupervised machine-learning models that organize complex, high-dimensional observations onto a two-dimensional grid while preserving local relationships among similar observations (Kohonen 1998, 2014). SOMs were first applied to individual-based species delimitation using genetic data by Pyron et al. (2023) and were subsequently extended to multilayer analyses capable of integrating different sources of biological information (Pyron 2023). In `delimSOM`, each data type is retained as a separate layer, but all layers jointly contribute to a shared SOM through layer-specific distance functions and weighting. During training, individuals with similar combinations of measurements are represented by neighboring map units, while more dissimilar individuals become separated across the map. The resulting map units are represented by codebook vectors that summarize the multivariate information of the individuals assigned to them. These codebook vectors are then clustered to infer candidate lineages, and replicate SOM analyses are used to evaluate support for alternative numbers of clusters (`K`) and the stability of individual assignments. The framework does not require predefined species assignments and explicitly allows `K = 1`. Any data that can be represented quantitatively for a common set of individuals can be incorporated, including genomic, morphological, behavioral, ecological, spatial, and other continuous, binary, categorical, or count data.
+SOMs are unsupervised machine-learning models that organize high-dimensional biological data on a two-dimensional grid map so that individuals with similar overall patterns are represented near one another (Kohonen 1998, 2014).
+Different sources of information, such as genomic, morphological, environmental, host, or spatial data, are retained as separate layers while jointly contributing to the same map.
+Essentially any data that can be represented quantitatively for a common set of individuals can be incorporated, including continuous, binary, categorical, and count data.
+Each cell in the grid map is represented by a codebook vector that summarizes the local multivariate pattern of the individuals mapped to it (or in simple terms, the "multivariate average").
+During training, each individual is repeatedly matched to the most similar grid cell, and that cell together with its neighbors is updated toward the individual's measurements.
+Over many training steps, this produces an organized map in which similar individuals occupy nearby regions and more dissimilar individuals are separated across the grid.
+Because the original observations are summarized by a smaller set of representative codebook vectors, SOMs can reduce sensitivity to individual-level noise and reveal broader structure in complex, high-dimensional datasets (Kohonen 1998).
+After SOM training, the codebook vectors are clustered to identify major groups that are interpreted as candidate lineages (Pyron et al. 2023).
 
-The motivation behind `delimSOM` is that speciation is a multidimensional evolutionary process in which genetic differentiation, phenotypic evolution, ecological specialization, reproductive isolation, and geographic isolation can arise through different mechanisms and accumulate at different rates (de Queiroz 2007). Robust species hypotheses are therefore more likely to emerge when multiple complementary sources of evidence are considered together rather than relying on a single property of lineage divergence (Dayrat 2005; Padial et al. 2010; Schlick-Steiner et al. 2010). Although integrative species delimitation has been advocated for decades, most existing workflows still analyze different sources of evidence separately and compare their resulting species hypotheses afterward, or use one data type to define candidate lineages that are subsequently evaluated with additional evidence. `delimSOM` addresses this limitation by allowing heterogeneous biological data to jointly inform species delimitation within a single unsupervised analysis. Variables are normalized before training, differences in the distance scales of layers are automatically balanced, and users can additionally specify data-type-specific distance functions or layer weights when appropriate. This makes it possible to integrate information that differs substantially in scale, dimensionality, missingness, and biological interpretation while retaining each source of evidence as a distinct component of the analysis.
+The framework does not require predefined species assignments and explicitly permits `K = 1`, so subdivision is only inferred when supported by the data (Janes et al. 2017; Pyron et al. 2023).
+Multiple independent SOM replicates are trained because both SOM initialization and clustering can vary among runs, allowing support for alternative numbers of clusters (K) and the stability of individual assignments to be quantified across replicates.
+Different data types are automatically balanced so that no single layer dominates the analysis, while users can also give some layers more or less weight if desired.
+Furthermore, the method is relative robust to missing data, as distances and codebook-vector updates are calculated only across observed variables, allowing partially incomplete individuals to contribute to SOM training without requiring global imputation (Samad & Harp 1992).
+This allows heterogeneous evidence to be analyzed jointly within a single framework, incorporating multiple dimensions of ecological and evolutionary divergence to delimit candidate lineages and support integrative taxonomy.
+*delimSOM* relies heavily on the R package *kohonen* (Wehrens & Buydens 2007; Wehrens & Kruisselbrink 2018).
+
 
 ## Main advantages of the approach
 
-- Does not require predefined species assignments.
-- Robust to missing data because it retains partially incomplete individuals and variables through missing-data-aware SOM training.
-- Automatically normalizes variables and balances contributions among SOM layers through layer-specific distance normalization.
-- Supports user-defined layer weights .
-- Trains replicate SOMs to quantify stability and support for inferred lineage structure.
-- Explicitly allows `K = 1`, so a dataset is not forced to contain multiple candidate species.
-- Includes preprocessing functions for SNP/sequence data, categorical variables, and low-variation/high-correlation filtering.
-- Provides six alternative clustering and `K`-selection approaches.
-- Includes diagnostics and visualizations for SOM learning, map quality, `K` support, replicate-consensus assignments, variable importance, and layer importance.
+- Supports any input data
+- Jointly integrates multiple data types in a single analysis
+- Automatically balances contributions among data layers
+- Allows `K = 1`
+- Does not require predefined species assignments
+- Robust to missing data 
+- Quantifies relative support across multiple K values
+- Provides STRUCTURE-like plots of replicate-consensus assignments
+- Includes six alternative clustering and `K`-selection approaches
+- Includes diagnostics and visualizations
 
 
-## Development status
+## Update: version 2.0
 
-We have now released version 2.0 of this method!
+We have now released version 2.0 of the delim-SOM framework!
+This species-delimitation framework was originally developed by Pyron et al. (2023) and subsequently extended by Pyron (2023) to multilayer SOMs for integrative species delimitation.
+With *delimSOM* 2.0 (Schönberger et al. 2026), we expand the original framework into a comprehensive *R* package with improved data preprocessing and SOM training, multiple clustering and K-selection approaches, extensive diagnostics and visualizations, and new variable- and layer-importance analyses.
 
-The framework is described in a preprint (xxx) and the manuscript is currently in review.
-
-Current R package version: `2.0.0.9000`
+Current *R* package version: `2.0.0.9000`
 
 For bug reports, feedback, or questions, please contact Daniel Schönberger: daniel.schoenberger@uky.edu.
+
 
 # Tutorial
 
