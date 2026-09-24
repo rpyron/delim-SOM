@@ -1,4 +1,4 @@
-# Fully integrative species delimitation with the *delimSOM* 2.0
+# Fully integrative species delimitation with *delimSOM* 2.0
 
 *delimSOM* is an *R* package for fully integrative species delimitation using single- and multilayer self-organizing maps (SOMs). 
 
