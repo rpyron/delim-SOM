@@ -44,7 +44,7 @@ Current *R* package version: `2.0.0.9000`
 For bug reports, feedback, or questions, please contact Daniel Schönberger: daniel.schoenberger@uky.edu.
 
 
-# Tutorial
+# Basic tutorial
 
 ## Installation
 
@@ -61,7 +61,7 @@ packageVersion("delimSOM")
 
 ## Input data
 
-SOM input is either one or multiple numeric matrices or data frames.
+Input data should be supplied as one or multiple numeric matrices or data frames.
 Rows should represent individuals and columns variables.
 For multilayer analyses, use individual identifiers as row names in every layer.
 Missing values should be represented as `NA`.
@@ -82,7 +82,7 @@ SOM_data <- list(
 )
 ```
 
-### Genetic and sequence data
+#### Genetic and sequence data
 
 `process.SNP.data.SOM()` converts several common genetic inputs into matrices suitable for SOM analysis. Supported inputs include VCF, `genind`, `genlight`, numeric SNP-dosage matrices, PLINK `.raw`, NEXUS, FASTA, and PHYLIP.
 
