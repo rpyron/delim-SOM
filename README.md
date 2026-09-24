@@ -44,9 +44,9 @@ Current *R* package version: `2.0.0.9000`
 For bug reports, feedback, or questions, please contact Daniel Schönberger: daniel.schoenberger@uky.edu.
 
 
-# Basic tutorial
+# A) Basic tutorial
 
-## Installation
+## 1. Installation
 
 Install and load the *delimSOM* *R* package:
 
@@ -59,7 +59,7 @@ packageVersion("delimSOM")
 ```
 
 
-## Input data
+## 2. Input data
 
 Input data should be supplied as one or multiple numeric matrices or data frames.
 Rows should represent individuals and columns variables.
@@ -82,92 +82,161 @@ SOM_data <- list(
 )
 ```
 
-#### Genetic and sequence data
+## 3. Data processing
 
-`process.SNP.data.SOM()` converts several common genetic inputs into matrices suitable for SOM analysis. Supported inputs include VCF, `genind`, `genlight`, numeric SNP-dosage matrices, PLINK `.raw`, NEXUS, FASTA, and PHYLIP.
+We provide several functions to prepare, filter, and process different input data types, making it suitable for subsequent SOM training.
 
-For example:
+### 3.1 Genetic data
 
-```r
-SNP_data <- process.SNP.data.SOM(
-  vcf.path = "data.vcf",
-  missing.loci.cutoff.lenient = 0.7,
-  missing.loci.cutoff.final = 0.5,
-  missing.individuals.cutoff = 0.5
-)
-```
+`process.SNP.data.SOM()` can be used to process and filter genetic data.
+Supported inputs include VCF, `genind`, `genlight`, numeric SNP-dosage matrices, PLINK `.raw`, NEXUS, FASTA, and PHYLIP.
+For VCF input, retained biallelic SNPs are converted to numeric 0/1/2 dosage data.
+The function returns a numeric matrix with individuals as rows and retained biallelic loci as columns, ready for SOM training. 
+For diploid genotype data, loci are encoded as 0/1/2 dosage values.
 
-### Categorical data
-
-Categorical variables can be converted to binary indicator variables with `make.cols.binary.SOM()`:
+VCF example using the recommended default filters:
 
 ```r
-binary_data <- make.cols.binary.SOM(
-  dataframe = categorical_data,
-  make.binary.cols = c("Host", "Habitat")
-)
+SNP_data <- process.SNP.data.SOM(vcf.path = "data/data.vcf",
+                                 missing.loci.cutoff.lenient = 0.7,
+                                 missing.loci.cutoff.final = 0.5,
+                                 missing.individuals.cutoff = 0.5)
 ```
+This filtering first removes loci with >70% missing data, then individuals with >50% missing data, followed by a final locus filter of >50% missing data. 
+Singleton and invariant loci are also removed by default (but can be retained using `singleton.loci.filter = FALSE` or `invariant.loci.filter = FALSE`).
 
-### Continuous numeric data
-
-Continuous environmental, morphological, physiological, spatial, or other numeric matrices can be filtered with `remove.lowCV.multicollinearity.SOM()`:
+Other supported genetic input formats can be supplied as follows:
 
 ```r
-continuous_data <- remove.lowCV.multicollinearity.SOM(
-  continuous_data,
-  CV.threshold = 0.05,
-  cor.threshold = 0.9
-)
+# genind object
+SNP_data <- process.SNP.data.SOM(genind.input = genind_object)
+
+# genlight object
+SNP_data <- process.SNP.data.SOM(genlight.input = genlight_object)
+
+# Numeric diploid SNP dosage matrix or data frame
+SNP_data <- process.SNP.data.SOM(snp.matrix.input = SNP_matrix,
+                                 snp.matrix.ploidy = 2)
+
+# PLINK .raw file
+SNP_data <- process.SNP.data.SOM(plink.raw.path = "data/data.raw")
+
+# NEXUS alignment
+SNP_data <- process.SNP.data.SOM(nexus.path = "data/data.nex")
+
+# FASTA alignment
+SNP_data <- process.SNP.data.SOM(fasta.path = "data/data.fasta")
+
+# PHYLIP alignment
+SNP_data <- process.SNP.data.SOM(phylip.path = "data/data.phy",
+                                 phylip.format = "sequential")
 ```
 
-`train.SOM()` additionally performs its own row matching, missing-data filtering, zero-variance filtering, and variable-wise min-max normalization before SOM training.
+### 3.2 Categorical data
 
-## Distance functions
+Categorical variables can be converted to binary indicator variables (0/1) with `make.cols.binary.SOM()`.
+Each observed category is converted into a separate binary column.
+For example, a `Habitat` variable with `"forest"` and `"grassland"` becomes `Habitat_forest` and `Habitat_grassland`.
+Missing values remain `NA`.
+By default, the function returns only the newly generated binary indicator columns suitable for SOM training.
 
-When `layer.distance.functions = NULL`, `train.SOM()` automatically infers a distance type from each layer:
-
-- binary `0/1` data: `"tanimoto"`
-- dosage/count-like `0/1/2` data: `"manhattan"`
-- other numeric continuous data: `"sumofsquares"`
-
-Users should verify that the automatically inferred distance is biologically appropriate. Distances can be supplied manually when needed:
+Example converting two categorical variables called `Host` and `Habitat`:
 
 ```r
-SOM_tr <- train.SOM(
-  input_data = SOM_data,
-  layer.distance.functions = c(
-    "manhattan",
-    "sumofsquares",
-    "sumofsquares",
-    "sumofsquares"
-  )
-)
+binary_data <- make.cols.binary.SOM(dataframe = categorical_data,
+                                    make.binary.cols = c("Host", "Habitat"))
 ```
 
-## Recommended workflow
+### 3.3 Continuous data
 
-The core analysis consists of training replicate SOMs and then clustering their codebook vectors.
+Continuous environmental, morphological, or other numeric data can be filtered with `remove.lowCV.multicollinearity.SOM()`.
+The function removes variables with low variation and strongly correlated variables.
+By default, variables with a coefficient of variation ≤0.05 are removed, followed by iterative removal of variables with an absolute Spearman correlation >0.9.
+
+Example using the recommended default filters:
 
 ```r
-SOM_tr <- train.SOM(
-  input_data = SOM_data
-)
-
-SOM_results <- clustering.SOM(
-  SOM.output = SOM_tr,
-  clustering.method = "kmeans+BICelbow"
-)
+continuous_data <- remove.lowCV.multicollinearity.SOM(input.dataframe = continuous_data,
+                                                      CV.threshold = 0.05,
+                                                      cor.threshold = 0.9)
 ```
 
-We recommend starting with `"kmeans+BICelbow"` because the simulation analyses associated with delim-SOM 2.0 found that the k-means/BIC approaches provided a strong balance of lineage recovery, assignment accuracy, and computational efficiency.
+Specific columns can be retained but ignored for filtering using `exclude.cols`, for example coordinates or identifiers:
 
-The automatically selected `K` should not be interpreted in isolation. Inspect the full `K`-support profile, replicate-consensus assignments, SOM topology, and—when biologically appropriate—hierarchical analyses within recovered candidate lineages.
+```r
+continuous_data <- remove.lowCV.multicollinearity.SOM(input.dataframe = continuous_data,
+                                                       CV.threshold = 0.05,
+                                                       cor.threshold = 0.9,
+                                                       exclude.cols = c("Latitude", "Longitude", "ID"))
+```
 
-# Empirical tutorial: Polygonia anglewing butterflies
+
+
+## 4. SOM training and clustering
+
+The core analysis consists of training replicate SOMs and then clustering their codebook vectors into candidate lineages.
+For multilayer analyses, only individuals shared across all layers are retained.
+
+### 4.1 SOM training
+
+First, we train the SOM map using the recommended defaults. 
+`N.steps` controls the number of training iterations for each SOM, while `N.replicates` controls the number of independently trained SOMs.
+Replicates are run in parallel by default, with the number of cores specified using `N.cores` (3-4 cores worked well in testing).
+Samples and variables containing more than 50% missing data are removed by default using `max.NA.row = 0.5` and `max.NA.col = 0.5`.
+Results can be saved during training using `save.SOM.results = TRUE` and `save.SOM.results.name`.
+
+```r
+SOM_tr <- train.SOM(input_data = SOM_data,
+                    parallel = TRUE,
+                    N.cores = 3,
+                    N.steps = 100,
+                    N.replicates = 110,
+                    max.NA.row = 0.5,
+                    max.NA.col = 0.5,
+                    save.SOM.results = TRUE,
+                    save.SOM.results.name = "SOM_tr.Rdata")
+```
+
+
+### 4.2 SOM clustering
+
+After SOM training, the codebook vectors from each replicate are clustered into groups interpreted as candidate lineages and estimate support for alternative values of `K`.
+Although we implement six alternative clustering and K-selection approaches, we recommend using the `"kmeans+BICelbow"` approach.
+This method first applies k-means clustering to the SOM codebook vectors across alternative values of K and then uses a conservative BIC-elbow criterion to select the optimal K.
+The approach performed best overall in our analyses and has also been used successfully in previous SOM-based species-delimitation analyses (Schönberger et al. 2026; Pyron 2023).
+`max.k` specifies the maximum number of candidate clusters evaluated.
+Results can be saved during clustering using `save.SOM.results = TRUE` and `save.SOM.results.name`.
+
+```r
+SOM_results <- clustering.SOM(SOM.output = SOM_tr,
+                              max.k = 10,
+                              clustering.method = "kmeans+BICelbow",
+                              save.SOM.results = TRUE,
+                              save.SOM.results.name = "SOM_results.Rdata")
+```
+
+
+By default, alternative values from K = 1 to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
+Clustering can also be rerun with a specific value of K enforced using `set.k`.
+When `set.k` is supplied, only that value of K is evaluated, bypassing automatic K-selection while retaining the replicate SOM framework.
+This is useful when automatic K-selection is not optimal or when multiple K values receive substantial support and results for a specific solution are desired.
+
+Example forcing a three-lineage solution:
+
+```r
+SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
+                                 set.k = 3,
+                                 clustering.method = "kmeans+BICelbow",
+                                 save.SOM.results = TRUE,
+                                 save.SOM.results.name = "SOM_results_K3.Rdata")
+```
+
+
+
+
+# B) Empirical tutorial: *Polygonia* anglewing butterflies
 
 The following example reproduces the main empirical focus study using western Canadian *Polygonia* anglewing butterflies from Dupuis et al. (2018):
-
-> Dupuis, J. R. et al. (2018). [Genomics confirms surprising ecological divergence and isolation in an enigmatic butterfly species complex](https://doi.org/10.1093/zoolinnean/zlx081).
 
 The original study recognized four species:
 
@@ -176,7 +245,7 @@ The original study recognized four species:
 - *Polygonia progne*
 - *Polygonia satyrus*
 
-For the delim-SOM 2.0 reanalysis, 200 shared individuals were analyzed across six complementary layers:
+For our *delim-SOM* 2.0 reanalysis, 200 shared individuals were analyzed across six complementary layers:
 
 1. genome-wide GBS SNPs
 2. mitochondrial COI
@@ -185,29 +254,13 @@ For the delim-SOM 2.0 reanalysis, 200 shared individuals were analyzed across si
 5. environmental variables
 6. spatial variables
 
-The example data are stored in:
+The example data can be downloaded here:
 
 ```text
-Empirical_examples/Dupuis_et_al_2018/
+https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_2018
 ```
 
-Because `Empirical_examples/` is retained in the GitHub repository but excluded from the installed R package, clone or download the GitHub repository if you want to run this empirical example locally.
 
-For example:
-
-```text
-git clone --branch dev2.0 https://github.com/rpyron/delim-SOM.git
-```
-
-Then run the tutorial from the repository root.
-
-The environmental table included in the repository has already been extracted from geographic coordinates. The full manuscript analysis used `NicheDiv` for environmental preprocessing, so install it if you want to reproduce that step exactly:
-
-```r
-if (!requireNamespace("NicheDiv", quietly = TRUE)) {
-  remotes::install_github("Daniel-1232/NicheDiv")
-}
-```
 
 ## 1. Set paths
 
@@ -1056,9 +1109,31 @@ plot.layer.importance.varimp.SOM()
 plot.layer.importance.leaveoneout.SOM()
 ```
 
+## Distance functions
+
+When `layer.distance.functions = NULL`, `train.SOM()` automatically infers a distance type from each layer:
+
+- binary `0/1` data: `"tanimoto"`
+- dosage/count-like `0/1/2` data: `"manhattan"`
+- other numeric continuous data: `"sumofsquares"`
+
+Users should verify that the automatically inferred distance is biologically appropriate. Distances can be supplied manually when needed:
+
+```r
+SOM_tr <- train.SOM(
+  input_data = SOM_data,
+  layer.distance.functions = c(
+    "manhattan",
+    "sumofsquares",
+    "sumofsquares",
+    "sumofsquares"
+  )
+)
+```
+
 # Citation
 
-Please cite the *delimSOM* framework as follows
+Please cite the *delimSOM* framework as follows:
 
 Schönberger, D., Pyron, R. A., & Dupuis, J. R. *delim-SOM 2.0*: Fully integrative species delimitation with machine learning and flexible diverse data types of biological and other data. *bioRxiv*
 
