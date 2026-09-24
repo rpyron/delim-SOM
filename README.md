@@ -2,10 +2,10 @@
 
 *delimSOM* is an *R* package for fully integrative species delimitation using single- and multilayer self-organizing maps (SOMs). 
 
-SOMs are unsupervised machine-learning models that organize high-dimensional biological data on a two-dimensional grid map so that individuals with similar overall patterns are represented near one another (Kohonen 1998, 2014).
+SOMs are unsupervised machine-learning models that organize high-dimensional data on a two-dimensional grid map so that individuals with similar overall patterns are represented near one another (Kohonen 1998, 2014).
 Different sources of information, such as genomic, morphological, environmental, host, or spatial data, are retained as separate layers while jointly contributing to the same map.
-Essentially any data that can be represented quantitatively for a common set of individuals can be incorporated, including continuous, binary, categorical, and count data.
-Each cell in the grid map is represented by a codebook vector that summarizes the local multivariate pattern of the individuals mapped to it (or in simple terms, the "multivariate average").
+Any data that can be represented quantitatively for a common set of individuals can be incorporated, including continuous, binary, categorical, and count data.
+Each cell in the grid is represented by a codebook vector that summarizes the local multivariate "average" of the individuals mapped to it.
 During training, each individual is repeatedly matched to the most similar grid cell, and that cell together with its neighbors is updated toward the individual's measurements.
 Over many training steps, this produces an organized map in which similar individuals occupy nearby regions and more dissimilar individuals are separated across the grid.
 Because the original observations are summarized by a smaller set of representative codebook vectors, SOMs can reduce sensitivity to individual-level noise and reveal broader structure in complex, high-dimensional datasets (Kohonen 1998).
