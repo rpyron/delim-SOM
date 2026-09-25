@@ -174,8 +174,8 @@ binary_data <- make.cols.binary.SOM(dataframe = categorical_data,
 ### 3.3 Continuous data
 
 Continuous environmental, morphological, or other numeric data can be filtered with `remove.lowCV.multicollinearity.SOM()`.
-The function removes variables with low variation and strongly correlated variables.
-By default, variables with a coefficient of variation ≤0.05 are removed, followed by iterative removal of variables with an absolute Spearman correlation >0.9.
+This function removes variables with negligible variation or strong correlations.
+By default, variables with a coefficient of variation ≤0.05 are removed, followed by iterative removal of variables with pairwise absolute Spearman correlations >0.9.
 
 Example using the recommended default filters:
 
@@ -185,7 +185,7 @@ continuous_data <- remove.lowCV.multicollinearity.SOM(input.dataframe = continuo
                                                       cor.threshold = 0.9)
 ```
 
-Specific columns can be retained but ignored for filtering using `exclude.cols`, for example coordinates or identifiers:
+Specific columns can be ignored for filtering but retained in the dataset using `exclude.cols`, for example coordinates or identifiers:
 
 ```r
 continuous_data <- remove.lowCV.multicollinearity.SOM(input.dataframe = continuous_data,
@@ -198,14 +198,14 @@ continuous_data <- remove.lowCV.multicollinearity.SOM(input.dataframe = continuo
 
 ## 4. SOM training and clustering
 
-The core analysis consists of training replicate SOMs and then clustering their codebook vectors into candidate lineages.
+The core analysis of *delim-SOM* consists of training replicate SOMs and then clustering their codebook vectors to identify candidate lineages.
 For multilayer analyses, only individuals shared across all layers are retained.
 
 ### 4.1 SOM training
 
-First, we train the SOM map using the recommended defaults. 
+First, we train multiple SOM maps using the recommended defaults. 
 `N.steps` controls the number of training iterations for each SOM, while `N.replicates` controls the number of independently trained SOMs.
-Replicates are run in parallel by default, with the number of cores specified using `N.cores` (3-4 cores worked well in testing).
+Replicates are run in parallel by default (recommended for large datasets), with the number of cores specified using `N.cores` (3-4 cores worked well in testing).
 Samples and variables containing more than 50% missing data are removed by default using `max.NA.row = 0.5` and `max.NA.col = 0.5`.
 Results can be saved during training using `save.SOM.results = TRUE` and `save.SOM.results.name`.
 
@@ -224,10 +224,10 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 
 ### 4.2 SOM clustering
 
-After SOM training, the codebook vectors from each replicate are clustered into groups interpreted as candidate lineages and estimate support for alternative values of `K`.
-Although we implement six alternative clustering and K-selection approaches, we recommend using the `"kmeans+BICelbow"` approach.
-This method first applies k-means clustering to the SOM codebook vectors across alternative values of K and then uses a conservative BIC-elbow criterion to select the optimal K.
-The approach performed best overall in our analyses and has also been used successfully in previous SOM-based species-delimitation analyses (Schönberger et al. 2026; Pyron 2023).
+After SOM training, the codebook vectors from each replicate are clustered into groups. These are then interpreted as candidate lineages and estimate support for alternative values of K (Pyron et al. 2023).
+Although we implement six alternative clustering and K-selection approaches, we recommend using the `"kmeans+BICelbow"` approach:
+it first applies k-means clustering to the codebook vectors across alternative K values and then uses a conservative BIC-elbow criterion to select the best-supported K.
+This approach performed best in our analyses (Schönberger et al. 2026) and has also been used successfully in previous SOM-based species-delimitation analyses (Pyron et al. 2023; Pyron 2023).
 `max.k` specifies the maximum number of candidate clusters evaluated.
 Results can be saved during clustering using `save.SOM.results = TRUE` and `save.SOM.results.name`.
 
@@ -241,9 +241,8 @@ SOM_results <- clustering.SOM(SOM.output = SOM_tr,
 
 
 By default, alternative values from K = 1 to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
-Clustering can also be rerun with a specific value of K enforced using `set.k`.
-When `set.k` is supplied, only that value of K is evaluated, bypassing automatic K-selection while retaining the replicate SOM framework.
-This is useful when automatic K-selection is not optimal or when multiple K values receive substantial support and results for a specific solution are desired.
+Clustering can also be rerun for a single K value by supplying `set.k`, which bypasses automatic K-selection while retaining the replicate SOM framework.
+This is useful when automatic K-selection fails after visual inspection of the BIC curve or when multiple K values receive substantial support and results for a specific solution are desired.
 
 Example forcing a three-lineage solution:
 
@@ -260,16 +259,10 @@ SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
 
 # B) Empirical tutorial: *Polygonia* anglewing butterflies
 
-The following example reproduces the main empirical focus study using western Canadian *Polygonia* anglewing butterflies from Dupuis et al. (2018):
+The following example reproduces the main empirical focus study using western Canadian *Polygonia* anglewing butterflies (Lepidoptera: Nymphalidae) from Dupuis et al. (2018)
+The original study inferred four species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*.
 
-The original study recognized four species:
-
-- *Polygonia faunus*
-- *Polygonia gracilis*
-- *Polygonia progne*
-- *Polygonia satyrus*
-
-For our *delim-SOM* 2.0 reanalysis, 200 shared individuals were analyzed across six complementary layers:
+For our *delim-SOM* 2.0 reanalysis, we analyzed 200 individuals shared across all six complementary layers:
 
 1. genome-wide GBS SNPs
 2. mitochondrial COI
