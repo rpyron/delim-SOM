@@ -259,8 +259,11 @@ SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
 
 # B) Empirical tutorial: *Polygonia* anglewing butterflies
 
-The following example reproduces the main empirical focus study using western Canadian *Polygonia* anglewing butterflies (Lepidoptera: Nymphalidae) from Dupuis et al. (2018).
+This tutorial section demonstrates the main steps of the *delim-SOM* 2.0 workflow based on empirical case study 1 presented in our study (Schönberger et al. 2026).
+The example uses four broadly sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species (Lepidoptera: Nymphalidae) from Dupuis et al. (2018).
 The original study inferred four species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*.
+
+###### Note: ADD FIGURE 5 Dupuis 18
 
 For our *delim-SOM* 2.0 reanalysis, we analyzed 200 individuals shared across all six complementary layers:
 
@@ -287,7 +290,7 @@ https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_
 example_dir <- file.path("Empirical_examples", "Dupuis_et_al_2018")
 ```
 
-## 2 Import and process data for SOM analyses
+## 2. Import and process data for SOM analyses
 
 
 ### 2.1 Process genome-wide SNP data
@@ -351,8 +354,10 @@ This retains 213 biallelic COI variables from the original 1,348 alignment sites
 
 ### 2.3 Prepare continuous wing-color morphology
 
-This section imports the continuous morphology data containing RGB measurements from dorsal and ventral wing regions.
+This section imports the continuous morphology data containing RGB measurements from six dorsal and ventral wing regions.
 The specimen identifiers are used as row names, and the non-morphological `Name` and `Species` columns are removed before we inspect the output.
+
+###### Note: ADD FIGURE 3 Dupuis 18
 
 ```r
 #### Prepare continuous morphology ############################################
@@ -377,6 +382,8 @@ This results in 18 continuous wing-color variables for 237 individuals:
 
 We next import the visually scored wing characters and use the specimen identifiers as row names.
 Wing character 8 is treated as nominal rather than ordinal and is therefore converted into four binary indicator variables.
+
+###### Note: ADD FIGURE 2 Dupuis 18
 
 ```r
 #### Prepare categorical morphology ###########################################
@@ -501,9 +508,9 @@ Filtering removes 3 of the 18 continuous variables due to pairwise absolute Spea
 
 ### 2.7 Prepare environmental data
 
-As next step, we import the environmental variables previously extracted for each specimen locality.
-The environmental dataset was generated using the *NicheDiv* *R* package (Schönberger et al. 2026), which extracts a comprehensive set of environmental variables from specimen coordinates for evaluating environmental differentiation (Schönberger et al. 2026).
-We remove all three spatial variables.
+As a next step, we import the environmental variables previously extracted for each specimen locality.
+The environmental dataset was generated using the *NicheDiv* *R* package (Schönberger et al. 2026), which extracts a comprehensive set of environmental variables from specimen coordinates for evaluating environmental differentiation.
+We remove latitude, longitude, and elevation because they are analyzed separately in the spatial layer (see below).
 
 ```r
 #### Prepare environmental data ################################################
