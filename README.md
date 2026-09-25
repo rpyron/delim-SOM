@@ -88,13 +88,13 @@ genomic_matrix <- matrix(c(0, 1, 2, 0,
                          dimnames = list(c("Individual_1", "Individual_2", "Individual_3", "Individual_4"),
                                          c("SNP_1", "SNP_2", "SNP_3", "SNP_4")))
 
-SOM_data <- genomic_matrix
+SOM_data_single <- genomic_matrix
 ```
 
 Multilayer example input (requires a list):
 
 ```r
-SOM_data <- list(
+SOM_data_multi <- list(
   Genomic = genomic_matrix,
   Morphology = morphology_matrix,
   Spatial = spatial_matrix
@@ -103,7 +103,7 @@ SOM_data <- list(
 
 ## 3. Data processing
 
-We provide several functions to prepare, filter, and process different input data types, making it suitable for subsequent SOM training.
+We provide several functions to prepare, filter, and process different input data types, making them suitable for subsequent SOM analyses.
 
 ### 3.1 Genetic data
 
@@ -114,6 +114,9 @@ The function returns a numeric matrix with individuals as rows and retained bial
 For diploid genotype data, loci are encoded as 0/1/2 dosage values.
 
 VCF example using the recommended default filters:
+This filtering first removes loci with >70% missing data, then individuals with >50% missing data, followed by a final locus filter of >50% missing data. 
+Singleton and invariant loci are also removed by default (but can be retained using `singleton.loci.filter = FALSE` or `invariant.loci.filter = FALSE`).
+
 
 ```r
 SNP_data <- process.SNP.data.SOM(vcf.path = "data/data.vcf",
@@ -121,8 +124,6 @@ SNP_data <- process.SNP.data.SOM(vcf.path = "data/data.vcf",
                                  missing.loci.cutoff.final = 0.5,
                                  missing.individuals.cutoff = 0.5)
 ```
-This filtering first removes loci with >70% missing data, then individuals with >50% missing data, followed by a final locus filter of >50% missing data. 
-Singleton and invariant loci are also removed by default (but can be retained using `singleton.loci.filter = FALSE` or `invariant.loci.filter = FALSE`).
 
 Other supported genetic input formats can be supplied as follows:
 
@@ -136,6 +137,10 @@ SNP_data <- process.SNP.data.SOM(genlight.input = genlight_object)
 # Numeric diploid SNP dosage matrix or data frame
 SNP_data <- process.SNP.data.SOM(snp.matrix.input = SNP_matrix,
                                  snp.matrix.ploidy = 2)
+                                 
+# Numeric haploid SNP dosage matrix or data frame
+SNP_data <- process.SNP.data.SOM(snp.matrix.input = SNP_matrix,
+                                 snp.matrix.ploidy = 1)
 
 # PLINK .raw file
 SNP_data <- process.SNP.data.SOM(plink.raw.path = "data/data.raw")
@@ -154,8 +159,8 @@ SNP_data <- process.SNP.data.SOM(phylip.path = "data/data.phy",
 ### 3.2 Categorical data
 
 Categorical variables can be converted to binary indicator variables (0/1) with `make.cols.binary.SOM()`.
-Each observed category is converted into a separate binary column.
-For example, a `Habitat` variable with `"forest"` and `"grassland"` becomes `Habitat_forest` and `Habitat_grassland`.
+This function converts each observed category into a separate binary column.
+For example, a `Habitat` variable with `"forest"` and `"grassland"` will create two columns called `Habitat_forest` and `Habitat_grassland` filled with 0 (absent) or 1 (present).
 Missing values remain `NA`.
 By default, the function returns only the newly generated binary indicator columns suitable for SOM training.
 
