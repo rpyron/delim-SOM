@@ -71,6 +71,13 @@ Missing values should be represented as `NA`.
 
 Single-layer example input:
 
+| | SNP_1 | SNP_2 | SNP_3 | SNP_4 |
+|---|---:|---:|---:|---:|
+| Individual_1 | 0 | 1 | 2 | 0 |
+| Individual_2 | 1 | 1 | 0 | 2 |
+| Individual_3 | 2 | 0 | 1 | 1 |
+| Individual_4 | 0 | 2 | NA | 1 |
+
 ```r
 genomic_matrix <- matrix(c(0, 1, 2, 0,
                            1, 1, 0, 2,
@@ -81,7 +88,6 @@ genomic_matrix <- matrix(c(0, 1, 2, 0,
                          dimnames = list(c("Individual_1", "Individual_2", "Individual_3", "Individual_4"),
                                          c("SNP_1", "SNP_2", "SNP_3", "SNP_4")))
 
-genomic_matrix
 SOM_data <- genomic_matrix
 ```
 
