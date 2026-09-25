@@ -2,22 +2,23 @@
 
 *delimSOM* is an *R* package for fully integrative species delimitation using single- and multilayer self-organizing maps (SOMs). 
 
-SOMs are unsupervised machine-learning models that organize high-dimensional data on a two-dimensional grid map so that individuals with similar overall patterns are represented near one another (Kohonen 1998, 2014).
+SOMs are unsupervised machine-learning models that organize high-dimensional data on a two-dimensional grid map so individuals with similar overall patterns are represented near one another (Kohonen 1998, 2014).
 Different sources of information, such as genomic, morphological, environmental, or spatial data, are retained as separate layers while jointly contributing to the same map.
 Any data that can be represented quantitatively for a common set of individuals can be incorporated, including continuous, binary, categorical, and count data.
+
 Each cell in the grid is represented by a codebook vector that summarizes the local multivariate "average" of the individuals mapped to it.
-During training, individuals are repeatedly matched to the most similar grid cell, and that cell and its neighbors are updated toward their measurements.
+During training, individuals are repeatedly matched to the most similar cell, and that cell and its neighbors are updated toward their measurements.
 Over many training steps, this produces an organized map where similar individuals become represented in nearby regions and dissimilar individuals farther apart.
-Because the observations are summarized by a smaller set of codebook vectors, SOMs can reduce sensitivity to  noise and reveal broader structure in complex datasets (Kohonen 1998).
+Because the observations are summarized by few codebook vectors, SOMs can reduce sensitivity to  noise and reveal broader structure in complex datasets.
 After SOM training, the codebook vectors are clustered into groups that are interpreted as candidate lineages (Pyron et al. 2023).
 
 The framework does not require predefined species assignments and explicitly permits `K = 1`, so subdivision is only inferred when supported (Janes et al. 2017; Pyron et al. 2023).
 Multiple SOM replicates quantify support for alternative K values and the stability of individual assignments.
 Data layers are automatically balanced so that no single layer dominates the analysis.
-The method is robust to missing data, because individual matching and codebook-vector updates use only observed variables, allowing the contribution of incomplete individuals without global imputation (Samad & Harp 1992).
-This allows heterogeneous evidence to be analyzed jointly within a single framework, incorporating multiple dimensions of ecological and evolutionary divergence to delimit candidate lineages.
-
+The method is also robust to missing data, because individual matching and codebook-vector updates use only observed variables, allowing the contribution of incomplete individuals without global imputation (Samad & Harp 1992).
 *delimSOM* relies heavily on the R package *kohonen* (Wehrens & Buydens 2007; Wehrens & Kruisselbrink 2018).
+
+This allows heterogeneous evidence to be analyzed jointly within a single framework, incorporating multiple dimensions of ecological and evolutionary divergence to delimit candidate lineages.
 
 
 ## Main advantages of the approach
