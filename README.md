@@ -307,15 +307,10 @@ Polygonia_SNP <- process.SNP.data.SOM(vcf.path = file.path(example_dir, "Polygon
 
 rownames(Polygonia_SNP) <- sub(".*?(\\d+)$", "\\1", rownames(Polygonia_SNP))
 dim(Polygonia_SNP)
-```
-
-```text
-[1] 237 961
-```
-```r
 print(Polygonia_SNP[1, 1:10])
 ```
 ```text
+[1] 237 961
      SNP1 SNP2 SNP3 SNP4 SNP5 SNP6 SNP7 SNP8 SNP9 SNP10
 8301    0    1    0    0    0    0    0    0    2     0
 ```
