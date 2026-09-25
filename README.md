@@ -259,7 +259,7 @@ SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
 
 # B) Empirical tutorial: *Polygonia* anglewing butterflies
 
-The following example reproduces the main empirical focus study using western Canadian *Polygonia* anglewing butterflies (Lepidoptera: Nymphalidae) from Dupuis et al. (2018)
+The following example reproduces the main empirical focus study using western Canadian *Polygonia* anglewing butterflies (Lepidoptera: Nymphalidae) from Dupuis et al. (2018).
 The original study inferred four species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*.
 
 For our *delim-SOM* 2.0 reanalysis, we analyzed 200 individuals shared across all six complementary layers:
@@ -284,39 +284,43 @@ https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_
 ```r
 #### Set environment ###########################################################
 
-example_dir <- file.path(
-  "Empirical_examples",
-  "Dupuis_et_al_2018"
-)
+example_dir <- file.path("Empirical_examples", "Dupuis_et_al_2018")
 ```
 
-## 2. Process genome-wide SNP data
+## Prepare data for SOM analyses
 
-The SNP layer contains GBS-derived biallelic SNPs.
+
+### 2.1 Process genome-wide SNP data
+
+We start by importing and processing the VCF file containing GBS-derived genome-wide SNPs using the recommended default settings. 
+This retains 961 biallelic SNPs (of 961) as variables from 237 individuals (4 removed due to >50% missing data).
+
+We then use `sub()` to simplify the row names by retaining only the numeric specimen identifier, and evaluate the output.
 
 ```r
 #### Process SNP data ##########################################################
 
-Polygonia_SNP <- process.SNP.data.SOM(
-  vcf.path = file.path(
-    example_dir,
-    "Polygonia_961SNPs.vcf"
-  ),
-  missing.loci.cutoff.lenient = 0.7,
-  missing.loci.cutoff.final = 0.5,
-  missing.individuals.cutoff = 0.5
-)
+Polygonia_SNP <- process.SNP.data.SOM(vcf.path = file.path(example_dir, "Polygonia_961SNPs.vcf"),
+                                      missing.loci.cutoff.lenient = 0.7,
+                                      missing.loci.cutoff.final = 0.5,
+                                      missing.individuals.cutoff = 0.5)
 
-rownames(Polygonia_SNP) <- sub(
-  ".*?(\\d+)$",
-  "\\1",
-  rownames(Polygonia_SNP)
-)
-
+rownames(Polygonia_SNP) <- sub(".*?(\\d+)$", "\\1", rownames(Polygonia_SNP))
 dim(Polygonia_SNP)
 ```
 
-The manuscript analysis retained 961 SNP variables.
+```text
+[1] 237 961
+```
+```r
+print(Polygonia_SNP[1, 1:10])
+```
+```text
+     SNP1 SNP2 SNP3 SNP4 SNP5 SNP6 SNP7 SNP8 SNP9 SNP10
+8301    0    1    0    0    0    0    0    0    2     0
+```
+
+
 
 ## 3. Process mitochondrial COI data
 
