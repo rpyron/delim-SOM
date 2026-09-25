@@ -1,6 +1,6 @@
 # Fully integrative species delimitation with *delimSOM* 2.0
 
-*delimSOM* is an *R* package for fully integrative species delimitation using single- and multilayer self-organizing maps (SOMs). 
+*delimSOM* 2.0 is an *R* package for fully integrative species delimitation using single- and multilayer self-organizing maps (SOMs). 
 
 SOMs are unsupervised machine-learning models that organize high-dimensional data on a two-dimensional grid map so individuals with similar overall patterns are represented near one another (Kohonen 1998, 2014).
 Different sources of information, such as genomic, morphological, environmental, or spatial data, are retained as separate layers while jointly contributing to the same map.
@@ -31,15 +31,16 @@ This allows heterogeneous evidence to be analyzed jointly within a single framew
 - Robust to missing data 
 - Quantifies relative support across multiple K values
 - Provides STRUCTURE-like plots of replicate-consensus assignments
-- Includes six alternative clustering and `K`-selection approaches
+- Includes six alternative clustering and K-selection approaches
 - Includes diagnostics and visualizations
 
 
 ## Update: version 2.0
 
 We have now released version 2.0 of the delim-SOM framework!
-This species-delimitation framework was originally developed by Pyron et al. (2023) and subsequently extended by Pyron (2023) to multilayer SOMs for integrative species delimitation.
-With *delimSOM* 2.0 (Schönberger et al. 2026), we expand the original framework into a comprehensive *R* package with improved data preprocessing and SOM training, multiple clustering and K-selection approaches, extensive diagnostics and visualizations, and new variable- and layer-importance analyses.
+
+The species-delimitation framework was introduced by Pyron et al. (2023) for genetic data and subsequently extended by Pyron (2023) to multilayer SOMs for integrative species delimitation by presenting *delimSOM*.
+With *delimSOM* 2.0 (Schönberger et al. 2026), we expand the original framework into a comprehensive *R* package with improved data preprocessing and SOM training, new clustering and K-selection approaches, extensive diagnostics and visualizations, and revised variable- and layer-importance analyses.
 
 Current *R* package version: `2.0.0.9000`
 
@@ -71,6 +72,16 @@ Missing values should be represented as `NA`.
 Single-layer example input:
 
 ```r
+genomic_matrix <- matrix(c(0, 1, 2, 0,
+                           1, 1, 0, 2,
+                           2, 0, 1, 1,
+                           0, 2, NA, 1),
+                         nrow = 4,
+                         byrow = TRUE,
+                         dimnames = list(c("Individual_1", "Individual_2", "Individual_3", "Individual_4"),
+                                         c("SNP_1", "SNP_2", "SNP_3", "SNP_4")))
+
+genomic_matrix
 SOM_data <- genomic_matrix
 ```
 
