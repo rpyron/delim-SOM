@@ -287,7 +287,7 @@ https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_
 example_dir <- file.path("Empirical_examples", "Dupuis_et_al_2018")
 ```
 
-## 2 Prepare data for SOM analyses
+## 2 Import and process data for SOM analyses
 
 
 ### 2.1 Process genome-wide SNP data
@@ -321,7 +321,7 @@ This retains all 961 biallelic SNPs as variables and 237 of the original 241 ind
 
 ### 2.2 Process mitochondrial COI data
 
-We next import and process the aligned mitochondrial COI sequences using the same function and the recommended default settings.
+Here, we import and process the aligned mitochondrial COI sequences using the same function and the recommended default settings.
 The sequence alignment is converted to biallelic SNP variables, after which `sub()` is used to retain only the numeric specimen identifier.
 Duplicate specimen identifiers are removed by retaining the first occurrence, and the output is evaluated.
 
@@ -351,17 +351,15 @@ This retains 213 biallelic COI variables from the original 1,348 alignment sites
 
 ### 2.3 Prepare continuous wing-color morphology
 
-We next import the continuous morphology data containing RGB measurements from dorsal and ventral wing regions.
+This section imports the continuous morphology data containing RGB measurements from dorsal and ventral wing regions.
 The specimen identifiers are used as row names, and the non-morphological `Name` and `Species` columns are removed before we inspect the output.
 
 ```r
 #### Prepare continuous morphology ############################################
 
-Polygonia_RGB <- read.delim(file.path(example_dir, "Polygonia_RGB_characters.txt"),
-                            stringsAsFactors = FALSE)
+Polygonia_RGB <- read.delim(file.path(example_dir, "Polygonia_RGB_characters.txt"), stringsAsFactors = FALSE)
 rownames(Polygonia_RGB) <- Polygonia_RGB$Species
 Polygonia_RGB <- Polygonia_RGB[, !names(Polygonia_RGB) %in% c("Name", "Species"), drop = FALSE]
-
 dim(Polygonia_RGB)
 print(Polygonia_RGB[1:2, 1:10])
 ```
@@ -383,10 +381,8 @@ Wing character 8 is treated as nominal rather than ordinal and is therefore conv
 ```r
 #### Prepare categorical morphology ###########################################
 
-Polygonia_wing_scores <- read.delim(file.path(example_dir, "Polygonia_visually_scored.txt"),
-                                    stringsAsFactors = FALSE)
+Polygonia_wing_scores <- read.delim(file.path(example_dir, "Polygonia_visually_scored.txt"), stringsAsFactors = FALSE)
 rownames(Polygonia_wing_scores) <- Polygonia_wing_scores$Name
-
 Polygonia_wing_scores <- Polygonia_wing_scores |>
   dplyr::select(-Name, -Species) |>
   dplyr::rename(Wing_character_1 = Ch1,
@@ -399,17 +395,13 @@ Polygonia_wing_scores <- Polygonia_wing_scores |>
                 Wing_character_8 = Ch8,
                 Wing_character_9 = Ch9,
                 Wing_character_10 = Ch10)
-
-Polygonia_wing_scores$Wing_character_8 <- factor(Polygonia_wing_scores$Wing_character_8,
-                                                 levels = 1:4)
-Wing_character_8_states <- stats::model.matrix(~ Wing_character_8 - 1,
-                                                data = Polygonia_wing_scores)
+Polygonia_wing_scores$Wing_character_8 <- factor(Polygonia_wing_scores$Wing_character_8, levels = 1:4)
+Wing_character_8_states <- stats::model.matrix(~ Wing_character_8 - 1, data = Polygonia_wing_scores)
 colnames(Wing_character_8_states) <- paste0("Wing_character_8_state_", 1:4)
 Polygonia_wing_scores <- cbind(Polygonia_wing_scores, Wing_character_8_states)
 Polygonia_wing_scores$Wing_character_8 <- NULL
-
 dim(Polygonia_wing_scores)
-print(Polygonia_wing_scores[1:2, 1:10])
+print(Polygonia_wing_scores[1:2, 1:5])
 ```
 
 This results in 13 categorical wing-character variables for 217 individuals:
@@ -419,24 +411,18 @@ This results in 13 categorical wing-character variables for 217 individuals:
      Wing_character_1 Wing_character_2 Wing_character_3 Wing_character_4 Wing_character_5
 8301                2                2                2                2                1
 8302                2                2                2                2                1
-     Wing_character_6 Wing_character_7 Wing_character_9 Wing_character_10 Wing_character_8_state_1
-8301                1                2                2                 1                        0
-8302                2                2                2                 1                        0
 ```
 
 ### 2.5 Prepare morphotype data
 
-We next import the metadata and extract the morphotype assigned to each specimen for inclusion in the categorical morphology layer.
+Here, we import the metadata and extract the morphotype assigned to each specimen for inclusion in the categorical morphology layer.
 
 ```r
 #### Prepare morphotype data ###################################################
 
-Polygonia_metadata <- read.csv(file.path(example_dir, "Polygonia_metadata.csv"),
-                               header = TRUE,
-                               sep = ";")
+Polygonia_metadata <- read.csv(file.path(example_dir, "Polygonia_metadata.csv"), header = TRUE, sep = ";")
 rownames(Polygonia_metadata) <- Polygonia_metadata$ID
 Polygonia_morphotype <- Polygonia_metadata[, "Morphotype", drop = FALSE]
-
 dim(Polygonia_morphotype)
 print(Polygonia_morphotype[1:5, , drop = FALSE])
 ```
@@ -456,8 +442,6 @@ Morphotype information is available for 265 individuals, although some individua
 ### 2.6 Combine and filter morphology
 
 We next combine the continuous wing-color measurements, categorical wing characters, and morphotype data using shared specimen identifiers.
-Morphotype is converted to binary indicator variables, after which the continuous and categorical variables are separated into two morphology layers.
-The continuous variables are then filtered for low variation and pairwise absolute Spearman correlations >0.9.
 
 ```r
 #### Combine and filter morphology #############################################
@@ -465,21 +449,17 @@ The continuous variables are then filtered for low variation and pairwise absolu
 rownames(Polygonia_RGB) <- as.character(rownames(Polygonia_RGB))
 rownames(Polygonia_wing_scores) <- as.character(rownames(Polygonia_wing_scores))
 rownames(Polygonia_morphotype) <- as.character(rownames(Polygonia_morphotype))
-
-Polygonia_RGB_wing_scores <- merge(Polygonia_RGB,
-                                    Polygonia_wing_scores,
-                                    by = "row.names",
-                                    all = FALSE)
+Polygonia_RGB_wing_scores <- merge(Polygonia_RGB, Polygonia_wing_scores, by = "row.names", all = FALSE)
 rownames(Polygonia_RGB_wing_scores) <- Polygonia_RGB_wing_scores$Row.names
 Polygonia_RGB_wing_scores$Row.names <- NULL
-
-Polygonia_morphology <- merge(Polygonia_RGB_wing_scores,
-                              Polygonia_morphotype,
-                              by = "row.names",
-                              all = FALSE)
+Polygonia_morphology <- merge(Polygonia_RGB_wing_scores, Polygonia_morphotype, by = "row.names", all = FALSE)
 rownames(Polygonia_morphology) <- Polygonia_morphology$Row.names
 Polygonia_morphology$Row.names <- NULL
 
+```
+Morphotype is converted to binary indicator variables, after which the continuous and categorical variables are separated into two morphology layers.
+
+```r
 Polygonia_morphology <- make.cols.binary.SOM(dataframe = Polygonia_morphology,
                                              make.binary.cols = "Morphotype",
                                              append.to.original = TRUE)
@@ -488,7 +468,11 @@ Polygonia_morphology$Morphotype <- NULL
 non.continuous.cols <- grepl("^Wing_character_|^Morphotype_", colnames(Polygonia_morphology))
 Polygonia_morphology_categorical <- Polygonia_morphology[, non.continuous.cols, drop = FALSE]
 Polygonia_morphology <- Polygonia_morphology[, !non.continuous.cols, drop = FALSE]
+```
 
+The continuous variables are then filtered for low variation and pairwise absolute Spearman correlations >0.9.
+
+```r
 Polygonia_morphology <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_morphology,
                                                            CV.threshold = 0.05,
                                                            cor.threshold = 0.9)
@@ -497,7 +481,7 @@ dim(Polygonia_morphology)
 print(Polygonia_morphology[1:2, 1:10])
 
 dim(Polygonia_morphology_categorical)
-print(Polygonia_morphology_categorical[1:2, 1:10])
+print(Polygonia_morphology_categorical[1:2, 1:6])
 ```
 
 After merging the datasets, 217 individuals are shared across the morphology data.
@@ -510,31 +494,30 @@ Filtering removes 3 of the 18 continuous variables due to pairwise absolute Spea
 8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 59.09
 
 [1] 217  15
-     Wing_character_1 Wing_character_2 Wing_character_3 Wing_character_4 Wing_character_5
-8301                2                2                2                2                1
-8302                2                2                2                2                1
-     Wing_character_6 Wing_character_7 Wing_character_9 Wing_character_10 Wing_character_8_state_1
-8301                1                2                2                 1                        0
-8302                2                2                2                 1                        0
+     Wing_character_1 Wing_character_2 Wing_character_3 Wing_character_4 Wing_character_5 Wing_character_6
+8301                2                2                2                2                1                1
+8302                2                2                2                2                1                2
 ```
 
 ### 2.7 Prepare environmental data
 
-We next import the environmental variables previously extracted for each specimen locality.
-Latitude, longitude, and elevation are removed because they are analyzed separately as spatial variables, and skewed environmental variables are transformed before filtering for low variation and strong pairwise correlations.
+As next step, we import the environmental variables previously extracted for each specimen locality.
+The environmental dataset was generated using the *NicheDiv* *R* package (Schönberger et al. 2026), which extracts a comprehensive set of environmental variables from specimen coordinates for evaluating environmental differentiation (Schönberger et al. 2026).
+We remove all three spatial variables.
 
 ```r
 #### Prepare environmental data ################################################
 
-Polygonia_environmental <- read.csv(file.path(example_dir, "Polygonia_environmental.csv"),
-                                    row.names = 1,
-                                    header = TRUE)
+Polygonia_environmental <- read.csv(file.path(example_dir, "Polygonia_environmental.csv"), row.names = 1, header = TRUE)
 Polygonia_environmental <- Polygonia_environmental[, !names(Polygonia_environmental) %in% c("Latitude", "Longitude", "Elevation"), drop = FALSE]
-
 Polygonia_environmental_rownames <- rownames(Polygonia_environmental)
 Polygonia_environmental <- as.data.frame(lapply(Polygonia_environmental, as.numeric))
 rownames(Polygonia_environmental) <- Polygonia_environmental_rownames
+```
 
+Skewed environmental variables are transformed before filtering for low variation and strong pairwise correlations.
+
+```r
 Polygonia_environmental <- NicheDiv::transform.skewed.variables(Polygonia_environmental)$transformed
 Polygonia_environmental <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_environmental,
                                                               CV.threshold = 0.05,
@@ -563,14 +546,10 @@ These three variables form the spatial data layer.
 
 Polygonia_spatial <- Polygonia_metadata[, c("Latitude", "Longitude"), drop = FALSE]
 Polygonia_spatial$Elevation <- NA
-
-Polygonia_spatial_sf <- sf::st_as_sf(Polygonia_spatial[!is.na(Polygonia_spatial$Latitude) &
-                                                        !is.na(Polygonia_spatial$Longitude), ],
+Polygonia_spatial_sf <- sf::st_as_sf(Polygonia_spatial[!is.na(Polygonia_spatial$Latitude) & !is.na(Polygonia_spatial$Longitude), ],
                                      coords = c("Longitude", "Latitude"),
                                      crs = 4326)
-
-Polygonia_spatial$Elevation[!is.na(Polygonia_spatial$Latitude) &
-                            !is.na(Polygonia_spatial$Longitude)] <-
+Polygonia_spatial$Elevation[!is.na(Polygonia_spatial$Latitude) & !is.na(Polygonia_spatial$Longitude)] <-
   elevatr::get_elev_point(locations = Polygonia_spatial_sf,
                           prj = sf::st_crs(Polygonia_spatial_sf)$proj4string,
                           src = "aws")$elevation
