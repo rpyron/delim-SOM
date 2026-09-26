@@ -930,6 +930,38 @@ layer_distances <- c(
 SOM_tr <- train.SOM(input_data = SOM_data, layer.distance.functions = layer_distances)
 ```
 
+# *delimSOM* 2.0 functions
+
+| Function                                    | Description                                                                                                         |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `process.SNP.data.SOM()`                    | Read and filter genetic data and return a processed SNP matrix for SOM analysis                                     |
+| `make.cols.binary.SOM()`                    | Convert categorical columns into binary (0/1) indicator variables                                                   |
+| `remove.lowCV.multicollinearity.SOM()`      | Remove variables with low variation or strong correlations                                                         |
+| `train.SOM()`                               | Preprocess input data and train single- or multilayer SOMs                                                          |
+| `clustering.SOM()`                          | Cluster SOM codebook vectors across replicates, select K, and calculate assignment and importance summaries         |
+| `plot.learning.SOM()`                       | Plot SOM learning trajectories across training steps                                                               |
+| `plot.layer.distance.scale.SOM()`           | Plot average pairwise distance scales of input layers across SOM replicates                                         |
+| `plot.K.SOM()`                              | Plot support profiles, successive ΔBIC values, and selected-K frequencies across SOM replicates                     |
+| `plot.model.SOM()`                          | Plot SOM topology, neighbor distances, sample mappings, and inferred cluster boundaries                             |
+| `plot.structure.SOM()`                      | Plot replicate-consensus assignment coefficients as a STRUCTURE-like stacked barplot                               |
+| `plot.map.SOM()`                            | Plot replicate-consensus assignment coefficients at geographic coordinates                                         |
+| `plot.variable.importance.SOM()`            | Plot variable importance based on cluster-separation or map-variance metrics                                        |
+| `plot.layer.importance.varimp.SOM()`        | Summarize variable-importance values within each data layer                                                         |
+| `plot.layer.importance.leaveoneout.SOM()`   | Evaluate layer importance using replicate-matched leave-one-layer-out analyses                                      |
+
+
+# References
+
+-Dupuis, J. R. et al. (2018). Genomics confirms surprising ecological divergence and isolation in an enigmatic butterfly species complex. *Zoological Journal of the Linnean Society*. https://doi.org/10.1093/zoolinnean/zlx081
+
+-Kohonen, T. (1998). The self-organizing map. *Neurocomputing*.
+
+-Kohonen, T. (2014). *MATLAB Implementations and Applications of the Self-Organizing Map*.
+
+-Pyron, R. A. (2023). Unsupervised machine learning for species delimitation, integrative taxonomy, and biodiversity conservation. *Molecular Phylogenetics and Evolution*, 189, 107939. https://doi.org/10.1016/j.ympev.2023.107939
+
+-Pyron, R. A., O’Connell, K. A., Duncan, S. C., Burbrink, F. T., & Beamer, D. A. (2023). Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for seal salamanders (*Desmognathus monticola*). *Systematic Biology*, 72(1), 179–197. https://doi.org/10.1093/sysbio/syac065
+
 
 # Citation
 
@@ -938,14 +970,7 @@ Please cite the *delimSOM* framework as follows:
 Schönberger, D., Pyron, R. A., & Dupuis, J. R. *delim-SOM 2.0*: Fully integrative species delimitation with machine learning and flexible diverse data types of biological and other data. *bioRxiv*
 
 
-# References
+# License
 
-Dupuis, J. R. et al. (2018). Genomics confirms surprising ecological divergence and isolation in an enigmatic butterfly species complex. *Zoological Journal of the Linnean Society*. https://doi.org/10.1093/zoolinnean/zlx081
-
-Kohonen, T. (1998). The self-organizing map. *Neurocomputing*.
-
-Kohonen, T. (2014). *MATLAB Implementations and Applications of the Self-Organizing Map*.
-
-Pyron, R. A. (2023). Unsupervised machine learning for species delimitation, integrative taxonomy, and biodiversity conservation. *Molecular Phylogenetics and Evolution*, 189, 107939. https://doi.org/10.1016/j.ympev.2023.107939
-
-Pyron, R. A., O’Connell, K. A., Duncan, S. C., Burbrink, F. T., & Beamer, D. A. (2023). Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for seal salamanders (*Desmognathus monticola*). *Systematic Biology*, 72(1), 179–197. https://doi.org/10.1093/sysbio/syac065
+*delimSOM* is released under the GPL-3 License.
+See the `LICENSE` file for details.
