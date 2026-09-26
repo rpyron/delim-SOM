@@ -40,7 +40,7 @@ This allows heterogeneous evidence to be analyzed jointly within a single framew
 We have now released version 2.0 of the delim-SOM framework!
 
 The species-delimitation framework was introduced by Pyron et al. (2023) for genetic data and subsequently extended by Pyron (2023) to multilayer SOMs for integrative species delimitation by presenting *delimSOM*.
-With *delimSOM* 2.0 (Schönberger et al. 2026), we expand the original framework into a comprehensive *R* package with improved data preprocessing and SOM training, new clustering and K-selection approaches, extensive diagnostics and visualizations, and revised variable- and layer-importance analyses.
+With *delimSOM* 2.0 (Schönberger et al. preprint), we expand the original framework into a comprehensive *R* package with improved data preprocessing and SOM training, new clustering and K-selection approaches, extensive diagnostics and visualizations, and revised variable- and layer-importance analyses.
 
 Current *R* package version: `2.0.0.9000`
 
@@ -227,7 +227,7 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 After SOM training, the codebook vectors from each replicate are clustered into groups. These are then interpreted as candidate lineages and estimate support for alternative values of K (Pyron et al. 2023).
 Although we implement six alternative clustering and K-selection approaches, we recommend using the `"kmeans+BICelbow"` approach:
 it first applies k-means clustering to the codebook vectors across alternative K values and then uses a conservative BIC-elbow criterion to select the best-supported K.
-This approach performed best in our analyses (Schönberger et al. 2026) and has also been used successfully in previous SOM-based species-delimitation analyses (Pyron et al. 2023; Pyron 2023).
+This approach performed best in our analyses (Schönberger et al. preprint) and has also been used successfully in previous SOM-based species-delimitation analyses (Pyron et al. 2023; Pyron 2023).
 `max.k` specifies the maximum number of candidate clusters evaluated.
 Results can be saved during clustering using `save.SOM.results = TRUE` and `save.SOM.results.name`.
 
@@ -259,7 +259,7 @@ SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
 
 # B) Empirical tutorial: *Polygonia* anglewing butterflies
 
-This tutorial section demonstrates the main steps of the *delim-SOM* 2.0 workflow based on empirical case study 1 presented in our study (Schönberger et al. 2026).
+This tutorial section demonstrates the main steps of the *delim-SOM* 2.0 workflow based on empirical case study 1 presented in our study (Schönberger et al. prepint).
 The example uses four broadly sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species (Lepidoptera: Nymphalidae) from Dupuis et al. (2018).
 
 The figure below shows their main results and the four inferred species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*:
@@ -363,7 +363,7 @@ This retains 213 biallelic COI variables from the original 1,348 alignment sites
 This section imports the continuous morphology data containing RGB measurements from six dorsal and ventral wing regions.
 The specimen identifiers are used as row names, and the non-morphological `Name` and `Species` columns are removed before we inspect the output.
 
-###### Note: ADD FIGURE 3 Dupuis 18
+
 
 ```r
 #### Prepare continuous morphology ############################################
@@ -384,12 +384,24 @@ This results in 18 continuous wing-color variables for 237 individuals:
 8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 101.19
 ```
 
+The figure below shows the six dorsal and ventral wing regions (11-16) used for the RGB measurements and the average red, green, and blue luminance values for each species; (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively (Fig. 3 in Dupuis et al. 2018).
+
+<p align="center">
+  <img src="figures/Figure_Dupuis_et_al_2018_Fig3.png" width="900">
+</p>
+
+
 ### 2.4 Prepare categorical wing morphology
 
 We next import the visually scored wing characters and use the specimen identifiers as row names.
 Wing character 8 is treated as nominal rather than ordinal and is therefore converted into four binary indicator variables.
 
-###### Note: ADD FIGURE 2 Dupuis 18
+The figure below shows the ten visually scored characters on the dorsal and ventral wing surfaces and the proportion of each character state across species (Fig. 2 in Dupuis et al. 2018).
+The labels 1–10 indicate the scored wing characters, while (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
+
+<p align="center">
+  <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="900">
+</p>
 
 ```r
 #### Prepare categorical morphology ###########################################
@@ -585,7 +597,6 @@ This results in three spatial variables for 265 individuals:
 ```
 
 
-
 ## 3. SOM training
 
 We next combine the six processed datasets into a named list.
@@ -669,13 +680,12 @@ plot.layer.distance.scale.SOM(Polygonia_SOM)
 For BIC-based methods, the plot shows the support profile across candidate K values, successive changes in BIC, and the frequency with which each K was selected across retained SOM replicates.
 The full support profile should be considered rather than relying only on the most frequently selected K.
 
-
 ```r
 plot.K.SOM(Polygonia_SOM)
 ```
 
 
-## 5.4 Visualize SOM topology and candidate lineages
+### 5.4 Visualize SOM topology and candidate lineages
 
 We next visualize the trained SOM topology and inferred candidate lineages for a representative replicate.
 The neighbor-distance panel shows distances among adjacent SOM units, with darker regions indicating larger distances and potential boundaries or "ridges" in map space.
@@ -698,22 +708,21 @@ plot.model.SOM(Polygonia_SOM,
                set.k = 4)
 ```
 
-## 5.6 Plot replicate-consensus assignments
+### 5.5 Plot replicate-consensus assignments
 
 `plot.structure.SOM()` provides a STRUCTURE-like visualization of replicate-consensus assignment coefficients.
 Each bar represents one individual and summarizes how consistently that individual is assigned to each candidate lineage across SOM replicates.
 Assignments distributed across multiple clusters indicate lower replicate-consensus assignment stability and should not be interpreted directly as admixture.
 
 ```r
-plot.structure.SOM(Polygonia_SOM, bottom.margin = 8)
+plot.structure.SOM(Polygonia_SOM,
+                   bottom.margin = 8)
 ```
 
-
-## 5.7 Plot geographic assignments
+### 5.6 Plot geographic assignments
 
 `plot.map.SOM()` maps the replicate-consensus assignment coefficients to the geographic coordinates of each individual.
 This allows the geographic distribution of the inferred candidate lineages and assignment uncertainty to be inspected.
-
 
 ```r
 plot.map.SOM(SOM.output = Polygonia_SOM,
@@ -727,8 +736,7 @@ plot.map.SOM(SOM.output = Polygonia_SOM,
              scale.position = c(0.75, 0.05))
 ```
 
-
-### 5.8 Evaluate variable importance
+### 5.7 Evaluate variable importance
 
 `clustering.SOM()` calculates two complementary measures of variable importance that can be visualized using `plot.variable.importance.SOM()`.
 First, cluster-separation importance uses an ANOVA-like η² effect size to quantify how strongly each variable is associated with separation among the inferred clusters.
@@ -740,6 +748,7 @@ plot.variable.importance.SOM(Polygonia_SOM,
                              bottom.margin = 2,
                              left.margin = 5.8)
 ```
+
 Second, map-variance importance quantifies how strongly each variable varies across the trained SOM map, irrespective of whether this variation corresponds directly to the final cluster boundaries.
 
 ```r
@@ -752,10 +761,12 @@ The stored variable-importance values can also be inspected directly.
 For example, the variables with the highest median cluster-separation importance in the continuous morphology layer can be obtained using:
 
 ```r
-head(sort(Polygonia_SOM$median_etasquared_variable_importance$Morphology, decreasing = TRUE), 15)
+head(sort(Polygonia_SOM$median_etasquared_variable_importance$Morphology,
+          decreasing = TRUE),
+     15)
 ```
 
-### 5.9. Evaluate layer importance
+### 5.8 Evaluate layer importance
 
 Layer importance can be evaluated in two complementary ways: by summarizing variable importance within each layer and by measuring how the inferred clustering changes when individual layers are omitted.
 
@@ -763,105 +774,86 @@ Layer importance can be evaluated in two complementary ways: by summarizing vari
 This provides an overview of how strongly the variables within each layer are associated with cluster separation or variation across the SOM map.
 
 ```r
-plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 4)
+plot.layer.importance.varimp.SOM(Polygonia_SOM,
+                                 bottom.margin = 4)
 ```
 
 `plot.layer.importance.leaveoneout.SOM()` reruns the analysis while omitting one data layer at a time and compares each reduced analysis with the full multilayer SOM.
 The analysis evaluates changes in the inferred number of clusters, cluster composition, and individual assignment confidence after each layer is omitted.
 Because SOM training and clustering are repeated for each omitted layer, this analysis is substantially more computationally intensive.
-In the *Polygonia* analysis, SNPs contributed most strongly to cluster separation, followed by categorical wing morphology and mitochondrial COI, whereas environmental and spatial layers contributed comparatively little.
 
 ```r
 plot.layer.importance.leaveoneout.SOM(Polygonia_SOM,
                                       bottom.margin = 7)
 ```
 
+In the *Polygonia* analysis, SNPs contributed most strongly to cluster separation, followed by categorical wing morphology and mitochondrial COI, whereas environmental and spatial layers contributed comparatively little.
+
 ## 6. Optional: compare clustering methods
 
-`clustering.SOM()` currently implements six clustering and K-selection methods:
-"kmeans+BICelbow", "kmeans+BICthreshold", "GMM+BICthreshold", "hierarchical+DB", "HDBSCAN", "OPTICS+Silhouette"
-
-
-Two other methods that often work well are "kmeans+BICthreshold" and "GMM+BICthreshold" (although the latter can take substantial time)
+`clustering.SOM()` currently implements six clustering and K-selection methods: `"kmeans+BICelbow"`, `"kmeans+BICthreshold"`, `"GMM+BICthreshold"`, `"hierarchical+DB"`, `"HDBSCAN"`, and `"OPTICS+Silhouette"`.
+Two additional BIC-based methods are `"kmeans+BICthreshold"` and `"GMM+BICthreshold"`, with the latter generally requiring more computation.
+For example, we can rerun clustering using `"kmeans+BICthreshold"`:
 
 ```r
 Polygonia_SOM_kmeans_BICthreshold <- clustering.SOM(SOM.output = Polygonia_SOM_tr,
-  clustering.method = "kmeans+BICthreshold")
+                                                    clustering.method = "kmeans+BICthreshold")
 
-Polygonia_SOM_HDBSCAN$optim_k_summary
+Polygonia_SOM_kmeans_BICthreshold$optim_k_summary
 ```
-The dominant K = 3 solution recovered *P. faunus* and *P. satyrus* as separate candidate lineages and combined *P. gracilis* and *P. progne* into a third candidate lineage.
-The latter two species were separated in 10% of SOM replicates and were subsequently resolved as separate lineages in a hierarchical reanalysis.
 
+No single clustering method is expected to perform best for every possible data structure.
+The k-means/BIC methods are recommended as the primary starting point, while alternative methods can provide useful complementary analyses.
 
-No single clustering method is expected to perform best for every possible data structure. The k-means/BIC methods are recommended as the primary starting point, while alternative methods can provide useful complementary analyses.
+## 7. Optional: hierarchical reanalysis
 
-## 7 Optional: hierarchical reanalysis
+A conservative primary analysis may combine weakly differentiated lineages.
+Hierarchical reanalysis can then test for additional structure within each recovered candidate lineage.
 
-A conservative primary analysis may combine weakly differentiated lineages. Hierarchical reanalysis can then test for additional structure within each recovered candidate lineage.
-
-For the Polygonia example:
+For the *Polygonia* example:
 
 ```r
 #### Assign individuals to dominant candidate lineage #########################
 
-Polygonia_clusters <- apply(
-  Polygonia_SOM$ancestry_matrix,
-  1,
-  which.max
-)
+Polygonia_clusters <- apply(Polygonia_SOM$ancestry_matrix,
+                            1,
+                            which.max)
 
-Polygonia_clusters <- paste0(
-  "cluster",
-  Polygonia_clusters
-)
+Polygonia_clusters <- paste0("cluster",
+                             Polygonia_clusters)
 
-table(
-  Polygonia_clusters
-)
+table(Polygonia_clusters)
 
-Polygonia_cluster_samples <- split(
-  rownames(
-    Polygonia_SOM$ancestry_matrix
-  ),
-  Polygonia_clusters
-)
+Polygonia_cluster_samples <- split(rownames(Polygonia_SOM$ancestry_matrix),
+                                   Polygonia_clusters)
 ```
 
-The main Polygonia analysis recovered three clusters containing approximately 79, 75, and 46 individuals. The middle cluster contained *P. gracilis* + *P. progne*.
+The main *Polygonia* analysis recovered three clusters containing approximately 79, 75, and 46 individuals.
+The middle cluster contained *P. gracilis* + *P. progne*.
 
-Subset that candidate lineage and rerun the workflow:
+We can subset this candidate lineage and rerun the workflow:
 
 ```r
-Polygonia_cluster2_data <- lapply(
-  Polygonia_SOM$input_data,
-  function(x) {
-    x[
-      Polygonia_cluster_samples$cluster2,
-      ,
-      drop = FALSE
-    ]
-  }
-)
+Polygonia_cluster2_data <- lapply(Polygonia_SOM$input_data,
+                                  function(x) {
+                                    x[Polygonia_cluster_samples$cluster2, , drop = FALSE]
+                                  })
 
-Polygonia_SOM_tr_cluster2 <- train.SOM(
-  input_data = Polygonia_cluster2_data,
-  max.NA.row = 0.5,
-  max.NA.col = 0.5,
-  save.SOM.results = FALSE
-)
+Polygonia_SOM_tr_cluster2 <- train.SOM(input_data = Polygonia_cluster2_data,
+                                       max.NA.row = 0.5,
+                                       max.NA.col = 0.5,
+                                       save.SOM.results = FALSE)
 
-Polygonia_SOM_cluster2 <- clustering.SOM(
-  SOM.output = Polygonia_SOM_tr_cluster2,
-  clustering.method = "kmeans+BICelbow",
-  max.k = 5,
-  save.SOM.results = FALSE
-)
+Polygonia_SOM_cluster2 <- clustering.SOM(SOM.output = Polygonia_SOM_tr_cluster2,
+                                         clustering.method = "kmeans+BICelbow",
+                                         max.k = 5,
+                                         save.SOM.results = FALSE)
 
 Polygonia_SOM_cluster2$optim_k_summary
 ```
 
-The manuscript analysis recovered `K = 2` with 100% support in this hierarchical analysis, separating *P. gracilis* and *P. progne*. No further subdivision was supported within the primary *P. faunus* or *P. satyrus* lineages.
+The manuscript analysis recovered K = 2 with 100% support in this hierarchical analysis, separating *P. gracilis* and *P. progne*.
+No further subdivision was supported within the primary *P. faunus* or *P. satyrus* lineages.
 
 # Applying delimSOM to your own data
 
@@ -870,19 +862,15 @@ For most projects, the workflow can be reduced to:
 ```r
 #### Prepare layers ############################################################
 
-SOM_data <- list(
-  Layer_1 = matrix_1,
-  Layer_2 = matrix_2,
-  Layer_3 = matrix_3
-)
+SOM_data <- list(Layer_1 = matrix_1,
+                 Layer_2 = matrix_2,
+                 Layer_3 = matrix_3)
 
 
 
 #### Train SOM #################################################################
 
-SOM_tr <- train.SOM(
-  input_data = SOM_data
-)
+SOM_tr <- train.SOM(input_data = SOM_data)
 
 
 
@@ -901,15 +889,13 @@ plot.learning.SOM(SOM_results)
 
 plot.K.SOM(SOM_results)
 
-plot.model.SOM(
-  SOM_results,
-  replicate.mode = "representative"
-)
+plot.model.SOM(SOM_results,
+               replicate.mode = "representative")
 
 plot.structure.SOM(SOM_results)
 ```
 
-# C) Advanced tutorial
+# C) Advanced settings and further recommendations
 
 ## Important considerations
 
@@ -925,13 +911,14 @@ plot.structure.SOM(SOM_results)
 
 ## Distance functions
 
-When `layer.distance.functions = NULL`, `train.SOM()` automatically infers a distance type from each layer:
+`train.SOM()` automatically infers a distance type from each layer:
 
 - binary `0/1` data: `"tanimoto"`
 - dosage/count-like `0/1/2` data: `"manhattan"`
 - other numeric continuous data: `"sumofsquares"`
 
-Users should verify that the automatically inferred distance is biologically appropriate. Distances can be supplied manually when needed:
+Users should verify that the automatically inferred distance is biologically appropriate. 
+Distances can be supplied manually when needed:
 
 ```r
 layer_distances <- c(
