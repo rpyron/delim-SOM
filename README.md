@@ -12,7 +12,7 @@ Over many training steps, this produces an organized map where similar individua
 Because the observations are summarized by few codebook vectors, SOMs can reduce sensitivity to  noise and reveal broader structure in complex datasets.
 After SOM training, the codebook vectors are clustered into groups that are interpreted as candidate lineages (Pyron et al. 2023).
 
-The framework does not require predefined species assignments and explicitly permits `K = 1`, so subdivision is only inferred when supported (Janes et al. 2017; Pyron et al. 2023).
+The framework does not require predefined species assignments and explicitly permits K = 1, so subdivision is only inferred when supported (Janes et al. 2017; Pyron et al. 2023).
 Multiple SOM replicates quantify support for alternative K values and the stability of individual assignments.
 Data layers are automatically balanced so that no single layer dominates the analysis.
 The method is also robust to missing data, because individual matching and codebook-vector updates use only observed variables, allowing the contribution of incomplete individuals without global imputation (Samad & Harp 1992).
@@ -26,7 +26,7 @@ This allows heterogeneous evidence to be analyzed jointly within a single framew
 - Supports any input data
 - Jointly integrates multiple data types in a single analysis
 - Automatically balances contributions among data layers
-- Allows `K = 1`
+- Allows K = 1
 - Does not require predefined species assignments
 - Robust to missing data 
 - Quantifies relative support across multiple K values
@@ -263,7 +263,9 @@ This tutorial section demonstrates the main steps of the *delim-SOM* 2.0 workflo
 The example uses four broadly sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species (Lepidoptera: Nymphalidae) from Dupuis et al. (2018).
 The original study inferred four species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*.
 
-###### Note: ADD FIGURE 5 Dupuis 18
+![SOM results for the Polygonia empirical example](figures/Figure_Dupuis_et_al_2018_Fig5.png)
+
+**Figure 1.** SOM results for the *Polygonia* empirical example.
 
 For our *delim-SOM* 2.0 reanalysis, we analyzed 200 individuals shared across all six complementary layers:
 
