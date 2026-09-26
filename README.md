@@ -262,14 +262,13 @@ SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
 This tutorial section demonstrates the main steps of the *delim-SOM* 2.0 workflow based on empirical case study 1 presented in our study (Schönberger et al. 2026).
 The example uses four broadly sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species (Lepidoptera: Nymphalidae) from Dupuis et al. (2018).
 
-Below, you can see Figure 5 from their study showing their main results and the four inferred species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*.
-A) geographic sampling localities
-B) consensus maximum-likelihood phylogeny based on the GBS data
-C) STRUCTURE results based on 961 SNPs, including the overall K = 4 clustering and the finest level of within-species substructure.
-
+The figure below shows their main results and the four inferred species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*:
+A) geographic sampling localities, 
+B) consensus maximum-likelihood phylogeny based on the GBS data, and
+C) STRUCTURE results based on 961 SNPs, including the overall K = 4 clustering and the finest level of within-species substructure (Fig. 5 in Dupuis et al. 2018).
 
 <p align="center">
-  <img src="figures/Figure_Dupuis_et_al_2018_Fig5.png" width="700">
+  <img src="figures/Figure_Dupuis_et_al_2018_Fig5.png" width="600">
 </p>
 
 For our *delim-SOM* 2.0 reanalysis, we analyzed 200 individuals shared across all six complementary layers:
