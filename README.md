@@ -16,9 +16,9 @@ The framework does not require predefined species assignments and explicitly per
 Multiple SOM replicates quantify support for alternative K values and the stability of individual assignments.
 Data layers are automatically balanced so that no single layer dominates the analysis.
 The method is also robust to missing data, because individual matching and codebook-vector updates use only observed variables, allowing the contribution of incomplete individuals without global imputation (Samad & Harp 1992).
-*delimSOM* relies heavily on the *kohonen* *R* package (Wehrens & Buydens 2007; Wehrens & Kruisselbrink 2018).
+Our package relies heavily on the *kohonen* *R* package (Wehrens & Buydens 2007; Wehrens & Kruisselbrink 2018).
 
-This allows heterogeneous evidence to be analyzed jointly within a single framework, incorporating multiple dimensions of ecological and evolutionary divergence to delimit candidate lineages.
+Overall, *delimSOM* allows heterogeneous evidence to be analyzed jointly within a single framework, incorporating multiple dimensions of ecological and evolutionary divergence to delimit candidate lineages.
 
 
 ## Main advantages of the approach
@@ -32,14 +32,14 @@ This allows heterogeneous evidence to be analyzed jointly within a single framew
 - Quantifies relative support across multiple K values
 - Provides STRUCTURE-like plots of replicate-consensus assignments
 - Includes six alternative clustering and K-selection approaches
-- Includes diagnostics and visualizations
+- Includes multiple diagnostics and visualizations
 
 
 ## Update: version 2.0
 
 We have now released version 2.0 of the delim-SOM framework!
 
-The species-delimitation framework was introduced by Pyron et al. (2023) for genetic data and subsequently extended by Pyron (2023) to multilayer SOMs for integrative species delimitation by presenting *delimSOM*.
+The species-delimitation framework was originally introduced by Pyron et al. (2023) for genetic data and subsequently extended by Pyron (2023) to multilayer SOMs for integrative species delimitation by presenting *delimSOM*.
 With *delimSOM* 2.0 (Schönberger et al. preprint), we expand the original framework into a comprehensive *R* package with improved data preprocessing and SOM training, new clustering and K-selection approaches, extensive diagnostics and visualizations, and revised variable- and layer-importance analyses.
 
 Current *R* package version: `2.0.0.9000`
@@ -109,13 +109,12 @@ We provide several functions to prepare, filter, and process different input dat
 
 `process.SNP.data.SOM()` can be used to process and filter genetic data.
 Supported inputs include VCF, `genind`, `genlight`, numeric SNP-dosage matrices, PLINK `.raw`, NEXUS, FASTA, and PHYLIP.
-For VCF input, retained biallelic SNPs are converted to numeric 0/1/2 dosage data.
-The function returns a numeric matrix with individuals as rows and retained biallelic loci as columns, ready for SOM training. 
-For diploid genotype data, loci are encoded as 0/1/2 dosage values.
+Retained biallelic loci are converted to numeric dosage data, with diploid genotypes encoded as 0/1/2 and haploid genotypes as 0/1.
+The function returns a numeric matrix with individuals as rows and retained biallelic loci as columns, ready for SOM training.
 
 VCF example using the recommended default filters:
 This filtering first removes loci with >70% missing data, then individuals with >50% missing data, followed by a final locus filter of >50% missing data. 
-Singleton and invariant loci are also removed by default (but can be retained using `singleton.loci.filter = FALSE` or `invariant.loci.filter = FALSE`).
+Singleton and invariant loci are also removed by default.
 
 
 ```r
@@ -929,6 +928,15 @@ layer_distances <- c(
   )
 SOM_tr <- train.SOM(input_data = SOM_data, layer.distance.functions = layer_distances)
 ```
+
+## Other input data
+
+...
+(but can be retained using `singleton.loci.filter = FALSE` or `invariant.loci.filter = FALSE`, respectively).
+
+## Other train.som arguments
+...
+
 
 # *delimSOM* 2.0 functions
 
