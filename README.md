@@ -361,7 +361,7 @@ We see that this dataset includes eighteen continuous wing-color variables (thre
 8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 101.19
 ```
 
-The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral wing regions (Spots 11-16) used for the RGB measurements and the average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
+The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral wing regions (spots 11-16 in their figure) used for the RGB measurements and the average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
 
 <p align="center">
   <img src="figures/Figure_Dupuis_et_al_2018_Fig3.png">
@@ -370,15 +370,8 @@ The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral
 
 ### 2.4 Prepare categorical wing morphology
 
-We next import the visually scored wing characters and use the specimen identifiers as row names.
+We next import and prepare the visually scored wing characters and use the specimen identifiers as row names.
 Wing character 8 is treated as nominal rather than ordinal and is therefore converted into four binary indicator variables.
-
-The figure below shows the ten visually scored characters on the dorsal and ventral wing surfaces and the proportion of each character state across species (Fig. 2 in Dupuis et al. 2018).
-The labels 1–10 indicate the scored wing characters, while (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
-
-<p align="center">
-  <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="900">
-</p>
 
 ```r
 #### Prepare categorical morphology ###########################################
@@ -406,7 +399,7 @@ dim(Polygonia_wing_scores)
 print(Polygonia_wing_scores[1:2, 1:5])
 ```
 
-This results in 13 categorical wing-character variables for 217 individuals:
+This results in thirteen categorical wing-character variables (columns) for 217 individuals (rows):
 
 ```text
 [1] 217  13
@@ -414,6 +407,14 @@ This results in 13 categorical wing-character variables for 217 individuals:
 8301                2                2                2                2                1
 8302                2                2                2                2                1
 ```
+
+The figure below shows the ten visually scored characters on the dorsal and ventral wing surfaces and the proportion of each character state across species (Fig. 2 in Dupuis et al. 2018).
+The labels 1–10 indicate the scored wing characters, while (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
+
+<p align="center">
+  <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="800">
+</p>
+
 
 ### 2.5 Prepare morphotype data
 
