@@ -352,7 +352,7 @@ dim(Polygonia_RGB)
 print(Polygonia_RGB[1:2, 1:10])
 ```
 
-We see that this dataset includes eighteen continuous wing-color variables (three colors x six variables) for 237 individuals:
+We see that this dataset includes eighteen continuous wing-color variables (three RGB colors x six wing regions) for 237 individuals:
 
 ```text
 [1] 237  18
@@ -361,7 +361,7 @@ We see that this dataset includes eighteen continuous wing-color variables (thre
 8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 101.19
 ```
 
-The figure below (Fig. 3 in Dupuis et al. 2018). shows the six dorsal and ventral wing regions (Spots 11-16) used for the RGB measurements and the average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
+The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral wing regions (Spots 11-16) used for the RGB measurements and the average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
 
 <p align="center">
   <img src="figures/Figure_Dupuis_et_al_2018_Fig3.png">
