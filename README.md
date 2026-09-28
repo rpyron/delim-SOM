@@ -371,7 +371,17 @@ The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral
 ### 2.4 Prepare categorical wing morphology
 
 We next import and prepare the visually scored wing characters and use the specimen identifiers as row names.
-Wing character 8 is treated as nominal rather than ordinal and is therefore converted into four binary indicator variables.
+
+The figure below (Fig. 2 in Dupuis et al. 2018) shows the ten visually scored characters on the dorsal and ventral wing surfaces and the proportion of each character state across species.
+The labels 1–10 indicate the scored wing characters, while (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
+We can see that most characters are binary, but three (1, 4, 5) are ordinal and one (8) is nominal.
+
+<p align="center">
+  <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="800">
+</p>
+
+We rename the wing characters for clarity and leave the binary and ordinal characters as they are.
+However, we treat wing character 8 as nominal and therefore convert it into four binary indicator variables (since there are four states).
 
 ```r
 #### Prepare categorical morphology ###########################################
@@ -399,7 +409,7 @@ dim(Polygonia_wing_scores)
 print(Polygonia_wing_scores[1:2, 1:5])
 ```
 
-This results in thirteen categorical wing-character variables (columns) for 217 individuals (rows):
+This results in thirteen wing-character variables (columns) for 217 individuals (rows):
 
 ```text
 [1] 217  13
@@ -407,13 +417,6 @@ This results in thirteen categorical wing-character variables (columns) for 217 
 8301                2                2                2                2                1
 8302                2                2                2                2                1
 ```
-
-The figure below shows the ten visually scored characters on the dorsal and ventral wing surfaces and the proportion of each character state across species (Fig. 2 in Dupuis et al. 2018).
-The labels 1–10 indicate the scored wing characters, while (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
-
-<p align="center">
-  <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="800">
-</p>
 
 
 ### 2.5 Prepare morphotype data
