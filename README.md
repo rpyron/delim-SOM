@@ -339,7 +339,8 @@ This retains 213 biallelic COI variables or SNPs (columns) from the original 1,3
 
 This section imports and processes the continuous morphology data containing RGB color measurements from six dorsal and ventral wing regions.
 The specimen identifiers are used as row names, and the non-morphological `Name` and `Species` columns are removed.
-We then evaluate the output.
+We then filter the continuous wing-color variables for low variation and pairwise absolute Spearman correlations >0.9 using the defaults in `remove.lowCV.multicollinearity.SOM()`.
+Lastly, we evaluate the output.
 
 
 ```r
@@ -348,17 +349,21 @@ We then evaluate the output.
 Polygonia_RGB <- read.delim(file.path(example_dir, "Polygonia_RGB_characters.txt"), stringsAsFactors = FALSE)
 rownames(Polygonia_RGB) <- Polygonia_RGB$Species
 Polygonia_RGB <- Polygonia_RGB[, !names(Polygonia_RGB) %in% c("Name", "Species"), drop = FALSE]
-dim(Polygonia_RGB)
-print(Polygonia_RGB[1:2, 1:10])
+Polygonia_morphology <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_RGB,
+                                                           CV.threshold = 0.05,
+                                                           cor.threshold = 0.9,
+                                                           prevalence.threshold = 0.05)
+dim(Polygonia_morphology)
+print(Polygonia_morphology[1:2, 1:10])
 ```
 
-We see that this dataset includes eighteen continuous wing-color variables (three RGB colors x six wing regions) for 237 individuals:
+Filtering removes three of the original eighteen continuous wing-color variables (three RGB colors x six wing regions), resulting in fifteen variables (columns) for 237 individuals (rows): 
 
 ```text
-[1] 237  18
-        R11   G11   B11    R12    G12   B12    R13    G13   B13    R14
-8301 107.67 49.73 17.70 159.34 105.67 24.43 168.71 116.31 26.65  95.23
-8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 101.19
+[1] 237  15
+        R11   G11   B11    R12    G12   B12    R13    G13   B13   G14
+8301 107.67 49.73 17.70 159.34 105.67 24.43 168.71 116.31 26.65 49.20
+8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 59.09
 ```
 
 The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral wing regions (spots 11-16 in their figure) used for the RGB measurements and the average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
@@ -421,7 +426,7 @@ This results in thirteen wing-character variables (columns) for 217 individuals 
 
 ### 2.5 Prepare morphotype data
 
-Here, we import the metadata and extract the morphotype assigned to each specimen for inclusion in the categorical morphology layer.
+In this section, we import the metadata and extract the morphotype assigned to each specimen for inclusion in the categorical morphology layer.
 
 ```r
 #### Prepare morphotype data ###################################################
@@ -445,70 +450,45 @@ Morphotype information is available for 265 individuals, although some individua
 8305       <NA>
 ```
 
-### 2.6 Combine and filter morphology
 
-We next combine the continuous wing-color measurements, categorical wing characters, and morphotype data using shared specimen identifiers.
+### 2.6 Combine categorical morphology
+
+In this section, we combine the categorical wing characters and morphotype data using shared specimen identifiers.
+Morphotype is converted to binary indicator variables using `make.cols.binary.SOM()` and directly added to the categorical morphology layer via `append.to.original = TRUE`.
 
 ```r
-#### Combine and filter morphology #############################################
+#### Combine categorical morphology ###########################################
 
-rownames(Polygonia_RGB) <- as.character(rownames(Polygonia_RGB))
 rownames(Polygonia_wing_scores) <- as.character(rownames(Polygonia_wing_scores))
 rownames(Polygonia_morphotype) <- as.character(rownames(Polygonia_morphotype))
-Polygonia_RGB_wing_scores <- merge(Polygonia_RGB, Polygonia_wing_scores, by = "row.names", all = FALSE)
-rownames(Polygonia_RGB_wing_scores) <- Polygonia_RGB_wing_scores$Row.names
-Polygonia_RGB_wing_scores$Row.names <- NULL
-Polygonia_morphology <- merge(Polygonia_RGB_wing_scores, Polygonia_morphotype, by = "row.names", all = FALSE)
-rownames(Polygonia_morphology) <- Polygonia_morphology$Row.names
-Polygonia_morphology$Row.names <- NULL
-
-```
-Morphotype is converted to binary indicator variables.
-The continuous and categorical variables are then separated into two morphology layers due to their different data structures.
-
-```r
-Polygonia_morphology <- make.cols.binary.SOM(dataframe = Polygonia_morphology,
-                                             make.binary.cols = "Morphotype",
-                                             append.to.original = TRUE)
-Polygonia_morphology$Morphotype <- NULL
-
-non.continuous.cols <- grepl("^Wing_character_|^Morphotype_", colnames(Polygonia_morphology))
-Polygonia_morphology_categorical <- Polygonia_morphology[, non.continuous.cols, drop = FALSE]
-Polygonia_morphology <- Polygonia_morphology[, !non.continuous.cols, drop = FALSE]
-```
-
-The continuous variables are then filtered for low variation and pairwise absolute Spearman correlations >0.9.
-
-```r
-Polygonia_morphology <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_morphology,
-                                                           CV.threshold = 0.05,
-                                                           cor.threshold = 0.9)
-
-dim(Polygonia_morphology)
-print(Polygonia_morphology[1:2, 1:10])
-
+Polygonia_morphology_categorical <- merge(Polygonia_wing_scores,
+                                          Polygonia_morphotype,
+                                          by = "row.names",
+                                          all = FALSE)
+rownames(Polygonia_morphology_categorical) <- Polygonia_morphology_categorical$Row.names
+Polygonia_morphology_categorical$Row.names <- NULL
+Polygonia_morphology_categorical <- make.cols.binary.SOM(dataframe = Polygonia_morphology_categorical,
+                                                         make.binary.cols = "Morphotype",
+                                                         append.to.original = TRUE)
+Polygonia_morphology_categorical$Morphotype <- NULL
 dim(Polygonia_morphology_categorical)
 print(Polygonia_morphology_categorical[1:2, 1:6])
 ```
 
-After merging the datasets, 217 individuals are shared across the morphology data.
-Filtering removes 3 of the 18 continuous variables due to pairwise absolute Spearman correlations >0.9, resulting in 15 continuous variables and 15 categorical variables:
+This results in fifteen categorical morphology variables (columns) for 217 individuals (rows):
 
 ```text
-[1] 217  15
-        R11   G11   B11    R12    G12   B12    R13    G13   B13   G14
-8301 107.67 49.73 17.70 159.34 105.67 24.43 168.71 116.31 26.65 49.20
-8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 59.09
-
 [1] 217  15
      Wing_character_1 Wing_character_2 Wing_character_3 Wing_character_4 Wing_character_5 Wing_character_6
 8301                2                2                2                2                1                1
 8302                2                2                2                2                1                2
 ```
 
+
 ### 2.7 Prepare environmental data
 
-As a next step, we import the environmental variables previously extracted for each specimen locality.
+Dupuis et al. (2018) did not include any environmental data in their study
+However, in our reanalyses, we used .... to ...import the environmental variables previously extracted for each specimen locality.
 The environmental dataset was generated using the *NicheDiv* *R* package (Schönberger et al. 2026), which extracts a comprehensive set of environmental variables from specimen coordinates for evaluating environmental differentiation.
 We remove latitude, longitude, and elevation because they are analyzed separately in the spatial layer (see below).
 
