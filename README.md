@@ -656,7 +656,7 @@ plot.layer.distance.scale.SOM(Polygonia_SOM)
 It visualizes the support profile across candidate K values, successive changes in BIC, and the frequency with which each K was selected across retained SOM replicates.
 The full support profile should be considered rather than relying only on the most frequently selected K, because selection frequency alone does not show how strongly the selected K is supported relative to alternative K values.
 
-In our empirical example below, 
+In our empirical example below, we see a clear BIC elbow at K = 3, where the largest improvement in fit occurs before subsequent reductions in BIC become much smaller, so that K = 3 is selected in 88% of SOM replicates, followed by K = 4 in 12%.
 
 ```r
 plot.K.SOM(Polygonia_SOM)
@@ -669,25 +669,38 @@ plot.K.SOM(Polygonia_SOM)
 
 ### 5.4 Visualize SOM topology and candidate lineages
 
-We next visualize the trained SOM topology and inferred candidate lineages for a representative replicate.
-The neighbor-distance panel shows distances among adjacent SOM units, with darker regions indicating larger distances and potential boundaries or "ridges" in map space.
-The clustering panel shows the inferred candidate-lineage boundaries.
+We next visualize the trained SOM topology and inferred candidate lineages for a representative replicate using `plot.model.SOM()`.
+The representative replicate is chosen based on ...
+
+The top neighbor-distance panel is a common SOM U-matrix plot (Ultsch 1993; Vesanto & Alhoniemi 2000; Wehrens & Buydens 2007) showing distances among adjacent SOM units for the representative replicate.
+Darker areas indicating relatively large distances between adjacent codebook vectors and mark boundaries (“ridges”) between groups. 
+Light areas indicating lower-distance “valleys,” so more internally similar areas of the map.
+Candidate lineages are therefore expected to occupy in these lighter valleys separated from one another by darker ridges.
+
+The bottom clustering panel shows the inferred candidate-lineage boundaries for the same representative replicate.
+Individuals are shown at the SOM units to which they were mapped, and the red boundaries separate the inferred candidate lineages.
+
+Below, we see three compact yellow valleys that are clearly separated by dark-blue boundaries or ridges that correspond closely to the inferred candidate-lineage boundaries in the bottom plot. 
+This strongly supports the three inferred candidate lineages.
+It also provides a clear example of a coherent SOM topology with well-defined and contiguous cluster structure, whereas in other empirical datasets the ridges are often weaker or less distinct, the valleys more irregular or fragmented, or transitions between candidate lineages more gradual (as in some empirical examples in Schönberger et al. preprint).
 
 ```r
 plot.model.SOM(Polygonia_SOM, replicate.mode = "representative")
 ```
 
-Specific K values can also be inspected using the `set.k` argument:
+<p align="center">
+  <img src="figures/Figure_model.png">
+</p>
 
 ```r
 plot.model.SOM(Polygonia_SOM,
                replicate.mode = "representative",
-               set.k = 3)
-
-plot.model.SOM(Polygonia_SOM,
-               replicate.mode = "representative",
                set.k = 4)
 ```
+<p align="center">
+  <img src="figures/Figure_model_k4.png">
+</p>
+
 
 ### 5.5 Plot replicate-consensus assignments
 
@@ -924,6 +937,18 @@ By default, alternative values from K = 1 to `max.k` are evaluated and the optim
 Clustering can also be rerun for a single K value by supplying `set.k`, which bypasses automatic K-selection while retaining the replicate SOM framework.
 This is useful when automatic K-selection fails after visual inspection of the BIC curve or when multiple K values receive substantial support and results for a specific solution are desired.
 
+
+Specific K values can also be inspected using the `set.k` argument:
+
+```r
+plot.model.SOM(Polygonia_SOM,
+               replicate.mode = "representative",
+               set.k = 3)
+
+plot.model.SOM(Polygonia_SOM,
+               replicate.mode = "representative",
+               set.k = 4)
+```
 Example forcing a three-lineage solution:
 
 ```r
