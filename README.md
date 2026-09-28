@@ -653,7 +653,10 @@ plot.layer.distance.scale.SOM(Polygonia_SOM)
 ### 5.3 Support for alternative K values
 
 `plot.K.SOM()` is an important function to evaluate relative support for alternative K values across SOM replicates.
-The plot shows the support profile across candidate K values, successive changes in BIC, and the frequency with which each K was selected across retained SOM replicates.
+It visualizes the support profile across candidate K values, successive changes in BIC, and the frequency with which each K was selected across retained SOM replicates.
+The full support profile should be considered rather than relying only on the most frequently selected K, because selection frequency alone does not show how strongly the selected K is supported relative to alternative K values.
+
+In our empirical example below, 
 
 ```r
 plot.K.SOM(Polygonia_SOM)
