@@ -112,7 +112,7 @@ Supported inputs include VCF, `genind`, `genlight`, numeric SNP-dosage matrices,
 Retained biallelic loci are converted to numeric dosage data, with diploid genotypes encoded as 0/1/2 and haploid genotypes as 0/1.
 The function returns a numeric matrix with individuals as rows and retained biallelic loci as columns, ready for SOM training.
 
-VCF example using the recommended default filters:
+Below we show an VCF example using the recommended default filters:
 This filtering first removes loci with >70% missing data, then individuals with >50% missing data, followed by a final locus filter of >50% missing data. 
 Singleton and invariant loci are also removed by default.
 
@@ -158,8 +158,8 @@ SNP_data <- process.SNP.data.SOM(phylip.path = "data/data.phy",
 ### 3.2 Categorical data
 
 Categorical variables can be converted to binary indicator variables (0/1) with `make.cols.binary.SOM()`.
-This function converts each observed category into a separate binary column.
-For example, a `Habitat` variable with `"forest"` and `"grassland"` will create two columns called `Habitat_forest` and `Habitat_grassland` filled with 0 (absent) or 1 (present).
+This function converts each observed category of each variable into a separate binary column.
+For example, a `Habitat` variable containing `"forest"` and `"grassland"` values will create two columns called `Habitat_forest` and `Habitat_grassland` filled with 0 (absent) or 1 (present).
 Missing values remain `NA`.
 By default, the function returns only the newly generated binary indicator columns suitable for SOM training.
 
@@ -174,37 +174,31 @@ binary_data <- make.cols.binary.SOM(dataframe = categorical_data,
 
 Continuous environmental, morphological, or other numeric data can be filtered with `remove.lowCV.multicollinearity.SOM()`.
 This function removes variables with negligible variation or strong correlations.
-By default, variables with a coefficient of variation ≤0.05 are removed, followed by iterative removal of variables with pairwise absolute Spearman correlations >0.9.
+By default, binary and count variables with prevalence <0.05 are removed, non-binary variables with a coefficient of variation ≤0.05 are removed, followed by iterative removal of variables with pairwise absolute Spearman correlations >0.9.
+Specific columns can be ignored for filtering but retained in the dataset using `exclude.cols`, for example coordinates or identifiers.
 
 Example using the recommended default filters:
 
 ```r
 continuous_data <- remove.lowCV.multicollinearity.SOM(input.dataframe = continuous_data,
-                                                      CV.threshold = 0.05,
-                                                      cor.threshold = 0.9)
-```
-
-Specific columns can be ignored for filtering but retained in the dataset using `exclude.cols`, for example coordinates or identifiers:
-
-```r
-continuous_data <- remove.lowCV.multicollinearity.SOM(input.dataframe = continuous_data,
+                                                       prevalence.threshold = 0.05,
                                                        CV.threshold = 0.05,
                                                        cor.threshold = 0.9,
                                                        exclude.cols = c("Latitude", "Longitude", "ID"))
 ```
 
 
-
 ## 4. SOM training and clustering
 
-The core analysis of *delim-SOM* consists of training replicate SOMs and then clustering their codebook vectors to identify candidate lineages.
+The core analysis of *delim-SOM* consists of training replicate SOMs and then clustering their codebook vectors to identify candidate lineages (Pyron et al. 2023).
 For multilayer analyses, only individuals shared across all layers are retained.
 
 ### 4.1 SOM training
 
 First, we train multiple SOM maps using the recommended defaults. 
+
 `N.steps` controls the number of training iterations for each SOM, while `N.replicates` controls the number of independently trained SOMs.
-Replicates are run in parallel by default (recommended for large datasets), with the number of cores specified using `N.cores` (3-4 cores worked well in testing).
+Replicates are run in parallel by default via `parallel = TRUE` (recommended for large datasets), with the number of cores specified using `N.cores` (3-4 cores worked well in testing).
 Samples and variables containing more than 50% missing data are removed by default using `max.NA.row = 0.5` and `max.NA.col = 0.5`.
 Results can be saved during training using `save.SOM.results = TRUE` and `save.SOM.results.name`.
 
@@ -223,8 +217,9 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 
 ### 4.2 SOM clustering
 
-After SOM training, the codebook vectors from each replicate are clustered into groups. These are then interpreted as candidate lineages and estimate support for alternative values of K (Pyron et al. 2023).
-Although we implement six alternative clustering and K-selection approaches, we recommend using the `"kmeans+BICelbow"` approach:
+After SOM training, the trained codebook vectors from each replicate are clustered into groups. These are then interpreted as candidate lineages and support for alternative values of K is estimated (Pyron et al. 2023).
+
+Although we implement six different clustering and K-selection approaches, we recommend using `"kmeans+BICelbow"` as primary approach:
 it first applies k-means clustering to the codebook vectors across alternative K values and then uses a conservative BIC-elbow criterion to select the best-supported K.
 This approach performed best in our analyses (Schönberger et al. preprint) and has also been used successfully in previous SOM-based species-delimitation analyses (Pyron et al. 2023; Pyron 2023).
 `max.k` specifies the maximum number of candidate clusters evaluated.
@@ -239,52 +234,34 @@ SOM_results <- clustering.SOM(SOM.output = SOM_tr,
 ```
 
 
-By default, alternative values from K = 1 to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
-Clustering can also be rerun for a single K value by supplying `set.k`, which bypasses automatic K-selection while retaining the replicate SOM framework.
-This is useful when automatic K-selection fails after visual inspection of the BIC curve or when multiple K values receive substantial support and results for a specific solution are desired.
+# B) Empirical example: *Polygonia* anglewing butterflies
 
-Example forcing a three-lineage solution:
+This tutorial section demonstrates the main steps of the *delim-SOM* 2.0 workflow based on the empirical case study 1 presented in our study (Schönberger et al. preprint).
+The example includes four broadly sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species (Lepidoptera: Nymphalidae) from Dupuis et al. (2018).
 
-```r
-SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
-                                 set.k = 3,
-                                 clustering.method = "kmeans+BICelbow",
-                                 save.SOM.results = TRUE,
-                                 save.SOM.results.name = "SOM_results_K3.Rdata")
-```
-
-
-
-
-# B) Empirical tutorial: *Polygonia* anglewing butterflies
-
-This tutorial section demonstrates the main steps of the *delim-SOM* 2.0 workflow based on empirical case study 1 presented in our study (Schönberger et al. prepint).
-The example uses four broadly sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species (Lepidoptera: Nymphalidae) from Dupuis et al. (2018).
-
-The figure below shows their main results and the four inferred species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*:
+The figure below (Fig. 5 in Dupuis et al. 2018) shows their main results and the four inferred species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*:
 A) geographic sampling localities, 
 B) consensus maximum-likelihood phylogeny based on the GBS data, and
-C) STRUCTURE results based on 961 SNPs, including the overall K = 4 clustering and the finest level of within-species substructure (Fig. 5 in Dupuis et al. 2018).
+C) STRUCTURE results based on 961 SNPs, including the overall K = 4 clustering and the finest level of within-species substructure.
 
 <p align="center">
   <img src="figures/Figure_Dupuis_et_al_2018_Fig5.png" width="600">
 </p>
 
-For our *delim-SOM* 2.0 reanalysis, we analyzed 200 individuals shared across all six complementary layers:
+For our *delim-SOM* 2.0 reanalysis, we analyzed 200 individuals shared across the six data layers:
 
-1. genome-wide GBS SNPs
+1. genome-wide genotyping-by-sequencing (GBS) SNPs
 2. mitochondrial COI
 3. continuous morphology (RGB wing-color measurements)
 4. categorical morphology (visually scored wing characters and morphotype)
 5. environmental variables
 6. spatial variables
 
-The example data can be downloaded here:
+To follow this tutorial side-by-side, the example data can be downloaded here:
 
 ```text
 https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_2018
 ```
-
 
 
 ## 1. Set paths
@@ -300,7 +277,7 @@ example_dir <- file.path("Empirical_examples", "Dupuis_et_al_2018")
 
 ### 2.1 Process genome-wide SNP data
 
-We start by importing and processing the VCF file containing GBS-derived genome-wide SNPs using the recommended default settings. 
+We start by importing and processing the VCF file containing GBS-derived genome-wide SNPs using `process.SNP.data.SOM()` with the recommended default settings. 
 We then use `sub()` to simplify the row names by retaining only the numeric specimen identifier, and evaluate the output.
 
 ```r
@@ -316,7 +293,7 @@ dim(Polygonia_SNP)
 print(Polygonia_SNP[1:2, 1:10])
 ```
 
-This retains all 961 biallelic SNPs as variables and 237 of the original 241 individuals, with 4 individuals removed due to >50% missing data:
+This retains all 961 biallelic SNPs as variables (columns) and 237 of the original 241 individuals (rows), with 4 individuals removed due to >50% missing data:
 
 ```text
 [1] 237 961
@@ -326,11 +303,11 @@ This retains all 961 biallelic SNPs as variables and 237 of the original 241 ind
 ```
 
 
-
 ### 2.2 Process mitochondrial COI data
 
-Here, we import and process the aligned mitochondrial COI sequences using the same function and the recommended default settings.
-The sequence alignment is converted to biallelic SNP variables, after which `sub()` is used to retain only the numeric specimen identifier.
+Second, we import and process the aligned mitochondrial COI sequences. As before, we use `process.SNP.data.SOM()` with the recommended default settings.
+The function converts the sequence alignment to biallelic SNP variables.
+Then, we use `sub()` to retain only the numeric specimen identifier, as before.
 Duplicate specimen identifiers are removed by retaining the first occurrence, and the output is evaluated.
 
 ```r
@@ -348,7 +325,7 @@ dim(Polygonia_COI)
 print(Polygonia_COI[1:2, 1:10])
 ```
 
-This retains 213 biallelic COI variables from the original 1,348 alignment sites and 255 individuals after removing duplicate specimen identifiers:
+This retains 213 biallelic COI variables or SNPs (columns) from the original 1,348 alignment sites and 255 individuals (rows) after removing duplicate specimen identifiers:
 
 ```text
 [1] 255 213
@@ -357,11 +334,12 @@ This retains 213 biallelic COI variables from the original 1,348 alignment sites
 8302    0    2    0    0    0    2    2    2     0     2
 ```
 
+
 ### 2.3 Prepare continuous wing-color morphology
 
-This section imports the continuous morphology data containing RGB measurements from six dorsal and ventral wing regions.
-The specimen identifiers are used as row names, and the non-morphological `Name` and `Species` columns are removed before we inspect the output.
-
+This section imports and processes the continuous morphology data containing RGB color measurements from six dorsal and ventral wing regions.
+The specimen identifiers are used as row names, and the non-morphological `Name` and `Species` columns are removed.
+We then evaluate the output.
 
 
 ```r
@@ -374,7 +352,7 @@ dim(Polygonia_RGB)
 print(Polygonia_RGB[1:2, 1:10])
 ```
 
-This results in 18 continuous wing-color variables for 237 individuals:
+We see that this dataset includes eighteen continuous wing-color variables (three colors x six variables) for 237 individuals:
 
 ```text
 [1] 237  18
@@ -383,10 +361,10 @@ This results in 18 continuous wing-color variables for 237 individuals:
 8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 101.19
 ```
 
-The figure below shows the six dorsal and ventral wing regions (11-16) used for the RGB measurements and the average red, green, and blue luminance values for each species; (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively (Fig. 3 in Dupuis et al. 2018).
+The figure below (Fig. 3 in Dupuis et al. 2018). shows the six dorsal and ventral wing regions (Spots 11-16) used for the RGB measurements and the average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
 
 <p align="center">
-  <img src="figures/Figure_Dupuis_et_al_2018_Fig3.png" width="900">
+  <img src="figures/Figure_Dupuis_et_al_2018_Fig3.png">
 </p>
 
 
@@ -935,6 +913,23 @@ SOM_tr <- train.SOM(input_data = SOM_data, layer.distance.functions = layer_dist
 (but can be retained using `singleton.loci.filter = FALSE` or `invariant.loci.filter = FALSE`, respectively).
 
 ## Other train.som arguments
+Discussion of NA thresholds with study results
+
+
+By default, alternative values from K = 1 to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
+Clustering can also be rerun for a single K value by supplying `set.k`, which bypasses automatic K-selection while retaining the replicate SOM framework.
+This is useful when automatic K-selection fails after visual inspection of the BIC curve or when multiple K values receive substantial support and results for a specific solution are desired.
+
+Example forcing a three-lineage solution:
+
+```r
+SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
+                                 set.k = 3,
+                                 clustering.method = "kmeans+BICelbow",
+                                 save.SOM.results = TRUE,
+                                 save.SOM.results.name = "SOM_results_K3.Rdata")
+```
+
 ...
 
 
