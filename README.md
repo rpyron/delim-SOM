@@ -617,9 +617,9 @@ After SOM training and clustering, *delim-SOM* 2.0 offers several functions to e
 
 `plot.learning.SOM()` is a diagnostic function to assess changes during SOM training across replicates and data layers.
 
-Below, we see a rapid initial decline followed by a stable plateau, which suggests that SOM learning has converged toward a stable representation.
+Below, we see an initial decline followed by a stable plateau at the end, which suggests that SOM learning has converged toward a stable representation.
 Erratic trajectories or continued changes late in training may indicate that additional training steps are needed or that the input data require further inspection.
-
+We also see that the absolute heights and slopes of trajectories can differ among data layers because layers differ in dimensionality, distance functions, and distance distributions, and therefore should not be interpreted as differences in layer importance.
 
 ```r
 plot.learning.SOM(Polygonia_SOM)
