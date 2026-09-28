@@ -656,6 +656,8 @@ plot.layer.distance.scale.SOM(Polygonia_SOM)
 It visualizes the support profile across candidate K values, successive changes in BIC, and the frequency with which each K was selected across retained SOM replicates.
 The full support profile should be considered rather than relying only on the most frequently selected K, because selection frequency alone does not show how strongly the selected K is supported relative to alternative K values.
 
+Support for multiple K values indicates uncertainty in the inferred number of candidate lineages, which could arise from weak differentiation, recent divergence, admixture, or discordance among data layers.
+
 In our empirical example below, we see a clear BIC elbow at K = 3, where the largest improvement in fit occurs before subsequent reductions in BIC become much smaller, so that K = 3 is selected in 88% of SOM replicates, followed by K = 4 in 12%.
 
 ```r
@@ -679,10 +681,14 @@ Candidate lineages are therefore expected to occupy in these lighter valleys sep
 
 The bottom clustering panel shows the inferred candidate-lineage boundaries for the same representative replicate.
 Individuals are shown at the SOM units to which they were mapped, and the red boundaries separate the inferred candidate lineages.
+Compact and contiguous cluster regions indicate strong correspondence between the inferred clustering and the learned SOM topology.
+In contrast, fragmented cluster regions, where the same inferred cluster occurs in disconnected parts of the SOM map, indicate reduced topological coherence and may reflect imperfect preservation of the underlying multivariate structure by the two-dimensional SOM, complex or gradual structure in the data, or an overly fine clustering solution.
 
 Below, we see three compact yellow valleys that are clearly separated by dark-blue boundaries or ridges that correspond closely to the inferred candidate-lineage boundaries in the bottom plot. 
 This strongly supports the three inferred candidate lineages.
 It also provides a clear example of a coherent SOM topology with well-defined and contiguous cluster structure, whereas in other empirical datasets the ridges are often weaker or less distinct, the valleys more irregular or fragmented, or transitions between candidate lineages more gradual (as in some empirical examples in Schönberger et al. preprint).
+Another characteristic visible in the plot is that some SOM units contain no mapped individuals.
+This is not unusual and is generally not a cause for concern because the SOM grid represents a smoothed topological surface of the data, so that empty or sparsely occupied units can occur between more strongly occupied regions.
 
 ```r
 plot.model.SOM(Polygonia_SOM, replicate.mode = "representative")
@@ -711,21 +717,32 @@ plot.model.SOM(Polygonia_SOM,
   <img src="figures/Figure_model_k4.png">
 </p>
 
-
+## ----------------------
 ### 5.5 Plot replicate-consensus assignments
 
 `plot.structure.SOM()` provides a STRUCTURE-like visualization of replicate-consensus assignment coefficients.
 Each bar represents one individual and summarizes how consistently that individual is assigned to each candidate lineage across SOM replicates.
-Assignments distributed across multiple clusters indicate lower replicate-consensus assignment stability and should not be interpreted directly as admixture.
+Assignments distributed across multiple clusters indicate that an individual is placed inconsistently among candidate lineages across SOM replicates.
+Such intermediate assignments may indicate weak or incomplete lineage differentiation associated with admixture or discordance among data sources, while a similar pattern across many individuals may also be consistent with recent divergence among lineages.
+
+Here, we use `bottom.margin` to adjust the lower plot margin for the individual labels and `sort.by.col` to order individuals by their assignment coefficient for the fourth cluster.
+The plot shows four cluster components rather than only the more frequently recovered K = 3 solution because the function summarizes assignments across all retained SOM replicates, including both K = 3 and K = 4 replicates.
+Overall, we see three major clusters, with most individuals showing highly consistent assignments to one of the three major candidate lineages, thus reflecting the predominant K = 3 solution.
+The fourth cluster occurs only as a relatively small assignment component in a subset of individuals.
 
 ```r
-plot.structure.SOM(Polygonia_SOM,
-                   bottom.margin = 8)
+plot.structure.SOM(Polygonia_SOM, bottom.margin = 3.5, sort.by.col = 4)
 ```
+<p align="center">
+  <img src="figures/Figure_structure.png">
+</p>
+
+After inspecting these indiviuals and their species and lineage assignments, together with some complicated code to clean the figure (as shown below), 
+
 
 ### 5.6 Plot geographic assignments
 
-`plot.map.SOM()` maps the replicate-consensus assignment coefficients to the geographic coordinates of each individual.
+`plot.map.SOM()` maps the replicate-consensus assignment coefficients to the geographic coordinates of each individual as pie charts.
 This allows the geographic distribution of the inferred candidate lineages and assignment uncertainty to be inspected.
 
 ```r
@@ -739,6 +756,7 @@ plot.map.SOM(SOM.output = Polygonia_SOM,
              north.arrow.N.size = 1,
              scale.position = c(0.75, 0.05))
 ```
+
 
 ### 5.7 Evaluate variable importance
 
