@@ -529,9 +529,10 @@ We can also see the applied transformations for some variables from the appended
 ### 2.8 Prepare spatial data
 
 Dupuis et al. (2018) did not include spatial data in their analyses.
-However, since they provided specimen coordinates, we 
+However, because they provided specimen coordinates, we could add a spatial layer to our reanalysis.
 
-Here, extract latitude and longitude from the metadata and obtain elevation for each specimen locality.
+Here, we first extract latitude and longitude from the metadata.
+We then use the `st_as_sf()` function in the *sf* package to convert specimens with available coordinates into a spatial object and the `get_elev_point()` function in the *elevatr* package to retrieve elevation for each specimen locality.
 These three variables form the spatial data layer.
 
 ```r
