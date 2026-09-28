@@ -528,7 +528,10 @@ We can also see the applied transformations for some variables from the appended
 
 ### 2.8 Prepare spatial data
 
-Finally, we extract latitude and longitude from the metadata and obtain elevation for each specimen locality.
+Dupuis et al. (2018) did not include spatial data in their analyses.
+However, since they provided specimen coordinates, we 
+
+Here, extract latitude and longitude from the metadata and obtain elevation for each specimen locality.
 These three variables form the spatial data layer.
 
 ```r
