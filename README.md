@@ -633,12 +633,20 @@ plot.learning.SOM(Polygonia_SOM)
 ### 5.2 Layer distance scales
 
 `plot.layer.distance.scale.SOM()` visualizes the average pairwise distance scale of each input layer before SOM training and internal distance normalization.
-This plot is a diagnostic of differences in raw distance scale among layers and of biological layer importance.
-Typically, we will see that genetic layer strongly dominate here.
+This plot is a diagnostic of differences in raw distance scale (representing both the number of variables and their variances) among layers.
+
+In the plot below, we see that the genomic layer strongly dominates the raw distance scale. 
+This pattern is typical for most empirical datasets, as shown in our study (Schönberger et al. preprint).
+Importantly, the internal distance normalization in `train.SOM()` downweights layers such layers and upweights layers with smaller raw distance scales, preventing these differences from automatically determining their contribution during SOM training.
 
 ```r
 plot.layer.distance.scale.SOM(Polygonia_SOM)
 ```
+
+<p align="center">
+  <img src="figures/Figure_layer_distance.png">
+</p>
+
 
 
 ### 5.3 Support for alternative K values
