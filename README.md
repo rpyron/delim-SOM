@@ -555,11 +555,13 @@ This results in three spatial variables (columns) for 265 individuals (rows):
 
 ## 3. SOM training
 
-We next combine the six processed layers into a named list, which then can be supplied to `train.SOM()` to train the replicate SOMs.
-This function automatically identifies the individuals shared across all layers and removes non-matching individuals (i.e., it is not necessary to manually restrict all layers to the same individuals). 
+We next combine the six processed layers into a named list, which can then be supplied to `train.SOM()`.
+This function first checks the data, removes any remaining zero-variance variables, constructs the SOM grid based on the data, and then trains replicate SOMs.
+It also automatically identifies the individuals shared across all layers and removes non-matching individuals (i.e., it is not necessary to manually restrict all layers to the same individuals). 
+Conveniently, `train.SOM()` prints messages summarizing the each processing and training steps.
 
 Here, we use the recommended default settings.
-Individuals and variables containing more than 50% missing data are removed using the `max.NA.row = 0.5` and `max.NA.col = 0.5` arguments, respectively.
+Individuals and variables containing more than 50% missing data are removed using `max.NA.row = 0.5` and `max.NA.col = 0.5`, respectively.
 Replicates are trained in parallel, and the training results are saved using the `save.SOM.results = TRUE` argument with the file name specified by `save.SOM.results.name`.
 Training for this dataset takes around 3-10 min.
 
@@ -585,6 +587,7 @@ Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data,
 
 After SOM training, we cluster the resultant codebook vectors using the recommended `"kmeans+BICelbow"` approach.
 The optimal K is selected for each SOM replicate, allowing support for alternative K values to be summarized across replicates.
+As for SOM training, the clustering results are saved using `save.SOM.results = TRUE` with the file name specified by `save.SOM.results.name`.
 We can then evaluate the support for each K using the `$optim_k_summary` component of the output object.
 
 ```r
@@ -592,15 +595,16 @@ We can then evaluate the support for each K using the `$optim_k_summary` compone
 
 Polygonia_SOM <- clustering.SOM(SOM.output = Polygonia_SOM_tr,
                                 clustering.method = "kmeans+BICelbow",
-                                save.SOM.results = FALSE)
+                                save.SOM.results = TRUE,
+                                save.SOM.results.name = "Polygonia_SOM_kmeansBICelbow.Rdata")
 Polygonia_SOM$optim_k_summary
 ```
 
-This analyses reveals strong support for K = 3, with support for K = 4 in 10% of SOM replicates:
+This analyses reveals strong support for K = 3, with support for K = 4 in 12% of SOM replicates:
 
 ```text
-K = 3: 90%
-K = 4: 10%
+K = 3: 88%
+K = 4: 12%
 ```
 
 
@@ -612,8 +616,12 @@ After SOM training and clustering, *delim-SOM* 2.0 offers several functions to e
 ### 5.1 Learning trajectories
 
 `plot.learning.SOM()` is a diagnostic function to assess changes during SOM training across replicates and data layers.
-We want to see a rapid initial decline followed by a stable plateau which suggests that SOM learning has converged toward a stable representation.
+Below, we see a rapid initial decline followed by a stable plateau, which suggests that SOM learning has converged toward a stable representation.
 Erratic trajectories or continued changes late in training may indicate that additional training steps are needed or that the input data require further inspection.
+
+<p align="center">
+  <img src="figures/Figure_learning.png">
+</p>
 
 ```r
 plot.learning.SOM(Polygonia_SOM)
