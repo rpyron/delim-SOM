@@ -268,7 +268,6 @@ https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_
 
 ```r
 #### Set environment ###########################################################
-
 example_dir <- file.path("Empirical_examples", "Dupuis_et_al_2018")
 ```
 
@@ -282,7 +281,6 @@ We then use `sub()` to simplify the row names by retaining only the numeric spec
 
 ```r
 #### Process SNP data ##########################################################
-
 Polygonia_SNP <- process.SNP.data.SOM(vcf.path = file.path(example_dir, "Polygonia_961SNPs.vcf"),
                                       missing.loci.cutoff.lenient = 0.7,
                                       missing.loci.cutoff.final = 0.5,
@@ -312,7 +310,6 @@ Duplicate specimen identifiers are removed by retaining the first occurrence, an
 
 ```r
 #### Process COI data ##########################################################
-
 Polygonia_COI <- process.SNP.data.SOM(nexus.path = file.path(example_dir, "Polygonia_COI.nex"),
                                       missing.loci.cutoff.lenient = 0.7,
                                       missing.loci.cutoff.final = 0.5,
@@ -345,7 +342,6 @@ Lastly, we evaluate the output.
 
 ```r
 #### Prepare continuous morphology ############################################
-
 Polygonia_RGB <- read.delim(file.path(example_dir, "Polygonia_RGB_characters.txt"), stringsAsFactors = FALSE)
 rownames(Polygonia_RGB) <- Polygonia_RGB$Species
 Polygonia_RGB <- Polygonia_RGB[, !names(Polygonia_RGB) %in% c("Name", "Species"), drop = FALSE]
@@ -390,7 +386,6 @@ However, we treat wing character 8 as nominal and therefore convert it into four
 
 ```r
 #### Prepare categorical morphology ###########################################
-
 Polygonia_wing_scores <- read.delim(file.path(example_dir, "Polygonia_visually_scored.txt"), stringsAsFactors = FALSE)
 rownames(Polygonia_wing_scores) <- Polygonia_wing_scores$Name
 Polygonia_wing_scores <- Polygonia_wing_scores |>
@@ -430,7 +425,6 @@ In this section, we import the metadata and extract the morphotype assigned to e
 
 ```r
 #### Prepare morphotype data ###################################################
-
 Polygonia_metadata <- read.csv(file.path(example_dir, "Polygonia_metadata.csv"), header = TRUE, sep = ";")
 rownames(Polygonia_metadata) <- Polygonia_metadata$ID
 Polygonia_morphotype <- Polygonia_metadata[, "Morphotype", drop = FALSE]
@@ -458,7 +452,6 @@ Morphotype is converted to binary indicator variables using `make.cols.binary.SO
 
 ```r
 #### Combine categorical morphology ###########################################
-
 rownames(Polygonia_wing_scores) <- as.character(rownames(Polygonia_wing_scores))
 rownames(Polygonia_morphotype) <- as.character(rownames(Polygonia_morphotype))
 Polygonia_morphology_categorical <- merge(Polygonia_wing_scores,
@@ -494,7 +487,6 @@ Here, we import this dataset and remove latitude, longitude, and elevation (beca
 
 ```r
 #### Prepare environmental data ################################################
-
 Polygonia_environmental <- read.csv(file.path(example_dir, "Polygonia_environmental.csv"), row.names = 1, header = TRUE)
 Polygonia_environmental <- Polygonia_environmental[, !names(Polygonia_environmental) %in% c("Latitude", "Longitude", "Elevation"), drop = FALSE]
 Polygonia_environmental_rownames <- rownames(Polygonia_environmental)
@@ -516,6 +508,7 @@ dim(Polygonia_environmental)
 print(Polygonia_environmental[1:2, 1:10])
 ```
 
+The output shows 156 of 309 variables transformed, followed by removal of seventeen for low prevalence, 61 for low CV, and 106 for high correlation.
 Of the original 309 environmental variables, 125 variables (columns) are retained after low-variation and correlation filtering for 265 individuals (rows).
 We can also see the applied transformations for some variables from the appended suffixes in their names (e.g., `_log` or `_sqrt`).
 
@@ -536,7 +529,6 @@ We then use the `st_as_sf()` function in the *sf* package to convert these coord
 
 ```r
 #### Prepare spatial data ######################################################
-
 Polygonia_spatial <- Polygonia_metadata[, c("Latitude", "Longitude"), drop = FALSE]
 Polygonia_spatial$Elevation <- NA
 Polygonia_spatial_sf <- sf::st_as_sf(Polygonia_spatial[!is.na(Polygonia_spatial$Latitude) & !is.na(Polygonia_spatial$Longitude), ],
@@ -619,7 +611,7 @@ After SOM training and clustering, *delim-SOM* 2.0 offers several functions to e
 
 ### 5.1 Learning trajectories
 
-`plot.learning.SOM()` visualizes changes during SOM training across replicates and data layers.
+`plot.learning.SOM()` is a diagnostic function to assess changes during SOM training across replicates and data layers.
 We want to see a rapid initial decline followed by a stable plateau which suggests that SOM learning has converged toward a stable representation.
 Erratic trajectories or continued changes late in training may indicate that additional training steps are needed or that the input data require further inspection.
 
