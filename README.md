@@ -532,8 +532,7 @@ Dupuis et al. (2018) did not include spatial data in their analyses.
 However, because they provided specimen coordinates, we could add a spatial layer to our reanalysis.
 
 Here, we first extract latitude and longitude from the metadata.
-We then use the `st_as_sf()` function in the *sf* package to convert specimens with available coordinates into a spatial object and the `get_elev_point()` function in the *elevatr* package to retrieve elevation for each specimen locality.
-These three variables form the spatial data layer.
+We then use the `st_as_sf()` function in the *sf* package to convert these coordinates into spatial points and the `get_elev_point()` function in the *elevatr* package to retrieve elevation for each specimen locality.
 
 ```r
 #### Prepare spatial data ######################################################
@@ -549,31 +548,28 @@ Polygonia_spatial$Elevation[!is.na(Polygonia_spatial$Latitude) & !is.na(Polygoni
                           src = "aws")$elevation
 
 dim(Polygonia_spatial)
-print(Polygonia_spatial[1:5, , drop = FALSE])
+print(Polygonia_spatial[1:2, , drop = FALSE])
 ```
 
-This results in three spatial variables for 265 individuals:
+This results in three spatial variables (columns) for 265 individuals (rows):
 
 ```text
 [1] 265   3
      Latitude Longitude Elevation
 8301   50.921  -114.527      1343
 8302   50.921  -114.527      1343
-8303   50.921  -114.527      1343
-8304   52.939  -114.288       954
-8305   52.939  -114.288       954
 ```
 
 
 ## 3. SOM training
 
-We next combine the six processed datasets into a named list.
-This list can then be supplied to `train.SOM()` to train the replicate SOMs.
-`train.SOM()` automatically identifies the individuals shared across all layers and removes non-matching individuals so that it is not necessary to manually restrict all layers to the same individuals. 
+We next combine the six processed layers into a named list, which then can be supplied to `train.SOM()` to train the replicate SOMs.
+This function automatically identifies the individuals shared across all layers and removes non-matching individuals (i.e., it is not necessary to manually restrict all layers to the same individuals). 
+
 Here, we use the recommended default settings.
 Individuals and variables containing more than 50% missing data are removed using the `max.NA.row = 0.5` and `max.NA.col = 0.5` arguments, respectively.
 Replicates are trained in parallel, and the training results are saved using the `save.SOM.results = TRUE` argument with the file name specified by `save.SOM.results.name`.
-Training will take around 3-10 min.
+Training for this dataset takes around 3-10 min.
 
 
 ```r
@@ -592,10 +588,11 @@ Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data,
                               save.SOM.results.name = "Polygonia_SOM_tr.Rdata")
 ```
 
+
 ## 4. Cluster SOM codebook vectors
 
 After SOM training, we cluster the resultant codebook vectors using the recommended `"kmeans+BICelbow"` approach.
-The optimal K is selected independently for each SOM replicate, allowing support for alternative K values to be summarized across replicates.
+The optimal K is selected for each SOM replicate, allowing support for alternative K values to be summarized across replicates.
 We can then evaluate the support for each K using the `$optim_k_summary` component of the output object.
 
 ```r
@@ -617,7 +614,7 @@ K = 4: 10%
 
 ## 5. Evaluate results
 
-After SOM training and clustering, *delim-SOM* 2.0 offers several diagnostic plotting functions.
+After SOM training and clustering, *delim-SOM* 2.0 offers several functions to evaluate and plot the results.
 
 
 ### 5.1 Learning trajectories
