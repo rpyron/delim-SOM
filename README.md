@@ -652,13 +652,16 @@ plot.layer.distance.scale.SOM(Polygonia_SOM)
 
 ### 5.3 Support for alternative K values
 
-`plot.K.SOM()` visualizes support for alternative K values across SOM replicates.
-For BIC-based methods, the plot shows the support profile across candidate K values, successive changes in BIC, and the frequency with which each K was selected across retained SOM replicates.
-The full support profile should be considered rather than relying only on the most frequently selected K.
+`plot.K.SOM()` is an important function to evaluate relative support for alternative K values across SOM replicates.
+The plot shows the support profile across candidate K values, successive changes in BIC, and the frequency with which each K was selected across retained SOM replicates.
 
 ```r
 plot.K.SOM(Polygonia_SOM)
 ```
+
+<p align="center">
+  <img src="figures/Figure_K_plot.png">
+</p>
 
 
 ### 5.4 Visualize SOM topology and candidate lineages
@@ -668,8 +671,7 @@ The neighbor-distance panel shows distances among adjacent SOM units, with darke
 The clustering panel shows the inferred candidate-lineage boundaries.
 
 ```r
-plot.model.SOM(Polygonia_SOM,
-               replicate.mode = "representative")
+plot.model.SOM(Polygonia_SOM, replicate.mode = "representative")
 ```
 
 Specific K values can also be inspected using the `set.k` argument:
