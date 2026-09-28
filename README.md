@@ -516,7 +516,8 @@ dim(Polygonia_environmental)
 print(Polygonia_environmental[1:2, 1:10])
 ```
 
-Of the original 309 environmental variables, 125 variables (columns) are retained after low-variation and correlation filtering for 265 individuals (rows):
+Of the original 309 environmental variables, 125 variables (columns) are retained after low-variation and correlation filtering for 265 individuals (rows).
+We can also see the applied transformations for some variables from the appended suffixes in their names (e.g., `_log` or `_sqrt`).
 
 ```text
 [1] 265 125
