@@ -487,10 +487,10 @@ This results in fifteen categorical morphology variables (columns) for 217 indiv
 
 ### 2.7 Prepare environmental data
 
-Dupuis et al. (2018) did not include any environmental data in their study
-However, in our reanalyses, we used .... to ...import the environmental variables previously extracted for each specimen locality.
-The environmental dataset was generated using the *NicheDiv* *R* package (Schönberger et al. 2026), which extracts a comprehensive set of environmental variables from specimen coordinates for evaluating environmental differentiation.
-We remove latitude, longitude, and elevation because they are analyzed separately in the spatial layer (see below).
+Dupuis et al. (2018) did not include environmental data in their study.
+For our reanalysis, we added an environmental layer by extracting a comprehensive set of environmental variables with the *NicheDiv* *R* package (Schönberger et al. 2026) based on their provided specimen coordinates.
+
+Here, we import this dataset and remove latitude, longitude, and elevation (because they are analyzed separately in the spatial layer described below).
 
 ```r
 #### Prepare environmental data ################################################
@@ -501,20 +501,22 @@ Polygonia_environmental_rownames <- rownames(Polygonia_environmental)
 Polygonia_environmental <- as.data.frame(lapply(Polygonia_environmental, as.numeric))
 rownames(Polygonia_environmental) <- Polygonia_environmental_rownames
 ```
-
-Skewed environmental variables are transformed before filtering for low variation and strong pairwise correlations.
+We then transform skewed environmental variables with the help of the `transform.skewed.variables()` function in the *NicheDiv* package. 
+Conveniently, this function automatically checks each variable for skewness and applies the most-appropriate transformation if skewed.
+As above for the continuous morphology data, we subsequently filter variables with low variation or strong pairwise correlations using `remove.lowCV.multicollinearity.SOM()`.
 
 ```r
 Polygonia_environmental <- NicheDiv::transform.skewed.variables(Polygonia_environmental)$transformed
 Polygonia_environmental <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_environmental,
                                                               CV.threshold = 0.05,
-                                                              cor.threshold = 0.9)
+                                                              cor.threshold = 0.9,
+                                                              prevalence.threshold = 0.05)
 
 dim(Polygonia_environmental)
 print(Polygonia_environmental[1:2, 1:10])
 ```
 
-Of the original 309 environmental variables, 125 are retained after prevalence, low-variation, and correlation filtering for 265 individuals:
+Of the original 309 environmental variables, 125 variables (columns) are retained after low-variation and correlation filtering for 265 individuals (rows):
 
 ```text
 [1] 265 125
