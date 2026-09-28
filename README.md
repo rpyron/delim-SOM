@@ -692,11 +692,21 @@ plot.model.SOM(Polygonia_SOM, replicate.mode = "representative")
   <img src="figures/Figure_model.png">
 </p>
 
+
+We can also examine the same plot for the alternative, less-supported K = 4 solution by specifying `set.k = 4`.
+This restricts the visualization to SOM replicates in which four clusters were inferred and selects the representative replicate from this subset.
+
+The plot below shows that the K = 4 solution provides a less clear example of correspondence between the neighbor-distance topology and the inferred clustering.
+The four inferred clusters remain fully contiguous in the bottom panel, but the upper panel shows less distinct valleys and more fragmented ridges, with several cluster boundaries lacking a strong corresponding neighbor-distance boundary.
+This illustrates how an inferred clustering solution can be visualized even when its separation is less clearly reflected in the underlying SOM topology.
+This weaker correspondence is also consistent with the lower support for K = 4 in the clustering results.
+
 ```r
 plot.model.SOM(Polygonia_SOM,
                replicate.mode = "representative",
                set.k = 4)
 ```
+
 <p align="center">
   <img src="figures/Figure_model_k4.png">
 </p>
