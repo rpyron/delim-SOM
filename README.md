@@ -767,79 +767,175 @@ These two species are separated only by a small proportion of replicates, with *
 ### 5.6 Plot geographic assignments
 
 `plot.map.SOM()` maps the replicate-consensus assignment coefficients to the geographic coordinates of each individual as pie charts.
-This allows the geographic distribution of the inferred candidate lineages and assignment uncertainty to be inspected.
+This function requires two objects as input:
+the SOM output object (here `Polygonia_SOM`) and a data frame containing the sample coordinates with row names matching those in the SOM output (here based on the spatial layer `Polygonia_spatial`).
+Several additional plotting arguments are available, as shown below, and may require some fine-tuning to obtain an aesthetically pleasing map.
+Because the four *Polygonia* species in our empirical example are broadly sympatric, this plot is less informative for distinguishing their geographic distributions because many of the pie charts overlap.
 
 ```r
 plot.map.SOM(SOM.output = Polygonia_SOM,
              Coordinates = Polygonia_spatial[, c("Latitude", "Longitude")],
              lat.buffer.range = 4,
-             lon.buffer.range = 5,
+             lon.buffer.range = 10,
+             pie.size = 1.4,
              north.arrow.position = c(0.04, 0.87),
-             north.arrow.length = 0.7,
-             north.arrow.N.position = 0.3,
+             north.arrow.length = 1.0,
+             north.arrow.N.position = 0.4,
              north.arrow.N.size = 1,
-             scale.position = c(0.75, 0.05))
+             scale.position = c(0.75, 0.07))
 ```
+
+<p align="center">
+  <img src="figures/Figure_map.png">
+</p>
+
 
 
 ### 5.7 Evaluate variable importance
 
 `clustering.SOM()` calculates two complementary measures of variable importance that can be visualized using `plot.variable.importance.SOM()`.
-First, cluster-separation importance uses an ANOVA-like η² effect size to quantify how strongly each variable is associated with separation among the inferred clusters.
-Higher η² values indicate a stronger association between a variable and the inferred cluster structure.
+
+`mode = "Cluster.separation"` visualizes cluster-separation importance and is generally the more directly relevant measure for identifying which variables distinguish the inferred candidate lineages.
+Specifically, it uses an ANOVA-like η² effect size to quantify how strongly each variable is associated with separation among the inferred clusters.
+Higher η² values indicate that a larger proportion of variation in that variable is associated with the inferred cluster structure.
+Here, we use `bottom.margin` and `left.margin` to adjust the plot margins depending on the length of the variable labels.
+We also use `bars.threshold.N` to set the threshold for omitting variable labels and boxplot whiskers for layers containing more than twenty displayed variables, which reduces visual clutter.
 
 ```r
 plot.variable.importance.SOM(Polygonia_SOM,
                              mode = "Cluster.separation",
+                            bars.threshold.N = 20,
                              bottom.margin = 2,
                              left.margin = 5.8)
 ```
 
-Second, map-variance importance quantifies how strongly each variable varies across the trained SOM map, irrespective of whether this variation corresponds directly to the final cluster boundaries.
+<p align="center">
+  <img src="figures/Figure_var_imp_clust_sep.png">
+</p>
+
+
+Second, `mode = "Map.variance"` visualizes map-variance importance, which quantifies how strongly each variable varies across the trained SOM map, irrespective of whether this variation corresponds directly to the final cluster boundaries.
+Higher values therefore indicate greater variation of a variable across the SOM map, which may reflect cluster separation, continuous gradients, or within-cluster variation.
+Map variance is primarily intended as a complementary measure to cluster-separation importance because strong variation across the SOM does not necessarily mean that a variable strongly distinguishes the inferred candidate lineages.
+If a variable shows both high cluster-separation importance (η²) and high map variance, this provides additional evidence for its importance because the variable both varies strongly across the SOM map and is aligned with the inferred cluster structure.
+Map variance is also particularly useful when K = 1, for which cluster-separation importance cannot be calculated because no between-cluster partition exists. 
+As above, we use `bottom.margin`, `left.margin`, and `bars.threshold.N` to modify the plot.
 
 ```r
 plot.variable.importance.SOM(Polygonia_SOM,
                              mode = "Map.variance",
+                             bars.threshold.N = 20,
+                             bottom.margin = 2,
                              left.margin = 5)
 ```
 
-The stored variable-importance values can also be inspected directly.
-For example, the variables with the highest median cluster-separation importance in the continuous morphology layer can be obtained using:
+<p align="center">
+  <img src="figures/Figure_var_imp_map_var.png">
+</p>
+
+The variable-importance values can also be inspected directly using the `median_etasquared_variable_importance` for cluster separation and `median_map_variance_variable_importance` for map variance component of the clustering output.
+For example, we can extract the ten variables with the highest median cluster-separation importance from individual data layers.
+The variable-importance values can also be inspected directly using the `median_etasquared_variable_importance` component for cluster separation and the `median_map_variance_variable_importance` component for map variance in the clustering output.
+For example, we can extract the ten variables with the highest median cluster-separation importance from individual data layers.
+Here, `sort()` orders the variables by their importance values and places the most important variables first, `head()` retains only the first ten variables, and `round()` rounds the resulting importance values to two decimal places.
+
+For the continuous RGB wing color layer:
 
 ```r
-head(sort(Polygonia_SOM$median_etasquared_variable_importance$Morphology,
-          decreasing = TRUE),
-     15)
+round(head(sort(Polygonia_SOM$median_etasquared_variable_importance[[1]], decreasing = TRUE), 10), 2)
 ```
+
+```text
+ R15  G14  R12  B11  R11  B16  G12  B13  G11  B12 
+0.49 0.36 0.20 0.19 0.19 0.14 0.14 0.12 0.09 0.09
+```
+
+For the categorical morphology layer:
+
+```r
+round(head(sort(Polygonia_SOM$median_etasquared_variable_importance[[2]], decreasing = TRUE), 10), 2)
+```
+
+```text
+        Wing_character_9 Wing_character_8_state_3         Wing_character_5 
+                    0.97                     0.92                     0.91 
+        Wing_character_1 Wing_character_8_state_1         Wing_character_4 
+                    0.90                     0.85                     0.77 
+        Wing_character_6         Wing_character_2 Wing_character_8_state_4 
+                    0.76                     0.76                     0.76 
+        Wing_character_3 
+                    0.61
+```
+
+For the environmental layer:
+
+```r
+round(head(sort(Polygonia_SOM$median_etasquared_variable_importance[[5]], decreasing = TRUE), 10), 2)
+```
+
+```text
+            TPI_cuberoot     Burned_area_05_log1p     Burned_area_06_log1p 
+                    0.19                     0.17                     0.14 
+                      RH     wetland_arcsine_sqrt                    EVI_4 
+                    0.14                     0.13                     0.12 
+                   EVI_3                PAS01_log snow_water_equivalent_10 
+                    0.11                     0.11                     0.10 
+   cropland_logit_shrunk 
+                    0.10
+```
+
 
 ### 5.8 Evaluate layer importance
 
-Layer importance can be evaluated in two complementary ways: by summarizing variable importance within each layer and by measuring how the inferred clustering changes when individual layers are omitted.
+*delimSOM* 2.0 provides two complementary ways to assess layer importance: by summarizing variable importance within each layer and by measuring how the inferred clustering changes when individual layers are omitted.
 
-`plot.layer.importance.varimp.SOM()` summarizes the distributions of variable-importance values within each data layer.
+`plot.layer.importance.varimp.SOM()` summarizes the distributions of variable-importance values presented in section 5.7 within each data layer.
 This provides an overview of how strongly the variables within each layer are associated with cluster separation or variation across the SOM map.
 
 ```r
 plot.layer.importance.varimp.SOM(Polygonia_SOM,
-                                 bottom.margin = 4)
+                                 bottom.margin = 3.5)
 ```
 
-`plot.layer.importance.leaveoneout.SOM()` reruns the analysis while omitting one data layer at a time and compares each reduced analysis with the full multilayer SOM.
-The analysis evaluates changes in the inferred number of clusters, cluster composition, and individual assignment confidence after each layer is omitted.
-Because SOM training and clustering are repeated for each omitted layer, this analysis is substantially more computationally intensive.
+<p align="center">
+  <img src="figures/Figure_layerimp_varimp.png">
+</p>
+
+`plot.layer.importance.leaveoneout.SOM()` is a leave-one-out analysis that reruns the analysis while omitting one data layer at a time and compares each reduced analysis with the full multilayer SOM.
+
+This provides are more direct assessment of how strongly each layer affects the inferred number of clusters, cluster composition, and individual assignment confidence after each layer is omitted. 
+If a layer is important, we would expect its omission to cause larger changes in the inferred number of clusters, cluster composition, or individual assignment confidence.
+Because SOM training and clustering are repeated for each omitted layer, this analysis is substantially more computationally intensive and might take a couple of hours depending on the scale of our dataset.
+
+The plot contains three complementary measures of layer importance.
+The left panel shows the absolute change in the inferred number of clusters (K) after each layer is omitted, with larger values indicating that the omitted layer had a stronger influence on the number of candidate lineages recovered.
+The middle panel shows the pairwise co-assignment change, which is the proportion of pairs of individuals whose same-cluster versus different-cluster relationship changes after omitting the layer. Larger values therefore indicate that removing the layer more strongly changes which individuals are grouped together.
+The right panel shows the change in mean assignment margin, where the assignment margin is the difference between the highest and second-highest cluster-assignment values for each individual. Positive values indicate that omitting the layer reduces assignment confidence, whereas values near zero indicate little change.
+For all three panels, larger values generally indicate greater importance of the omitted layer for the inferred delimitation, while values close to zero indicate that removing the layer has little effect on the clustering.
+Points represent replicate-matched comparisons between the full analysis and the corresponding leave-one-layer-out analysis, while the boxplots summarize variation across SOM replicates.
+
+In the *Polygonia* analysis, SNPs contributed most strongly to cluster separation, followed by categorical wing morphology and mitochondrial COI, whereas environmental and spatial layers contributed comparatively little.
+
 
 ```r
 plot.layer.importance.leaveoneout.SOM(Polygonia_SOM,
                                       bottom.margin = 7)
 ```
 
-In the *Polygonia* analysis, SNPs contributed most strongly to cluster separation, followed by categorical wing morphology and mitochondrial COI, whereas environmental and spatial layers contributed comparatively little.
 
 ## 6. Optional: compare clustering methods
 
-`clustering.SOM()` currently implements six clustering and K-selection methods: `"kmeans+BICelbow"`, `"kmeans+BICthreshold"`, `"GMM+BICthreshold"`, `"hierarchical+DB"`, `"HDBSCAN"`, and `"OPTICS+Silhouette"`.
-Two additional BIC-based methods are `"kmeans+BICthreshold"` and `"GMM+BICthreshold"`, with the latter generally requiring more computation.
-For example, we can rerun clustering using `"kmeans+BICthreshold"`:
+No single clustering method is expected to perform best for every possible data structure because performance depends on geometry, dimensionality, noise, overlap, and parameterization (Omran et al. 2007; Rodriguez et al. 2019).
+*delimSOM* 2.0 therefore implements six clustering and K-selection methods in `clustering.SOM()`: 
+`"kmeans+BICelbow"`, `"kmeans+BICthreshold"`, `"GMM+BICthreshold"`, `"hierarchical+DB"`, `"HDBSCAN"`, and `"OPTICS+Silhouette"`.
+
+Our testing (Schönberger et al. preprint) showed that the two k-means/BIC approaches provided the best overall balance of lineage recovery, assignment accuracy, and computational efficiency.
+We therefore recommend `"kmeans+BICelbow"` as the primary starting point, while alternative methods can provide useful complementary analyses.
+`"kmeans+BICthreshold"` performed similarly well, and `"GMM+BICthreshold"` also showed high lineage recovery and assignment accuracy but generally required longer computation times.
+
+By contrast, we do not recommend using `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"` as primary approaches.
+Hierarchical clustering showed high recovery and assignment accuracy but was substantially slower, whereas HDBSCAN and OPTICS were computationally faster but less reliable, particularly when the number of simulated lineages was high.
+For our *Polygonia* example, we can rerun clustering using `"kmeans+BICthreshold"`:
 
 ```r
 Polygonia_SOM_kmeans_BICthreshold <- clustering.SOM(SOM.output = Polygonia_SOM_tr,
@@ -848,30 +944,19 @@ Polygonia_SOM_kmeans_BICthreshold <- clustering.SOM(SOM.output = Polygonia_SOM_t
 Polygonia_SOM_kmeans_BICthreshold$optim_k_summary
 ```
 
-No single clustering method is expected to perform best for every possible data structure.
-The k-means/BIC methods are recommended as the primary starting point, while alternative methods can provide useful complementary analyses.
 
 ## 7. Optional: hierarchical reanalysis
 
-A conservative primary analysis may combine weakly differentiated lineages.
-Hierarchical reanalysis can then test for additional structure within each recovered candidate lineage.
+Hierarchical reanalysis can test for additional structure within each recovered main candidate lineage (ref).
 
 For the *Polygonia* example:
 
 ```r
 #### Assign individuals to dominant candidate lineage #########################
-
-Polygonia_clusters <- apply(Polygonia_SOM$ancestry_matrix,
-                            1,
-                            which.max)
-
-Polygonia_clusters <- paste0("cluster",
-                             Polygonia_clusters)
-
+Polygonia_clusters <- apply(Polygonia_SOM$ancestry_matrix, 1, which.max)
+Polygonia_clusters <- paste0("cluster", Polygonia_clusters)
 table(Polygonia_clusters)
-
-Polygonia_cluster_samples <- split(rownames(Polygonia_SOM$ancestry_matrix),
-                                   Polygonia_clusters)
+Polygonia_cluster_samples <- split(rownames(Polygonia_SOM$ancestry_matrix), Polygonia_clusters)
 ```
 
 The main *Polygonia* analysis recovered three clusters containing approximately 79, 75, and 46 individuals.
@@ -901,98 +986,360 @@ Polygonia_SOM_cluster2$optim_k_summary
 The manuscript analysis recovered K = 2 with 100% support in this hierarchical analysis, separating *P. gracilis* and *P. progne*.
 No further subdivision was supported within the primary *P. faunus* or *P. satyrus* lineages.
 
-# Applying delimSOM to your own data
-
-For most projects, the workflow can be reduced to:
-
-```r
-#### Prepare layers ############################################################
-
-SOM_data <- list(Layer_1 = matrix_1,
-                 Layer_2 = matrix_2,
-                 Layer_3 = matrix_3)
-
-
-
-#### Train SOM #################################################################
-
-SOM_tr <- train.SOM(input_data = SOM_data)
-
-
-
-#### Cluster SOM ###############################################################
-
-SOM_results <- clustering.SOM(SOM.output = SOM_tr,
-                              clustering.method = "kmeans+BICelbow")
-
-
-
-#### Evaluate results ##########################################################
-
-SOM_results$optim_k_summary
-
-plot.learning.SOM(SOM_results)
-
-plot.K.SOM(SOM_results)
-
-plot.model.SOM(SOM_results,
-               replicate.mode = "representative")
-
-plot.structure.SOM(SOM_results)
-```
 
 # C) Advanced settings and further recommendations
 
 ## Important considerations
 
-- Use the same biological individuals across data layers whenever possible.
-- Ensure that row names uniquely identify individuals.
+- Ensure that row names uniquely and consistently identify individuals across all layers.
 - Encode missing values as `NA`.
-- Inspect training convergence and model-quality diagnostics.
-- Inspect support across alternative values of K, not only the modal solution.
+- Preprocess variables to remove low-information and strongly redundant predictors.
+- Inspect support across alternative values of K rather than relying only on the most frequently selected K.
 - Treat inferred clusters as candidate-lineage hypotheses rather than definitive taxonomic conclusions.
 - Consider hierarchical reanalysis when weaker structure may occur within a strongly supported candidate lineage.
-- Species-rich systems and datasets with small or strongly uneven within-lineage sample sizes require more cautious interpretation.
+- Consider the biological independence of variables and data layers rather than only the number of variables they contain.
+- Species-rich systems and datasets with small or strongly uneven within-lineage sample sizes require more cautious interpretation or additional analyses.
+
+Our simulation and empirical results showed that performance was strongest when the number of lineages was relatively small and within-lineage sampling was sufficiently large (Schönberger et al. preprint).
+We therefore recommend approximately K ≤ 4 and at least 15 individuals per lineage when possible.
+Analyses outside these conditions should be interpreted more cautiously and ideally supported by complementary analyses, since recovery became less reliable as the number of lineages increased, sample sizes decreased, or sampling became strongly uneven.
+
+
+## Variable redundancy and preprocessing
+
+Because SOM training is distance-based, strongly redundant variables can repeatedly represent the same underlying biological signal and disproportionately influence the learned map.
+
+This consideration applies especially to genomic data.
+For example, multiple SNPs within the same RAD locus, linkage-disequilibrium block, inversion, or other tightly linked genomic region may represent partly redundant evolutionary information.
+Where appropriate, LD pruning or retaining representative markers from strongly linked regions can therefore improve the independence of the genomic information supplied to the SOM.
+
+The same principle applies across data layers.
+For example, environmental and spatial layers may partly represent the same geographic gradient, and multiple mitochondrial markers generally represent the same underlying mitochondrial genealogy.
+Internal layer normalization balances numerical distance scales among layers but does not remove biological redundancy within or among layers.
 
 
 ## Distance functions
 
-`train.SOM()` automatically infers a distance type from each layer:
-
+`train.SOM()` automatically infers a distance function from the numerical structure of each layer:
+  
 - binary `0/1` data: `"tanimoto"`
-- dosage/count-like `0/1/2` data: `"manhattan"`
+- dosage-like `0/1/2` data: `"manhattan"`
 - other numeric continuous data: `"sumofsquares"`
 
-Users should verify that the automatically inferred distance is biologically appropriate. 
-Distances can be supplied manually when needed:
+When `verbose = TRUE`, the inferred layer types and distance functions are printed during training.
+Users should verify that the automatically inferred distance is biologically appropriate for each layer because numerical structure alone cannot always determine the intended meaning of a dataset.
 
+In general:
+  
+- `"sumofsquares"` is recommended for continuous variables when larger differences should contribute disproportionately to sample separation.
+- `"euclidean"` can be used when distances should increase linearly with multivariate displacement.
+- `"tanimoto"` is appropriate for binary presence/absence variables.
+- `"manhattan"` is recommended for SNP dosages and other dosage-like genetic encodings.
+- `"manhattan"` may also be preferable for sparse, skewed, or zero-heavy count data.
+- transformed count data that behave more like continuous variables may instead be more appropriately analyzed using `"sumofsquares"`.
+
+Distances can be supplied manually when needed:
+  
 ```r
 layer_distances <- c(
-    "manhattan",
-    "sumofsquares",
-    "sumofsquares",
-    "sumofsquares"
-  )
-SOM_tr <- train.SOM(input_data = SOM_data, layer.distance.functions = layer_distances)
+  "manhattan",
+  "sumofsquares",
+  "sumofsquares",
+  "sumofsquares"
+)
+
+SOM_tr <- train.SOM(input_data = SOM_data,
+                    layer.distance.functions = layer_distances)
 ```
+
+Different variable types should generally be placed in separate layers when they require different distance functions.
+For example, continuous morphometric measurements and binary morphological characters are better represented as separate layers rather than combined into a single matrix.
+
+
+## Layer weights
+
+For multilayer analyses, `train.SOM()` automatically normalizes layer-specific distance scales so that layers with larger raw distances do not automatically dominate SOM training.
+Users can additionally modify the relative influence of individual layers using `manual.layer.weights`.
+These user-defined weights are combined with the internal distance-normalization weights rather than replacing them.
+Manual weighting can be useful when some layers have greater measurement uncertainty, lower information content, stronger environmental noise, or known differences in biological relevance.
+Layers with greater uncertainty or lower information content may be down-weighted, whereas layers with well-characterized evolutionary signal may be emphasized.
+
+For example:
+  
+  ```r
+SOM_tr <- train.SOM(input_data = SOM_data,
+                    manual.layer.weights = c(1, 1, 0.5, 1))
+```
+
+
+Importantly, internal distance normalization accounts for differences in distance scale but does not remove redundancy within or among layers.
+
+For example:
+  
+- multiple linked SNPs from the same genomic region may repeatedly represent the same evolutionary signal;
+- multiple mitochondrial loci generally describe the same underlying mitochondrial genealogy;
+- environmental and spatial layers may partly represent the same geographic gradient;
+- highly correlated variables within one layer may repeatedly represent the same biological gradient.
+
+Where possible, preprocessing to reduce redundancy, such as LD pruning or removing highly correlated predictors, is preferable to simply down-weighting an entire layer.
+
 
 ## Other input data
 
-...
-(but can be retained using `singleton.loci.filter = FALSE` or `invariant.loci.filter = FALSE`, respectively).
+Any dataset that can be represented as a numeric sample-by-variable matrix can potentially be incorporated into `train.SOM()` after appropriate preprocessing.
 
-## Other train.som arguments
-Discussion of NA thresholds with study results
+Examples include:
+  
+  - SNPs and nucleotide-sequence data
+- microsatellites and short tandem repeats
+- structural variants and copy-number variants
+- genotype likelihoods or expected allele dosages
+- polyploid genotype data
+- k-mer or other sequence-derived features
+- transcriptomic or gene-expression data
+- continuous morphological measurements
+- meristic traits
+- categorical traits converted to binary variables
+- behavioral variables
+- host-association data
+- environmental variables
+- spatial variables
 
+Some of these data types might require external preprocessing before SOM training.
+
+For microsatellites and other multiallelic markers, arbitrary allele identifiers should not be entered directly as numeric values.
+Allele sizes, repeat numbers, or appropriately constructed allele-count variables should instead be used.
+
+Polyploid genotype data can be supplied as allele-dosage matrices after appropriate preprocessing, but users should manually specify an appropriate distance function.
+For example, tetraploid genotypes can be represented as dosage values from 0 to 4 and analyzed using Manhattan distance.
+Mixed-ploidy datasets require additional care because the same dosage difference does not represent the same proportional allele-frequency difference across ploidy levels.
+Raw dosages from different ploidies should therefore not be combined without appropriate standardization.
+
+Genotype likelihoods or posterior genotype probabilities can be incorporated as expected allele dosages.
+Because these values are continuous, their intended genetic interpretation may not be recognized automatically, so the distance function should generally be specified manually.
+
+Genome-wide k-mer data and other sequence-derived features can also be incorporated after appropriate filtering and normalization.
+Because these matrices can contain extremely large numbers of redundant or rare variables, feature reduction is generally recommended before training.
+
+Raw RNA-seq counts should not generally be supplied directly to `train.SOM()`.
+Expression data should first be quality filtered, normalized, and appropriately transformed, for example using variance-stabilized or normalized log-expression values.
+Low-variation and strongly redundant genes should also be removed or reduced where appropriate.
+
+
+## Missing data
+
+`train.SOM()` removes individuals and variables containing more than the specified proportion of missing data using:
+  
+  ```r
+max.NA.row
+max.NA.col
+```
+
+Both default to:
+  
+  ```r
+0.5
+```
+
+Missing values that remain after filtering are handled directly during SOM training rather than globally imputed.
+Distances and codebook-vector updates are calculated only across observed dimensions.
+
+Our simulations showed relatively little decline in performance at moderate levels of missing data, but performance decreased more strongly when missingness became high.
+The default threshold of 0.5 therefore provides a permissive starting point, but users should adjust these thresholds according to their dataset.
+
+For datasets with very large numbers of variables, stricter thresholds may be reasonable if sufficient information remains.
+For datasets with few variables or difficult-to-replace specimens, more permissive thresholds may sometimes be preferable.
+
+
+## Number of training steps and replicates
+
+`N.steps` determines the number of SOM training iterations for each replicate, while `N.replicates` determines the number of independently initialized SOMs.
+
+We recommend approximately 80–200 SOM training iterations and 80–150 replicate maps, with the defaults:
+  
+  ```r
+N.steps = 100
+N.replicates = 110
+```
+
+Too few training steps can result in unstable or insufficiently converged maps.
+Increasing the number of training steps substantially beyond the recommended range often increases runtime without providing proportional improvements.
+
+Likewise, too few replicates make the final results more sensitive to stochastic initialization, whereas very large numbers of replicates mainly increase computation time without proportionate improvement in stability.
+
+The appropriate values depend on dataset size, dimensionality, number of layers, and computational resources.
+Users should inspect `plot.learning.SOM()` to determine whether training has stabilized.
+
+
+## Neighborhood function
+
+The SOM neighborhood function is controlled by:
+  
+  ```r
+training.neighborhoods
+```
+
+The available options are:
+  
+  ```r
+"gaussian"
+"bubble"
+```
+
+The recommended default is:
+  
+  ```r
+training.neighborhoods = "gaussian"
+```
+
+Our simulations showed that the Gaussian neighborhood more reliably recovered the expected K and produced better topology preservation, whereas the bubble neighborhood was generally faster and sometimes produced lower quantization error.
+
+We therefore recommend retaining `"gaussian"` as the primary setting unless there is a specific reason to test the alternative.
+
+
+## Learning rates and learning-rate tuning
+
+By default, SOM training uses:
+  
+  ```r
+learning.rate.initial = 0.5
+learning.rate.final = 0.1
+```
+
+The learning rate decreases during training so that early iterations produce broad organization of the map and later iterations provide finer local adjustment.
+
+Learning-rate tuning can be activated with:
+  
+  ```r
+learning.rate.tuning = TRUE
+```
+
+This evaluates multiple initial and final learning-rate combinations and retains the combination producing the lowest mean quantization error across tuning replicates.
+
+Our testing showed only relatively small performance improvements from learning-rate tuning while substantially increasing runtime.
+We therefore generally recommend:
+  
+  ```r
+learning.rate.tuning = FALSE
+```
+
+Learning-rate tuning may still be useful for small datasets or exploratory analyses where computation time is not limiting.
+
+
+## SOM grid size
+
+By default:
+  
+  ```r
+grid.size = NULL
+```
+
+so `train.SOM()` automatically determines both the size and shape of the SOM grid from sample size and the structure of the input data.
+
+The default:
+  
+  ```r
+grid.multiplier = 5
+```
+
+controls the approximate number of SOM units relative to sample size.
+
+Larger values of `grid.multiplier` produce finer maps with more SOM units, whereas smaller values produce coarser maps.
+
+A grid that is too coarse can merge distinct structure, while an overly fine grid can fragment clusters, increase the number of empty units, and increase computation time.
+
+We therefore generally recommend retaining the automatic grid construction unless there is a specific reason to modify map resolution.
+
+A user-defined grid can be supplied as:
+  
+  ```r
+SOM_tr <- train.SOM(input_data = SOM_data,
+                    grid.size = c(5, 4))
+```
+
+
+## Parallel training
+
+Replicate SOMs are trained in parallel by default:
+  
+  ```r
+parallel = TRUE
+```
+
+with the number of cores controlled by:
+  
+  ```r
+N.cores
+```
+
+Parallel execution is especially useful for large or high-dimensional datasets.
+
+For example:
+  
+  ```r
+SOM_tr <- train.SOM(input_data = SOM_data,
+                    parallel = TRUE,
+                    N.cores = 4)
+```
+
+Increasing the number of cores does not change the statistical analysis, only computational performance.
+
+
+## Model-quality filtering
+
+`clustering.SOM()` can remove poorly fitting SOM replicates before clustering.
+
+Two complementary diagnostics are used:
+  
+  - quantization error, which measures how closely samples are represented by their best-matching SOM units;
+- topographic error, which measures how well neighborhood relationships are preserved on the SOM grid.
+
+By default, replicates above the 95th percentile for these errors are removed:
+  
+  ```r
+quantization.error.quantile = 0.95
+topographic.error.quantile = 0.95
+```
+
+This conservative filtering removes only the worst-fitting replicate maps while retaining most replicates for downstream consensus analyses.
+
+Quantization and topographic error should be considered together because a map can fit individual observations well while still poorly preserving the underlying topology, or preserve the topology while fitting individual observations less closely.
+
+
+## Maximum K and fixed-K analyses
 
 By default, alternative values from K = 1 to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
-Clustering can also be rerun for a single K value by supplying `set.k`, which bypasses automatic K-selection while retaining the replicate SOM framework.
-This is useful when automatic K-selection fails after visual inspection of the BIC curve or when multiple K values receive substantial support and results for a specific solution are desired.
 
+The maximum K should be chosen large enough to include all biologically plausible lineage numbers, while avoiding unnecessarily large values that increase computation and introduce many implausible alternatives.
 
-Specific K values can also be inspected using the `set.k` argument:
+For example:
+  
+  ```r
+SOM_results <- clustering.SOM(SOM.output = SOM_tr,
+                              max.k = 10,
+                              clustering.method = "kmeans+BICelbow")
+```
 
-```r
+Importantly, users should inspect the complete K-support profile rather than relying only on the automatically selected K.
+
+This is particularly important for the BIC-elbow method.
+Our simulations with K = 7 showed that the conservative K = 1 versus K = 2 safeguard can sometimes prevent automatic selection of a higher-K elbow when the initial improvement from K = 1 to K = 2 is weak, even when a clear elbow occurs at a higher value of K.
+
+Clustering can therefore also be rerun for a single K value using `set.k`, which bypasses automatic K selection while retaining the replicate SOM framework.
+
+For example, forcing a three-lineage solution:
+  
+  ```r
+SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
+                                 set.k = 3,
+                                 clustering.method = "kmeans+BICelbow",
+                                 save.SOM.results = TRUE,
+                                 save.SOM.results.name = "SOM_results_K3.Rdata")
+```
+
+Specific K values can also be inspected using `plot.model.SOM()` without rerunning SOM training:
+  
+  ```r
 plot.model.SOM(Polygonia_SOM,
                replicate.mode = "representative",
                set.k = 3)
@@ -1001,17 +1348,105 @@ plot.model.SOM(Polygonia_SOM,
                replicate.mode = "representative",
                set.k = 4)
 ```
-Example forcing a three-lineage solution:
 
-```r
-SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
-                                 set.k = 3,
-                                 clustering.method = "kmeans+BICelbow",
-                                 save.SOM.results = TRUE,
-                                 save.SOM.results.name = "SOM_results_K3.Rdata")
+Fixed-K analyses should generally be used to inspect or test specific alternative solutions rather than to replace evaluation of the full K-support profile.
+
+
+## BIC threshold
+
+The threshold-based clustering approaches use:
+  
+  ```r
+BIC.thresh
 ```
 
-...
+to determine whether the improvement in BIC is sufficiently large to support an additional cluster.
+
+The default threshold should generally be retained unless there is a specific analytical reason to alter the level of evidence required for additional subdivision.
+
+Changing this threshold directly affects how conservative K selection is, so analyses using alternative thresholds are best treated as sensitivity analyses.
+
+
+## Reusing trained SOMs
+
+SOM training and clustering are separate steps in *delimSOM* 2.0.
+
+This allows alternative clustering methods, values of `max.k`, or fixed-K analyses to be applied to the same `train.SOM()` output without retraining the SOMs.
+
+For example:
+  
+  ```r
+SOM_kmeans_elbow <- clustering.SOM(SOM.output = SOM_tr,
+                                   clustering.method = "kmeans+BICelbow")
+
+SOM_kmeans_threshold <- clustering.SOM(SOM.output = SOM_tr,
+                                       clustering.method = "kmeans+BICthreshold")
+```
+
+This is particularly useful for sensitivity analyses because the different clustering approaches are then applied to exactly the same trained SOM replicates.
+
+
+## Reproducibility
+
+Both SOM training and clustering use reproducible random seeds controlled through:
+  
+  ```r
+set.seed.N
+```
+
+For analyses that will be compared directly, users should retain the same seed unless intentionally evaluating stochastic sensitivity.
+
+The replicate framework already incorporates stochastic variation by training multiple independently initialized SOMs, so conclusions should generally be based on patterns across replicates rather than on any single SOM map.
+
+
+## Interpreting K = 1 and weak structure
+
+One important feature of *delimSOM* 2.0 is that K = 1 is explicitly allowed.
+
+K = 1 should therefore be interpreted as an absence of sufficient support for subdivision under the analyzed data and settings rather than as a failed analysis.
+
+Mixed support across K values or intermediate replicate-consensus assignments may indicate weak differentiation, recent divergence, admixture, discordance among data layers, or a transition between population structure and stronger lineage divergence.
+
+In such situations, users should consider:
+  
+  - the complete K-support profile;
+- replicate-consensus assignment coefficients;
+- SOM topology and neighbor-distance plots;
+- variable- and layer-importance results;
+- independent biological evidence;
+- hierarchical reanalysis of strongly supported broader candidate lineages.
+
+
+## Hierarchical reanalysis
+
+A conservative primary analysis may combine weakly differentiated lineages into a broader candidate lineage.
+When biologically justified, the samples assigned to such a lineage can be extracted and analyzed again using the same workflow.
+
+Hierarchical reanalysis can therefore help identify weaker substructure that is masked by stronger differentiation among the major lineages.
+
+However, hierarchical analyses should not be used simply to subdivide every recovered cluster until additional groups appear.
+Further subdivision should be supported by the K-support profile, assignment coefficients, SOM topology, and independent biological evidence.
+
+
+## Saving and reusing results
+
+Both `train.SOM()` and `clustering.SOM()` can save their results directly.
+
+For example:
+  
+  ```r
+SOM_tr <- train.SOM(input_data = SOM_data,
+                    save.SOM.results = TRUE,
+                    save.SOM.results.name = "SOM_tr.Rdata")
+
+SOM_results <- clustering.SOM(SOM.output = SOM_tr,
+                              save.SOM.results = TRUE,
+                              save.SOM.results.name = "SOM_results.Rdata")
+```
+
+The `overwrite.SOM.results` argument controls whether an existing output file is replaced.
+
+Saving trained SOM objects is particularly useful because clustering settings can subsequently be changed without repeating the more computationally intensive SOM-training step.
 
 
 # *delimSOM* 2.0 functions
