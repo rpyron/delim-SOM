@@ -725,19 +725,43 @@ Each bar represents one individual and summarizes how consistently that individu
 Assignments distributed across multiple clusters indicate that an individual is placed inconsistently among candidate lineages across SOM replicates.
 Such intermediate assignments may indicate weak or incomplete lineage differentiation associated with admixture or discordance among data sources, while a similar pattern across many individuals may also be consistent with recent divergence among lineages.
 
-Here, we use `bottom.margin` to adjust the lower plot margin for the individual labels and `sort.by.col` to order individuals by their assignment coefficient for the fourth cluster.
+Here, we use `bottom.margin` to adjust the lower plot margin for the individual labels.
 The plot shows four cluster components rather than only the more frequently recovered K = 3 solution because the function summarizes assignments across all retained SOM replicates, including both K = 3 and K = 4 replicates.
 Overall, we see three major clusters, with most individuals showing highly consistent assignments to one of the three major candidate lineages, thus reflecting the predominant K = 3 solution.
 The fourth cluster occurs only as a relatively small assignment component in a subset of individuals.
 
 ```r
-plot.structure.SOM(Polygonia_SOM, bottom.margin = 3.5, sort.by.col = 4)
+plot.structure.SOM(Polygonia_SOM, bottom.margin = 3.5)
 ```
 <p align="center">
   <img src="figures/Figure_structure.png">
 </p>
 
-After inspecting these indiviuals and their species and lineage assignments, together with some complicated code to clean the figure (as shown below), 
+We can also extract and evaluate the replicate-consensus cluster assignment coefficients underlying the plot.
+These are stored in the `$ancestry_matrix` component of the clustering output.
+It is also often useful to combine these coefficients with species labels to compare the inferred candidate-lineage assignments with existing species identifications.
+Because the individual IDs are stored as row names in both the ancestry matrix and `Polygonia_metadata`, we can match the species names to the corresponding individuals.
+We can then inspect the dataframe:
+  
+  ```r
+head(Polygonia_SOM$ancestry_matrix)
+Polygonia_ancestry <- as.data.frame(Polygonia_SOM$ancestry_matrix)
+Polygonia_ancestry$Species <- Polygonia_metadata$Species[match(rownames(Polygonia_ancestry), rownames(Polygonia_metadata))]
+head(Polygonia_ancestry)
+```
+```text
+        Cluster_1   Cluster_2  Cluster_3   Cluster_4     Species
+8301         0      0.8787879  0.1212121       0    Polygonia faunus
+8302         0      0.8787879  0.1212121       0    Polygonia faunus
+8303         0      0.8787879  0.1212121       0    Polygonia faunus
+8304         0      0.8787879  0.1212121       0    Polygonia faunus
+8306         0      0.8787879  0.1212121       0    Polygonia faunus
+8307         0      0.8787879  0.1212121       0    Polygonia faunus
+```
+
+This full data frame together with the STRUCTURE-like barplot reveals that the purple and blue clusters correspond to *P. satyrus* (purple) and *P. faunus* (blue), respectively. 
+However, *P. gracilis* and *P. progne* are both predominantly assigned to the green cluster, corresponding to a single candidate lineage.
+These two species are separated only by a small proportion of replicates, with *P. gracilis* receiving the yellow cluster component and *P. progne* the blue cluster component.
 
 
 ### 5.6 Plot geographic assignments
