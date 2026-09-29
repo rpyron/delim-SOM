@@ -3347,9 +3347,14 @@ clustering.SOM <- function(SOM.output,
 #' @param axis.ticks.font.size A single positive numeric value giving the
 #'   y-axis numeric tick-label font size in points. Default: `7`.
 #' @param sort.by.col Optional positive integer specifying the first dominant
-#'   cluster in the sample ordering. If `NULL`, samples are ordered by
-#'   single-linkage hierarchical clustering of their complete assignment
-#'   profiles. Default: `1`.
+#'   cluster in the sample ordering, or a numeric vector specifying the complete
+#'   dominant-cluster order. The dominant cluster of a sample is the cluster with
+#'   the highest assignment coefficient for that sample. Samples are first grouped
+#'   by their dominant cluster. Within each dominant-cluster group, samples are
+#'   ordered by their complete assignment profiles, beginning with the dominant
+#'   cluster coefficient and then the remaining cluster coefficients in the
+#'   specified cluster order. If `NULL`, samples are ordered by single-linkage
+#'   hierarchical clustering of their complete assignment profiles. Default: `1`.
 #' @param bar.border.col Optional character string giving the color of vertical
 #'   separation lines between samples. If `NULL`, no separation lines are
 #'   drawn. Default: `NULL`.
@@ -3376,15 +3381,22 @@ clustering.SOM <- function(SOM.output,
 #' or conflicting signals among data layers. The plot is not produced for K = 1
 #' because all samples would have an assignment coefficient of one for the same cluster.
 #'
-#' If `sort.by.col` is supplied, samples are grouped by their dominant cluster,
-#' beginning with the specified cluster and continuing through the remaining
-#' clusters in column order. Within each group, samples are ordered from highest
-#' to lowest assignment coefficient for that cluster. For example, with three
-#' clusters, `sort.by.col = 2` produces Cluster 2, Cluster 3, and Cluster 1. If
-#' `sort.by.col = NULL`, Euclidean distances are calculated among complete
-#' assignment profiles, and samples are ordered using single-linkage hierarchical
-#' clustering. Cluster colors follow the column order of `ancestry_matrix`.
-#'
+#' If `sort.by.col` is supplied as a single integer, samples are grouped by their
+#' dominant cluster beginning with the specified cluster and continuing through
+#' the remaining clusters in column order. Alternatively, a vector containing
+#' each cluster exactly once can be supplied to specify the complete
+#' dominant-cluster order. Within each dominant-cluster group, samples are first
+#' ordered from highest to lowest assignment coefficient for the dominant
+#' cluster, followed by decreasing coefficients for the remaining clusters in
+#' the specified cluster order. Sample names are used only to resolve identical
+#' complete assignment profiles. For example, with three clusters,
+#' `sort.by.col = 2` produces Cluster 2, Cluster 3, and Cluster 1, whereas
+#' `sort.by.col = c(3, 1, 2)` explicitly produces Cluster 3, Cluster 1, and
+#' Cluster 2. If `sort.by.col = NULL`, Euclidean distances are calculated among
+#' complete assignment profiles, and samples are ordered using single-linkage
+#' hierarchical clustering. Cluster colors follow the column order of
+#' `ancestry_matrix`.
+#' 
 #' Sample names are displayed vertically below the bars. For datasets containing
 #' many samples or long sample names, increasing `width` or `bottom.margin`, or
 #' decreasing `Individual.labels.font.size`, may improve readability.
@@ -3478,7 +3490,7 @@ plot.structure.SOM <- function(SOM.output,
                                Y.axis.title = "Cluster assignment coefficient", #set y axis title
                                axis.labels.font.size = 9.1, #font size of y-axis title in points
                                axis.ticks.font.size = 7, #font size of y-axis numeric tick labels in points
-                               sort.by.col = 1, #specify integer giving column index of ancestry matrix for ordering rows of ancestry matrix (if NULL, hierarchical ordering is performed)
+                               sort.by.col = 1, #specify first dominant cluster or complete dominant-cluster order for sorting samples (if NULL, hierarchical ordering is performed)
                                bar.border.col = NULL, #color of separation lines (e.g. "black", "gray30"); NULL = no border
                                bar.border.lwd = 1, #line width of separation lines (ignored if color is NULL)
                                verbose = TRUE #whether to print messages
@@ -3556,7 +3568,12 @@ plot.structure.SOM <- function(SOM.output,
 
   # Validate ordering arguments
   if (!is.null(sort.by.col)) {
-    if (!is.numeric(sort.by.col) || length(sort.by.col) != 1 || is.na(sort.by.col) || sort.by.col < 1 || sort.by.col > ncol(SOM.output$ancestry_matrix) || (sort.by.col %% 1 != 0)) stop(paste0("Plotting aborted: sort.by.col must be integer between 1 and ", ncol(SOM.output$ancestry_matrix), " or NULL"))
+    if (!is.numeric(sort.by.col) || any(is.na(sort.by.col)) || any(sort.by.col %% 1 != 0)) stop("Plotting aborted: sort.by.col must be NULL, a single cluster number, or a vector specifying the complete cluster order")
+    if (length(sort.by.col) == 1) {
+      if (sort.by.col < 1 || sort.by.col > ncol(SOM.output$ancestry_matrix)) stop(paste0("Plotting aborted: sort.by.col must be integer between 1 and ", ncol(SOM.output$ancestry_matrix), ", a vector specifying the complete cluster order, or NULL"))
+    } else {
+      if (length(sort.by.col) != ncol(SOM.output$ancestry_matrix) || !setequal(sort.by.col, seq_len(ncol(SOM.output$ancestry_matrix)))) stop(paste0("Plotting aborted: when sort.by.col is a vector, it must contain each cluster exactly once from 1 to ", ncol(SOM.output$ancestry_matrix)))
+    }
   }
 
   # Validate bar-border arguments
@@ -3579,10 +3596,27 @@ plot.structure.SOM <- function(SOM.output,
   # Order rows of ancestry_matrix
   if (!is.null(sort.by.col)) {
     dominant_cluster <- max.col(ancestry_matrix, ties.method = "first")
-    cluster_order <- c(seq.int(sort.by.col, ncol(ancestry_matrix)), if (sort.by.col > 1) seq_len(sort.by.col - 1))
-    dominant_cluster_order <- match(dominant_cluster, cluster_order)
-    dominant_assignment <- ancestry_matrix[cbind(seq_len(nrow(ancestry_matrix)), dominant_cluster)]
-    sample_order <- order(dominant_cluster_order, -dominant_assignment)
+    if (length(sort.by.col) == 1) {
+      cluster_order <- c(seq.int(sort.by.col, ncol(ancestry_matrix)), if (sort.by.col > 1) seq_len(sort.by.col - 1))
+    } else {
+      cluster_order <- sort.by.col
+    }
+    sample_names <- rownames(ancestry_matrix)
+    if (is.null(sample_names)) sample_names <- as.character(seq_len(nrow(ancestry_matrix)))
+    sample_order <- integer(0)
+    for (cluster_index in cluster_order) {
+      cluster_samples <- which(dominant_cluster == cluster_index)
+      if (length(cluster_samples) > 0) {
+        remaining_clusters <- cluster_order[cluster_order != cluster_index]
+        sort_arguments <- c(
+          list(-ancestry_matrix[cluster_samples, cluster_index]),
+          lapply(remaining_clusters, function(remaining_cluster) -ancestry_matrix[cluster_samples, remaining_cluster]),
+          list(sample_names[cluster_samples])
+        )
+        within_cluster_order <- do.call(order, sort_arguments)
+        sample_order <- c(sample_order, cluster_samples[within_cluster_order])
+      }
+    }
   } else {
     sample_order <- stats::hclust(stats::dist(ancestry_matrix), method = "single")$order
   }
