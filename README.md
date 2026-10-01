@@ -265,13 +265,14 @@ https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_
 example_dir <- file.path("Empirical_examples", "Dupuis_et_al_2018")
 ```
 
+
 ## 2. Import and process data for SOM analyses
 
 
 ### 2.1 Import metadata
 
-We first import the metadata containing specimen identifiers, species names, geographic coordinates, and morphotype information.
-The specimen identifiers are used as row names and allow the metadata to be matched to the other data layers throughout the analysis.
+We first import the metadata.
+Specimen identifiers are used as row names and allow the metadata to be matched to the other data layers throughout the analysis.
 
 ```r
 #### Import metadata ############################################################
@@ -279,13 +280,22 @@ Polygonia_metadata <- read.csv(file.path(example_dir, "Polygonia_metadata.csv"),
 rownames(Polygonia_metadata) <- Polygonia_metadata$ID
 Polygonia_metadata <- dplyr::select(Polygonia_metadata, Species, ID, Latitude, Longitude, Morphotype)
 dim(Polygonia_metadata)
-head(Polygonia_metadata)
+head(Polygonia_metadata, n = 2)
+```
+
+We see that the metadata contain species identity, specimen ID, geographic coordinates, and morphotype information for 265 individuals:
+
+```text
+[1] 265   5
+        Species        ID   Latitude Longitude Morphotype
+8301 Polygonia faunus 8301   50.921  -114.527  Contrasted
+8302 Polygonia faunus 8302   50.921  -114.527  Contrasted
 ```
 
 
-### 2.1 Process genome-wide SNP data
+### 2.2 Process genome-wide SNP data
 
-We start by importing and processing the VCF file containing GBS-derived genome-wide SNPs using `process.SNP.data.SOM()` with the recommended default settings. 
+We next import and process the VCF file containing GBS-derived genome-wide SNPs using `process.SNP.data.SOM()` with the recommended default settings. 
 We then use `sub()` to simplify the row names by retaining only the numeric specimen identifier, and evaluate the output.
 
 ```r
@@ -310,7 +320,7 @@ This retains all 961 biallelic SNPs as variables (columns) and 237 of the origin
 ```
 
 
-### 2.2 Process mitochondrial COI data
+### 2.3 Process mitochondrial COI data
 
 Second, we import and process the aligned mitochondrial COI sequences. As before, we use `process.SNP.data.SOM()` with the recommended default settings.
 The function converts the sequence alignment to biallelic SNP variables.
@@ -341,13 +351,12 @@ This retains 213 biallelic COI variables or SNPs (columns) from the original 1,3
 ```
 
 
-### 2.3 Prepare continuous wing-color morphology
+### 2.4 Prepare continuous wing-color morphology
 
 This section imports and processes the continuous morphology data containing RGB color measurements from six dorsal and ventral wing regions.
 The specimen identifiers are used as row names, and the non-morphological `Name` and `Species` columns are removed.
 We then filter the continuous wing-color variables for low variation and pairwise absolute Spearman correlations >0.9 using the defaults in `remove.lowCV.multicollinearity.SOM()`.
 Lastly, we evaluate the output.
-
 
 ```r
 #### Prepare continuous morphology ############################################
@@ -375,9 +384,9 @@ The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral
 </p>
 
 
-### 2.4 Prepare categorical wing morphology
+### 2.5 Prepare categorical wing morphology
 
-We next import and prepare the visually scored wing characters and use the specimen identifiers as row names.
+We next import and prepare the visually scored wing characters and combine them with the morphotype data.
 
 The figure below (Fig. 2 in Dupuis et al. 2018) shows the ten visually scored characters on the dorsal and ventral wing surfaces and the proportion of each character state across species.
 The labels 1–10 indicate the scored wing characters, while (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
@@ -387,8 +396,14 @@ We can see that most characters are binary, but three (1, 4, 5) are ordinal and 
   <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="800">
 </p>
 
-We rename the wing characters for clarity and leave the binary and ordinal characters as they are.
-However, we treat wing character 8 as nominal and therefore convert it into four binary indicator variables (since there are four states).
+We first import the visually scored wing characters and use the specimen identifiers as row names.
+We remove the `Name` and `Species` columns and rename the ten wing characters for clarity.
+The binary and ordinal characters are left as they are.
+However, we treat wing character 8 as nominal and therefore convert its four states into four binary indicator variables and remove the original wing character 8 variable.
+Morphotype data are then extracted from the metadata.
+We ensure that the specimen identifiers of both datasets are stored as character row names and combine the wing-character and morphotype data using their shared specimen identifiers.
+The shared specimen identifiers are restored as row names after merging.
+Finally, morphotype is converted into binary indicator variables using `make.cols.binary.SOM()` with `append.to.original = TRUE`, and the original morphotype variable is removed.
 
 ```r
 #### Prepare categorical morphology ###########################################
@@ -411,53 +426,8 @@ Wing_character_8_states <- stats::model.matrix(~ Wing_character_8 - 1, data = Po
 colnames(Wing_character_8_states) <- paste0("Wing_character_8_state_", 1:4)
 Polygonia_wing_scores <- cbind(Polygonia_wing_scores, Wing_character_8_states)
 Polygonia_wing_scores$Wing_character_8 <- NULL
-dim(Polygonia_wing_scores)
-print(Polygonia_wing_scores[1:2, 1:5])
-```
 
-This results in thirteen wing-character variables (columns) for 217 individuals (rows):
-
-```text
-[1] 217  13
-     Wing_character_1 Wing_character_2 Wing_character_3 Wing_character_4 Wing_character_5
-8301                2                2                2                2                1
-8302                2                2                2                2                1
-```
-
-
-### 2.5 Prepare morphotype data
-
-In this section, we import the metadata and extract the morphotype assigned to each specimen for inclusion in the categorical morphology layer.
-
-```r
-#### Prepare morphotype data ###################################################
-Polygonia_metadata <- read.csv(file.path(example_dir, "Polygonia_metadata.csv"), header = TRUE, sep = ";")
-rownames(Polygonia_metadata) <- Polygonia_metadata$ID
 Polygonia_morphotype <- Polygonia_metadata[, "Morphotype", drop = FALSE]
-dim(Polygonia_morphotype)
-print(Polygonia_morphotype[1:5, , drop = FALSE])
-```
-
-Morphotype information is available for 265 individuals, although some individuals have missing morphotype scores:
-
-```text
-[1] 265   1
-     Morphotype
-8301 Contrasted
-8302 Contrasted
-8303 Contrasted
-8304 Contrasted
-8305       <NA>
-```
-
-
-### 2.6 Combine categorical morphology
-
-In this section, we combine the categorical wing characters and morphotype data using shared specimen identifiers.
-Morphotype is converted to binary indicator variables using `make.cols.binary.SOM()` and directly added to the categorical morphology layer via `append.to.original = TRUE`.
-
-```r
-#### Combine categorical morphology ###########################################
 rownames(Polygonia_wing_scores) <- as.character(rownames(Polygonia_wing_scores))
 rownames(Polygonia_morphotype) <- as.character(rownames(Polygonia_morphotype))
 Polygonia_morphology_categorical <- merge(Polygonia_wing_scores,
@@ -484,45 +454,7 @@ This results in fifteen categorical morphology variables (columns) for 217 indiv
 ```
 
 
-### 2.7 Prepare environmental data
-
-Dupuis et al. (2018) did not include environmental data in their study.
-For our reanalysis, we added an environmental layer by extracting a comprehensive set of environmental variables with the *NicheDiv* *R* package (Schönberger et al. 2026) based on their provided specimen coordinates.
-
-Here, we import this dataset and remove latitude, longitude, and elevation (because they are analyzed separately in the spatial layer described below).
-
-```r
-#### Prepare environmental data ################################################
-Polygonia_environmental <- read.csv(file.path(example_dir, "Polygonia_environmental.csv"), row.names = 1, header = TRUE)
-Polygonia_environmental <- Polygonia_environmental[, !names(Polygonia_environmental) %in% c("Latitude", "Longitude", "Elevation"), drop = FALSE]
-Polygonia_environmental_rownames <- rownames(Polygonia_environmental)
-Polygonia_environmental <- as.data.frame(lapply(Polygonia_environmental, as.numeric))
-rownames(Polygonia_environmental) <- Polygonia_environmental_rownames
-```
-We then transform skewed environmental variables with the help of the `transform.skewed.variables()` function in the *NicheDiv* package. 
-Conveniently, this function automatically checks each variable for skewness and applies the most-appropriate transformation if skewed.
-As above for the continuous morphology data, we subsequently filter variables with low variation or strong pairwise correlations using `remove.lowCV.multicollinearity.SOM()`.
-
-```r
-Polygonia_environmental <- NicheDiv::transform.skewed.variables(Polygonia_environmental)$transformed
-Polygonia_environmental <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_environmental)
-
-dim(Polygonia_environmental)
-print(Polygonia_environmental[1:2, 1:10])
-```
-
-The output shows 156 of 309 variables transformed, followed by removal of seventeen for low prevalence, 61 for low CV, and 106 for high correlation.
-Of the original 309 environmental variables, 125 variables (columns) are retained after low-variation and correlation filtering for 265 individuals (rows).
-We can also see the applied transformations for some variables from the appended suffixes in their names (e.g., `_log` or `_sqrt`).
-
-```text
-[1] 265 125
-     CMD_sqrt  PAS_log RH Tmax02 Tmax04 Tmax09 Tmax10_log Tmax11 Tmin11_log1p_shifted PPT01_log
-8301 12.72792 4.828314 53   -0.7    9.5   17.9   2.360854    3.7             1.740466   2.70805
-8302 12.72792 4.828314 53   -0.7    9.5   17.9   2.360854    3.7             1.740466   2.70805
-```
-
-### 2.8 Prepare spatial data
+### 2.6 Prepare spatial data
 
 Dupuis et al. (2018) did not include spatial data in their analyses.
 However, because they provided specimen coordinates, we could add a spatial layer to our reanalysis.
@@ -556,6 +488,45 @@ This results in three spatial variables (columns) for 265 individuals (rows):
 ```
 
 
+### 2.7 Prepare environmental data
+
+Dupuis et al. (2018) did not include environmental data in their study.
+For our reanalysis, we added an environmental layer by extracting a comprehensive set of environmental variables with the *NicheDiv* *R* package (Schönberger et al. 2026) based on their provided specimen coordinates.
+
+Here, we import this dataset and remove latitude, longitude, and elevation (because they are analyzed separately in the spatial layer).
+
+```r
+#### Prepare environmental data ################################################
+Polygonia_environmental <- read.csv(file.path(example_dir, "Polygonia_environmental.csv"), row.names = 1, header = TRUE)
+Polygonia_environmental <- Polygonia_environmental[, !names(Polygonia_environmental) %in% c("Latitude", "Longitude", "Elevation"), drop = FALSE]
+Polygonia_environmental_rownames <- rownames(Polygonia_environmental)
+Polygonia_environmental <- as.data.frame(lapply(Polygonia_environmental, as.numeric))
+rownames(Polygonia_environmental) <- Polygonia_environmental_rownames
+```
+We then transform skewed environmental variables with the help of the `transform.skewed.variables()` function in the *NicheDiv* package. 
+Conveniently, this function automatically checks each variable for skewness and applies the most-appropriate transformation if skewed.
+As above for the continuous morphology data, we subsequently filter variables with low variation or strong pairwise correlations using `remove.lowCV.multicollinearity.SOM()`.
+
+```r
+Polygonia_environmental <- NicheDiv::transform.skewed.variables(Polygonia_environmental)$transformed
+Polygonia_environmental <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_environmental)
+
+dim(Polygonia_environmental)
+print(Polygonia_environmental[1:2, 1:10])
+```
+
+The output shows 156 of 309 variables transformed, followed by removal of seventeen for low prevalence, 61 for low CV, and 106 for high correlation.
+Of the original 309 environmental variables, 125 variables (columns) are retained after low-variation and correlation filtering for 265 individuals (rows).
+We can also see the applied transformations for some variables from the appended suffixes in their names (e.g., `_log` or `_sqrt`).
+
+```text
+[1] 265 125
+     CMD_sqrt  PAS_log RH Tmax02 Tmax04 Tmax09 Tmax10_log Tmax11 Tmin11_log1p_shifted PPT01_log
+8301 12.72792 4.828314 53   -0.7    9.5   17.9   2.360854    3.7             1.740466   2.70805
+8302 12.72792 4.828314 53   -0.7    9.5   17.9   2.360854    3.7             1.740466   2.70805
+```
+
+
 ## 3. SOM training
 
 We next combine the six processed layers into a named list, which can then be supplied to `train.SOM()`.
@@ -566,7 +537,6 @@ Conveniently, `train.SOM()` prints messages summarizing the each processing and 
 Here, we use the recommended default settings.
 Individuals and variables containing more than 50% missing data are removed using `max.NA.row = 0.5` and `max.NA.col = 0.5`, respectively.
 Training for this dataset takes around 3-10 min.
-
 
 ```r
 #### Train SOM #################################################################
@@ -928,8 +898,8 @@ Our testing (Schönberger et al. preprint) showed that the two k-means/BIC appro
 We therefore recommend `"kmeans+BICelbow"` as the primary starting point, while alternative methods can provide useful complementary analyses.
 `"kmeans+BICthreshold"` performed similarly well, and `"GMM+BICthreshold"` also showed high lineage recovery and assignment accuracy but generally required longer computation times.
 
-By contrast, we do not recommend using `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"` as primary approaches.
-Hierarchical clustering showed high recovery and assignment accuracy but was substantially slower, whereas HDBSCAN and OPTICS were computationally faster but less reliable, particularly when the number of simulated lineages was high.
+By contrast, we do not recommend using `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"`.
+Hierarchical clustering showed high recovery and assignment accuracy but was prohibitively slow, whereas HDBSCAN and OPTICS were computationally faster but less reliable.
 For our *Polygonia* example, we can rerun clustering using `"kmeans+BICthreshold"`:
 
 ```r
