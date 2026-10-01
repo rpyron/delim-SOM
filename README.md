@@ -217,11 +217,14 @@ Although we implement six different clustering and K-selection approaches, we re
 it first applies k-means clustering to the codebook vectors across alternative K values and then uses a conservative BIC-elbow criterion to select the best-supported K.
 This approach performed best in our analyses (Schönberger et al. preprint) and has also been used successfully in previous SOM-based species-delimitation analyses (Pyron et al. 2023; Pyron 2023).
 `max.k` specifies the maximum number of candidate clusters evaluated.
+`BIC.thresh` specifies the minimum BIC improvement required before additional subdivision is considered supported, with a default of `6`.
+Following Kass and Raftery (1995), values of 6–10 indicate strong support, values >10 indicate very strong support, and values <6 indicate weaker support for the more complex solution.
 
 ```r
 SOM_results <- clustering.SOM(SOM.output = SOM_tr,
                               max.k = 10,
-                              clustering.method = "kmeans+BICelbow")
+                              clustering.method = "kmeans+BICelbow",
+                              BIC.thresh = 6) 
 ```
 
 
@@ -263,6 +266,21 @@ example_dir <- file.path("Empirical_examples", "Dupuis_et_al_2018")
 ```
 
 ## 2. Import and process data for SOM analyses
+
+
+### 2.1 Import metadata
+
+We first import the metadata containing specimen identifiers, species names, geographic coordinates, and morphotype information.
+The specimen identifiers are used as row names and allow the metadata to be matched to the other data layers throughout the analysis.
+
+```r
+#### Import metadata ############################################################
+Polygonia_metadata <- read.csv(file.path(example_dir, "Polygonia_metadata.csv"), header = TRUE, sep = ";")
+rownames(Polygonia_metadata) <- Polygonia_metadata$ID
+Polygonia_metadata <- dplyr::select(Polygonia_metadata, Species, ID, Latitude, Longitude, Morphotype)
+dim(Polygonia_metadata)
+head(Polygonia_metadata)
+```
 
 
 ### 2.1 Process genome-wide SNP data
@@ -336,10 +354,7 @@ Lastly, we evaluate the output.
 Polygonia_RGB <- read.delim(file.path(example_dir, "Polygonia_RGB_characters.txt"), stringsAsFactors = FALSE)
 rownames(Polygonia_RGB) <- Polygonia_RGB$Species
 Polygonia_RGB <- Polygonia_RGB[, !names(Polygonia_RGB) %in% c("Name", "Species"), drop = FALSE]
-Polygonia_morphology <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_RGB,
-                                                           CV.threshold = 0.05,
-                                                           cor.threshold = 0.9,
-                                                           prevalence.threshold = 0.05)
+Polygonia_morphology <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_RGB)
 dim(Polygonia_morphology)
 print(Polygonia_morphology[1:2, 1:10])
 ```
@@ -490,10 +505,7 @@ As above for the continuous morphology data, we subsequently filter variables wi
 
 ```r
 Polygonia_environmental <- NicheDiv::transform.skewed.variables(Polygonia_environmental)$transformed
-Polygonia_environmental <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_environmental,
-                                                              CV.threshold = 0.05,
-                                                              cor.threshold = 0.9,
-                                                              prevalence.threshold = 0.05)
+Polygonia_environmental <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_environmental)
 
 dim(Polygonia_environmental)
 print(Polygonia_environmental[1:2, 1:10])

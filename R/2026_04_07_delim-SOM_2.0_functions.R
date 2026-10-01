@@ -1414,7 +1414,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #'   summaries are calculated for each SOM input layer after clustering. These
 #'   include map-variance and cluster-separation importance. Default: `TRUE`.
 #' @param save.SOM.results Logical; if `TRUE`, the clustered SOM result object is
-#'   saved as an `.Rdata` file. Default: `TRUE`.
+#'   saved as an `.Rdata` file. Default: `FALSE`.
 #' @param save.SOM.results.name Optional character string giving the output file
 #'   name used when saving or loading clustered SOM results. File names supplied
 #'   by the user must end in `.Rdata`. If `NULL`, a default name is generated.
@@ -1946,7 +1946,7 @@ clustering.SOM <- function(SOM.output,
                            calculate.variable.importance = TRUE, #whether to calculate map variance and eta-squared variable-importance summaries
                            verbose = TRUE, #whether to show messages
                            message.N.replicates = 20, #frequency of progress messages during clustering (message is printed every message.N.replicates iterations)
-                           save.SOM.results = TRUE, #whether to save clustered SOM results to file
+                           save.SOM.results = FALSE, #whether to save clustered SOM results to file
                            save.SOM.results.name = NULL, #file name for saving clustered SOM results (if NULL, default name is generated; if save.SOM.results = TRUE)
                            overwrite.SOM.results = FALSE, #if FALSE, existing clustering results are loaded instead of re-running clustering
                            set.seed.N = 1 #set seed for reproducibility
