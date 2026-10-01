@@ -8,7 +8,7 @@ Any data that can be represented quantitatively for a common set of individuals 
 
 Each cell in the grid is represented by a codebook vector that summarizes the local multivariate "average" of the individuals mapped to it.
 During training, individuals are repeatedly matched to the most similar cell, and that cell and its neighbors are updated toward their measurements.
-Over many training steps, this produces an organized map where similar individuals become represented in nearby regions and dissimilar individuals farther apart.
+Over many training steps, this produces an organized map where similar individuals become represented in nearby regions and dissimilar individuals farther apart (Kohonen 1998, 2014).
 Because the observations are summarized by few codebook vectors, SOMs can reduce sensitivity to  noise and reveal broader structure in complex datasets.
 After SOM training, the codebook vectors are clustered into groups that are interpreted as candidate lineages (Pyron et al. 2023).
 
@@ -112,7 +112,7 @@ Supported inputs include VCF, `genind`, `genlight`, numeric SNP-dosage matrices,
 Retained biallelic loci are converted to numeric dosage data, with diploid genotypes encoded as 0/1/2 and haploid genotypes as 0/1.
 The function returns a numeric matrix with individuals as rows and retained biallelic loci as columns, ready for SOM training.
 
-Below we show an VCF example using the recommended default filters:
+Below we show a VCF example using the recommended default filters:
 This filtering first removes loci with >70% missing data, then individuals with >50% missing data, followed by a final locus filter of >50% missing data. 
 Singleton and invariant loci are also removed by default.
 
@@ -213,7 +213,7 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 
 After SOM training, the trained codebook vectors from each replicate are clustered into groups. These are then interpreted as candidate lineages and support for alternative values of K is estimated (Pyron et al. 2023).
 
-Although we implement six different clustering and K-selection approaches, we recommend using `"kmeans+BICelbow"` as primary approach:
+Although we implement six different clustering and K-selection approaches, we recommend using `"kmeans+BICelbow"` as the primary approach:
 it first applies k-means clustering to the codebook vectors across alternative K values and then uses a conservative BIC-elbow criterion to select the best-supported K.
 This approach performed best in our analyses (Schönberger et al. preprint) and has also been used successfully in previous SOM-based species-delimitation analyses (Pyron et al. 2023; Pyron 2023).
 `max.k` specifies the maximum number of candidate clusters evaluated.
@@ -547,7 +547,7 @@ We can also see the applied transformations for some variables from the appended
 We next combine the six processed layers into a named list, which can then be supplied to `train.SOM()`.
 This function first checks the data, removes any remaining zero-variance variables, constructs the SOM grid based on the data, and then trains replicate SOMs.
 It also automatically identifies the individuals shared across all layers and removes non-matching individuals (i.e., it is not necessary to manually restrict all layers to the same individuals). 
-Conveniently, `train.SOM()` prints messages summarizing the each processing and training steps.
+Conveniently, `train.SOM()` prints messages summarizing each processing and training step.
 
 Here, we use the recommended default settings.
 Individuals and variables containing more than 50% missing data are removed using `max.NA.row = 0.5` and `max.NA.col = 0.5`, respectively.
@@ -581,7 +581,7 @@ Polygonia_SOM <- clustering.SOM(SOM.output = Polygonia_SOM_tr,
 Polygonia_SOM$optim_k_summary
 ```
 
-This analyses reveals strong support for K = 3, with support for K = 4 in 12% of SOM replicates:
+This analysis reveals strong support for K = 3, with support for K = 4 in 12% of SOM replicates:
 
 ```text
 K = 3: 88%
@@ -621,7 +621,7 @@ Notably, these raw distance scales should not be interpreted as measures of laye
 
 In the plot below, we see that the genomic layer strongly dominates the raw distance scale. 
 This pattern is typical for most empirical datasets, as shown in our study (Schönberger et al. preprint).
-Importantly, the internal distance normalization in `train.SOM()` downweights layers such layers and upweights layers with smaller raw distance scales, preventing these differences from automatically determining their contribution during SOM training.
+Importantly, the internal distance normalization in `train.SOM()` downweights such layers and upweights layers with smaller raw distance scales, preventing these differences from automatically determining their contribution during SOM training.
 
 ```r
 plot.layer.distance.scale.SOM(Polygonia_SOM)
@@ -876,10 +876,10 @@ round(head(sort(Polygonia_SOM$median_etasquared_variable_importance[[5]], decrea
 
 *delimSOM* 2.0 provides two complementary ways to assess layer importance: by summarizing variable importance within each layer and by measuring how the inferred clustering changes when individual layers are omitted.
 
-First, `plot.layer.importance.varimp.SOM()` summarizes the distributions of variable-importance values presented above in section 5.7 within each data layer.
+First, `plot.layer.importance.varimp.SOM()` summarizes the distributions of variable-importance values (presented above in section 5.7) within each data layer.
 This allows the relative importance of the different data layers to be compared based on how strongly their variables are associated with cluster separation or variation across the SOM map.
-When examining this plot, it is important to consider the number of variables within each layer (e.g., the SNP layer contains hundreds of variables, whereas the spatial layer contains only three).
 
+When examining this plot, it is important to consider the number of variables within each layer (e.g., the SNP layer contains hundreds of variables, whereas the spatial layer contains only three).
 We use `bottom.margin` to adjust the bottom plot margin according to the length of the layer names.
 
 ```r
@@ -892,18 +892,16 @@ plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 3.5)
 
 Second, `plot.layer.importance.leaveoneout.SOM()` performs a leave-one-layer-out analysis by rerunning the analysis while omitting one data layer at a time and comparing each reduced analysis with the full multilayer SOM.
 
-This provides are more direct assessment of how strongly each layer affects the inferred number of clusters, cluster composition, and individual assignment confidence after each layer is omitted. 
+This provides a more direct assessment of how strongly each layer affects the inferred number of clusters, cluster composition, and individual assignment confidence after each layer is omitted. 
 If a layer is important, we would expect its omission to cause larger changes in the inferred number of clusters, cluster composition, or individual assignment confidence.
-Because SOM training and clustering are repeated for each omitted layer, this analysis is substantially more computationally intensive and might take a couple of hours depending on the scale of our dataset.
+Because SOM training and clustering are repeated for each omitted layer, this analysis is substantially more computationally intensive and might take a couple of hours depending on the scale of the dataset.
 
 The plot contains three complementary measures of layer importance.
 The left panel shows the absolute change in the inferred number of clusters (K) after each layer is omitted, with larger values indicating that the omitted layer had a stronger influence on the number of candidate lineages recovered.
 The middle panel shows the pairwise co-assignment change, which is the proportion of pairs of individuals whose same-cluster versus different-cluster relationship changes after omitting the layer. Larger values therefore indicate that removing the layer more strongly changes which individuals are grouped together.
 The right panel shows the change in mean assignment margin, where the assignment margin is the difference between the highest and second-highest cluster-assignment values for each individual. Positive values indicate that omitting the layer reduces assignment confidence, whereas values near zero indicate little change.
-For all three panels, larger values generally indicate greater importance of the omitted layer for the inferred delimitation, while values close to zero indicate that removing the layer has little effect on the clustering.
+For all three panels, larger values indicate greater importance of the omitted layer for the inferred delimitation, while values close to zero indicate that removing the layer has little effect on the clustering.
 Points represent replicate-matched comparisons between the full analysis and the corresponding leave-one-layer-out analysis, while the boxplots summarize variation across SOM replicates.
-
-In the *Polygonia* analysis, SNPs contributed most strongly to cluster separation, followed by categorical wing morphology and mitochondrial COI, whereas environmental and spatial layers contributed comparatively little.
 
 
 ```r
@@ -931,7 +929,7 @@ Polygonia_cluster_samples <- split(rownames(Polygonia_SOM$ancestry_matrix), Poly
 ```
 
 The main *Polygonia* analysis recovered three candidate lineages (K = 3) containing 46, 79, and 75 individuals.
-We can subset each candidate lineage from the original input data and rerun the complete SOM training and clustering workflow:
+We can subset each candidate lineage from the original input data and rerun the SOM training and clustering workflow:
 
 ```r
 Polygonia_cluster1_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
@@ -963,15 +961,13 @@ Polygonia_SOM_cluster3$optim_k_summary
 ```
 
 Clusters 1 and 2 each recovered K = 1 with 100% support, whereas cluster 3 recovered K = 2 with 100% support. 
-This indicates ... but  additional structure within cluster 3.
+This indicates no further supported subdivision within clusters 1 and 2, but additional structure within cluster 3.
 
-The hierarchical result for cluster 3 can then be evaluated using the same visualization and diagnostic functions as the primary analysis:
+The hierarchical result for cluster 3 can then be evaluated using the same visualization and diagnostic functions as for the primary analysis:
 
 ```r
-plot.model.SOM(Polygonia_SOM_cluster3,
-               replicate.mode = "representative")
-plot.structure.SOM(Polygonia_SOM_cluster3,
-                   bottom.margin = 9.5)
+plot.model.SOM(Polygonia_SOM_cluster3, replicate.mode = "representative")
+plot.structure.SOM(Polygonia_SOM_cluster3, bottom.margin = 9.5)
 plot.K.SOM(Polygonia_SOM_cluster3)
 plot.map.SOM(SOM.output = Polygonia_SOM_cluster3,
              Coordinates = Polygonia_spatial[, c("Latitude", "Longitude")],
@@ -982,19 +978,13 @@ plot.map.SOM(SOM.output = Polygonia_SOM_cluster3,
              north.arrow.length = 1,
              north.arrow.N.position = 0.3,
              north.arrow.N.size = 1)
-plot.variable.importance.SOM(Polygonia_SOM_cluster3,
-                             mode = "Cluster.separation",
-                             left.margin = 5)
-plot.variable.importance.SOM(Polygonia_SOM_cluster3,
-                             mode = "Map.variance",
-                             left.margin = 5)
-plot.layer.importance.varimp.SOM(Polygonia_SOM_cluster3,
-                                 bottom.margin = 3.5)
-plot.layer.importance.leaveoneout.SOM(Polygonia_SOM_cluster3,
-                                      bottom.margin = 6.5)
+plot.variable.importance.SOM(Polygonia_SOM_cluster3, mode = "Cluster.separation", left.margin = 5)
+plot.variable.importance.SOM(Polygonia_SOM_cluster3, mode = "Map.variance", left.margin = 5)
+plot.layer.importance.varimp.SOM(Polygonia_SOM_cluster3, bottom.margin = 3.5)
+plot.layer.importance.leaveoneout.SOM(Polygonia_SOM_cluster3, bottom.margin = 6.5)
 ```
 
-The species composition of the hierarchical cluster-3 analysis can also be compared with the original taxonomic assignments, revealing that cluster 3 contains the two lumped species: *Polygonia gracilis* and *P. progne*.
+The species composition of the hierarchical cluster-3 analysis can also be compared with the original taxonomic assignments, revealing that cluster 3 contains the two species *Polygonia gracilis* and *P. progne*, which were lumped into a single candidate lineage in our primary analysis.
 This suggests that the primary analysis grouped these taxa into a single broader candidate lineage, whereas the hierarchical reanalysis detected additional structure within this lineage.
 
 ```r
@@ -1008,8 +998,8 @@ table(Polygonia_ancestry_SOM_cluster3$Species)
 ```text
 [1] 3
 
-Polygonia gracilis gracilis Polygonia gracilis zephyrus            Polygonia progne 
-                          8                           9                          58
+Polygonia gracilis gracilis     Polygonia gracilis zephyrus     Polygonia progne 
+            8                                 9                         58
 ```
 
 
@@ -1019,10 +1009,10 @@ Polygonia gracilis gracilis Polygonia gracilis zephyrus            Polygonia pro
 
 - Ensure that row names uniquely and consistently identify individuals across all layers.
 - Encode missing values as `NA`.
-- Preprocess variables to transform skeweness and remove low-information and strongly redundant predictors.
+- Preprocess variables to transform skewness and remove low-information and strongly redundant predictors.
 - Inspect support across alternative values of K rather than relying only on the most frequently selected K.
 - Treat inferred clusters as candidate-lineage hypotheses rather than definitive taxonomic conclusions.
-- Data with different structures should be included as separate layers
+- Data with different structures should be included as separate layers.
 - Perform hierarchical reanalysis to detect weaker structure within a strongly supported candidate lineage.
 - Consider the biological independence of variables and data layers rather than only the number of variables they contain.
 - Species-rich systems and datasets with small or strongly uneven within-lineage sample sizes require more cautious interpretation or additional analyses.
@@ -1073,8 +1063,8 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 ```
 
 Importantly, internal distance normalization accounts for differences in distance scale but does not remove redundancy within or among layers.
-For example, multiple linked SNPs from the same genomic region may repeatedly represent the same evolutionary signal, multiple mitochondrial loci generally describe the same underlying mitochondrial genealogy, and environmental and spatial layers may partly represent the same geographic gradient;
-Therefore, we might, for example, down-weight a mitochondrial layer relative to a genome-wide SNP layer containing markers distributed across many approximately independent genomic regions, because multiple mitochondrial markers generally represent the same underlying organellar genealogy rather than multiple independent evolutionary histories.
+For example, linked SNPs may repeatedly represent the same evolutionary signal, multiple mitochondrial loci describe the same underlying mitochondrial genealogy, and environmental and spatial layers partly represent the same geographic gradient.
+Therefore, we might down-weight a mitochondrial layer relative to a genome-wide SNP layer containing markers distributed across many approximately independent genomic regions, because multiple mitochondrial markers generally represent the same underlying organellar genealogy rather than multiple independent evolutionary histories.
 Where possible, preprocessing to reduce redundancy, such as LD pruning or removing highly correlated predictors, is preferable to simply down-weighting an entire layer.
 
 
@@ -1085,8 +1075,8 @@ By default, figures are only displayed in the active R graphics device because `
 To save a figure, set `save = TRUE`.
 Supported file types are `"svg"`, `"png"`, and `"jpg"`.
 If `file.name = NULL`, a default file name is generated automatically.
-Figure dimensions can be adjusted using `width` and `height` (in centimeters).
-Rraster-image resolution can be controlled using `resolution` (dpi).
+Figure dimensions can be adjusted using `width` and `height` in centimeters.
+Raster-image resolution can be controlled using `resolution` in dpi.
 
 For example:
 
@@ -1101,8 +1091,8 @@ plot.model.SOM(SOM_results,
                resolution = 300)
 ```
 
-By default, `overwrite = TRUE`, so an existing figure with the same file name is replaced.
-Set `overwrite = FALSE` to prevent existing files from being overwritten.
+An existing figure with the same file name is overwritten by default (`overwrite = TRUE`).
+To prevent existing files from being overwritten, set `overwrite = FALSE` .
 
 The same saving arguments are available for `plot.learning.SOM()`, `plot.layer.distance.scale.SOM()`, `plot.K.SOM()`, `plot.model.SOM()`, `plot.structure.SOM()`, `plot.map.SOM()`, `plot.variable.importance.SOM()`, `plot.layer.importance.varimp.SOM()`, and `plot.layer.importance.leaveoneout.SOM()`.
 
@@ -1138,7 +1128,7 @@ Categorical ecological or life-history variables, such as host use or developmen
 Related categorical variables can be combined within one layer when they have similar data structures and biological interpretation.
 
 Community-composition data can also be incorporated after appropriate preprocessing.
-For example, our supplementary analysis *Pocillopora* corals included Symbiodiniaceae ITS2 OTU community data as a separate symbiont layer.
+For example, our supplementary analysis of *Pocillopora* corals included Symbiodiniaceae ITS2 OTU community data as a separate symbiont layer.
 
 Geographic classifications such as watersheds, ecoregions, islands, or drainage basins can be represented as binary indicator variables and included as separate categorical layers.
 These should generally be kept separate from continuous spatial or environmental variables because they have different data structures and may require different distance functions.
@@ -1267,7 +1257,7 @@ By default, `grid.size = NULL`, so `train.SOM()` automatically determines both t
 
 The default `grid.multiplier = 5` controls the approximate number of SOM units relative to sample size.
 Larger values produce finer maps with more SOM units, whereas smaller values produce coarser maps.
-A grid that is too coarse can merge distinct structure, whereas an overly fine grid can fragment clusters, increase the number of empty units, and increase computation time.
+A grid that is too coarse can merge distinct structure, whereas an overly fine grid can fragment clusters, increase the number of empty units, and increase computation time (Kohonen 1998, 2014; Vesanto 1999).
 We therefore generally recommend retaining the automatic grid construction unless there is a specific reason to modify map resolution.
 For datasets with relatively few samples, `train.SOM()` may abort if the automatically generated grid is too large and return a message recommending a smaller `grid.multiplier`.
 In this case, decrease `grid.multiplier` until an appropriate grid can be constructed.
@@ -1289,10 +1279,10 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 
 ## Parallel training
 
-Replicates are run in parallel by default via `parallel = TRUE`, which is especially useful for large genomic or multilayer datasets (> 2000 variables).
+Replicates are run in parallel by default via `parallel = TRUE`, which is especially useful for large genomic or multilayer datasets (>2,000 variables).
 In our runtime comparison, parallel execution improved computational scalability for datasets with large numbers of variables, whereas parallelization was less efficient for small datasets.
 The number of cores can be specified using `N.cores`. 
-Using 3-4 cores worked well in our testing whereas using more cores often slowed computation considerably.
+Using 3–4 cores worked well in our testing, whereas using more cores often slowed computation considerably.
 
 For example:
   
@@ -1308,7 +1298,7 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 By default, alternative values from K = 1 to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
 Importantly, users should inspect the complete K-support profile rather than relying only on the automatically selected K.
 Clustering can also be rerun for a single K value using `set.k`, which bypasses automatic K selection while retaining the replicate SOM framework.
-This is often useful if many K values are supported or if the automatic K-determination does not work well (e.g., because the distinct BIC is not detected).
+This is often useful if many K values are supported or if the automatic K-selection does not work well (e.g., because the distinct BIC is not detected).
 Fixed-K analyses should be used to inspect or test specific alternative solutions rather than to replace evaluation of the full K-support profile.
 
 For example, forcing a three-lineage solution:
@@ -1377,25 +1367,75 @@ For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `ov
 | `plot.layer.importance.leaveoneout.SOM()`   | Evaluate layer importance using replicate-matched leave-one-layer-out analyses                                      |
 
 
+# Future directions
+
+A current limitation of *delimSOM* is that the same individuals must be represented across all included data layers.
+In practice, genomic, morphological, behavioral, ecological, and life-history datasets are often collected independently and may therefore contain different sets of individuals.
+Environmental information may also originate from occurrence records that are not linked to the specimens used for genomic or phenotypic measurements, while older studies frequently report only species-level summaries rather than individual-level data.
+Restricting analyses to individuals shared across all layers can consequently lead to substantial sample loss and may limit the number of existing datasets that can be analyzed using a fully integrative framework.
+This makes *delimSOM* particularly well suited to prospective studies in which multiple data types are collected from the same specimens.
+Future development could relax this requirement by allowing partial overlap among layers and by developing approaches for integrating heterogeneous datasets with missing information across layers.
+
+Another promising direction is to connect the inferred candidate-lineage structure more directly with the biological processes underlying divergence.
+For example, phenotypic or ecological variables identified as important for lineage separation could be linked to genomic variation using genotype–phenotype or genotype–environment association approaches (e.g., Forester et al. 2018).
+This could help identify genomic regions associated with morphological differentiation, ecological divergence, or adaptation to contrasting environments.
+Such extensions would allow *delimSOM* not only to identify candidate lineages, but also to provide a starting point for investigating the genomic basis of the differences among them.
+
+
+# Feedback
+
+We welcome feedback, suggestions, bug reports, and ideas for future development of *delimSOM*.
+We are also interested in discussing new applications of the framework, methodological extensions, and potential collaborations.
+
+Daniel Schönberger: daniel.schoenberger@uky.edu  
+R. Alexander Pyron: rpyron@gwu.edu
+
+
 # References
 
-- Dupuis, J. R. et al. (2018). Genomics confirms surprising ecological divergence and isolation in an enigmatic butterfly species complex. *Zoological Journal of the Linnean Society*. https://doi.org/10.1093/zoolinnean/zlx081
+- Cottrell, M., & Letrémy, P. (2005). Missing values: Processing with the Kohonen algorithm. *ASMDA 2005*, 489–496.
 
-- Hollister, J. W. (2025). *elevatr: Access Elevation Data from Various APIs*. R package version 0.99.1. https://CRAN.R-project.org/package=elevatr/
+- Dupuis, J. R., McDonald, C. M., Acorn, J. H., & Sperling, F. A. H. (2018). Genomics-informed species delimitation to support morphological identification of anglewing butterflies (Lepidoptera: Nymphalidae: *Polygonia*). *Zoological Journal of the Linnean Society*, 183(2), 372–389. https://doi.org/10.1093/zoolinnean/zlx081
+
+- Hollister, J. W. (2025). *elevatr: Access elevation data from various APIs*. R package version 0.99.1. https://CRAN.R-project.org/package=elevatr/
+
+- Janes, J. K., Miller, J. M., Dupuis, J. R., Malenfant, R. M., Gorrell, J. C., Cullingham, C. I., & Andrew, R. L. (2017). The K = 2 conundrum. *Molecular Ecology*, 26(14), 3594–3602. https://doi.org/10.1111/mec.14187
+
+- Kass, R. E., & Raftery, A. E. (1995). Bayes factors. *Journal of the American Statistical Association*, 90(430), 773–795. https://doi.org/10.1080/01621459.1995.10476572
 
 - Kohonen, T. (1998). The self-organizing map. *Neurocomputing*, 21(1–3), 1–6. https://doi.org/10.1016/S0925-2312(98)00030-7
 
-- Kohonen, T. (2014). *MATLAB Implementations and Applications of the Self-Organizing Map*. Unigrafia Oy, Helsinki, Finland.
+- Kohonen, T. (2001). *Self-organizing maps* (Vol. 30). Springer Berlin Heidelberg. https://doi.org/10.1007/978-3-642-56927-2
 
-- Pebesma, E. (2018). Simple Features for R: Standardized Support for Spatial Vector Data. *The R Journal*, 10(1), 439–446. https://doi.org/10.32614/RJ-2018-009
+- Kohonen, T. (2014). *MATLAB implementations and applications of the self-organizing map*. Unigrafia Oy.
 
-- Pebesma, E., & Bivand, R. (2023). *Spatial Data Science: With Applications in R*. Chapman and Hall/CRC. https://doi.org/10.1201/9780429459016
+- Omran, M. G. H., Engelbrecht, A. P., & Salman, A. (2007). An overview of clustering methods. *Intelligent Data Analysis*, 11(6), 583–605. https://doi.org/10.3233/IDA-2007-11602
+
+- Pebesma, E. (2018). Simple Features for R: Standardized support for spatial vector data. *The R Journal*, 10(1), 439–446. https://doi.org/10.32614/RJ-2018-009
+
+- Pebesma, E., & Bivand, R. (2023). *Spatial data science: With applications in R*. Chapman and Hall/CRC. https://doi.org/10.1201/9780429459016
 
 - Pyron, R. A. (2023). Unsupervised machine learning for species delimitation, integrative taxonomy, and biodiversity conservation. *Molecular Phylogenetics and Evolution*, 189, 107939. https://doi.org/10.1016/j.ympev.2023.107939
 
 - Pyron, R. A., O’Connell, K. A., Duncan, S. C., Burbrink, F. T., & Beamer, D. A. (2023). Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for seal salamanders (*Desmognathus monticola*). *Systematic Biology*, 72(1), 179–197. https://doi.org/10.1093/sysbio/syac065
 
+- Rodriguez, M. Z., Comin, C. H., Casanova, D., Bruno, O. M., Amancio, D. R., Costa, L. da F., & Rodrigues, F. A. (2019). Clustering algorithms: A comparative approach. *PLOS ONE*, 14(1), e0210236. https://doi.org/10.1371/journal.pone.0210236
+
+- Samad, T., & Harp, S. (1992). Self–organization with partial data. *Network: Computation in Neural Systems*, 3(2), 205–212. https://doi.org/10.1088/0954-898X/3/2/008
+
 - Schönberger, D., MacDonald, Z. G., Schmidt, B. C., & Dupuis, J. R. (2026). NicheDiv: A DAPC framework to quantify niche divergence across highly multivariate environmental space. *bioRxiv*. https://doi.org/10.64898/2026.06.19.733388
+
+- Schönberger, D., Pyron, R. A., & Dupuis, J. R. (2026). *delim-SOM 2.0*: Fully integrative species delimitation with machine learning and flexible diverse data types of biological and other data. *bioRxiv*.
+
+- Ultsch, A. (1993). Self-organizing neural networks for visualisation and classification. In *Information and classification. Studies in classification, data analysis and knowledge organization* (pp. 307–313). Springer. https://doi.org/10.1007/978-3-642-50974-2_31
+
+- Vesanto, J. (1999). SOM-based data visualization methods. *Intelligent Data Analysis*, 3(2), 111–126.
+
+- Vesanto, J., & Alhoniemi, E. (2000). Clustering of the self-organizing map. *IEEE Transactions on Neural Networks*, 11(3), 586–600. https://doi.org/10.1109/72.846731
+
+- Wehrens, R., & Buydens, L. M. C. (2007). Self- and super-organizing maps in R: The kohonen package. *Journal of Statistical Software*, 21(5). https://doi.org/10.18637/jss.v021.i05
+
+- Wehrens, R., & Kruisselbrink, J. (2018). Flexible self-organizing maps in kohonen 3.0. *Journal of Statistical Software*, 87(7). https://doi.org/10.18637/jss.v087.i07
 
 
 # Citation
