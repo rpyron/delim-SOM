@@ -880,6 +880,8 @@ First, `plot.layer.importance.varimp.SOM()` summarizes the distributions of vari
 This allows the relative importance of the different data layers to be compared based on how strongly their variables are associated with cluster separation or variation across the SOM map.
 When examining this plot, it is important to consider the number of variables within each layer (e.g., the SNP layer contains hundreds of variables, whereas the spatial layer contains only three).
 
+We use `bottom.margin` to adjust the bottom plot margin according to the length of the layer names.
+
 ```r
 plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 3.5)
 ```
@@ -888,7 +890,7 @@ plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 3.5)
   <img src="figures/Figure_layerimp_varimp.png">
 </p>
 
-`plot.layer.importance.leaveoneout.SOM()` is a leave-one-out analysis that reruns the analysis while omitting one data layer at a time and compares each reduced analysis with the full multilayer SOM.
+Second, `plot.layer.importance.leaveoneout.SOM()` performs a leave-one-layer-out analysis by rerunning the analysis while omitting one data layer at a time and comparing each reduced analysis with the full multilayer SOM.
 
 This provides are more direct assessment of how strongly each layer affects the inferred number of clusters, cluster composition, and individual assignment confidence after each layer is omitted. 
 If a layer is important, we would expect its omission to cause larger changes in the inferred number of clusters, cluster composition, or individual assignment confidence.
