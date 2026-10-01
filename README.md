@@ -260,7 +260,7 @@ https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_
 
 ## 1. Set paths
 
-We first define the path to the directory containing the empirical example datasets.
+Here, we define the path to the directory containing the empirical example datasets.
 
 ```r
 #### Set environment ###########################################################
@@ -269,6 +269,8 @@ example_dir <- file.path("Empirical_examples", "Dupuis_et_al_2018")
 
 
 ## 2. Import and process data for SOM analyses
+
+In this section, we import, filter, process, and evaluate each data source to prepare the six data layers used for SOM training.
 
 
 ### 2.1 Import metadata
