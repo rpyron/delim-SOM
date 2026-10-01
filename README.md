@@ -1002,87 +1002,95 @@ For example, continuous morphometric measurements and binary morphological chara
 ## Layer weights
 
 For multilayer analyses, `train.SOM()` automatically normalizes layer-specific distance scales so that layers with larger raw distances do not automatically dominate SOM training.
-Users can additionally modify the relative influence of individual layers using `manual.layer.weights`.
+Users can supply `manual.layer.weights` to adjust the relative influence of individual layers.
 These user-defined weights are combined with the internal distance-normalization weights rather than replacing them.
 Manual weighting can be useful when some layers have greater measurement uncertainty, lower information content, stronger environmental noise, or known differences in biological relevance.
-Layers with greater uncertainty or lower information content may be down-weighted, whereas layers with well-characterized evolutionary signal may be emphasized.
-
-For example:
+For instance, layers can be weighted according to their expected reliability and biological informativeness, with less reliable or noisier layers given lower weight and layers representing clearer evolutionary signal given greater influence.
   
   ```r
 SOM_tr <- train.SOM(input_data = SOM_data,
                     manual.layer.weights = c(1, 1, 0.5, 1))
 ```
 
-
 Importantly, internal distance normalization accounts for differences in distance scale but does not remove redundancy within or among layers.
-
-For example:
-  
-- multiple linked SNPs from the same genomic region may repeatedly represent the same evolutionary signal;
-- multiple mitochondrial loci generally describe the same underlying mitochondrial genealogy;
-- environmental and spatial layers may partly represent the same geographic gradient;
-- highly correlated variables within one layer may repeatedly represent the same biological gradient.
-
-
-Therefore, we might for example downweight our mitochondrial layer compared to ... because
+For example, multiple linked SNPs from the same genomic region may repeatedly represent the same evolutionary signal, multiple mitochondrial loci generally describe the same underlying mitochondrial genealogy, and environmental and spatial layers may partly represent the same geographic gradient;
+Therefore, we might, for example, down-weight a mitochondrial layer relative to a genome-wide SNP layer containing markers distributed across many approximately independent genomic regions, because multiple mitochondrial markers generally represent the same underlying organellar genealogy rather than multiple independent evolutionary histories.
 Where possible, preprocessing to reduce redundancy, such as LD pruning or removing highly correlated predictors, is preferable to simply down-weighting an entire layer.
 
 
 ## Other input data
 
-Any dataset that can be represented as a numeric sample-by-variable matrix can potentially be incorporated into `train.SOM()`.
-Some of these data types might require external preprocessing before SOM training.
+Beyond the data types demonstrated in the empirical example above, any dataset that can be represented as a numeric sample-by-variable matrix can potentially be incorporated into `train.SOM()`.
+Some additional data types may require external preprocessing before SOM training.
 
-Examples include:
-  
-- SNPs and nucleotide-sequence data
+Additional examples include:
+
 - microsatellites and short tandem repeats
 - structural variants and copy-number variants
 - genotype likelihoods or expected allele dosages
 - polyploid genotype data
 - k-mer or other sequence-derived features
 - transcriptomic or gene-expression data
-- continuous morphological measurements
 - meristic traits
-- categorical traits converted to binary variables
-- behavioral variables
-- host-association data
-- environmental variables
-- spatial variables
+- host haplotype markers
+- host-use and developmental-mode data
+- symbiont-community data
+- watershed or ecoregion classifications
 
 For microsatellites and other multiallelic markers, arbitrary allele identifiers should not be entered directly as numeric values.
-Allele sizes, repeat numbers, or appropriately constructed allele-count variables should instead be used.
+When allele size or repeat number is biologically meaningful, allele sizes or repeat numbers can instead be retained as numeric variables.
+Alternatively, each locus can be expanded into allele-count variables.
+Manhattan distance is generally appropriate for allele-size, repeat-number, or allele-count representations.
 
-Polyploid genotype data can be supplied as allele-dosage matrices after appropriate preprocessing, but users should manually specify an appropriate distance function.
+Host haplotypes or other categorical genetic markers can be converted to binary indicator variables before SOM training.
+For example, in our supplementary empirical analysis of *Pocillopora* corals, mtORF and PocHistone haplotypes were converted to binary variables and included as a separate host-haplotype layer.
+
+Categorical ecological or life-history variables, such as host use or developmental mode, can likewise be converted to binary indicator variables.
+Related categorical variables can be combined within one layer when they have similar data structures and biological interpretation.
+
+Community-composition data can also be incorporated after appropriate preprocessing.
+For example, our supplementary analysis *Pocillopora* corals included Symbiodiniaceae ITS2 OTU community data as a separate symbiont layer.
+
+Geographic classifications such as watersheds, ecoregions, islands, or drainage basins can be represented as binary indicator variables and included as separate categorical layers.
+These should generally be kept separate from continuous spatial or environmental variables because they have different data structures and may require different distance functions.
+
+Structural variants and copy-number variants can be represented using dosage, count, presence/absence, or continuous quantitative variables depending on the underlying data.
+Correlated calls describing the same structural event should be consolidated where possible to avoid repeatedly representing the same genomic signal.
+
+Genotype likelihoods or posterior genotype probabilities can be converted externally to expected allele dosages.
+For diploid biallelic loci, these expected dosages range continuously from 0 to 2.
+Because continuous dosage values may not be recognized automatically as genetic dosage data, Manhattan distance should generally be specified manually.
+
+Polyploid genotype data can be supplied as externally generated allele-dosage matrices ranging from zero to the relevant ploidy.
 For example, tetraploid genotypes can be represented as dosage values from 0 to 4 and analyzed using Manhattan distance.
 Mixed-ploidy datasets require additional care because the same dosage difference does not represent the same proportional allele-frequency difference across ploidy levels.
-Raw dosages from different ploidies should therefore not be combined without appropriate standardization.
-
-Genotype likelihoods or posterior genotype probabilities can be incorporated as expected allele dosages.
-Because these values are continuous, their intended genetic interpretation may not be recognized automatically, so the distance function should generally be specified manually.
+Raw dosages from different ploidies should therefore not be combined without proportional or other appropriate standardization.
 
 Genome-wide k-mer data and other sequence-derived features can also be incorporated after appropriate filtering and normalization.
 Because these matrices can contain extremely large numbers of redundant or rare variables, feature reduction is generally recommended before training.
+Binary k-mer presence/absence can be represented as binary variables, whereas quantitative k-mer counts should be normalized before analysis.
 
 Raw RNA-seq counts should not generally be supplied directly to `train.SOM()`.
 Expression data should first be quality filtered, normalized, and appropriately transformed, for example using variance-stabilized or normalized log-expression values.
 Low-variation and strongly redundant genes should also be removed or reduced where appropriate.
 
+Meristic traits and other count data can be incorporated as numeric variables.
+Manhattan distance is often appropriate when counts are sparse, skewed, or zero-heavy, whereas transformed count data may be treated as continuous variables when appropriate.
+
 
 ## Missing data
 
 `train.SOM()` removes individuals and variables containing more than the specified proportion of missing data using `max.NA.row` and `max.NA.col`.
-Both default to `0.5` corresponding to ...
+Both default to `0.5`, corresponding to a maximum of 50% missing data per individual or variable.
 
-Missing values that remain after filtering are handled directly during SOM training rather than globally imputed.
-Distances and codebook-vector updates are calculated only across observed dimensions.
+Our analyses (Schönberger et al. preprint) show that *delimSOM* is relatively robust to substantial missingness.
+Specifically, performance declined only marginally as the proportion of missing data increased to approximately 50%, but decreased more sharply beyond this threshold.
+This robustness is facilitated by how missing data are handled during SOM training.
+After individuals and variables with excessive missingness are removed, best-matching units are identified using only the observed dimensions, and codebook updates are restricted to those dimensions.
+Incomplete observations can therefore still contribute to SOM training without requiring global imputation across heterogeneous data layers (Cottrell & Letrémy 2005; Kohonen 2001; Samad & Harp 1992; Wehrens & Buydens 2007).
 
-Our simulations showed relatively little decline in performance at moderate levels of missing data, but performance decreased more strongly when missingness became high.
-The default threshold of 0.5 therefore provides a permissive starting point, but users should adjust these thresholds according to their dataset.
-
-For datasets with very large numbers of variables, stricter thresholds may be reasonable if sufficient information remains.
-For datasets with few variables or difficult-to-replace specimens, more permissive thresholds may sometimes be preferable.
+This supports `0.5` as our recommended default filtering threshold, retaining incomplete data while excluding individuals and variables with very high missingness.
+Based on our simulation results, we do not recommend increasing these thresholds above approximately `0.5–0.6` because performance declined more sharply beyond this range.
 
 
 ## Number of training steps and replicates
