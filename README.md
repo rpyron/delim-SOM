@@ -1078,6 +1078,35 @@ Therefore, we might, for example, down-weight a mitochondrial layer relative to 
 Where possible, preprocessing to reduce redundancy, such as LD pruning or removing highly correlated predictors, is preferable to simply down-weighting an entire layer.
 
 
+## Saving figures
+
+All *delimSOM* plotting functions can save figures directly using the `save`, `plot.type`, and `file.name` arguments.
+By default, figures are only displayed in the active R graphics device because `save = FALSE`.
+To save a figure, set `save = TRUE`.
+Supported file types are `"svg"`, `"png"`, and `"jpg"`.
+If `file.name = NULL`, a default file name is generated automatically.
+Figure dimensions can be adjusted using `width` and `height` (in centimeters).
+Rraster-image resolution can be controlled using `resolution` (dpi).
+
+For example:
+
+```r
+plot.model.SOM(SOM_results,
+               replicate.mode = "representative",
+               save = TRUE,
+               plot.type = "png",
+               file.name = "SOM_model.png",
+               width = 16,
+               height = 10,
+               resolution = 300)
+```
+
+By default, `overwrite = TRUE`, so an existing figure with the same file name is replaced.
+Set `overwrite = FALSE` to prevent existing files from being overwritten.
+
+The same saving arguments are available for `plot.learning.SOM()`, `plot.layer.distance.scale.SOM()`, `plot.K.SOM()`, `plot.model.SOM()`, `plot.structure.SOM()`, `plot.map.SOM()`, `plot.variable.importance.SOM()`, `plot.layer.importance.varimp.SOM()`, and `plot.layer.importance.leaveoneout.SOM()`.
+
+
 ## Other input data
 
 Beyond the data types demonstrated in the empirical example above, any dataset that can be represented as a numeric sample-by-variable matrix can potentially be incorporated into `train.SOM()`.
