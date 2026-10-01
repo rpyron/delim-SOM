@@ -219,12 +219,14 @@ This approach performed best in our analyses (Schönberger et al. preprint) and 
 `max.k` specifies the maximum number of candidate clusters evaluated.
 `BIC.thresh` specifies the minimum BIC improvement required before additional subdivision is considered supported, with a default of `6`.
 Following Kass and Raftery (1995), values of 6–10 indicate strong support, values >10 indicate very strong support, and values <6 indicate weaker support for the more complex solution.
+The support for each K is shown using the `$optim_k_summary` component of the `SOM_results` output object.
 
 ```r
 SOM_results <- clustering.SOM(SOM.output = SOM_tr,
                               max.k = 10,
                               clustering.method = "kmeans+BICelbow",
                               BIC.thresh = 6) 
+SOM_results$optim_k_summary
 ```
 
 
@@ -276,18 +278,20 @@ In this section, we import, filter, process, and evaluate each data source to pr
 ### 2.1 Import metadata
 
 We first import the metadata.
-Specimen identifiers are used as row names and allow the metadata to be matched to the other data layers throughout the analysis.
 
 ```r
 #### Import metadata ############################################################
 Polygonia_metadata <- read.csv(file.path(example_dir, "Polygonia_metadata.csv"), header = TRUE, sep = ";")
 rownames(Polygonia_metadata) <- Polygonia_metadata$ID
 Polygonia_metadata <- dplyr::select(Polygonia_metadata, Species, ID, Latitude, Longitude, Morphotype)
+
 dim(Polygonia_metadata)
 head(Polygonia_metadata, n = 2)
 ```
 
-We see that the metadata contain species identity, specimen ID, geographic coordinates, and morphotype information for 265 individuals:
+We see that the metadata contain species identity, specimen ID, geographic coordinates, and morphotype information for 265 individuals.
+Specimen identifiers are used as row names and allow the metadata to be matched to the other data layers throughout the analysis.
+
 
 ```text
 [1] 265   5
@@ -310,11 +314,12 @@ Polygonia_SNP <- process.SNP.data.SOM(vcf.path = file.path(example_dir, "Polygon
                                       missing.individuals.cutoff = 0.5)
 
 rownames(Polygonia_SNP) <- sub(".*?(\\d+)$", "\\1", rownames(Polygonia_SNP))
+
 dim(Polygonia_SNP)
 print(Polygonia_SNP[1:2, 1:10])
 ```
 
-This retains all 961 biallelic SNPs as variables (columns) and 237 of the original 241 individuals (rows), with 4 individuals removed due to >50% missing data:
+This retains all 961 biallelic SNPs as variables (columns) and 237 of the original 241 individuals (rows), with four individuals removed due to  more than 50% missing data:
 
 ```text
 [1] 237 961
@@ -341,11 +346,12 @@ Polygonia_COI <- process.SNP.data.SOM(nexus.path = file.path(example_dir, "Polyg
 Polygonia_COI_numeric_rownames <- sub(".*?(\\d+)$", "\\1", rownames(Polygonia_COI))
 Polygonia_COI <- Polygonia_COI[!duplicated(Polygonia_COI_numeric_rownames), , drop = FALSE]
 rownames(Polygonia_COI) <- Polygonia_COI_numeric_rownames[!duplicated(Polygonia_COI_numeric_rownames)]
+
 dim(Polygonia_COI)
 print(Polygonia_COI[1:2, 1:10])
 ```
 
-This retains 213 biallelic COI variables or SNPs (columns) from the original 1,348 alignment sites and 255 individuals (rows) after removing duplicate specimen identifiers:
+This retains 213 biallelic COI variables or SNPs (columns) from the original 1,348 alignment sites and 255 individuals (rows) after removing 60 duplicate specimen identifiers:
 
 ```text
 [1] 255 213
@@ -359,7 +365,7 @@ This retains 213 biallelic COI variables or SNPs (columns) from the original 1,3
 
 This section imports and processes the continuous morphology data containing RGB color measurements from six dorsal and ventral wing regions.
 The specimen identifiers are used as row names, and the non-morphological `Name` and `Species` columns are removed.
-We then filter the continuous wing-color variables for low variation and pairwise absolute Spearman correlations >0.9 using the defaults in `remove.lowCV.multicollinearity.SOM()`.
+We then filter the continuous wing-color variables for low variation and high pairwise absolute Spearman correlations using the defaults in `remove.lowCV.multicollinearity.SOM()`.
 Lastly, we evaluate the output.
 
 ```r
@@ -368,6 +374,7 @@ Polygonia_RGB <- read.delim(file.path(example_dir, "Polygonia_RGB_characters.txt
 rownames(Polygonia_RGB) <- Polygonia_RGB$Species
 Polygonia_RGB <- Polygonia_RGB[, !names(Polygonia_RGB) %in% c("Name", "Species"), drop = FALSE]
 Polygonia_morphology <- remove.lowCV.multicollinearity.SOM(input.dataframe = Polygonia_RGB)
+
 dim(Polygonia_morphology)
 print(Polygonia_morphology[1:2, 1:10])
 ```
@@ -404,10 +411,6 @@ We first import the visually scored wing characters and use the specimen identif
 We remove the `Name` and `Species` columns and rename the ten wing characters for clarity.
 The binary and ordinal characters are left as they are.
 However, we treat wing character 8 as nominal and therefore convert its four states into four binary indicator variables and remove the original wing character 8 variable.
-Morphotype data are then extracted from the metadata.
-We ensure that the specimen identifiers of both datasets are stored as character row names and combine the wing-character and morphotype data using their shared specimen identifiers.
-The shared specimen identifiers are restored as row names after merging.
-Finally, morphotype is converted into binary indicator variables using `make.cols.binary.SOM()` with `append.to.original = TRUE`, and the original morphotype variable is removed.
 
 ```r
 #### Prepare categorical morphology ###########################################
@@ -430,7 +433,14 @@ Wing_character_8_states <- stats::model.matrix(~ Wing_character_8 - 1, data = Po
 colnames(Wing_character_8_states) <- paste0("Wing_character_8_state_", 1:4)
 Polygonia_wing_scores <- cbind(Polygonia_wing_scores, Wing_character_8_states)
 Polygonia_wing_scores$Wing_character_8 <- NULL
+```
 
+Morphotype data are then extracted from the metadata.
+We ensure that the specimen identifiers of both datasets are stored as character row names and combine the wing-character and morphotype data using their shared specimen identifiers.
+The shared specimen identifiers are restored as row names after merging.
+Finally, morphotype is converted into binary indicator variables using `make.cols.binary.SOM()` with `append.to.original = TRUE`, and the original morphotype variable is removed.
+
+```r
 Polygonia_morphotype <- Polygonia_metadata[, "Morphotype", drop = FALSE]
 rownames(Polygonia_wing_scores) <- as.character(rownames(Polygonia_wing_scores))
 rownames(Polygonia_morphotype) <- as.character(rownames(Polygonia_morphotype))
@@ -444,6 +454,7 @@ Polygonia_morphology_categorical <- make.cols.binary.SOM(dataframe = Polygonia_m
                                                          make.binary.cols = "Morphotype",
                                                          append.to.original = TRUE)
 Polygonia_morphology_categorical$Morphotype <- NULL
+
 dim(Polygonia_morphology_categorical)
 print(Polygonia_morphology_categorical[1:2, 1:6])
 ```
@@ -464,7 +475,7 @@ Dupuis et al. (2018) did not include spatial data in their analyses.
 However, because they provided specimen coordinates, we could add a spatial layer to our reanalysis.
 
 Here, we first extract latitude and longitude from the metadata.
-We then use the `st_as_sf()` function in the *sf* package to convert these coordinates into spatial points and the `get_elev_point()` function in the *elevatr* package to retrieve elevation for each specimen locality.
+We then use the `st_as_sf()` function in the *sf* package (Pebesma 2018; Pebesma & Bivand 2023) to convert these coordinates into spatial points and the `get_elev_point()` function in the *elevatr* package (Hollister 2025) to retrieve elevation for each specimen locality.
 
 ```r
 #### Prepare spatial data ######################################################
@@ -507,7 +518,7 @@ Polygonia_environmental_rownames <- rownames(Polygonia_environmental)
 Polygonia_environmental <- as.data.frame(lapply(Polygonia_environmental, as.numeric))
 rownames(Polygonia_environmental) <- Polygonia_environmental_rownames
 ```
-We then transform skewed environmental variables with the help of the `transform.skewed.variables()` function in the *NicheDiv* package. 
+We then transform skewed environmental variables with the help of the `transform.skewed.variables()` function in the *NicheDiv* *R* package (Schönberger et al. 2026). 
 Conveniently, this function automatically checks each variable for skewness and applies the most-appropriate transformation if skewed.
 As above for the continuous morphology data, we subsequently filter variables with low variation or strong pairwise correlations using `remove.lowCV.multicollinearity.SOM()`.
 
@@ -560,6 +571,7 @@ Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data,
 
 After SOM training, we cluster the resultant codebook vectors using the recommended `"kmeans+BICelbow"` approach.
 The optimal K is selected for each SOM replicate, allowing support for alternative K values to be summarized across replicates.
+Clustering for this dataset takes around 2-7 min.
 We can then evaluate the support for each K using the `$optim_k_summary` component of the output object.
 
 ```r
@@ -587,8 +599,10 @@ After SOM training and clustering, *delim-SOM* 2.0 offers several functions to e
 `plot.learning.SOM()` is a diagnostic function to assess changes during SOM training across replicates and data layers.
 
 Below, we see an initial decline followed by a stable plateau at the end, which suggests that SOM learning has converged toward a stable representation.
-Erratic trajectories or continued changes late in training may indicate that additional training steps are needed or that the input data require further inspection.
-We also see that the absolute heights and slopes of trajectories can differ among data layers because layers differ in dimensionality, distance functions, and distance distributions, and therefore should not be interpreted as differences in layer importance.
+Erratic trajectories or continued changes late in training would indicate that additional training steps are needed or that the input data require further inspection.
+We also note that the absolute heights and slopes of trajectories can differ among data layers.
+This is expected since layers differ in dimensionality, distance functions, and distance distributions.
+These differences not be interpreted as layer importance.
 
 ```r
 plot.learning.SOM(Polygonia_SOM)
@@ -1353,14 +1367,21 @@ For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `ov
 
 - Dupuis, J. R. et al. (2018). Genomics confirms surprising ecological divergence and isolation in an enigmatic butterfly species complex. *Zoological Journal of the Linnean Society*. https://doi.org/10.1093/zoolinnean/zlx081
 
-- Kohonen, T. (1998). The self-organizing map. *Neurocomputing*.
+- Hollister, J. W. (2025). *elevatr: Access Elevation Data from Various APIs*. R package version 0.99.1. https://CRAN.R-project.org/package=elevatr/
 
-- Kohonen, T. (2014). *MATLAB Implementations and Applications of the Self-Organizing Map*.
+- Kohonen, T. (1998). The self-organizing map. *Neurocomputing*, 21(1–3), 1–6. https://doi.org/10.1016/S0925-2312(98)00030-7
+
+- Kohonen, T. (2014). *MATLAB Implementations and Applications of the Self-Organizing Map*. Unigrafia Oy, Helsinki, Finland.
+
+- Pebesma, E. (2018). Simple Features for R: Standardized Support for Spatial Vector Data. *The R Journal*, 10(1), 439–446. https://doi.org/10.32614/RJ-2018-009
+
+- Pebesma, E., & Bivand, R. (2023). *Spatial Data Science: With Applications in R*. Chapman and Hall/CRC. https://doi.org/10.1201/9780429459016
 
 - Pyron, R. A. (2023). Unsupervised machine learning for species delimitation, integrative taxonomy, and biodiversity conservation. *Molecular Phylogenetics and Evolution*, 189, 107939. https://doi.org/10.1016/j.ympev.2023.107939
 
 - Pyron, R. A., O’Connell, K. A., Duncan, S. C., Burbrink, F. T., & Beamer, D. A. (2023). Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for seal salamanders (*Desmognathus monticola*). *Systematic Biology*, 72(1), 179–197. https://doi.org/10.1093/sysbio/syac065
 
+- Schönberger, D., MacDonald, Z. G., Schmidt, B. C., & Dupuis, J. R. (2026). NicheDiv: A DAPC framework to quantify niche divergence across highly multivariate environmental space. *bioRxiv*. https://doi.org/10.64898/2026.06.19.733388
 
 # Citation
 
