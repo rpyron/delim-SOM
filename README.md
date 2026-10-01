@@ -1220,7 +1220,8 @@ SOM_tr_tuned <- train.SOM(input_data = SOM_data,
                           learning.rate.tuning = TRUE)
 ```
 
-However, our analyses (Schönberger et al. preprint) showed that learning-rate tuning improved performance only marginally while substantially increasing runtime.
+However, our analyses (Schönberger et al. preprint) showed that learning-rate and tuning improved performance only marginally while substantially increasing runtime.
+Consistent with previous work (Pyron 2023), this suggests that variation in these hyperparameters have relatively little impact on the results.
 We therefore recommend retaining the default learning rates and `learning.rate.tuning = FALSE`.
 Learning-rate tuning may be useful for small datasets or short exploratory analyses.
 
