@@ -1093,26 +1093,7 @@ This supports `0.5` as our recommended default filtering threshold, retaining in
 Based on our simulation results, we do not recommend increasing these thresholds above approximately `0.5–0.6` because performance declined more sharply beyond this range.
 
 
-## Number of training steps and replicates
-
-`N.steps` determines the number of SOM training iterations for each replicate, while `N.replicates` determines the number of independently initialized SOMs.
-
-We recommend approximately 80–200 SOM training iterations and 80–150 replicate maps, with the defaults:
-  
-  ```r
-N.steps = 100
-N.replicates = 110
-```
-
-Too few training steps can result in unstable or insufficiently converged maps.
-Increasing the number of training steps substantially beyond the recommended range often increases runtime without providing proportional improvements.
-
-Likewise, too few replicates make the final results more sensitive to stochastic initialization, whereas very large numbers of replicates mainly increase computation time without proportionate improvement in stability.
-
-The appropriate values depend on dataset size, dimensionality, number of layers, and computational resources.
-Users should inspect `plot.learning.SOM()` to determine whether training has stabilized.
-
-## 6. Optional: compare clustering methods
+## Compare clustering methods
 
 No single clustering method is expected to perform best for every possible data structure because performance depends on geometry, dimensionality, noise, overlap, and parameterization (Omran et al. 2007; Rodriguez et al. 2019).
 *delimSOM* 2.0 therefore implements six clustering and K-selection methods in `clustering.SOM()`: 
@@ -1122,72 +1103,76 @@ Our testing (Schönberger et al. preprint) showed that the two k-means/BIC appro
 We therefore recommend `"kmeans+BICelbow"` as the primary starting point, while alternative methods can provide useful complementary analyses.
 `"kmeans+BICthreshold"` performed similarly well, and `"GMM+BICthreshold"` also showed high lineage recovery and assignment accuracy but generally required longer computation times.
 
-By contrast, we do not recommend using `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"`.
+By contrast, we do not generally recommend using `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"`.
 Hierarchical clustering showed high recovery and assignment accuracy but was prohibitively slow, whereas HDBSCAN and OPTICS were computationally faster but less reliable.
-For our *Polygonia* example, we can rerun clustering using `"kmeans+BICthreshold"`:
+
+
+The alternative clustering methods can be compared using the same trained SOM:
 
 ```r
-Polygonia_SOM_kmeans_BICthreshold <- clustering.SOM(SOM.output = Polygonia_SOM_tr,
-                                                    clustering.method = "kmeans+BICthreshold")
+SOM_kmeans_BICthreshold <- clustering.SOM(SOM.output = SOM_tr,
+                                          clustering.method = "kmeans+BICthreshold")
+SOM_kmeans_BICthreshold$optim_k_summary
 
-Polygonia_SOM_kmeans_BICthreshold$optim_k_summary
+SOM_GMM_BICthreshold <- clustering.SOM(SOM.output = SOM_tr,
+                                       clustering.method = "GMM+BICthreshold")
+SOM_GMM_BICthreshold$optim_k_summary
+
+SOM_hierarchical_DB <- clustering.SOM(SOM.output = SOM_tr,
+                                      clustering.method = "hierarchical+DB")
+SOM_hierarchical_DB$optim_k_summary
+
+SOM_HDBSCAN <- clustering.SOM(SOM.output = SOM_tr,
+                              clustering.method = "HDBSCAN")
+SOM_HDBSCAN$optim_k_summary
+
+SOM_OPTICS_Silhouette <- clustering.SOM(SOM.output = SOM_tr,
+                                        clustering.method = "OPTICS+Silhouette")
+SOM_OPTICS_Silhouette$optim_k_summary
 ```
-
 
 
 ## Neighborhood function
 
-The SOM neighborhood function is controlled by:
-  
-  ```r
-training.neighborhoods
+`train.SOM()` allows either `"gaussian"` or `"bubble"` neighborhood functions via `training.neighborhoods`.
+The bubble function applies equal influence to all SOM units within the neighborhood radius, whereas the Gaussian function applies progressively less influence with increasing distance from the best-matching unit (Kohonen 1998).
+For both functions, the neighborhood radius decreases during training, shifting from broad map organization to finer local refinement (Kohonen 2014; Wehrens & Kruisselbrink 2018).
+
+The Gaussian neighborhood is used by default:
+
+```r
+SOM_tr <- train.SOM(input_data = SOM_data, training.neighborhoods = "gaussian")
 ```
 
-The available options are:
-  
-  ```r
-"gaussian"
-"bubble"
+Alternatively, the bubble neighborhood can be used:
+
+```r
+SOM_tr_bubble <- train.SOM(input_data = SOM_data, training.neighborhoods = "bubble")
 ```
 
-The recommended default is:
-  
-  ```r
-training.neighborhoods = "gaussian"
+Our analyses (Schönberger et al. preprint) showed that the Gaussian neighborhood more reliably recovered the correct number of lineages and produced lower topographic error, whereas the bubble neighborhood produced lower quantization error and shorter runtimes.
+We therefore recommend the Gaussian neighborhood as the primary option because it more reliably recovered the correct number of lineages and better preserved SOM topology.
+
+
+## Learning-rate tuning
+
+SOM training uses a learning rate that decreases linearly during training, with larger updates early in training supporting broad map organization and progressively smaller updates allowing finer local refinement (Kohonen 1998).
+By default, `train.SOM()` uses an initial learning rate of `0.5` and a final learning rate of `0.1`. 
+These default values performed well in our analyses and experience.
+
+Optional learning-rate tuning can be enabled with `learning.rate.tuning = TRUE`.
+When enabled, `train.SOM()` tests alternative initial and final learning-rate combinations and selects the combination with the lowest mean quantization error, which measures how closely samples are represented by their best-matching SOM units.
+
+For example:
+
+```r
+SOM_tr_tuned <- train.SOM(input_data = SOM_data,
+                          learning.rate.tuning = TRUE)
 ```
 
-Our simulations showed that the Gaussian neighborhood more reliably recovered the expected K and produced better topology preservation, whereas the bubble neighborhood was generally faster and sometimes produced lower quantization error.
-
-We therefore recommend retaining `"gaussian"` as the primary setting unless there is a specific reason to test the alternative.
-
-
-## Learning rates and learning-rate tuning
-
-By default, SOM training uses:
-  
-  ```r
-learning.rate.initial = 0.5
-learning.rate.final = 0.1
-```
-
-The learning rate decreases during training so that early iterations produce broad organization of the map and later iterations provide finer local adjustment.
-
-Learning-rate tuning can be activated with:
-  
-  ```r
-learning.rate.tuning = TRUE
-```
-
-This evaluates multiple initial and final learning-rate combinations and retains the combination producing the lowest mean quantization error across tuning replicates.
-
-Our testing showed only relatively small performance improvements from learning-rate tuning while substantially increasing runtime.
-We therefore generally recommend:
-  
-  ```r
-learning.rate.tuning = FALSE
-```
-
-Learning-rate tuning may still be useful for small datasets or exploratory analyses where computation time is not limiting.
+However, our analyses (Schönberger et al. preprint) showed that learning-rate tuning improved performance only marginally while substantially increasing runtime.
+We therefore recommend retaining the default learning rates and `learning.rate.tuning = FALSE`.
+Learning-rate tuning may be useful for small datasets or short exploratory analyses.
 
 
 ## SOM grid size
@@ -1220,6 +1205,9 @@ A user-defined grid can be supplied as:
 SOM_tr <- train.SOM(input_data = SOM_data,
                     grid.size = c(5, 4))
 ```
+or using the grid multiplier.
+
+Note that If data is scarce, train.SOM will sometimes abort with a message to decrease the grid multiplier.
 
 
 ## Parallel training

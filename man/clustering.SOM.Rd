@@ -16,7 +16,7 @@ clustering.SOM(
   calculate.variable.importance = TRUE,
   verbose = TRUE,
   message.N.replicates = 20,
-  save.SOM.results = TRUE,
+  save.SOM.results = FALSE,
   save.SOM.results.name = NULL,
   overwrite.SOM.results = FALSE,
   set.seed.N = 1
@@ -69,7 +69,7 @@ Default: \code{TRUE}.}
 progress messages during replicate clustering. Default: \code{20}.}
 
 \item{save.SOM.results}{Logical; if \code{TRUE}, the clustered SOM result object is
-saved as an \code{.Rdata} file. Default: \code{TRUE}.}
+saved as an \code{.Rdata} file. Default: \code{FALSE}.}
 
 \item{save.SOM.results.name}{Optional character string giving the output file
 name used when saving or loading clustered SOM results. File names supplied

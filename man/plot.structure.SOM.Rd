@@ -90,9 +90,14 @@ y-axis-title font size in points. Default: \code{9.1}.}
 y-axis numeric tick-label font size in points. Default: \code{7}.}
 
 \item{sort.by.col}{Optional positive integer specifying the first dominant
-cluster in the sample ordering. If \code{NULL}, samples are ordered by
-single-linkage hierarchical clustering of their complete assignment
-profiles. Default: \code{1}.}
+cluster in the sample ordering, or a numeric vector specifying the complete
+dominant-cluster order. The dominant cluster of a sample is the cluster with
+the highest assignment coefficient for that sample. Samples are first grouped
+by their dominant cluster. Within each dominant-cluster group, samples are
+ordered by their complete assignment profiles, beginning with the dominant
+cluster coefficient and then the remaining cluster coefficients in the
+specified cluster order. If \code{NULL}, samples are ordered by single-linkage
+hierarchical clustering of their complete assignment profiles. Default: \code{1}.}
 
 \item{bar.border.col}{Optional character string giving the color of vertical
 separation lines between samples. If \code{NULL}, no separation lines are
@@ -133,14 +138,21 @@ differentiation, recent divergence, incomplete lineage sorting, hybridization,
 or conflicting signals among data layers. The plot is not produced for K = 1
 because all samples would have an assignment coefficient of one for the same cluster.
 
-If \code{sort.by.col} is supplied, samples are grouped by their dominant cluster,
-beginning with the specified cluster and continuing through the remaining
-clusters in column order. Within each group, samples are ordered from highest
-to lowest assignment coefficient for that cluster. For example, with three
-clusters, \code{sort.by.col = 2} produces Cluster 2, Cluster 3, and Cluster 1. If
-\code{sort.by.col = NULL}, Euclidean distances are calculated among complete
-assignment profiles, and samples are ordered using single-linkage hierarchical
-clustering. Cluster colors follow the column order of \code{ancestry_matrix}.
+If \code{sort.by.col} is supplied as a single integer, samples are grouped by their
+dominant cluster beginning with the specified cluster and continuing through
+the remaining clusters in column order. Alternatively, a vector containing
+each cluster exactly once can be supplied to specify the complete
+dominant-cluster order. Within each dominant-cluster group, samples are first
+ordered from highest to lowest assignment coefficient for the dominant
+cluster, followed by decreasing coefficients for the remaining clusters in
+the specified cluster order. Sample names are used only to resolve identical
+complete assignment profiles. For example, with three clusters,
+\code{sort.by.col = 2} produces Cluster 2, Cluster 3, and Cluster 1, whereas
+\code{sort.by.col = c(3, 1, 2)} explicitly produces Cluster 3, Cluster 1, and
+Cluster 2. If \code{sort.by.col = NULL}, Euclidean distances are calculated among
+complete assignment profiles, and samples are ordered using single-linkage
+hierarchical clustering. Cluster colors follow the column order of
+\code{ancestry_matrix}.
 
 Sample names are displayed vertically below the bars. For datasets containing
 many samples or long sample names, increasing \code{width} or \code{bottom.margin}, or
