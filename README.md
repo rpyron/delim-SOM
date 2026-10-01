@@ -878,10 +878,10 @@ round(head(sort(Polygonia_SOM$median_etasquared_variable_importance[[5]], decrea
 
 First, `plot.layer.importance.varimp.SOM()` summarizes the distributions of variable-importance values presented above in section 5.7 within each data layer.
 This allows the relative importance of the different data layers to be compared based on how strongly their variables are associated with cluster separation or variation across the SOM map.
+When examining this plot, it is important to consider the number of variables within each layer (e.g., the SNP layer contains hundreds of variables, whereas the spatial layer contains only three).
 
 ```r
-plot.layer.importance.varimp.SOM(Polygonia_SOM,
-                                 bottom.margin = 3.5)
+plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 3.5)
 ```
 
 <p align="center">
