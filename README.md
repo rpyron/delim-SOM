@@ -912,7 +912,7 @@ plot.layer.importance.leaveoneout.SOM(Polygonia_SOM,
 ```
 
 <p align="center">
-  <img src="figures/Figure_layerimp_loo.png">
+  <img src="figures/Figure_layerimp_lolo.png">
 </p>
 
 
@@ -994,7 +994,8 @@ plot.layer.importance.leaveoneout.SOM(Polygonia_SOM_cluster3,
                                       bottom.margin = 6.5)
 ```
 
-The species composition of the hierarchical cluster-3 analysis can also be compared with the original taxonomic assignments:
+The species composition of the hierarchical cluster-3 analysis can also be compared with the original taxonomic assignments, revealing that cluster 3 contains the two lumped species: *Polygonia gracilis* and *P. progne*.
+This suggests that the primary analysis grouped these taxa into a single broader candidate lineage, whereas the hierarchical reanalysis detected additional structure within this lineage.
 
 ```r
 Polygonia_ancestry_SOM_cluster3 <- as.data.frame(Polygonia_SOM_cluster3$ancestry_matrix)
@@ -1002,6 +1003,13 @@ Polygonia_ancestry_SOM_cluster3$Species <- Polygonia_metadata$Species[match(rown
 Polygonia_ancestry_SOM_cluster3$Species_revised <- Polygonia_metadata$Species_revised[match(rownames(Polygonia_SOM_cluster3$ancestry_matrix), rownames(Polygonia_metadata))]
 length(unique(Polygonia_ancestry_SOM_cluster3$Species))
 table(Polygonia_ancestry_SOM_cluster3$Species)
+```
+
+```text
+[1] 3
+
+Polygonia gracilis gracilis Polygonia gracilis zephyrus            Polygonia progne 
+                          8                           9                          58
 ```
 
 
