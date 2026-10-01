@@ -602,7 +602,7 @@ Below, we see an initial decline followed by a stable plateau at the end, which 
 Erratic trajectories or continued changes late in training would indicate that additional training steps are needed or that the input data require further inspection.
 We also note that the absolute heights and slopes of trajectories can differ among data layers.
 This is expected since layers differ in dimensionality, distance functions, and distance distributions.
-These differences not be interpreted as layer importance.
+These differences should not be interpreted as layer importance.
 
 ```r
 plot.learning.SOM(Polygonia_SOM)
@@ -616,7 +616,7 @@ plot.learning.SOM(Polygonia_SOM)
 ### 5.2 Layer distance scales
 
 `plot.layer.distance.scale.SOM()` visualizes the average pairwise distance scale of each input layer before SOM training and internal distance normalization.
-This plot is a diagnostic of differences in raw distance scale (representing both the number of variables and their variances) among layers.
+This plot is a diagnostic of differences in raw distance scale among layers (representing both the number of variables and their variances).
 Notably, these raw distance scales should not be interpreted as measures of layer importance.
 
 In the plot below, we see that the genomic layer strongly dominates the raw distance scale. 
@@ -635,13 +635,14 @@ plot.layer.distance.scale.SOM(Polygonia_SOM)
 
 ### 5.3 Support for alternative K values
 
-`plot.K.SOM()` is an important function to evaluate relative support for alternative K values across SOM replicates.
+`plot.K.SOM()` is an important function to evaluate relative support for alternative K values.
 It visualizes the support profile across candidate K values, successive changes in BIC, and the frequency with which each K was selected across retained SOM replicates.
-The full support profile should be considered rather than relying only on the most frequently selected K, because selection frequency alone does not show how strongly the selected K is supported relative to alternative K values.
 
+The full support profile should be considered rather than relying only on the most frequently selected K, because selection frequency alone does not show how strongly the selected K is supported relative to alternative K values.
 Support for multiple K values indicates uncertainty in the inferred number of candidate lineages, which could arise from weak differentiation, recent divergence, admixture, or discordance among data layers.
 
-In our empirical example below, we see a clear BIC elbow at K = 3, where the largest improvement in fit occurs before subsequent reductions in BIC become much smaller, so that K = 3 is selected in 88% of SOM replicates, followed by K = 4 in 12%.
+In our empirical example below, we see a clear BIC elbow at K = 3, where the largest improvement in fit occurs before subsequent reductions in BIC become much smaller.
+This resulted in K = 3 being selected in 88% of SOM replicates, followed by K = 4 in 12%.
 
 ```r
 plot.K.SOM(Polygonia_SOM)
@@ -655,12 +656,13 @@ plot.K.SOM(Polygonia_SOM)
 ### 5.4 Visualize SOM topology and candidate lineages
 
 We next visualize the trained SOM topology and inferred candidate lineages for a representative replicate using `plot.model.SOM()`.
-The representative replicate is chosen based on ...
+The representative replicate is selected by first identifying the most frequently inferred K across retained replicates and then, among replicates supporting that K, choosing the replicate with the highest mean pairwise Adjusted Rand Index relative to the other candidate replicates.
 
-The top neighbor-distance panel is a common SOM U-matrix plot (Ultsch 1993; Vesanto & Alhoniemi 2000; Wehrens & Buydens 2007) showing distances among adjacent SOM units for the representative replicate.
-Darker areas indicating relatively large distances between adjacent codebook vectors and mark boundaries (“ridges”) between groups. 
-Light areas indicating lower-distance “valleys,” so more internally similar areas of the map.
-Candidate lineages are therefore expected to occupy in these lighter valleys separated from one another by darker ridges.
+The top neighbor-distance panel is a U-matrix plot that is commonly used in SOM studies (Ultsch 1993; Vesanto & Alhoniemi 2000; Wehrens & Buydens 2007).
+It shows the distances among adjacent SOM units for the representative replicate.
+Darker areas indicate relatively large distances between adjacent codebook vectors and mark boundaries (“ridges”) between groups. 
+Light areas indicate lower-distance “valleys,” so more internally similar areas of the map.
+Candidate lineages are therefore expected to occupy these lighter valleys separated from one another by darker ridges.
 
 The bottom clustering panel shows the inferred candidate-lineage boundaries for the same representative replicate.
 Individuals are shown at the SOM units to which they were mapped, and the red boundaries separate the inferred candidate lineages.
