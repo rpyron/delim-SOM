@@ -822,10 +822,9 @@ plot.variable.importance.SOM(Polygonia_SOM,
   <img src="figures/Figure_var_imp_map_var.png">
 </p>
 
-The variable-importance values can also be inspected directly in the clustering output using the `median_etasquared_variable_importance` component for cluster separation and the `median_map_variance_variable_importance` component for map variance.For example, we can extract the ten variables with the highest median cluster-separation importance from individual data layers.
-The variable-importance values can also be inspected directly using the `median_etasquared_variable_importance` component for cluster separation and the `median_map_variance_variable_importance` component for map variance in the clustering output.
+The variable-importance values can also be inspected directly in the clustering output using the `median_etasquared_variable_importance` component for cluster separation and the `median_map_variance_variable_importance` component for map variance.
 For example, we can extract the ten variables with the highest median cluster-separation importance from individual data layers.
-Here, `sort()` orders the variables by their importance values and places the most important variables first, `head()` retains only the first ten variables, and `round()` rounds the resulting importance values to two decimal places.
+Here, `sort()` orders the variables by their importance values and `decreasing = TRUE` places the most important variables first, `head()` retains only the first ten variables, and `round()` rounds the resulting importance values to two decimal places.
 
 For the continuous RGB wing color layer:
 
@@ -877,8 +876,8 @@ round(head(sort(Polygonia_SOM$median_etasquared_variable_importance[[5]], decrea
 
 *delimSOM* 2.0 provides two complementary ways to assess layer importance: by summarizing variable importance within each layer and by measuring how the inferred clustering changes when individual layers are omitted.
 
-`plot.layer.importance.varimp.SOM()` summarizes the distributions of variable-importance values presented in section 5.7 within each data layer.
-This provides an overview of how strongly the variables within each layer are associated with cluster separation or variation across the SOM map.
+First, `plot.layer.importance.varimp.SOM()` summarizes the distributions of variable-importance values presented above in section 5.7 within each data layer.
+This allows the relative importance of the different data layers to be compared based on how strongly their variables are associated with cluster separation or variation across the SOM map.
 
 ```r
 plot.layer.importance.varimp.SOM(Polygonia_SOM,
