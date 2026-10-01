@@ -911,33 +911,15 @@ plot.layer.importance.leaveoneout.SOM(Polygonia_SOM,
                                       bottom.margin = 7)
 ```
 
-
-## 6. Optional: compare clustering methods
-
-No single clustering method is expected to perform best for every possible data structure because performance depends on geometry, dimensionality, noise, overlap, and parameterization (Omran et al. 2007; Rodriguez et al. 2019).
-*delimSOM* 2.0 therefore implements six clustering and K-selection methods in `clustering.SOM()`: 
-`"kmeans+BICelbow"`, `"kmeans+BICthreshold"`, `"GMM+BICthreshold"`, `"hierarchical+DB"`, `"HDBSCAN"`, and `"OPTICS+Silhouette"`.
-
-Our testing (Schönberger et al. preprint) showed that the two k-means/BIC approaches provided the best overall balance of lineage recovery, assignment accuracy, and computational efficiency.
-We therefore recommend `"kmeans+BICelbow"` as the primary starting point, while alternative methods can provide useful complementary analyses.
-`"kmeans+BICthreshold"` performed similarly well, and `"GMM+BICthreshold"` also showed high lineage recovery and assignment accuracy but generally required longer computation times.
-
-By contrast, we do not recommend using `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"`.
-Hierarchical clustering showed high recovery and assignment accuracy but was prohibitively slow, whereas HDBSCAN and OPTICS were computationally faster but less reliable.
-For our *Polygonia* example, we can rerun clustering using `"kmeans+BICthreshold"`:
-
-```r
-Polygonia_SOM_kmeans_BICthreshold <- clustering.SOM(SOM.output = Polygonia_SOM_tr,
-                                                    clustering.method = "kmeans+BICthreshold")
-
-Polygonia_SOM_kmeans_BICthreshold$optim_k_summary
-```
+<p align="center">
+  <img src="figures/Figure_layerimp_loo.png">
+</p>
 
 
-## 7. Optional: hierarchical reanalysis
 
-Hierarchical reanalysis can test for additional structure within each recovered main candidate lineage (ref).
+## 6. Optional: hierarchical reanalysis
 
+Hierarchical reanalysis can be used to test for additional structure within each recovered main candidate lineage (Janes et al. 2017).
 For the *Polygonia* example:
 
 ```r
@@ -958,15 +940,12 @@ Polygonia_cluster2_data <- lapply(Polygonia_SOM$input_data,
                                   function(x) {
                                     x[Polygonia_cluster_samples$cluster2, , drop = FALSE]
                                   })
-
 Polygonia_SOM_tr_cluster2 <- train.SOM(input_data = Polygonia_cluster2_data,
                                        max.NA.row = 0.5,
                                        max.NA.col = 0.5)
-
 Polygonia_SOM_cluster2 <- clustering.SOM(SOM.output = Polygonia_SOM_tr_cluster2,
                                          clustering.method = "kmeans+BICelbow",
                                          max.k = 5)
-
 Polygonia_SOM_cluster2$optim_k_summary
 ```
 
@@ -996,11 +975,12 @@ Specifically, it assigns `"tanimoto"` to binary `0/1` data, `"manhattan"` to dos
 
 When `verbose = TRUE`, the inferred layer types and distance functions are printed during training.
 Users should verify that the automatically inferred distance works correctly and is appropriate for each layer.
+We recommend:
   
-- `"sumofsquares"` is recommended for most continuous quantitative variables because larger differences should generally contribute more strongly to sample separation.
-- `"tanimoto"` is recommended for binary presence/absence variables because it measures the proportion of mismatching binary states.
-- `"manhattan"` is recommended for SNP and other dosage-like genetic encodings because it sums absolute per-variable differences without squaring them, and is also often preferable for raw count data when counts are sparse, skewed, or zero-heavy.
-- `"sumofsquares"` may instead be more appropriate for count-derived variables when large abundance differences are biologically meaningful or when counts have been transformed, for example using log, square-root, or Hellinger transformations, to behave more like continuous predictors.
+- `"sumofsquares"` for most continuous quantitative variables because larger differences should generally contribute more strongly to sample separation.
+- `"tanimoto"` for binary presence/absence variables because it measures the proportion of mismatching binary states.
+- `"manhattan"` for SNP and other dosage-like genetic encodings because it sums absolute per-variable differences without squaring them, and is also often preferable for raw count data when counts are sparse, skewed, or zero-heavy.
+- `"sumofsquares"` for count-derived variables when large abundance differences are biologically meaningful or when counts have been transformed, for example using log, square-root, or Hellinger transformations, to behave more like continuous predictors.
 
 Distances can be supplied manually when needed:
   
@@ -1016,7 +996,7 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 ```
 
 Importantly, different variable types should be placed in separate layers when they have different data or variance structures and thus require different distance functions.
-For example, continuous morphometric measurements and binary morphological characters are better represented as separate layers rather than combined into a single matrix.
+For example, continuous morphometric measurements and binary morphological characters are better represented as separate layers rather than combined into a single dataset, as done in our *Polygonia* empirical example.
 
 
 ## Layer weights
@@ -1123,6 +1103,28 @@ Likewise, too few replicates make the final results more sensitive to stochastic
 
 The appropriate values depend on dataset size, dimensionality, number of layers, and computational resources.
 Users should inspect `plot.learning.SOM()` to determine whether training has stabilized.
+
+## 6. Optional: compare clustering methods
+
+No single clustering method is expected to perform best for every possible data structure because performance depends on geometry, dimensionality, noise, overlap, and parameterization (Omran et al. 2007; Rodriguez et al. 2019).
+*delimSOM* 2.0 therefore implements six clustering and K-selection methods in `clustering.SOM()`: 
+`"kmeans+BICelbow"`, `"kmeans+BICthreshold"`, `"GMM+BICthreshold"`, `"hierarchical+DB"`, `"HDBSCAN"`, and `"OPTICS+Silhouette"`.
+
+Our testing (Schönberger et al. preprint) showed that the two k-means/BIC approaches provided the best overall balance of lineage recovery, assignment accuracy, and computational efficiency.
+We therefore recommend `"kmeans+BICelbow"` as the primary starting point, while alternative methods can provide useful complementary analyses.
+`"kmeans+BICthreshold"` performed similarly well, and `"GMM+BICthreshold"` also showed high lineage recovery and assignment accuracy but generally required longer computation times.
+
+By contrast, we do not recommend using `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"`.
+Hierarchical clustering showed high recovery and assignment accuracy but was prohibitively slow, whereas HDBSCAN and OPTICS were computationally faster but less reliable.
+For our *Polygonia* example, we can rerun clustering using `"kmeans+BICthreshold"`:
+
+```r
+Polygonia_SOM_kmeans_BICthreshold <- clustering.SOM(SOM.output = Polygonia_SOM_tr,
+                                                    clustering.method = "kmeans+BICthreshold")
+
+Polygonia_SOM_kmeans_BICthreshold$optim_k_summary
+```
+
 
 
 ## Neighborhood function
