@@ -260,6 +260,8 @@ https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_
 
 ## 1. Set paths
 
+We first define the path to the directory containing the empirical example datasets.
+
 ```r
 #### Set environment ###########################################################
 example_dir <- file.path("Empirical_examples", "Dupuis_et_al_2018")
