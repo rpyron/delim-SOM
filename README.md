@@ -9,7 +9,7 @@ Any data that can be represented quantitatively for a common set of individuals 
 Each cell in the grid is represented by a codebook vector that summarizes the local multivariate "average" of the individuals mapped to it.
 During training, individuals are repeatedly matched to the most similar cell, and that cell and its neighbors are updated toward their measurements.
 Over many training steps, this produces an organized map where similar individuals become represented in nearby regions and dissimilar individuals farther apart (Kohonen 1998, 2014).
-Because the observations are summarized by few codebook vectors, SOMs can reduce sensitivity to  noise and reveal broader structure in complex datasets.
+Because the observations are summarized by few codebook vectors, SOMs can reduce sensitivity to noise and reveal broader structure in complex datasets.
 After SOM training, the codebook vectors are clustered into groups that are interpreted as candidate lineages (Pyron et al. 2023).
 
 The framework does not require predefined species assignments and explicitly permits K = 1, so subdivision is only inferred when supported (Janes et al. 2017; Pyron et al. 2023).
@@ -319,7 +319,7 @@ dim(Polygonia_SNP)
 print(Polygonia_SNP[1:2, 1:10])
 ```
 
-This retains all 961 biallelic SNPs as variables (columns) and 237 of the original 241 individuals (rows), with four individuals removed due to  more than 50% missing data:
+This retains all 961 biallelic SNPs as variables (columns) and 237 of the original 241 individuals (rows), with four individuals removed due to more than 50% missing data:
 
 ```text
 [1] 237 961
@@ -519,7 +519,7 @@ Polygonia_environmental <- as.data.frame(lapply(Polygonia_environmental, as.nume
 rownames(Polygonia_environmental) <- Polygonia_environmental_rownames
 ```
 We then transform skewed environmental variables with the help of the `transform.skewed.variables()` function in the *NicheDiv* *R* package (Schönberger et al. 2026). 
-Conveniently, this function automatically checks each variable for skewness and applies the most-appropriate transformation if skewed.
+Conveniently, this function automatically checks each variable for skewness and applies the most appropriate transformation if skewed.
 As above for the continuous morphology data, we subsequently filter variables with low variation or strong pairwise correlations using `remove.lowCV.multicollinearity.SOM()`.
 
 ```r
@@ -662,7 +662,7 @@ The representative replicate is selected by first identifying the most frequentl
 The top neighbor-distance panel is a U-matrix plot that is commonly used in SOM studies (Ultsch 1993; Vesanto & Alhoniemi 2000; Wehrens & Buydens 2007).
 It shows the distances among adjacent SOM units for the representative replicate.
 Darker areas indicate relatively large distances between adjacent codebook vectors and mark boundaries (“ridges”) between groups. 
-Light areas indicate lower-distance “valleys,” so more internally similar areas of the map.
+Light areas indicate lower-distance “valleys,” representing more internally similar areas of the map.
 Supported candidate lineages are therefore expected to occupy these lighter valleys separated from one another by darker ridges.
 
 The bottom clustering panel shows the inferred candidate-lineage boundaries for the same representative replicate.
@@ -1068,7 +1068,7 @@ plot.model.SOM(SOM_results,
 ```
 
 An existing figure with the same file name is overwritten by default (`overwrite = TRUE`).
-To prevent existing files from being overwritten, set `overwrite = FALSE` .
+To prevent existing files from being overwritten, set `overwrite = FALSE`.
 
 The same saving arguments are available for `plot.learning.SOM()`, `plot.layer.distance.scale.SOM()`, `plot.K.SOM()`, `plot.model.SOM()`, `plot.structure.SOM()`, `plot.map.SOM()`, `plot.variable.importance.SOM()`, `plot.layer.importance.varimp.SOM()`, and `plot.layer.importance.leaveoneout.SOM()`.
 
@@ -1267,10 +1267,10 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 
 ## Fixed-K analyses
 
-By default, alternative values from K = 1 to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
+By default, alternative values from one to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
 Importantly, users should inspect the complete K-support profile rather than relying only on the automatically selected K.
 Clustering can also be rerun for a single K value using `set.k`, which bypasses automatic K selection while retaining the replicate SOM framework.
-This is often useful if many K values are supported or if the automatic K-selection does not work well (e.g., because the distinct BIC is not detected).
+This is often useful if many K values are supported or if the automatic K-selection does not work well (e.g., because a distinct BIC elbow is not detected).
 Fixed-K analyses should be used to inspect or test specific alternative solutions rather than to replace evaluation of the full K-support profile.
 
 For example, forcing a three-lineage solution:
