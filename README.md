@@ -546,8 +546,7 @@ We can also see the applied transformations for some variables from the appended
 
 We next combine the six processed layers into a named list, which can then be supplied to `train.SOM()`.
 This function first checks the data, removes any remaining zero-variance variables, constructs the SOM grid based on the data, and then trains replicate SOMs.
-It also automatically identifies the individuals shared across all layers and removes non-matching individuals (i.e., it is not necessary to manually restrict all layers to the same individuals). 
-Conveniently, `train.SOM()` prints messages summarizing each processing and training step.
+It also automatically matches and retains individuals shared across all layers, and prints messages summarizing each processing and training step.
 
 Here, we use the recommended default settings.
 Individuals and variables containing more than 50% missing data are removed using `max.NA.row = 0.5` and `max.NA.col = 0.5`, respectively.
@@ -854,23 +853,6 @@ round(head(sort(Polygonia_SOM$median_etasquared_variable_importance[[2]], decrea
                     0.61
 ```
 
-For the environmental layer:
-
-```r
-round(head(sort(Polygonia_SOM$median_etasquared_variable_importance[[5]], decreasing = TRUE), 10), 2)
-```
-
-```text
-            TPI_cuberoot     Burned_area_05_log1p     Burned_area_06_log1p 
-                    0.19                     0.17                     0.14 
-                      RH     wetland_arcsine_sqrt                    EVI_4 
-                    0.14                     0.13                     0.12 
-                   EVI_3                PAS01_log snow_water_equivalent_10 
-                    0.11                     0.11                     0.10 
-   cropland_logit_shrunk 
-                    0.10
-```
-
 
 ### 5.8 Evaluate layer importance
 
@@ -893,7 +875,7 @@ plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 3.5)
 Second, `plot.layer.importance.leaveoneout.SOM()` performs a leave-one-layer-out analysis by rerunning the analysis while omitting one data layer at a time and comparing each reduced analysis with the full multilayer SOM.
 
 This provides a more direct assessment of how strongly each layer affects the inferred number of clusters, cluster composition, and individual assignment confidence after each layer is omitted. 
-If a layer is important, we would expect its omission to cause larger changes in the inferred number of clusters, cluster composition, or individual assignment confidence.
+If a layer is important, its omission should therefore produce larger changes in these measures.
 Because SOM training and clustering are repeated for each omitted layer, this analysis is substantially more computationally intensive and might take a couple of hours depending on the scale of the dataset.
 
 The plot contains three complementary measures of layer importance.
@@ -1012,9 +994,6 @@ Polygonia gracilis gracilis     Polygonia gracilis zephyrus     Polygonia progne
 - Preprocess variables to transform skewness and remove low-information and strongly redundant predictors.
 - Inspect support across alternative values of K rather than relying only on the most frequently selected K.
 - Treat inferred clusters as candidate-lineage hypotheses rather than definitive taxonomic conclusions.
-- Data with different structures should be included as separate layers.
-- Perform hierarchical reanalysis to detect weaker structure within a strongly supported candidate lineage.
-- Consider the biological independence of variables and data layers rather than only the number of variables they contain.
 - Species-rich systems and datasets with small or strongly uneven within-lineage sample sizes require more cautious interpretation or additional analyses.
 
 
@@ -1054,10 +1033,9 @@ For example, continuous morphometric measurements and binary morphological chara
 For multilayer analyses, `train.SOM()` automatically normalizes layer-specific distance scales so that layers with larger raw distances do not automatically dominate SOM training.
 Users can supply `manual.layer.weights` to adjust the relative influence of individual layers.
 These user-defined weights are combined with the internal distance-normalization weights rather than replacing them.
-Manual weighting can be useful when some layers have greater measurement uncertainty, lower information content, stronger environmental noise, or known differences in biological relevance.
-For instance, layers can be weighted according to their expected reliability and biological informativeness, with less reliable or noisier layers given lower weight and layers representing clearer evolutionary signal given greater influence.
-  
-  ```r
+Manual weighting can be useful when layers differ in measurement uncertainty, information content, environmental noise, or biological relevance, with less reliable or noisier layers given lower weight.  
+
+```r
 SOM_tr <- train.SOM(input_data = SOM_data,
                     manual.layer.weights = c(1, 1, 0.5, 1))
 ```
@@ -1077,8 +1055,6 @@ Supported file types are `"svg"`, `"png"`, and `"jpg"`.
 If `file.name = NULL`, a default file name is generated automatically.
 Figure dimensions can be adjusted using `width` and `height` in centimeters.
 Raster-image resolution can be controlled using `resolution` in dpi.
-
-For example:
 
 ```r
 plot.model.SOM(SOM_results,
@@ -1239,8 +1215,6 @@ These default values performed well in our analyses and experience.
 Optional learning-rate tuning can be enabled with `learning.rate.tuning = TRUE`.
 When enabled, `train.SOM()` tests alternative initial and final learning-rate combinations and selects the combination with the lowest mean quantization error, which measures how closely samples are represented by their best-matching SOM units.
 
-For example:
-
 ```r
 SOM_tr_tuned <- train.SOM(input_data = SOM_data,
                           learning.rate.tuning = TRUE)
@@ -1283,8 +1257,6 @@ Replicates are run in parallel by default via `parallel = TRUE`, which is especi
 In our runtime comparison, parallel execution improved computational scalability for datasets with large numbers of variables, whereas parallelization was less efficient for small datasets.
 The number of cores can be specified using `N.cores`. 
 Using 3–4 cores worked well in our testing, whereas using more cores often slowed computation considerably.
-
-For example:
   
   ```r
 SOM_tr <- train.SOM(input_data = SOM_data,
@@ -1325,8 +1297,6 @@ plot.model.SOM(SOM_results,
 
 `train.SOM()`, `clustering.SOM()`, and `plot.layer.importance.leaveoneout.SOM()` can require substantial computation time.
 Their results can therefore be saved and automatically reused when the corresponding result files are already present.
-
-For example:
 
 ```r
 SOM_tr <- train.SOM(input_data = SOM_data,
@@ -1369,17 +1339,14 @@ For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `ov
 
 # Future directions
 
-A current limitation of *delimSOM* is that the same individuals must be represented across all included data layers.
-In practice, genomic, morphological, behavioral, ecological, and life-history datasets are often collected independently and may therefore contain different sets of individuals.
-Environmental information may also originate from occurrence records that are not linked to the specimens used for genomic or phenotypic measurements, while older studies frequently report only species-level summaries rather than individual-level data.
-Restricting analyses to individuals shared across all layers can consequently lead to substantial sample loss and may limit the number of existing datasets that can be analyzed using a fully integrative framework.
-This makes *delimSOM* particularly well suited to prospective studies in which multiple data types are collected from the same specimens.
-Future development could relax this requirement by allowing partial overlap among layers and by developing approaches for integrating heterogeneous datasets with missing information across layers.
+A current limitation of *delimSOM* is that the same individuals must be represented across all data layers.
+Because genomic, morphological, behavioral, ecological, and life-history data are often collected from different specimens or sources, restricting analyses to shared individuals can substantially reduce sample sizes and limit the use of existing datasets.
+*delimSOM* is therefore particularly well suited to prospective studies in which multiple data types are collected from the same specimens.
+Future development could allow partial overlap among layers and better integration of heterogeneous datasets with missing information across layers.
 
-Another promising direction is to connect the inferred candidate-lineage structure more directly with the biological processes underlying divergence.
-For example, phenotypic or ecological variables identified as important for lineage separation could be linked to genomic variation using genotype–phenotype or genotype–environment association approaches (e.g., Forester et al. 2018).
-This could help identify genomic regions associated with morphological differentiation, ecological divergence, or adaptation to contrasting environments.
-Such extensions would allow *delimSOM* not only to identify candidate lineages, but also to provide a starting point for investigating the genomic basis of the differences among them.
+Another promising direction is to connect candidate-lineage structure with the processes underlying divergence.
+Phenotypic or ecological variables important for lineage separation could be linked to genomic variation using genotype–phenotype or genotype–environment association approaches (e.g., Forester et al. 2018).
+This could help identify genomic regions associated with morphological or ecological differentiation and extend *delimSOM* from delimiting candidate lineages toward investigating the genomic basis of their divergence.
 
 
 # Feedback
@@ -1396,6 +1363,8 @@ R. Alexander Pyron: rpyron@gwu.edu
 - Cottrell, M., & Letrémy, P. (2005). Missing values: Processing with the Kohonen algorithm. *ASMDA 2005*, 489–496.
 
 - Dupuis, J. R., McDonald, C. M., Acorn, J. H., & Sperling, F. A. H. (2018). Genomics-informed species delimitation to support morphological identification of anglewing butterflies (Lepidoptera: Nymphalidae: *Polygonia*). *Zoological Journal of the Linnean Society*, 183(2), 372–389. https://doi.org/10.1093/zoolinnean/zlx081
+
+- Forester, B. R., Lasky, J. R., Wagner, H. H., & Urban, D. L. (2018). Comparing methods for detecting multilocus adaptation with multivariate genotype–environment associations. *Molecular Ecology*, 27(9), 2215–2233. https://doi.org/10.1111/mec.14584
 
 - Hollister, J. W. (2025). *elevatr: Access elevation data from various APIs*. R package version 0.99.1. https://CRAN.R-project.org/package=elevatr/
 
