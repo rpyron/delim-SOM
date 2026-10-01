@@ -655,25 +655,28 @@ plot.K.SOM(Polygonia_SOM)
 
 ### 5.4 Visualize SOM topology and candidate lineages
 
-We next visualize the trained SOM topology and inferred candidate lineages for a representative replicate using `plot.model.SOM()`.
+We next visualize the trained SOM topology and inferred candidate lineages using `plot.model.SOM()`.
+
+With the recommended `replicate.mode = "representative"`, this is done for a representative replicate rather than simply the first or a random replicate.
 The representative replicate is selected by first identifying the most frequently inferred K across retained replicates and then, among replicates supporting that K, choosing the replicate with the highest mean pairwise Adjusted Rand Index relative to the other candidate replicates.
 
 The top neighbor-distance panel is a U-matrix plot that is commonly used in SOM studies (Ultsch 1993; Vesanto & Alhoniemi 2000; Wehrens & Buydens 2007).
 It shows the distances among adjacent SOM units for the representative replicate.
 Darker areas indicate relatively large distances between adjacent codebook vectors and mark boundaries (“ridges”) between groups. 
 Light areas indicate lower-distance “valleys,” so more internally similar areas of the map.
-Candidate lineages are therefore expected to occupy these lighter valleys separated from one another by darker ridges.
+Supported candidate lineages are therefore expected to occupy these lighter valleys separated from one another by darker ridges.
 
 The bottom clustering panel shows the inferred candidate-lineage boundaries for the same representative replicate.
 Individuals are shown at the SOM units to which they were mapped, and the red boundaries separate the inferred candidate lineages.
-Compact and contiguous cluster regions indicate strong correspondence between the inferred clustering and the learned SOM topology.
-In contrast, fragmented cluster regions, where the same inferred cluster occurs in disconnected parts of the SOM map, indicate reduced topological coherence and may reflect imperfect preservation of the underlying multivariate structure by the two-dimensional SOM, complex or gradual structure in the data, or an overly fine clustering solution.
+Contiguous cluster regions indicate strong correspondence between the inferred clustering and the learned SOM topology.
+Fragmented cluster regions with the same inferred cluster occurring in disconnected parts of the SOM map indicate reduced topological coherence and can reflect imperfect preservation of the underlying multivariate structure by the two-dimensional SOM or an overly fine clustering solution.
 
-Below, we see three compact yellow valleys that are clearly separated by dark-blue boundaries or ridges that correspond closely to the inferred candidate-lineage boundaries in the bottom plot. 
+Below, we clearly see three yellow valleys that are distinctly separated by dark-blue ridges that correspond closely to the inferred candidate-lineage boundaries in the bottom plot. 
 This strongly supports the three inferred candidate lineages.
-It also provides a clear example of a coherent SOM topology with well-defined and contiguous cluster structure, whereas in other empirical datasets the ridges are often weaker or less distinct, the valleys more irregular or fragmented, or transitions between candidate lineages more gradual (as in some empirical examples in Schönberger et al. preprint).
+It also provides a clear example of a coherent SOM topology with well-defined and contiguous cluster structure.
+In other empirical datasets, the ridges are often less distinct, the valleys more fragmented, or transitions between candidate lineages more gradual (as in some empirical examples in Schönberger et al. preprint).
 Another characteristic visible in the plot is that some SOM units contain no mapped individuals.
-This is not unusual and is generally not a cause for concern because the SOM grid represents a smoothed topological surface of the data, so that empty or sparsely occupied units can occur between more strongly occupied regions.
+This is not unusual and is generally not concerning because the SOM grid represents a smoothed topological surface of the data, so that empty or sparsely occupied units can occur between more strongly occupied regions.
 
 ```r
 plot.model.SOM(Polygonia_SOM, replicate.mode = "representative")
@@ -684,12 +687,11 @@ plot.model.SOM(Polygonia_SOM, replicate.mode = "representative")
 </p>
 
 
-We can also examine the same plot for the alternative, less-supported K = 4 solution by specifying `set.k = 4`.
-This restricts the visualization to SOM replicates in which four clusters were inferred and selects the representative replicate from this subset.
+We can also examine the same plot for the alternative, less-supported K = 4 solution using `set.k`.
+This restricts the visualization to replicates in which four clusters were inferred and determines the representative replicate from this subset.
 
 The plot below shows that the K = 4 solution provides a less clear example of correspondence between the neighbor-distance topology and the inferred clustering.
 The four inferred clusters remain fully contiguous in the bottom panel, but the upper panel shows less distinct valleys and more fragmented ridges, with several cluster boundaries lacking a strong corresponding neighbor-distance boundary.
-This illustrates how an inferred clustering solution can be visualized even when its separation is less clearly reflected in the underlying SOM topology.
 This weaker correspondence is also consistent with the lower support for K = 4 in the clustering results.
 
 ```r
@@ -702,16 +704,16 @@ plot.model.SOM(Polygonia_SOM,
   <img src="figures/Figure_model_k4.png">
 </p>
 
-## ----------------------
+
 ### 5.5 Plot replicate-consensus assignments
 
 `plot.structure.SOM()` provides a STRUCTURE-like visualization of replicate-consensus assignment coefficients.
 Each bar represents one individual and summarizes how consistently that individual is assigned to each candidate lineage across SOM replicates.
-Assignments distributed across multiple clusters indicate that an individual is placed inconsistently among candidate lineages across SOM replicates.
-Such intermediate assignments may indicate weak or incomplete lineage differentiation associated with admixture or discordance among data sources, while a similar pattern across many individuals may also be consistent with recent divergence among lineages.
+Assignments distributed across multiple clusters indicate that an individual is placed inconsistently among candidate lineages across replicates.
+Such intermediate assignments may indicate weak lineage differentiation associated with admixture or discordance among data sources, while a similar pattern across many individuals may also be consistent with recent divergence.
 
 Here, we use `bottom.margin` to adjust the lower plot margin for the individual labels.
-The plot shows four cluster components rather than only the more frequently recovered K = 3 solution because the function summarizes assignments across all retained SOM replicates, including both K = 3 and K = 4 replicates.
+The plot shows four cluster components rather than only the more frequently recovered K = 3 solution because the function summarizes assignments across all retained replicates across all K.
 Overall, we see three major clusters, with most individuals showing highly consistent assignments to one of the three major candidate lineages, thus reflecting the predominant K = 3 solution.
 The fourth cluster occurs only as a relatively small assignment component in a subset of individuals.
 
@@ -722,9 +724,9 @@ plot.structure.SOM(Polygonia_SOM, bottom.margin = 3.5)
   <img src="figures/Figure_structure.png">
 </p>
 
-We can also extract and evaluate the replicate-consensus cluster assignment coefficients underlying the plot.
+We can also extract and evaluate the replicate-consensus cluster assignment coefficients directly.
 These are stored in the `$ancestry_matrix` component of the clustering output.
-It is also often useful to combine these coefficients with species labels to compare the inferred candidate-lineage assignments with existing species identifications.
+Furthermore, it is often useful to combine these coefficients with species labels to compare the inferred candidate-lineage assignments with existing species hypotheses.
 Because the individual IDs are stored as row names in both the ancestry matrix and `Polygonia_metadata`, we can match the species names to the corresponding individuals.
 We can then inspect the dataframe:
   
@@ -744,7 +746,7 @@ head(Polygonia_ancestry)
 8307         0      0.8787879  0.1212121       0    Polygonia faunus
 ```
 
-This full data frame together with the STRUCTURE-like barplot reveals that the purple and blue clusters correspond to *P. satyrus* (purple) and *P. faunus* (blue), respectively. 
+Evaluating this data frame together with the STRUCTURE-like barplot reveals that the purple and blue clusters correspond to *P. satyrus* (purple) and *P. faunus* (blue), respectively. 
 However, *P. gracilis* and *P. progne* are both predominantly assigned to the green cluster, corresponding to a single candidate lineage.
 These two species are separated only by a small proportion of replicates, with *P. gracilis* receiving the yellow cluster component and *P. progne* the blue cluster component.
 
@@ -780,9 +782,10 @@ plot.map.SOM(SOM.output = Polygonia_SOM,
 
 `clustering.SOM()` calculates two complementary measures of variable importance that can be visualized using `plot.variable.importance.SOM()`.
 
-`mode = "Cluster.separation"` visualizes cluster-separation importance and is generally the more directly relevant measure for identifying which variables distinguish the inferred candidate lineages.
-Specifically, it uses an ANOVA-like η² effect size to quantify how strongly each variable is associated with separation among the inferred clusters.
+`mode = "Cluster.separation"` visualizes cluster-separation importance and is generally the more relevant measure for identifying which variables distinguish the inferred candidate lineages.
+It uses an ANOVA-like η² effect size to quantify how strongly each variable is associated with separation among the inferred clusters.
 Higher η² values indicate that a larger proportion of variation in that variable is associated with the inferred cluster structure.
+
 Here, we use `bottom.margin` and `left.margin` to adjust the plot margins depending on the length of the variable labels.
 We also use `bars.threshold.N` to set the threshold for omitting variable labels and boxplot whiskers for layers containing more than twenty displayed variables, which reduces visual clutter.
 
@@ -802,8 +805,9 @@ plot.variable.importance.SOM(Polygonia_SOM,
 Second, `mode = "Map.variance"` visualizes map-variance importance, which quantifies how strongly each variable varies across the trained SOM map, irrespective of whether this variation corresponds directly to the final cluster boundaries.
 Higher values therefore indicate greater variation of a variable across the SOM map, which may reflect cluster separation, continuous gradients, or within-cluster variation.
 Map variance is primarily intended as a complementary measure to cluster-separation importance because strong variation across the SOM does not necessarily mean that a variable strongly distinguishes the inferred candidate lineages.
-If a variable shows both high cluster-separation importance (η²) and high map variance, this provides additional evidence for its importance because the variable both varies strongly across the SOM map and is aligned with the inferred cluster structure.
+If a variable shows both high η² cluster-separation importance and map variance, this provides additional evidence for its importance because the variable both varies strongly across the SOM map and is aligned with the inferred cluster structure.
 Map variance is also particularly useful when K = 1, for which cluster-separation importance cannot be calculated because no between-cluster partition exists. 
+
 As above, we use `bottom.margin`, `left.margin`, and `bars.threshold.N` to modify the plot.
 
 ```r
@@ -818,8 +822,7 @@ plot.variable.importance.SOM(Polygonia_SOM,
   <img src="figures/Figure_var_imp_map_var.png">
 </p>
 
-The variable-importance values can also be inspected directly using the `median_etasquared_variable_importance` for cluster separation and `median_map_variance_variable_importance` for map variance component of the clustering output.
-For example, we can extract the ten variables with the highest median cluster-separation importance from individual data layers.
+The variable-importance values can also be inspected directly in the clustering output using the `median_etasquared_variable_importance` component for cluster separation and the `median_map_variance_variable_importance` component for map variance.For example, we can extract the ten variables with the highest median cluster-separation importance from individual data layers.
 The variable-importance values can also be inspected directly using the `median_etasquared_variable_importance` component for cluster separation and the `median_map_variance_variable_importance` component for map variance in the clustering output.
 For example, we can extract the ten variables with the highest median cluster-separation importance from individual data layers.
 Here, `sort()` orders the variables by their importance values and places the most important variables first, `head()` retains only the first ten variables, and `round()` rounds the resulting importance values to two decimal places.
