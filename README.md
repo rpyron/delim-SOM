@@ -917,40 +917,92 @@ plot.layer.importance.leaveoneout.SOM(Polygonia_SOM,
 
 
 
-## 6. Optional: hierarchical reanalysis
+## 6. Hierarchical reanalysis
 
 Hierarchical reanalysis can be used to test for additional structure within each recovered main candidate lineage (Janes et al. 2017).
-For the *Polygonia* example:
+For the *Polygonia* example, we first assign each individual to the candidate lineage for which it has the highest ancestry proportion and split the samples by cluster:
 
 ```r
-#### Assign individuals to dominant candidate lineage #########################
-Polygonia_clusters <- apply(Polygonia_SOM$ancestry_matrix, 1, which.max)
-Polygonia_clusters <- paste0("cluster", Polygonia_clusters)
+#### Hierarchical reanalysis ###################################################
+Polygonia_clusters <- apply(Polygonia_SOM$ancestry_matrix, 1, which.max) #assign each sample to cluster with highest ancestry proportion
+Polygonia_clusters <- paste0("cluster", Polygonia_clusters) #rename clusters
 table(Polygonia_clusters)
 Polygonia_cluster_samples <- split(rownames(Polygonia_SOM$ancestry_matrix), Polygonia_clusters)
 ```
 
-The main *Polygonia* analysis recovered three clusters containing approximately 79, 75, and 46 individuals.
-The middle cluster contained *P. gracilis* + *P. progne*.
-
-We can subset this candidate lineage and rerun the workflow:
+The main *Polygonia* analysis recovered three candidate lineages (K = 3) containing 46, 79, and 75 individuals.
+We can subset each candidate lineage from the original input data and rerun the complete SOM training and clustering workflow:
 
 ```r
-Polygonia_cluster2_data <- lapply(Polygonia_SOM$input_data,
-                                  function(x) {
-                                    x[Polygonia_cluster_samples$cluster2, , drop = FALSE]
-                                  })
-Polygonia_SOM_tr_cluster2 <- train.SOM(input_data = Polygonia_cluster2_data,
+Polygonia_cluster1_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
+Polygonia_cluster2_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster2, , drop = FALSE]) #cluster 2 subset
+Polygonia_cluster3_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster3, , drop = FALSE]) #cluster 3 subset
+
+
+Polygonia_SOM_tr_cluster1 <- train.SOM(Polygonia_cluster1_data,
                                        max.NA.row = 0.5,
                                        max.NA.col = 0.5)
-Polygonia_SOM_cluster2 <- clustering.SOM(SOM.output = Polygonia_SOM_tr_cluster2,
-                                         clustering.method = "kmeans+BICelbow",
-                                         max.k = 5)
+Polygonia_SOM_cluster1 <- clustering.SOM(Polygonia_SOM_tr_cluster1,
+                                         clustering.method = "kmeans+BICelbow")
+Polygonia_SOM_cluster1$optim_k_summary
+
+
+Polygonia_SOM_tr_cluster2 <- train.SOM(Polygonia_cluster2_data,
+                                       max.NA.row = 0.5,
+                                       max.NA.col = 0.5)
+Polygonia_SOM_cluster2 <- clustering.SOM(Polygonia_SOM_tr_cluster2,
+                                         clustering.method = "kmeans+BICelbow")
 Polygonia_SOM_cluster2$optim_k_summary
+
+Polygonia_SOM_tr_cluster3 <- train.SOM(Polygonia_cluster3_data,
+                                       max.NA.row = 0.5,
+                                       max.NA.col = 0.5)
+Polygonia_SOM_cluster3 <- clustering.SOM(Polygonia_SOM_tr_cluster3,
+                                         clustering.method = "kmeans+BICelbow")
+Polygonia_SOM_cluster3$optim_k_summary
 ```
 
-The manuscript analysis recovered K = 2 with 100% support in this hierarchical analysis, separating *P. gracilis* and *P. progne*.
-No further subdivision was supported within the primary *P. faunus* or *P. satyrus* lineages.
+Clusters 1 and 2 each recovered K = 1 with 100% support, whereas cluster 3 recovered K = 2 with 100% support. 
+This indicates ... but  additional structure within cluster 3.
+
+The hierarchical result for cluster 3 can then be evaluated using the same visualization and diagnostic functions as the primary analysis:
+
+```r
+plot.model.SOM(Polygonia_SOM_cluster3,
+               replicate.mode = "representative")
+plot.structure.SOM(Polygonia_SOM_cluster3,
+                   bottom.margin = 9.5)
+plot.K.SOM(Polygonia_SOM_cluster3)
+plot.map.SOM(SOM.output = Polygonia_SOM_cluster3,
+             Coordinates = Polygonia_spatial[, c("Latitude", "Longitude")],
+             lat.buffer.range = 5,
+             lon.buffer.range = 5,
+             pie.size = 1.5,
+             north.arrow.position = c(0.04, 0.89),
+             north.arrow.length = 1,
+             north.arrow.N.position = 0.3,
+             north.arrow.N.size = 1)
+plot.variable.importance.SOM(Polygonia_SOM_cluster3,
+                             mode = "Cluster.separation",
+                             left.margin = 5)
+plot.variable.importance.SOM(Polygonia_SOM_cluster3,
+                             mode = "Map.variance",
+                             left.margin = 5)
+plot.layer.importance.varimp.SOM(Polygonia_SOM_cluster3,
+                                 bottom.margin = 3.5)
+plot.layer.importance.leaveoneout.SOM(Polygonia_SOM_cluster3,
+                                      bottom.margin = 6.5)
+```
+
+The species composition of the hierarchical cluster-3 analysis can also be compared with the original taxonomic assignments:
+
+```r
+Polygonia_ancestry_SOM_cluster3 <- as.data.frame(Polygonia_SOM_cluster3$ancestry_matrix)
+Polygonia_ancestry_SOM_cluster3$Species <- Polygonia_metadata$Species[match(rownames(Polygonia_SOM_cluster3$ancestry_matrix), rownames(Polygonia_metadata))]
+Polygonia_ancestry_SOM_cluster3$Species_revised <- Polygonia_metadata$Species_revised[match(rownames(Polygonia_SOM_cluster3$ancestry_matrix), rownames(Polygonia_metadata))]
+length(unique(Polygonia_ancestry_SOM_cluster3$Species))
+table(Polygonia_ancestry_SOM_cluster3$Species)
+```
 
 
 # C) Advanced settings and further recommendations
@@ -1106,7 +1158,6 @@ We therefore recommend `"kmeans+BICelbow"` as the primary starting point, while 
 By contrast, we do not generally recommend using `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"`.
 Hierarchical clustering showed high recovery and assignment accuracy but was prohibitively slow, whereas HDBSCAN and OPTICS were computationally faster but less reliable.
 
-
 The alternative clustering methods can be compared using the same trained SOM:
 
 ```r
@@ -1137,6 +1188,8 @@ SOM_OPTICS_Silhouette$optim_k_summary
 `train.SOM()` allows either `"gaussian"` or `"bubble"` neighborhood functions via `training.neighborhoods`.
 The bubble function applies equal influence to all SOM units within the neighborhood radius, whereas the Gaussian function applies progressively less influence with increasing distance from the best-matching unit (Kohonen 1998).
 For both functions, the neighborhood radius decreases during training, shifting from broad map organization to finer local refinement (Kohonen 2014; Wehrens & Kruisselbrink 2018).
+Our analyses (Schönberger et al. preprint) showed that the Gaussian neighborhood more reliably recovered the correct number of lineages and produced lower topographic error, whereas the bubble neighborhood produced lower quantization error and shorter runtimes.
+We therefore recommend the Gaussian neighborhood as the primary option because it more reliably recovered the correct number of lineages and better preserved SOM topology.
 
 The Gaussian neighborhood is used by default:
 
@@ -1149,10 +1202,6 @@ Alternatively, the bubble neighborhood can be used:
 ```r
 SOM_tr_bubble <- train.SOM(input_data = SOM_data, training.neighborhoods = "bubble")
 ```
-
-Our analyses (Schönberger et al. preprint) showed that the Gaussian neighborhood more reliably recovered the correct number of lineages and produced lower topographic error, whereas the bubble neighborhood produced lower quantization error and shorter runtimes.
-We therefore recommend the Gaussian neighborhood as the primary option because it more reliably recovered the correct number of lineages and better preserved SOM topology.
-
 
 ## Learning-rate tuning
 
@@ -1177,37 +1226,28 @@ Learning-rate tuning may be useful for small datasets or short exploratory analy
 
 ## SOM grid size
 
-By default:
-  
-  ```r
-grid.size = NULL
-```
+By default, `grid.size = NULL`, so `train.SOM()` automatically determines both the size and shape of the SOM grid based on sample size and the structure of the input data.
 
-so `train.SOM()` automatically determines both the size and shape of the SOM grid from sample size and the structure of the input data.
-
-The default:
-  
-  ```r
-grid.multiplier = 5
-```
-
-controls the approximate number of SOM units relative to sample size.
-
-Larger values of `grid.multiplier` produce finer maps with more SOM units, whereas smaller values produce coarser maps.
-
-A grid that is too coarse can merge distinct structure, while an overly fine grid can fragment clusters, increase the number of empty units, and increase computation time.
-
+The default `grid.multiplier = 5` controls the approximate number of SOM units relative to sample size.
+Larger values produce finer maps with more SOM units, whereas smaller values produce coarser maps.
+A grid that is too coarse can merge distinct structure, whereas an overly fine grid can fragment clusters, increase the number of empty units, and increase computation time.
 We therefore generally recommend retaining the automatic grid construction unless there is a specific reason to modify map resolution.
+For datasets with relatively few samples, `train.SOM()` may abort if the automatically generated grid is too large and return a message recommending a smaller `grid.multiplier`.
+In this case, decrease `grid.multiplier` until an appropriate grid can be constructed.
 
-A user-defined grid can be supplied as:
-  
-  ```r
+A user-defined grid can be supplied directly:
+
+```r
 SOM_tr <- train.SOM(input_data = SOM_data,
                     grid.size = c(5, 4))
 ```
-or using the grid multiplier.
 
-Note that If data is scarce, train.SOM will sometimes abort with a message to decrease the grid multiplier.
+Alternatively, map resolution can be adjusted using `grid.multiplier`:
+
+```r
+SOM_tr <- train.SOM(input_data = SOM_data,
+                    grid.multiplier = 4)
+```
 
 
 ## Parallel training
@@ -1230,95 +1270,28 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 
 By default, alternative values from K = 1 to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
 Importantly, users should inspect the complete K-support profile rather than relying only on the automatically selected K.
-
-Clustering can therefore also be rerun for a single K value using `set.k`, which bypasses automatic K selection while retaining the replicate SOM framework.
+Clustering can also be rerun for a single K value using `set.k`, which bypasses automatic K selection while retaining the replicate SOM framework.
+This is often useful if many K values are supported or if the automatic K-determination does not work well (e.g., because the distinct BIC is not detected).
+Fixed-K analyses should be used to inspect or test specific alternative solutions rather than to replace evaluation of the full K-support profile.
 
 For example, forcing a three-lineage solution:
-  
-  ```r
+
+```r
 SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
                                  set.k = 3,
                                  clustering.method = "kmeans+BICelbow")
 ```
 
 Specific K values can also be inspected using `plot.model.SOM()` without rerunning SOM training:
-  
-  ```r
-plot.model.SOM(Polygonia_SOM,
+
+```r
+plot.model.SOM(SOM_results,
                replicate.mode = "representative",
                set.k = 3)
-
-plot.model.SOM(Polygonia_SOM,
+plot.model.SOM(SOM_results,
                replicate.mode = "representative",
                set.k = 4)
 ```
-
-Fixed-K analyses should generally be used to inspect or test specific alternative solutions rather than to replace evaluation of the full K-support profile.
-
-
-## BIC threshold
-
-The threshold-based clustering approaches use:
-  
-  ```r
-BIC.thresh
-```
-
-to determine whether the improvement in BIC is sufficiently large to support an additional cluster.
-
-The default threshold should generally be retained unless there is a specific analytical reason to alter the level of evidence required for additional subdivision.
-
-Changing this threshold directly affects how conservative K selection is, so analyses using alternative thresholds are best treated as sensitivity analyses.
-
-
-## Reusing trained SOMs
-
-SOM training and clustering are separate steps in *delimSOM* 2.0.
-
-This allows alternative clustering methods, values of `max.k`, or fixed-K analyses to be applied to the same `train.SOM()` output without retraining the SOMs.
-
-For example:
-  
-  ```r
-SOM_kmeans_elbow <- clustering.SOM(SOM.output = SOM_tr,
-                                   clustering.method = "kmeans+BICelbow")
-
-SOM_kmeans_threshold <- clustering.SOM(SOM.output = SOM_tr,
-                                       clustering.method = "kmeans+BICthreshold")
-```
-
-This is particularly useful for sensitivity analyses because the different clustering approaches are then applied to exactly the same trained SOM replicates.
-
-
-
-
-## Interpreting K = 1 and weak structure
-
-One important feature of *delimSOM* 2.0 is that K = 1 is explicitly allowed.
-
-K = 1 should therefore be interpreted as an absence of sufficient support for subdivision under the analyzed data and settings rather than as a failed analysis.
-
-Mixed support across K values or intermediate replicate-consensus assignments may indicate weak differentiation, recent divergence, admixture, discordance among data layers, or a transition between population structure and stronger lineage divergence.
-
-In such situations, users should consider:
-  
-  - the complete K-support profile;
-- replicate-consensus assignment coefficients;
-- SOM topology and neighbor-distance plots;
-- variable- and layer-importance results;
-- independent biological evidence;
-- hierarchical reanalysis of strongly supported broader candidate lineages.
-
-
-## Hierarchical reanalysis
-
-A conservative primary analysis may combine weakly differentiated lineages into a broader candidate lineage.
-When biologically justified, the samples assigned to such a lineage can be extracted and analyzed again using the same workflow.
-
-Hierarchical reanalysis can therefore help identify weaker substructure that is masked by stronger differentiation among the major lineages.
-
-However, hierarchical analyses should not be used simply to subdivide every recovered cluster until additional groups appear.
-Further subdivision should be supported by the K-support profile, assignment coefficients, SOM topology, and independent biological evidence.
 
 
 ## Saving and reusing results
@@ -1386,6 +1359,7 @@ For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `ov
 - Pyron, R. A., O’Connell, K. A., Duncan, S. C., Burbrink, F. T., & Beamer, D. A. (2023). Speciation hypotheses from phylogeographic delimitation yield an integrative taxonomy for seal salamanders (*Desmognathus monticola*). *Systematic Biology*, 72(1), 179–197. https://doi.org/10.1093/sysbio/syac065
 
 - Schönberger, D., MacDonald, Z. G., Schmidt, B. C., & Dupuis, J. R. (2026). NicheDiv: A DAPC framework to quantify niche divergence across highly multivariate environmental space. *bioRxiv*. https://doi.org/10.64898/2026.06.19.733388
+
 
 # Citation
 
