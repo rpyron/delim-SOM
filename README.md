@@ -198,20 +198,14 @@ For multilayer analyses, only individuals shared across all layers are retained.
 First, we train multiple SOM maps using the recommended defaults. 
 
 `N.steps` controls the number of training iterations for each SOM, while `N.replicates` controls the number of independently trained SOMs.
-Replicates are run in parallel by default via `parallel = TRUE` (recommended for large datasets), with the number of cores specified using `N.cores` (3-4 cores worked well in testing).
 Samples and variables containing more than 50% missing data are removed by default using `max.NA.row = 0.5` and `max.NA.col = 0.5`.
-Results can be saved during training using `save.SOM.results = TRUE` and `save.SOM.results.name`.
 
 ```r
 SOM_tr <- train.SOM(input_data = SOM_data,
-                    parallel = TRUE,
-                    N.cores = 3,
                     N.steps = 100,
                     N.replicates = 110,
                     max.NA.row = 0.5,
-                    max.NA.col = 0.5,
-                    save.SOM.results = TRUE,
-                    save.SOM.results.name = "SOM_tr.Rdata")
+                    max.NA.col = 0.5)
 ```
 
 
@@ -223,14 +217,11 @@ Although we implement six different clustering and K-selection approaches, we re
 it first applies k-means clustering to the codebook vectors across alternative K values and then uses a conservative BIC-elbow criterion to select the best-supported K.
 This approach performed best in our analyses (Schönberger et al. preprint) and has also been used successfully in previous SOM-based species-delimitation analyses (Pyron et al. 2023; Pyron 2023).
 `max.k` specifies the maximum number of candidate clusters evaluated.
-Results can be saved during clustering using `save.SOM.results = TRUE` and `save.SOM.results.name`.
 
 ```r
 SOM_results <- clustering.SOM(SOM.output = SOM_tr,
                               max.k = 10,
-                              clustering.method = "kmeans+BICelbow",
-                              save.SOM.results = TRUE,
-                              save.SOM.results.name = "SOM_results.Rdata")
+                              clustering.method = "kmeans+BICelbow")
 ```
 
 
@@ -562,13 +553,11 @@ Conveniently, `train.SOM()` prints messages summarizing the each processing and 
 
 Here, we use the recommended default settings.
 Individuals and variables containing more than 50% missing data are removed using `max.NA.row = 0.5` and `max.NA.col = 0.5`, respectively.
-Replicates are trained in parallel, and the training results are saved using the `save.SOM.results = TRUE` argument with the file name specified by `save.SOM.results.name`.
 Training for this dataset takes around 3-10 min.
 
 
 ```r
 #### Train SOM #################################################################
-
 Polygonia_all_data <- list(Morphology = Polygonia_morphology,
                            Morphology_2 = Polygonia_morphology_categorical,
                            SNP = Polygonia_SNP,
@@ -577,9 +566,7 @@ Polygonia_all_data <- list(Morphology = Polygonia_morphology,
                            Spatial = Polygonia_spatial)
 Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data,
                               max.NA.row = 0.5,
-                              max.NA.col = 0.5,
-                              save.SOM.results = TRUE,
-                              save.SOM.results.name = "Polygonia_SOM_tr.Rdata")
+                              max.NA.col = 0.5)
 ```
 
 
@@ -587,16 +574,12 @@ Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data,
 
 After SOM training, we cluster the resultant codebook vectors using the recommended `"kmeans+BICelbow"` approach.
 The optimal K is selected for each SOM replicate, allowing support for alternative K values to be summarized across replicates.
-As for SOM training, the clustering results are saved using `save.SOM.results = TRUE` with the file name specified by `save.SOM.results.name`.
 We can then evaluate the support for each K using the `$optim_k_summary` component of the output object.
 
 ```r
 #### Cluster SOM ###############################################################
-
 Polygonia_SOM <- clustering.SOM(SOM.output = Polygonia_SOM_tr,
-                                clustering.method = "kmeans+BICelbow",
-                                save.SOM.results = TRUE,
-                                save.SOM.results.name = "Polygonia_SOM_kmeansBICelbow.Rdata")
+                                clustering.method = "kmeans+BICelbow")
 Polygonia_SOM$optim_k_summary
 ```
 
@@ -804,7 +787,7 @@ We also use `bars.threshold.N` to set the threshold for omitting variable labels
 ```r
 plot.variable.importance.SOM(Polygonia_SOM,
                              mode = "Cluster.separation",
-                            bars.threshold.N = 20,
+                             bars.threshold.N = 20,
                              bottom.margin = 2,
                              left.margin = 5.8)
 ```
@@ -972,13 +955,11 @@ Polygonia_cluster2_data <- lapply(Polygonia_SOM$input_data,
 
 Polygonia_SOM_tr_cluster2 <- train.SOM(input_data = Polygonia_cluster2_data,
                                        max.NA.row = 0.5,
-                                       max.NA.col = 0.5,
-                                       save.SOM.results = FALSE)
+                                       max.NA.col = 0.5)
 
 Polygonia_SOM_cluster2 <- clustering.SOM(SOM.output = Polygonia_SOM_tr_cluster2,
                                          clustering.method = "kmeans+BICelbow",
-                                         max.k = 5,
-                                         save.SOM.results = FALSE)
+                                         max.k = 5)
 
 Polygonia_SOM_cluster2$optim_k_summary
 ```
@@ -993,50 +974,27 @@ No further subdivision was supported within the primary *P. faunus* or *P. satyr
 
 - Ensure that row names uniquely and consistently identify individuals across all layers.
 - Encode missing values as `NA`.
-- Preprocess variables to remove low-information and strongly redundant predictors.
+- Preprocess variables to transform skeweness and remove low-information and strongly redundant predictors.
 - Inspect support across alternative values of K rather than relying only on the most frequently selected K.
 - Treat inferred clusters as candidate-lineage hypotheses rather than definitive taxonomic conclusions.
-- Consider hierarchical reanalysis when weaker structure may occur within a strongly supported candidate lineage.
+- Data with different structures should be included as separate layers
+- Perform hierarchical reanalysis to detect weaker structure within a strongly supported candidate lineage.
 - Consider the biological independence of variables and data layers rather than only the number of variables they contain.
 - Species-rich systems and datasets with small or strongly uneven within-lineage sample sizes require more cautious interpretation or additional analyses.
-
-Our simulation and empirical results showed that performance was strongest when the number of lineages was relatively small and within-lineage sampling was sufficiently large (Schönberger et al. preprint).
-We therefore recommend approximately K ≤ 4 and at least 15 individuals per lineage when possible.
-Analyses outside these conditions should be interpreted more cautiously and ideally supported by complementary analyses, since recovery became less reliable as the number of lineages increased, sample sizes decreased, or sampling became strongly uneven.
-
-
-## Variable redundancy and preprocessing
-
-Because SOM training is distance-based, strongly redundant variables can repeatedly represent the same underlying biological signal and disproportionately influence the learned map.
-
-This consideration applies especially to genomic data.
-For example, multiple SNPs within the same RAD locus, linkage-disequilibrium block, inversion, or other tightly linked genomic region may represent partly redundant evolutionary information.
-Where appropriate, LD pruning or retaining representative markers from strongly linked regions can therefore improve the independence of the genomic information supplied to the SOM.
-
-The same principle applies across data layers.
-For example, environmental and spatial layers may partly represent the same geographic gradient, and multiple mitochondrial markers generally represent the same underlying mitochondrial genealogy.
-Internal layer normalization balances numerical distance scales among layers but does not remove biological redundancy within or among layers.
 
 
 ## Distance functions
 
-`train.SOM()` automatically infers a distance function from the numerical structure of each layer:
-  
-- binary `0/1` data: `"tanimoto"`
-- dosage-like `0/1/2` data: `"manhattan"`
-- other numeric continuous data: `"sumofsquares"`
+`train.SOM()` automatically infers a distance function from the numerical structure of each layer.
+Specifically, it assigns `"tanimoto"` to binary `0/1` data, `"manhattan"` to dosage-like `0/1/2` data, and `"sumofsquares"` to other numeric continuous data.
 
 When `verbose = TRUE`, the inferred layer types and distance functions are printed during training.
-Users should verify that the automatically inferred distance is biologically appropriate for each layer because numerical structure alone cannot always determine the intended meaning of a dataset.
-
-In general:
+Users should verify that the automatically inferred distance works correctly and is appropriate for each layer.
   
-- `"sumofsquares"` is recommended for continuous variables when larger differences should contribute disproportionately to sample separation.
-- `"euclidean"` can be used when distances should increase linearly with multivariate displacement.
-- `"tanimoto"` is appropriate for binary presence/absence variables.
-- `"manhattan"` is recommended for SNP dosages and other dosage-like genetic encodings.
-- `"manhattan"` may also be preferable for sparse, skewed, or zero-heavy count data.
-- transformed count data that behave more like continuous variables may instead be more appropriately analyzed using `"sumofsquares"`.
+- `"sumofsquares"` is recommended for most continuous quantitative variables because larger differences should generally contribute more strongly to sample separation.
+- `"tanimoto"` is recommended for binary presence/absence variables because it measures the proportion of mismatching binary states.
+- `"manhattan"` is recommended for SNP and other dosage-like genetic encodings because it sums absolute per-variable differences without squaring them, and is also often preferable for raw count data when counts are sparse, skewed, or zero-heavy.
+- `"sumofsquares"` may instead be more appropriate for count-derived variables when large abundance differences are biologically meaningful or when counts have been transformed, for example using log, square-root, or Hellinger transformations, to behave more like continuous predictors.
 
 Distances can be supplied manually when needed:
   
@@ -1047,12 +1005,11 @@ layer_distances <- c(
   "sumofsquares",
   "sumofsquares"
 )
-
 SOM_tr <- train.SOM(input_data = SOM_data,
                     layer.distance.functions = layer_distances)
 ```
 
-Different variable types should generally be placed in separate layers when they require different distance functions.
+Importantly, different variable types should be placed in separate layers when they have different data or variance structures and thus require different distance functions.
 For example, continuous morphometric measurements and binary morphological characters are better represented as separate layers rather than combined into a single matrix.
 
 
@@ -1081,16 +1038,19 @@ For example:
 - environmental and spatial layers may partly represent the same geographic gradient;
 - highly correlated variables within one layer may repeatedly represent the same biological gradient.
 
+
+Therefore, we might for example downweight our mitochondrial layer compared to ... because
 Where possible, preprocessing to reduce redundancy, such as LD pruning or removing highly correlated predictors, is preferable to simply down-weighting an entire layer.
 
 
 ## Other input data
 
-Any dataset that can be represented as a numeric sample-by-variable matrix can potentially be incorporated into `train.SOM()` after appropriate preprocessing.
+Any dataset that can be represented as a numeric sample-by-variable matrix can potentially be incorporated into `train.SOM()`.
+Some of these data types might require external preprocessing before SOM training.
 
 Examples include:
   
-  - SNPs and nucleotide-sequence data
+- SNPs and nucleotide-sequence data
 - microsatellites and short tandem repeats
 - structural variants and copy-number variants
 - genotype likelihoods or expected allele dosages
@@ -1104,8 +1064,6 @@ Examples include:
 - host-association data
 - environmental variables
 - spatial variables
-
-Some of these data types might require external preprocessing before SOM training.
 
 For microsatellites and other multiallelic markers, arbitrary allele identifiers should not be entered directly as numeric values.
 Allele sizes, repeat numbers, or appropriately constructed allele-count variables should instead be used.
@@ -1128,18 +1086,8 @@ Low-variation and strongly redundant genes should also be removed or reduced whe
 
 ## Missing data
 
-`train.SOM()` removes individuals and variables containing more than the specified proportion of missing data using:
-  
-  ```r
-max.NA.row
-max.NA.col
-```
-
-Both default to:
-  
-  ```r
-0.5
-```
+`train.SOM()` removes individuals and variables containing more than the specified proportion of missing data using `max.NA.row` and `max.NA.col`.
+Both default to `0.5` corresponding to ...
 
 Missing values that remain after filtering are handled directly during SOM training rather than globally imputed.
 Distances and codebook-vector updates are calculated only across observed dimensions.
@@ -1260,70 +1208,24 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 
 ## Parallel training
 
-Replicate SOMs are trained in parallel by default:
-  
-  ```r
-parallel = TRUE
-```
-
-with the number of cores controlled by:
-  
-  ```r
-N.cores
-```
-
-Parallel execution is especially useful for large or high-dimensional datasets.
+Replicates are run in parallel by default via `parallel = TRUE`, which is especially useful for large genomic or multilayer datasets (> 2000 variables).
+In our runtime comparison, parallel execution improved computational scalability for datasets with large numbers of variables, whereas parallelization was less efficient for small datasets.
+The number of cores can be specified using `N.cores`. 
+Using 3-4 cores worked well in our testing whereas using more cores often slowed computation considerably.
 
 For example:
   
   ```r
 SOM_tr <- train.SOM(input_data = SOM_data,
                     parallel = TRUE,
-                    N.cores = 4)
+                    N.cores = 3)
 ```
 
-Increasing the number of cores does not change the statistical analysis, only computational performance.
 
-
-## Model-quality filtering
-
-`clustering.SOM()` can remove poorly fitting SOM replicates before clustering.
-
-Two complementary diagnostics are used:
-  
-  - quantization error, which measures how closely samples are represented by their best-matching SOM units;
-- topographic error, which measures how well neighborhood relationships are preserved on the SOM grid.
-
-By default, replicates above the 95th percentile for these errors are removed:
-  
-  ```r
-quantization.error.quantile = 0.95
-topographic.error.quantile = 0.95
-```
-
-This conservative filtering removes only the worst-fitting replicate maps while retaining most replicates for downstream consensus analyses.
-
-Quantization and topographic error should be considered together because a map can fit individual observations well while still poorly preserving the underlying topology, or preserve the topology while fitting individual observations less closely.
-
-
-## Maximum K and fixed-K analyses
+## Fixed-K analyses
 
 By default, alternative values from K = 1 to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
-
-The maximum K should be chosen large enough to include all biologically plausible lineage numbers, while avoiding unnecessarily large values that increase computation and introduce many implausible alternatives.
-
-For example:
-  
-  ```r
-SOM_results <- clustering.SOM(SOM.output = SOM_tr,
-                              max.k = 10,
-                              clustering.method = "kmeans+BICelbow")
-```
-
 Importantly, users should inspect the complete K-support profile rather than relying only on the automatically selected K.
-
-This is particularly important for the BIC-elbow method.
-Our simulations with K = 7 showed that the conservative K = 1 versus K = 2 safeguard can sometimes prevent automatic selection of a higher-K elbow when the initial improvement from K = 1 to K = 2 is weak, even when a clear elbow occurs at a higher value of K.
 
 Clustering can therefore also be rerun for a single K value using `set.k`, which bypasses automatic K selection while retaining the replicate SOM framework.
 
@@ -1332,9 +1234,7 @@ For example, forcing a three-lineage solution:
   ```r
 SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
                                  set.k = 3,
-                                 clustering.method = "kmeans+BICelbow",
-                                 save.SOM.results = TRUE,
-                                 save.SOM.results.name = "SOM_results_K3.Rdata")
+                                 clustering.method = "kmeans+BICelbow")
 ```
 
 Specific K values can also be inspected using `plot.model.SOM()` without rerunning SOM training:
@@ -1386,17 +1286,6 @@ SOM_kmeans_threshold <- clustering.SOM(SOM.output = SOM_tr,
 This is particularly useful for sensitivity analyses because the different clustering approaches are then applied to exactly the same trained SOM replicates.
 
 
-## Reproducibility
-
-Both SOM training and clustering use reproducible random seeds controlled through:
-  
-  ```r
-set.seed.N
-```
-
-For analyses that will be compared directly, users should retain the same seed unless intentionally evaluating stochastic sensitivity.
-
-The replicate framework already incorporates stochastic variation by training multiple independently initialized SOMs, so conclusions should generally be based on patterns across replicates rather than on any single SOM map.
 
 
 ## Interpreting K = 1 and weak structure
@@ -1430,23 +1319,28 @@ Further subdivision should be supported by the K-support profile, assignment coe
 
 ## Saving and reusing results
 
-Both `train.SOM()` and `clustering.SOM()` can save their results directly.
+`train.SOM()`, `clustering.SOM()`, and `plot.layer.importance.leaveoneout.SOM()` can require substantial computation time.
+Their results can therefore be saved and automatically reused when the corresponding result files are already present.
 
 For example:
-  
-  ```r
+
+```r
 SOM_tr <- train.SOM(input_data = SOM_data,
                     save.SOM.results = TRUE,
                     save.SOM.results.name = "SOM_tr.Rdata")
 
 SOM_results <- clustering.SOM(SOM.output = SOM_tr,
+                              clustering.method = "kmeans+BICelbow",
                               save.SOM.results = TRUE,
-                              save.SOM.results.name = "SOM_results.Rdata")
+                              save.SOM.results.name = "SOM_kmeans.Rdata")
+
+SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(SOM_output = SOM_results,
+                                                              save.leave.one.layer.out.results = TRUE,
+                                                              save.leave.one.layer.out.results.name = "SOM_layer_importance.Rdata")
 ```
 
-The `overwrite.SOM.results` argument controls whether an existing output file is replaced.
-
-Saving trained SOM objects is particularly useful because clustering settings can subsequently be changed without repeating the more computationally intensive SOM-training step.
+For `train.SOM()` and `clustering.SOM()`, `overwrite.SOM.results = FALSE` causes an existing saved result to be loaded instead of rerunning the analysis, whereas `overwrite.SOM.results = TRUE` reruns the analysis and overwrites the saved result.
+For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `overwrite.leave.one.layer.out.results`.
 
 
 # *delimSOM* 2.0 functions
