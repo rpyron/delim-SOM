@@ -687,7 +687,7 @@ This restricts the visualization to replicates in which four clusters were infer
 
 The plot below shows that the K = 4 solution provides a less clear example of correspondence between the neighbor-distance topology and the inferred clustering.
 The four inferred clusters remain fully contiguous in the bottom panel, but the upper panel shows less distinct valleys and more fragmented ridges, with several cluster boundaries lacking a strong corresponding neighbor-distance boundary.
-This weaker correspondence is also consistent with the lower support for K = 4 in the clustering results.
+This weaker correspondence is consistent with the lower support for K = 4.
 
 ```r
 plot.model.SOM(Polygonia_SOM,
@@ -702,7 +702,7 @@ plot.model.SOM(Polygonia_SOM,
 
 ### 5.5 Plot replicate-consensus assignments
 
-`plot.structure.SOM()` provides a STRUCTURE-like visualization of replicate-consensus assignment coefficients.
+`plot.structure.SOM()` provides a visualization similar to STRUCTURE bar plots (Pritchard et al. 2000) using replicate-consensus assignment coefficients.
 Each bar represents one individual and summarizes how consistently that individual is assigned to each candidate lineage across SOM replicates.
 Assignments distributed across multiple clusters indicate that an individual is placed inconsistently among candidate lineages across replicates.
 Such intermediate assignments may indicate weak lineage differentiation associated with admixture or discordance among data sources, while a similar pattern across many individuals may also be consistent with recent divergence.
@@ -710,7 +710,7 @@ Such intermediate assignments may indicate weak lineage differentiation associat
 Here, we use `bottom.margin` to adjust the lower plot margin for the individual labels.
 The plot shows four cluster components rather than only the more frequently recovered K = 3 solution because the function summarizes assignments across all retained replicates across all K.
 Overall, we see three major clusters, with most individuals showing highly consistent assignments to one of the three major candidate lineages, thus reflecting the predominant K = 3 solution.
-The fourth cluster occurs only as a relatively small assignment component in a subset of individuals.
+The fourth cluster occurs only as a relatively small assignment component in a subset of individuals, consistent with the less-supported K = 4 solution in 12% of replicates.
 
 ```r
 plot.structure.SOM(Polygonia_SOM, bottom.margin = 3.5)
@@ -1380,6 +1380,8 @@ R. Alexander Pyron: rpyron@gwu.edu
 - Pebesma, E. (2018). Simple Features for R: Standardized support for spatial vector data. *The R Journal*, 10(1), 439–446. https://doi.org/10.32614/RJ-2018-009
 
 - Pebesma, E., & Bivand, R. (2023). *Spatial data science: With applications in R*. Chapman and Hall/CRC. https://doi.org/10.1201/9780429459016
+
+- Pritchard, J. K., Stephens, M., & Donnelly, P. (2000). Inference of population structure using multilocus genotype data. *Genetics*, 155(2), 945–959. https://doi.org/10.1093/genetics/155.2.945
 
 - Pyron, R. A. (2023). Unsupervised machine learning for species delimitation, integrative taxonomy, and biodiversity conservation. *Molecular Phylogenetics and Evolution*, 189, 107939. https://doi.org/10.1016/j.ympev.2023.107939
 
