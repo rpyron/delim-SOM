@@ -702,7 +702,7 @@ plot.model.SOM(Polygonia_SOM,
 
 ### 5.5 Plot replicate-consensus assignments
 
-`plot.structure.SOM()` provides a visualization similar to STRUCTURE bar plots (Pritchard et al. 2000) using replicate-consensus assignment coefficients.
+`plot.structure.SOM()` provides a visualization similar to *STRUCTURE* bar plots (Pritchard et al. 2000) using replicate-consensus assignment coefficients.
 Each bar represents one individual and summarizes how consistently that individual is assigned to each candidate lineage across SOM replicates.
 Assignments distributed across multiple clusters indicate that an individual is placed inconsistently among candidate lineages across replicates.
 Such intermediate assignments may indicate weak lineage differentiation associated with admixture or discordance among data sources, while a similar pattern across many individuals may also be consistent with recent divergence.
@@ -1050,12 +1050,12 @@ Nonetheless, reducing redundancy during preprocessing (e.g., LD pruning or corre
 
 ## Saving figures
 
-All *delimSOM* plotting functions can save figures directly using the `save`, `plot.type`, and `file.name` arguments.
-By default, figures are only displayed in the active R graphics device because `save = FALSE`.
+All plotting functions can save figures directly using the `save`, `plot.type`, and `file.name` arguments.
+By default, figures are only displayed in the active *R* graphics device.
 To save a figure, set `save = TRUE`.
 Supported file types are `"svg"`, `"png"`, and `"jpg"`.
 If `file.name = NULL`, a default file name is generated automatically.
-Figure dimensions can be adjusted using `width` and `height` in centimeters.
+Figure dimensions can be set using `width` and `height` in centimeters.
 Raster-image resolution can be controlled using `resolution` in dpi.
 
 ```r
@@ -1089,50 +1089,46 @@ Additional examples include:
 - k-mer or other sequence-derived features
 - transcriptomic or gene-expression data
 - meristic traits
-- host haplotype markers
-- host-use and developmental-mode data
-- symbiont-community data
+- host-use data
+- developmental data
+- symbiont data
 - watershed or ecoregion classifications
 
 For microsatellites and other multiallelic markers, arbitrary allele identifiers should not be entered directly as numeric values.
-When allele size or repeat number is biologically meaningful, allele sizes or repeat numbers can instead be retained as numeric variables.
+When allele size or repeat number is biologically meaningful, these values can instead be retained as numeric variables.
 Alternatively, each locus can be expanded into allele-count variables.
 Manhattan distance is generally appropriate for allele-size, repeat-number, or allele-count representations.
 
 Host haplotypes or other categorical genetic markers can be converted to binary indicator variables before SOM training.
-For example, in our supplementary empirical analysis of *Pocillopora* corals, mtORF and PocHistone haplotypes were converted to binary variables and included as a separate host-haplotype layer.
+For example, in our supplementary empirical analysis of *Pocillopora* corals, mtORF and PocHistone haplotypes were converted to binary variables and included as a host-haplotype layer.
 
 Categorical ecological or life-history variables, such as host use or developmental mode, can likewise be converted to binary indicator variables.
-Related categorical variables can be combined within one layer when they have similar data structures and biological interpretation.
 
 Community-composition data can also be incorporated after appropriate preprocessing.
-For example, our supplementary analysis of *Pocillopora* corals included Symbiodiniaceae ITS2 OTU community data as a separate symbiont layer.
+For example, our supplementary analysis of *Pocillopora* corals included ITS2 OTU community data from Symbiodiniaceae symbionts as a symbiont layer.
 
-Geographic classifications such as watersheds, ecoregions, islands, or drainage basins can be represented as binary indicator variables and included as separate categorical layers.
-These should generally be kept separate from continuous spatial or environmental variables because they have different data structures and may require different distance functions.
+Geographic classifications such as watersheds, ecoregions, islands, or drainage basins can be represented as binary indicator variables and included as categorical layers.
 
 Structural variants and copy-number variants can be represented using dosage, count, presence/absence, or continuous quantitative variables depending on the underlying data.
-Correlated calls describing the same structural event should be consolidated where possible to avoid repeatedly representing the same genomic signal.
 
-Genotype likelihoods or posterior genotype probabilities can be converted externally to expected allele dosages.
-For diploid biallelic loci, these expected dosages range continuously from 0 to 2.
-Because continuous dosage values may not be recognized automatically as genetic dosage data, Manhattan distance should generally be specified manually.
+Genotype likelihoods or posterior genotype probabilities can be converted to expected allele dosages.
+For diploid biallelic loci, these expected dosages range continuously from zero to two.
+Because continuous dosage values may not be recognized automatically as genetic dosage data, Manhattan distance should be specified manually in `train.SOM()`.
 
 Polyploid genotype data can be supplied as externally generated allele-dosage matrices ranging from zero to the relevant ploidy.
-For example, tetraploid genotypes can be represented as dosage values from 0 to 4 and analyzed using Manhattan distance.
-Mixed-ploidy datasets require additional care because the same dosage difference does not represent the same proportional allele-frequency difference across ploidy levels.
-Raw dosages from different ploidies should therefore not be combined without proportional or other appropriate standardization.
+For example, tetraploid genotypes can be represented as dosage values from zero to four and analyzed using Manhattan distance.
+Mixed-ploidy datasets require additional care because the same dosage difference does not represent the same proportional allele-dosage difference across ploidy levels.
 
-Genome-wide k-mer data and other sequence-derived features can also be incorporated after appropriate filtering and normalization.
-Because these matrices can contain extremely large numbers of redundant or rare variables, feature reduction is generally recommended before training.
-Binary k-mer presence/absence can be represented as binary variables, whereas quantitative k-mer counts should be normalized before analysis.
+Genome-wide k-mer and other sequence-derived features can be incorporated after appropriate filtering and normalization.
+Because these matrices can contain extremely large numbers of redundant or rare variables, feature reduction is recommended before training.
+Binary k-mer presence/absence can be represented as binary variables, whereas quantitative k-mer counts should be normalized.
 
-Raw RNA-seq counts should not generally be supplied directly to `train.SOM()`.
-Expression data should first be quality filtered, normalized, and appropriately transformed, for example using variance-stabilized or normalized log-expression values.
-Low-variation and strongly redundant genes should also be removed or reduced where appropriate.
+Raw RNA-seq counts should not be supplied directly to `train.SOM()`.
+Expression data should first be quality filtered, normalized, and appropriately transformed (e.g., using variance-stabilized or normalized log-expression values).
+Low-variation and strongly redundant genes should also be removed.
 
 Meristic traits and other count data can be incorporated as numeric variables.
-Manhattan distance is often appropriate when counts are sparse, skewed, or zero-heavy, whereas transformed count data may be treated as continuous variables when appropriate.
+Manhattan distance is appropriate when counts are sparse, skewed, or zero-heavy, whereas transformed count data may be treated as continuous variables.
 
 
 ## Missing data
@@ -1140,21 +1136,27 @@ Manhattan distance is often appropriate when counts are sparse, skewed, or zero-
 `train.SOM()` removes individuals and variables containing more than the specified proportion of missing data using `max.NA.row` and `max.NA.col`.
 Both default to `0.5`, corresponding to a maximum of 50% missing data per individual or variable.
 
-Our analyses (Schönberger et al. preprint) show that *delimSOM* is relatively robust to substantial missingness.
+Our analyses show that *delimSOM* is relatively robust to substantial missingness (Schönberger et al. preprint).
 Specifically, performance declined only marginally as the proportion of missing data increased to approximately 50%, but decreased more sharply beyond this threshold.
 This robustness is facilitated by how missing data are handled during SOM training.
 After individuals and variables with excessive missingness are removed, best-matching units are identified using only the observed dimensions, and codebook updates are restricted to those dimensions.
 Incomplete observations can therefore still contribute to SOM training without requiring global imputation across heterogeneous data layers (Cottrell & Letrémy 2005; Kohonen 2001; Samad & Harp 1992; Wehrens & Buydens 2007).
 
-This supports `0.5` as our recommended default filtering threshold, retaining incomplete data while excluding individuals and variables with very high missingness.
-Based on our simulation results, we do not recommend increasing these thresholds above approximately `0.5–0.6` because performance declined more sharply beyond this range.
+These results support `0.5` as our recommended default filtering threshold, retaining incomplete data while excluding individuals and variables with very high missingness.
+Based on our simulation results, we do not recommend increasing these thresholds above approximately `0.5–0.6` because performance declined more sharply beyond this range (Schönberger et al. preprint).
 
 
 ## Compare clustering methods
 
 No single clustering method is expected to perform best for every possible data structure because performance depends on geometry, dimensionality, noise, overlap, and parameterization (Omran et al. 2007; Rodriguez et al. 2019).
 *delimSOM* 2.0 therefore implements six clustering and K-selection methods in `clustering.SOM()`: 
-`"kmeans+BICelbow"`, `"kmeans+BICthreshold"`, `"GMM+BICthreshold"`, `"hierarchical+DB"`, `"HDBSCAN"`, and `"OPTICS+Silhouette"`.
+
+- `"kmeans+BICelbow"`: k-means clustering with K selected from the BIC elbow.
+- `"kmeans+BICthreshold"`: k-means clustering with K selected using a minimum BIC-improvement threshold.
+- `"GMM+BICthreshold"`: Gaussian mixture modeling with K selected using a minimum BIC-improvement threshold.
+- `"hierarchical+DB"`: hierarchical clustering with K selected using the Davies–Bouldin index.
+- `"HDBSCAN"`: density-based clustering that can identify clusters without specifying K directly.
+- `"OPTICS+Silhouette"`: OPTICS density-based clustering with the clustering solution evaluated using Silhouette scores.
 
 Our testing (Schönberger et al. preprint) showed that the two k-means/BIC approaches provided the best overall balance of lineage recovery, assignment accuracy, and computational efficiency.
 We therefore recommend `"kmeans+BICelbow"` as the primary starting point, while alternative methods can provide useful complementary analyses.
