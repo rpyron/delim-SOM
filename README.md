@@ -862,7 +862,8 @@ round(head(sort(Polygonia_SOM$median_etasquared_variable_importance[[2]], decrea
 First, `plot.layer.importance.varimp.SOM()` summarizes the distributions of variable-importance values (presented above in section 5.7) within each data layer.
 This allows the relative importance of the different data layers to be compared based on how strongly their variables are associated with cluster separation or variation across the SOM map.
 
-When examining this plot, it is important to consider the number of variables within each layer (e.g., the SNP layer contains hundreds of variables, whereas the spatial layer contains only three).
+When examining this plot, it is important to consider the number of variables within each layer.
+Layers with few variables (e.g. the spatial layer) may show wide boxplots, but this apparently large variation is based on only a small number of variables.
 We use `bottom.margin` to adjust the bottom plot margin according to the length of the layer names.
 
 ```r
@@ -876,8 +877,8 @@ plot.layer.importance.varimp.SOM(Polygonia_SOM, bottom.margin = 3.5)
 Second, `plot.layer.importance.leaveoneout.SOM()` performs a leave-one-layer-out analysis by rerunning the analysis while omitting one data layer at a time and comparing each reduced analysis with the full multilayer SOM.
 
 This provides a more direct assessment of how strongly each layer affects the inferred number of clusters, cluster composition, and individual assignment confidence after each layer is omitted. 
-If a layer is important, its omission should therefore produce larger changes in these measures.
-Because SOM training and clustering are repeated for each omitted layer, this analysis is substantially more computationally intensive and might take a couple of hours depending on the scale of the dataset.
+If a layer is important, its omission should produce larger changes in these measures.
+Because SOM training and clustering are repeated for each omitted layer, this analysis is computationally very intensive and might take a couple of hours depending on the scale of the dataset.
 
 The plot contains three complementary measures of layer importance.
 The left panel shows the absolute change in the inferred number of clusters (K) after each layer is omitted, with larger values indicating that the omitted layer had a stronger influence on the number of candidate lineages recovered.
@@ -901,7 +902,8 @@ plot.layer.importance.leaveoneout.SOM(Polygonia_SOM,
 ## 6. Hierarchical reanalysis
 
 Hierarchical reanalysis can be used to test for additional structure within each recovered main candidate lineage (Janes et al. 2017).
-For the *Polygonia* example, we first assign each individual to the candidate lineage for which it has the highest ancestry proportion and split the samples by cluster:
+For the *Polygonia* example, we first assign each individual to the candidate lineage with the highest ancestry proportion using `apply()`.
+We then rename the clusters using `paste0()` and split the samples by cluster using `split()`.
 
 ```r
 #### Hierarchical reanalysis ###################################################
@@ -911,8 +913,8 @@ table(Polygonia_clusters)
 Polygonia_cluster_samples <- split(rownames(Polygonia_SOM$ancestry_matrix), Polygonia_clusters)
 ```
 
-The main *Polygonia* analysis recovered three candidate lineages (K = 3) containing 46, 79, and 75 individuals.
-We can subset each candidate lineage from the original input data and rerun the SOM training and clustering workflow:
+As we have seen before, the main *Polygonia* analysis recovered three candidate lineages (K = 3).
+We can subset each candidate lineage from the original input data using `lapply()` and rerun the SOM training and clustering workflow:
 
 ```r
 Polygonia_cluster1_data <- lapply(Polygonia_SOM$input_data, function(x) x[Polygonia_cluster_samples$cluster1, , drop = FALSE]) #cluster 1 subset
@@ -943,10 +945,11 @@ Polygonia_SOM_cluster3 <- clustering.SOM(Polygonia_SOM_tr_cluster3,
 Polygonia_SOM_cluster3$optim_k_summary
 ```
 
-Clusters 1 and 2 each recovered K = 1 with 100% support, whereas cluster 3 recovered K = 2 with 100% support. 
-This indicates no further supported subdivision within clusters 1 and 2, but additional structure within cluster 3.
+These hierarchical analyses show that clusters 1 and 2 each recovered K = 1 with 100% support, whereas cluster 3 recovered K = 2 with 100% support. 
+This indicates no further subdivision within the first two clusters, but additional structure within the third.
 
-The hierarchical result for cluster 3 can then be evaluated using the same visualization and diagnostic functions as for the primary analysis:
+We can visualize the results of any resulting subclusters using the same functions as for the primary analysis.
+Here, we do that for cluster 3.
 
 ```r
 plot.model.SOM(Polygonia_SOM_cluster3, replicate.mode = "representative")
@@ -966,21 +969,21 @@ plot.variable.importance.SOM(Polygonia_SOM_cluster3, mode = "Map.variance", left
 plot.layer.importance.varimp.SOM(Polygonia_SOM_cluster3, bottom.margin = 3.5)
 plot.layer.importance.leaveoneout.SOM(Polygonia_SOM_cluster3, bottom.margin = 6.5)
 ```
+It is also often useful to compare the species composition of the hierarchical subclusters with the original taxonomic assignments to determine whether the additional structure corresponds to previously recognized species.
 
-The species composition of the hierarchical cluster-3 analysis can also be compared with the original taxonomic assignments, revealing that cluster 3 contains the two species *Polygonia gracilis* and *P. progne*, which were lumped into a single candidate lineage in our primary analysis.
-This suggests that the primary analysis grouped these taxa into a single broader candidate lineage, whereas the hierarchical reanalysis detected additional structure within this lineage.
+In our case, this comparison shows that cluster 3 contains the two species *Polygonia gracilis* and *P. progne*, which were grouped into a single candidate lineage in our primary analysis.
+The hierarchical reanalysis therefore detected additional structure within this broader candidate lineage.
 
 ```r
 Polygonia_ancestry_SOM_cluster3 <- as.data.frame(Polygonia_SOM_cluster3$ancestry_matrix)
 Polygonia_ancestry_SOM_cluster3$Species <- Polygonia_metadata$Species[match(rownames(Polygonia_SOM_cluster3$ancestry_matrix), rownames(Polygonia_metadata))]
-Polygonia_ancestry_SOM_cluster3$Species_revised <- Polygonia_metadata$Species_revised[match(rownames(Polygonia_SOM_cluster3$ancestry_matrix), rownames(Polygonia_metadata))]
+
 length(unique(Polygonia_ancestry_SOM_cluster3$Species))
 table(Polygonia_ancestry_SOM_cluster3$Species)
 ```
 
 ```text
 [1] 3
-
 Polygonia gracilis gracilis     Polygonia gracilis zephyrus     Polygonia progne 
             8                                 9                         58
 ```
@@ -990,18 +993,18 @@ Polygonia gracilis gracilis     Polygonia gracilis zephyrus     Polygonia progne
 
 ## Important considerations
 
-- Ensure that rownames uniquely and consistently identify individuals across all layers.
-- Encode missing values as `NA`.
-- Preprocess variables to transform skewness and remove low-information and strongly redundant predictors.
-- Inspect support across alternative values of K rather than relying only on the most frequently selected K.
-- Treat inferred clusters as candidate-lineage hypotheses rather than definitive taxonomic conclusions.
-- Species-rich systems and datasets with small or strongly uneven within-lineage sample sizes require more cautious interpretation or additional analyses.
+- Ensure that rownames uniquely and consistently identify individuals across all layers
+- Encode missing values as `NA`
+- Preprocess variables to transform skewness and remove low-information and strongly redundant predictors
+- Inspect support across alternative values of K rather than relying only on the most frequently selected K
+- Treat inferred clusters as candidate-lineage hypotheses rather than definitive taxonomic conclusions
+- Species-rich systems and datasets with small or strongly uneven within-lineage sample sizes require more cautious interpretation or additional analyses
 
 
 ## Distance functions
 
 `train.SOM()` automatically infers a distance function from the numerical structure of each layer.
-Specifically, it assigns `"tanimoto"` to binary `0/1` data, `"manhattan"` to dosage-like `0/1/2` data, and `"sumofsquares"` to other numeric continuous data.
+Specifically, it assigns the `"tanimoto"` distance function to binary `0/1` data, `"manhattan"` to dosage-like `0/1/2` data, and `"sumofsquares"` to other numeric continuous data.
 
 When `verbose = TRUE`, the inferred layer types and distance functions are printed during training.
 Users should verify that the automatically inferred distance works correctly and is appropriate for each layer.
@@ -1010,7 +1013,7 @@ We recommend:
 - `"sumofsquares"` for most continuous quantitative variables because larger differences should generally contribute more strongly to sample separation.
 - `"tanimoto"` for binary presence/absence variables because it measures the proportion of mismatching binary states.
 - `"manhattan"` for SNP and other dosage-like genetic encodings because it sums absolute per-variable differences without squaring them, and is also often preferable for raw count data when counts are sparse, skewed, or zero-heavy.
-- `"sumofsquares"` for count-derived variables when large abundance differences are biologically meaningful or when counts have been transformed, for example using log, square-root, or Hellinger transformations, to behave more like continuous predictors.
+- `"sumofsquares"` for count-derived variables when large abundance differences are biologically meaningful or when counts have been transformed to behave more like continuous predictors (e.g., using log, square-root, or Hellinger transformations).
 
 Distances can be supplied manually when needed:
   
@@ -1018,33 +1021,31 @@ Distances can be supplied manually when needed:
 layer_distances <- c(
   "manhattan",
   "sumofsquares",
-  "sumofsquares",
   "sumofsquares"
 )
-SOM_tr <- train.SOM(input_data = SOM_data,
-                    layer.distance.functions = layer_distances)
+SOM_tr <- train.SOM(input_data = SOM_data, layer.distance.functions = layer_distances)
 ```
 
 Importantly, different variable types should be placed in separate layers when they have different data or variance structures and thus require different distance functions.
-For example, continuous morphometric measurements and binary morphological characters are better represented as separate layers rather than combined into a single dataset, as done in our *Polygonia* empirical example.
+For example, continuous morphometric measurements and binary morphological characters are better represented as separate layers rather than combined into a single dataset, as done in our *Polygonia* example.
 
 
 ## Layer weights
 
-For multilayer analyses, `train.SOM()` automatically normalizes layer-specific distance scales so that layers with larger raw distances do not automatically dominate SOM training.
+For multilayer analyses, `train.SOM()` automatically normalizes layer-specific distance scales so that layers with larger raw distances do not automatically dominate training.
 Users can supply `manual.layer.weights` to adjust the relative influence of individual layers.
-These user-defined weights are combined with the internal distance-normalization weights rather than replacing them.
-Manual weighting can be useful when layers differ in measurement uncertainty, information content, environmental noise, or biological relevance, with less reliable or noisier layers given lower weight.  
+These user-defined weights are combined with the internal distance-normalization weights.
+Manual weighting can be useful when layers differ in measurement uncertainty, information content, environmental noise, biological relevance, or when prior hypotheses justify giving particular data types greater or lower influence.
+Less reliable or noisier layers can therefore be assigned lower weights, whereas layers expected a priori to provide stronger evidence can be assigned greater weights.
 
 ```r
-SOM_tr <- train.SOM(input_data = SOM_data,
-                    manual.layer.weights = c(1, 1, 0.5, 1))
+SOM_tr <- train.SOM(input_data = SOM_data, manual.layer.weights = c(1, 0.5, 1))
 ```
 
 Importantly, internal distance normalization accounts for differences in distance scale but does not remove redundancy within or among layers.
 For example, linked SNPs may repeatedly represent the same evolutionary signal, multiple mitochondrial loci describe the same underlying mitochondrial genealogy, and environmental and spatial layers partly represent the same geographic gradient.
-Therefore, we might down-weight a mitochondrial layer relative to a genome-wide SNP layer containing markers distributed across many approximately independent genomic regions, because multiple mitochondrial markers generally represent the same underlying organellar genealogy rather than multiple independent evolutionary histories.
-Where possible, preprocessing to reduce redundancy, such as LD pruning or removing highly correlated predictors, is preferable to simply down-weighting an entire layer.
+Therefore, we might down-weight a mitochondrial layer relative to a SNP layer containing unlinked genome-wide markers (because multiple mitochondrial markers generally represent the same underlying organellar genealogy rather than independent evolutionary histories).
+Nonetheless, reducing redundancy during preprocessing (e.g., LD pruning or correlation filtering) is often preferred to simply down-weighting the entire layer.
 
 
 ## Saving figures
