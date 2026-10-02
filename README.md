@@ -398,8 +398,8 @@ We next import and process the visually scored wing characters and combine them 
 
 The figure below (Fig. 2 in Dupuis et al. 2018) shows the ten visually scored characters on the dorsal and ventral wing surfaces and the proportion of each character state across species.
 The authors chose these characters and regions based on diagnostic features in field guides.
-The labels 1–10 indicate the scored wing characters, while (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
-We can see that most characters are binary, but three (spots 1, 4, 5) are ordinal and one (spot 8) is nominal.
+The labels 1–10 indicate the wing characters, while (c) and (s) denote the contrasted and smeared morphotypes, respectively.
+Most characters are binary, but three are ordinal (spots 1, 4, 5) and one is nominal (spot 8).
 
 <p align="center">
   <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="800">
@@ -407,7 +407,7 @@ We can see that most characters are binary, but three (spots 1, 4, 5) are ordina
 
 We first import the visually scored wing characters and use the specimen identifiers as row names.
 We remove the `Name` and `Species` columns and rename the ten wing characters for clarity.
-The binary and ordinal characters are left as they are.
+The binary and ordinal characters are left untouched.
 However, we treat wing character 8 as nominal and therefore convert its four states into four binary indicator variables and remove the original wing character 8 variable.
 
 ```r
@@ -504,7 +504,7 @@ This results in three spatial variables (columns) for 265 individuals (rows):
 ### 2.7 Prepare environmental data
 
 Dupuis et al. (2018) did not include environmental data in their study.
-For our reanalysis, we added an environmental layer by extracting a comprehensive set of environmental variables with the *NicheDiv* *R* package (Schönberger et al. 2026) based on their provided specimen coordinates.
+For our reanalysis, we added an environmental layer by extracting a comprehensive set of environmental variables with the aid of the novel *NicheDiv* *R* package (Schönberger et al. 2026) based on their provided specimen coordinates.
 
 Here, we import this dataset and remove latitude, longitude, and elevation (because they are analyzed separately in the spatial layer).
 
@@ -516,9 +516,9 @@ Polygonia_environmental_rownames <- rownames(Polygonia_environmental)
 Polygonia_environmental <- as.data.frame(lapply(Polygonia_environmental, as.numeric))
 rownames(Polygonia_environmental) <- Polygonia_environmental_rownames
 ```
-We then transform skewed environmental variables with the help of the `transform.skewed.variables()` function in the *NicheDiv* *R* package (Schönberger et al. 2026). 
-Conveniently, this function automatically checks each variable for skewness and applies the most appropriate transformation if skewed.
-As above for the continuous morphology data, we subsequently filter variables with low variation or strong pairwise correlations using `remove.lowCV.multicollinearity.SOM()`.
+We then transform skewed environmental variables using `transform.skewed.variables()` in the *NicheDiv* *R* package (Schönberger et al. 2026). 
+This function automatically checks each variable for skewness and applies the most appropriate transformation if skewed.
+As above for the continuous morphology data, we subsequently remove variables with low variation or strong pairwise correlations using `remove.lowCV.multicollinearity.SOM()`.
 
 ```r
 Polygonia_environmental <- NicheDiv::transform.skewed.variables(Polygonia_environmental)$transformed
@@ -528,8 +528,7 @@ dim(Polygonia_environmental)
 print(Polygonia_environmental[1:2, 1:10])
 ```
 
-The output shows 156 of 309 variables transformed, followed by removal of seventeen for low prevalence, 61 for low CV, and 106 for high correlation.
-Of the original 309 environmental variables, 125 variables (columns) are retained after low-variation and correlation filtering for 265 individuals (rows).
+After filtering, 125 environmental variables (columns) of the original 309 are retained for 265 individuals (rows).
 We can also see the applied transformations for some variables from the appended suffixes in their names (e.g., `_log` or `_sqrt`).
 
 ```text
