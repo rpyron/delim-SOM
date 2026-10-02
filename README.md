@@ -15,7 +15,7 @@ After SOM training, the codebook vectors are clustered into groups that are inte
 
 The framework does not require predefined species assignments and explicitly permits K = 1, so subdivision is only inferred when supported (Janes et al. 2017; Pyron et al. 2023).
 Multiple SOM replicates quantify support for alternative K values and the stability of individual assignments.
-Data layers are automatically balanced so that no single layer dominates the analysis.
+Data layers are automatically balanced so that large-scale layers do not dominate the analysis.
 The method is also robust to missing data.
 Our package relies heavily on the *kohonen* *R* package (Wehrens & Buydens 2007; Wehrens & Kruisselbrink 2018).
 
@@ -361,7 +361,7 @@ This retains 213 biallelic COI variables or SNPs (columns) from the original 1,3
 ### 2.4 Prepare continuous wing-color morphology
 
 This section imports and processes the continuous morphology data containing RGB color measurements from six dorsal and ventral wing regions.
-The specimen identifiers are used as rownames (confusingly stored as `Species` column in the original dataset), and the non-morphological `Name` and `Species` columns are removed.
+The specimen identifiers are used as rownames (confusingly stored in the `Species` column in the original dataset), and the non-morphological `Name` and `Species` columns are removed.
 We then filter the continuous wing-color variables for low variation and high pairwise absolute Spearman correlations using the defaults in `remove.lowCV.multicollinearity.SOM()`.
 Lastly, we evaluate the output.
 
@@ -376,7 +376,7 @@ dim(Polygonia_morphology)
 print(Polygonia_morphology[1:2, 1:10])
 ```
 
-Filtering removes three of the original eighteen continuous wing-color variables (three RGB colors x six wing regions), resulting in fifteen variables (columns) for 237 individuals (rows): 
+Filtering removes three of the original eighteen continuous wing-color variables (three RGB colors × six wing regions), resulting in fifteen variables (columns) for 237 individuals (rows): 
 
 ```text
 [1] 237  15
@@ -385,7 +385,7 @@ Filtering removes three of the original eighteen continuous wing-color variables
 8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 59.09
 ```
 
-The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral wing regions (spots 11-16 in their figure) used for the RGB measurements and their average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared morphotypes, respectively.
+The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral wing regions (spots 11–16 in their figure) used for the RGB measurements and their average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared morphotypes, respectively.
 
 <p align="center">
   <img src="figures/Figure_Dupuis_et_al_2018_Fig3.png">
@@ -399,7 +399,7 @@ We next import and process the visually scored wing characters and combine them 
 The figure below (Fig. 2 in Dupuis et al. 2018) shows the ten visually scored characters on the dorsal and ventral wing surfaces and the proportion of each character state across species.
 The authors chose these characters and regions based on diagnostic features in field guides.
 The labels 1–10 indicate the wing characters, while (c) and (s) denote the contrasted and smeared morphotypes, respectively.
-Most characters are binary, but three are ordinal (spots 1, 4, 5) and one is nominal (spot 8).
+Most characters are binary, but three are ordinal (spots 1, 4, and 5) and one is nominal (spot 8).
 
 <p align="center">
   <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="800">
@@ -723,10 +723,10 @@ We can also extract and evaluate the replicate-consensus cluster assignment coef
 These are stored in the `$ancestry_matrix` component of the clustering output.
 Furthermore, it is often useful to combine these coefficients with species labels to compare the inferred candidate-lineage assignments with existing species hypotheses.
 
-In our example, the individual IDs are stored as rownames in both the ancestry matrix and `Polygonia_metadata` so we can match the species names to the corresponding individuals.
+In our example, the individual IDs are stored as rownames in both the ancestry matrix and `Polygonia_metadata`, so we can match the species names to the corresponding individuals.
 We can then inspect the dataframe:
   
-  ```r
+```r
 head(Polygonia_SOM$ancestry_matrix)
 Polygonia_ancestry <- as.data.frame(Polygonia_SOM$ancestry_matrix)
 Polygonia_ancestry$Species <- Polygonia_metadata$Species[match(rownames(Polygonia_ancestry), rownames(Polygonia_metadata))]
@@ -863,7 +863,7 @@ First, `plot.layer.importance.varimp.SOM()` summarizes the distributions of vari
 This allows the relative importance of the different data layers to be compared based on how strongly their variables are associated with cluster separation or variation across the SOM map.
 
 When examining this plot, it is important to consider the number of variables within each layer.
-Layers with few variables (e.g. the spatial layer) may show wide boxplots, but this apparently large variation is based on only a small number of variables.
+Layers with few variables (e.g., the spatial layer) may show wide boxplots, but this apparently large variation is based on only a small number of variables.
 We use `bottom.margin` to adjust the bottom plot margin according to the length of the layer names.
 
 ```r
@@ -902,12 +902,12 @@ plot.layer.importance.leaveoneout.SOM(Polygonia_SOM,
 ## 6. Hierarchical reanalysis
 
 Hierarchical reanalysis can be used to test for additional structure within each recovered main candidate lineage (Janes et al. 2017).
-For the *Polygonia* example, we first assign each individual to the candidate lineage with the highest ancestry proportion using `apply()`.
+For the *Polygonia* example, we first assign each individual to the candidate lineage with the highest assignment proportion using `apply()`.
 We then rename the clusters using `paste0()` and split the samples by cluster using `split()`.
 
 ```r
 #### Hierarchical reanalysis ###################################################
-Polygonia_clusters <- apply(Polygonia_SOM$ancestry_matrix, 1, which.max) #assign each sample to cluster with highest ancestry proportion
+Polygonia_clusters <- apply(Polygonia_SOM$ancestry_matrix, 1, which.max) #assign each sample to cluster with highest assignment proportion
 Polygonia_clusters <- paste0("cluster", Polygonia_clusters) #rename clusters
 table(Polygonia_clusters)
 Polygonia_cluster_samples <- split(rownames(Polygonia_SOM$ancestry_matrix), Polygonia_clusters)
@@ -948,7 +948,7 @@ Polygonia_SOM_cluster3$optim_k_summary
 These hierarchical analyses show that clusters 1 and 2 each recovered K = 1 with 100% support, whereas cluster 3 recovered K = 2 with 100% support. 
 This indicates no further subdivision within the first two clusters, but additional structure within the third.
 
-We can visualize the results of any resulting subclusters using the same functions as for the primary analysis.
+We can visualize any resulting subclusters using the same functions as for the primary analysis.
 Here, we do that for cluster 3.
 
 ```r
@@ -995,7 +995,7 @@ Polygonia gracilis gracilis     Polygonia gracilis zephyrus     Polygonia progne
 
 - Ensure that rownames uniquely and consistently identify individuals across all layers
 - Encode missing values as `NA`
-- Preprocess variables to transform skewness and remove low-information and strongly redundant predictors
+- Preprocess variables to reduce skewness and remove low-information and strongly redundant predictors
 - Inspect support across alternative values of K rather than relying only on the most frequently selected K
 - Treat inferred clusters as candidate-lineage hypotheses rather than definitive taxonomic conclusions
 - Species-rich systems and datasets with small or strongly uneven within-lineage sample sizes require more cautious interpretation or additional analyses
@@ -1143,7 +1143,7 @@ After individuals and variables with excessive missingness are removed, the most
 Incomplete observations can therefore still contribute to SOM training without requiring global imputation across heterogeneous data layers (Cottrell & Letrémy 2005; Kohonen 2001; Samad & Harp 1992; Wehrens & Buydens 2007).
 
 These results support `0.5` as our recommended default filtering threshold, retaining incomplete data while excluding individuals and variables with very high missingness.
-Based on our simulation results, we do not recommend increasing these thresholds above approximately `0.5–0.6` because performance declined more sharply beyond this range (Schönberger et al. preprint).
+Based on our simulation results, we do not recommend increasing these thresholds above approximately 0.5–0.6 because performance declined more sharply beyond this range (Schönberger et al. preprint).
 
 
 ## Compare clustering methods
@@ -1195,7 +1195,7 @@ SOM_OPTICS_Silhouette$optim_k_summary
 `train.SOM()` allows either `"gaussian"` or `"bubble"` neighborhood functions via `training.neighborhoods`.
 The bubble function applies equal influence to all SOM cells within the neighborhood radius, whereas the Gaussian function applies progressively less influence with increasing distance from the cell most similar to the current individual (Kohonen 1998).
 For both functions, the neighborhood radius decreases during training, shifting from broad map organization to finer local refinement (Kohonen 2014; Wehrens & Kruisselbrink 2018).
-Our analyses (Schönberger et al. preprint) showed that the Gaussian neighborhood more reliably recovered the correct number of lineages and produced lower topographic error, whereas the bubble neighborhood produced lower quantization error and shorter runtimes.
+Our analyses showed that the Gaussian neighborhood more reliably recovered the correct number of lineages and produced lower topographic error, whereas the bubble neighborhood produced lower quantization error and shorter runtimes (Schönberger et al. preprint).
 We therefore recommend the Gaussian neighborhood as the primary option because it more reliably recovered the correct number of lineages and better preserved SOM topology.
 
 The Gaussian neighborhood is used by default:
@@ -1214,56 +1214,52 @@ SOM_tr_bubble <- train.SOM(input_data = SOM_data, training.neighborhoods = "bubb
 
 SOM training uses a learning rate that decreases linearly during training, with larger updates early in training supporting broad map organization and progressively smaller updates allowing finer local refinement (Kohonen 1998).
 By default, `train.SOM()` uses an initial learning rate of `0.5` and a final learning rate of `0.1`. 
-These default values performed well in our analyses and experience.
+These default values performed well in our analyses.
 
 Optional learning-rate tuning can be enabled with `learning.rate.tuning = TRUE`.
 When enabled, `train.SOM()` tests alternative initial and final learning-rate combinations and selects the combination with the lowest mean quantization error, which measures how closely samples are represented by their most similar SOM cells.
 
 ```r
-SOM_tr_tuned <- train.SOM(input_data = SOM_data,
-                          learning.rate.tuning = TRUE)
+SOM_tr_tuned <- train.SOM(input_data = SOM_data, learning.rate.tuning = TRUE)
 ```
 
-However, our analyses (Schönberger et al. preprint) showed that learning-rate and tuning improved performance only marginally while substantially increasing runtime.
-Consistent with previous work (Pyron 2023), this suggests that variation in these hyperparameters have relatively little impact on the results.
-We therefore recommend retaining the default learning rates and `learning.rate.tuning = FALSE`.
-Learning-rate tuning may be useful for small datasets or short exploratory analyses.
+However, our analyses showed that learning-rate tuning improved performance only marginally while substantially increasing runtime (Schönberger et al. preprint).
+Consistent with previous work (Pyron 2023), this suggests that variation in these hyperparameters has relatively little impact on results.
+We therefore recommend retaining the default learning rates and `learning.rate.tuning = FALSE`, while using learning-rate tuning for small datasets or short exploratory analyses.
 
 
 ## SOM grid size
 
-By default, `grid.size = NULL`, so `train.SOM()` automatically determines both the size and shape of the SOM grid based on sample size and the structure of the input data.
+By default, `train.SOM()` automatically determines both the size and shape of the SOM grid based on sample size and the structure of the input data.
 
 The default `grid.multiplier = 5` controls the approximate number of SOM cells relative to sample size.
 Larger values produce finer maps with more SOM cells, whereas smaller values produce coarser maps.
 A grid that is too coarse can merge distinct structure, whereas an overly fine grid can fragment clusters, increase the number of empty cells, and increase computation time (Kohonen 1998, 2014; Vesanto 1999).
 We therefore generally recommend retaining the automatic grid construction unless there is a specific reason to modify map resolution.
 For datasets with relatively few samples, `train.SOM()` may abort if the automatically generated grid is too large and return a message recommending a smaller `grid.multiplier`.
-In this case, decrease `grid.multiplier` until an appropriate grid can be constructed.
+In this case, the `grid.multiplier` should be decreased until an appropriate grid can be constructed.
 
-A user-defined grid can be supplied directly:
+A user-defined grid can also be supplied:
 
 ```r
-SOM_tr <- train.SOM(input_data = SOM_data,
-                    grid.size = c(5, 4))
+SOM_tr <- train.SOM(input_data = SOM_data, grid.size = c(5, 4))
 ```
 
 Alternatively, map resolution can be adjusted using `grid.multiplier`:
 
 ```r
-SOM_tr <- train.SOM(input_data = SOM_data,
-                    grid.multiplier = 4)
+SOM_tr <- train.SOM(input_data = SOM_data, grid.multiplier = 4)
 ```
 
 
 ## Parallel training
 
 Replicates are run in parallel by default via `parallel = TRUE`, which is especially useful for large genomic or multilayer datasets (>2,000 variables).
-In our runtime comparison, parallel execution improved computational scalability for datasets with large numbers of variables, whereas parallelization was less efficient for small datasets.
+In our runtime comparison, parallel execution improved computational scalability for datasets with large numbers of variables, whereas parallelization was less efficient for small datasets (Schönberger et al. preprint).
 The number of cores can be specified using `N.cores`. 
 Using 3–4 cores worked well in our testing, whereas using more cores often slowed computation considerably.
   
-  ```r
+```r
 SOM_tr <- train.SOM(input_data = SOM_data,
                     parallel = TRUE,
                     N.cores = 3)
@@ -1272,13 +1268,11 @@ SOM_tr <- train.SOM(input_data = SOM_data,
 
 ## Fixed-K analyses
 
-By default, alternative values from one to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
-Importantly, users should inspect the complete K-support profile rather than relying only on the automatically selected K.
-Clustering can also be rerun for a single K value using `set.k`, which bypasses automatic K selection while retaining the replicate SOM framework.
+By default, alternative K values from one to `max.k` are evaluated and the optimal K is selected separately for each SOM replicate.
+Clustering can be rerun for a single K value using `set.k`.
 This is often useful if many K values are supported or if the automatic K-selection does not work well (e.g., because a distinct BIC elbow is not detected).
-Fixed-K analyses should be used to inspect or test specific alternative solutions rather than to replace evaluation of the full K-support profile.
 
-For example, forcing a three-lineage solution and then examining the assignment coefficients for this K = 3 solution:
+In the example below, we force a three-lineage solution and then examine the assignment coefficients for this K = 3 solution:
 
 ```r
 SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
@@ -1289,7 +1283,7 @@ plot.structure.SOM(SOM_results_K3)
 head(SOM_results_K3$ancestry_matrix)                                 
 ```
 
-Specific K values can also be inspected using `plot.model.SOM()` without rerunning SOM training:
+`plot.model.SOM()` can also restrict the visualization to replicates with a specified K, enabling direct comparison of the SOM topology and cluster boundaries for a fixed K value.
 
 ```r
 plot.model.SOM(SOM_results,
@@ -1297,14 +1291,15 @@ plot.model.SOM(SOM_results,
                set.k = 3)
 plot.model.SOM(SOM_results,
                replicate.mode = "representative",
-               set.k = 4)
+               set.k = 4) 
 ```
 
 
 ## Saving and reusing results
 
-`train.SOM()`, `clustering.SOM()`, and `plot.layer.importance.leaveoneout.SOM()` can require substantial computation time.
-Their results can therefore be saved and automatically reused when the corresponding result files are already present.
+`train.SOM()`, `clustering.SOM()`, and especially `plot.layer.importance.leaveoneout.SOM()` can require substantial computation time.
+Their results can therefore be saved and automatically reused when corresponding result files from a previous run are already present.
+File names should use `.Rdata` as extension.
 
 ```r
 SOM_tr <- train.SOM(input_data = SOM_data,
@@ -1321,7 +1316,7 @@ SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(SOM_output = SOM_r
                                                               save.leave.one.layer.out.results.name = "SOM_layer_importance.Rdata")
 ```
 
-For `train.SOM()` and `clustering.SOM()`, `overwrite.SOM.results = FALSE` causes an existing saved result to be loaded instead of rerunning the analysis, whereas `overwrite.SOM.results = TRUE` reruns the analysis and overwrites the saved result.
+For `train.SOM()` and `clustering.SOM()`, `overwrite.SOM.results = TRUE` reruns the analysis and overwrites the saved result.
 For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `overwrite.leave.one.layer.out.results`.
 
 
@@ -1336,7 +1331,7 @@ For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `ov
 | `clustering.SOM()`                          | Cluster SOM codebook vectors across replicates, select K, and calculate assignment and importance summaries         |
 | `plot.learning.SOM()`                       | Plot SOM learning trajectories across training steps                                                               |
 | `plot.layer.distance.scale.SOM()`           | Plot average pairwise distance scales of input layers across SOM replicates                                         |
-| `plot.K.SOM()`                              | Plot support profiles, successive ΔBIC values, and selected-K frequencies across SOM replicates                     |
+| `plot.K.SOM()`                              | Plot clustering-support profiles and selected-K frequencies across retained SOM replicates                     |
 | `plot.model.SOM()`                          | Plot SOM topology, neighbor distances, sample mappings, and inferred cluster boundaries                             |
 | `plot.structure.SOM()`                      | Plot replicate-consensus assignment coefficients as a STRUCTURE-like stacked barplot                               |
 | `plot.map.SOM()`                            | Plot replicate-consensus assignment coefficients at geographic coordinates                                         |
@@ -1349,7 +1344,6 @@ For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `ov
 
 A current limitation of *delimSOM* is that the same individuals must be represented across all data layers.
 Because genomic, morphological, behavioral, ecological, and life-history data are often collected from different specimens or sources, restricting analyses to shared individuals can substantially reduce sample sizes and limit the use of existing datasets.
-*delimSOM* is therefore particularly well suited to prospective studies in which multiple data types are collected from the same specimens.
 Future development could allow partial overlap among layers and better integration of heterogeneous datasets with missing information across layers.
 
 Another promising direction is to connect candidate-lineage structure with the processes underlying divergence.
@@ -1368,7 +1362,7 @@ R. Alexander Pyron: rpyron@gwu.edu
 
 # References
 
-- Cottrell, M., & Letrémy, P. (2005). Missing values: Processing with the Kohonen algorithm. *ASMDA 2005*, 489–496.
+- Cottrell, M., & Letrémy, P. (2005). Missing values: Processing with the Kohonen algorithm. *ASMDA 2005*, 489–496. https://doi.org/10.48550/arXiv.math/0701152
 
 - Dupuis, J. R., McDonald, C. M., Acorn, J. H., & Sperling, F. A. H. (2018). Genomics-informed species delimitation to support morphological identification of anglewing butterflies (Lepidoptera: Nymphalidae: *Polygonia*). *Zoological Journal of the Linnean Society*, 183(2), 372–389. https://doi.org/10.1093/zoolinnean/zlx081
 
@@ -1408,7 +1402,7 @@ R. Alexander Pyron: rpyron@gwu.edu
 
 - Ultsch, A. (1993). Self-organizing neural networks for visualisation and classification. In *Information and classification. Studies in classification, data analysis and knowledge organization* (pp. 307–313). Springer. https://doi.org/10.1007/978-3-642-50974-2_31
 
-- Vesanto, J. (1999). SOM-based data visualization methods. *Intelligent Data Analysis*, 3(2), 111–126.
+- Vesanto, J. (1999). SOM-based data visualization methods. *Intelligent Data Analysis*, 3(2), 111–126. https://doi.org/10.3233/IDA-1999-3203
 
 - Vesanto, J., & Alhoniemi, E. (2000). Clustering of the self-organizing map. *IEEE Transactions on Neural Networks*, 11(3), 586–600. https://doi.org/10.1109/72.846731
 
@@ -1421,7 +1415,7 @@ R. Alexander Pyron: rpyron@gwu.edu
 
 Please cite the *delimSOM* framework as follows:
 
-Schönberger, D., Pyron, R. A., & Dupuis, J. R. *delim-SOM 2.0*: Fully integrative species delimitation with machine learning and flexible diverse data types of biological and other data. *bioRxiv*
+Schönberger, D., Pyron, R. A., & Dupuis, J. R. Fully integrative species delimitation with machine learning: Using self-organizing maps to infer candidate lineages from genetic, phenotypic, spatial, and environmental data in *delim-SOM* 2.0. *bioRxiv*
 
 
 # License
