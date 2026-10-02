@@ -541,13 +541,14 @@ We can also see the applied transformations for some variables from the appended
 
 ## 3. SOM training
 
-We next combine the six processed layers into a named list, which can then be supplied to `train.SOM()`.
-This function first checks the data, removes any remaining zero-variance variables, constructs the SOM grid based on the data, and then trains replicate SOMs.
-It also automatically matches and retains individuals shared across all layers, and prints messages summarizing each processing and training step.
+All datasets are now ready for SOM training.
+We combine the six processed layers into a named list, which can then be supplied to `train.SOM()`.
+This function first checks the data, removes any remaining zero-variance variables, constructs the SOM grid, and then trains replicate SOMs.
+It also automatically matches and retains individuals shared across all layers and prints messages summarizing each processing and training step.
 
 Here, we use the recommended default settings.
 Individuals and variables containing more than 50% missing data are removed using `max.NA.row = 0.5` and `max.NA.col = 0.5`, respectively.
-Training for this dataset takes around 3-10 min.
+Training for this dataset takes around 3–10 min.
 
 ```r
 #### Train SOM #################################################################
@@ -567,7 +568,7 @@ Polygonia_SOM_tr <- train.SOM(input_data = Polygonia_all_data,
 
 After SOM training, we cluster the resultant codebook vectors using the recommended `"kmeans+BICelbow"` approach.
 The optimal K is selected for each SOM replicate, allowing support for alternative K values to be summarized across replicates.
-Clustering for this dataset takes around 2-7 min.
+Clustering for this dataset takes around 2–7 min.
 We can then evaluate the support for each K using the `$optim_k_summary` component of the output object.
 
 ```r
@@ -594,10 +595,10 @@ After SOM training and clustering, *delim-SOM* 2.0 offers several functions to e
 
 `plot.learning.SOM()` is a diagnostic function to assess changes during SOM training across replicates and data layers.
 
-Below, we see an initial decline followed by a stable plateau at the end, which suggests that SOM learning has converged toward a stable representation.
+Below, we see an initial decline followed by a stable plateau at the end for each layer, which suggests that SOM learning has converged toward a stable representation.
 Erratic trajectories or continued changes late in training would indicate that additional training steps are needed or that the input data require further inspection.
 We also note that the absolute heights and slopes of trajectories can differ among data layers.
-This is expected since layers differ in dimensionality, distance functions, and distance distributions.
+This is expected because layers differ in dimensionality, distance functions, and distance distributions.
 These differences should not be interpreted as layer importance.
 
 ```r
@@ -613,11 +614,11 @@ plot.learning.SOM(Polygonia_SOM)
 
 `plot.layer.distance.scale.SOM()` visualizes the average pairwise distance scale of each input layer before SOM training and internal distance normalization.
 This plot is a diagnostic of differences in raw distance scale among layers (representing both the number of variables and their variances).
-Notably, these raw distance scales should not be interpreted as measures of layer importance.
+Notably, raw distance scales should not be interpreted as measures of layer importance.
 
-In the plot below, we see that the genomic layer strongly dominates the raw distance scale. 
-This pattern is typical for most empirical datasets, as shown in our study (Schönberger et al. preprint).
-Importantly, the internal distance normalization in `train.SOM()` downweights such layers and upweights layers with smaller raw distance scales, preventing these differences from automatically determining their contribution during SOM training.
+Below, we see that the genomic layer strongly dominates the raw distance scale. 
+This pattern is typical for many empirical datasets (Schönberger et al. preprint).
+Importantly, the internal distance normalization in `train.SOM()` downweights such layers and upweights layers with smaller raw distance scales, preventing these differences from automatically determining their contribution during training.
 
 ```r
 plot.layer.distance.scale.SOM(Polygonia_SOM)
@@ -634,11 +635,11 @@ plot.layer.distance.scale.SOM(Polygonia_SOM)
 `plot.K.SOM()` is an important function to evaluate relative support for alternative K values.
 It visualizes the support profile across candidate K values, successive changes in BIC, and the frequency with which each K was selected across retained SOM replicates.
 
-The full support profile should be considered rather than relying only on the most frequently selected K, because selection frequency alone does not show how strongly the selected K is supported relative to alternative K values.
-Support for multiple K values indicates uncertainty in the inferred number of candidate lineages, which could arise from weak differentiation, recent divergence, admixture, or discordance among data layers.
+The full support profile should be considered rather than relying only on the most frequently selected K.
+Support for multiple K values indicates uncertainty in the inferred number of candidate lineages, which could arise from weak differentiation, recent divergence, admixture, or discordance among layers.
 
-In our empirical example below, we see a clear BIC elbow at K = 3, where the largest improvement in fit occurs before subsequent reductions in BIC become much smaller.
-This resulted in K = 3 being selected in 88% of SOM replicates, followed by K = 4 in 12%.
+In our empirical example below, we see a clear BIC elbow between K = 3 and K = 4 (top), with the largest ΔBIC improvement occurring at K = 3 and much smaller improvements thereafter (middle).
+This resulted in K = 3 being selected in 88% of SOM replicates and K = 4 in 12% (bottom).
 
 ```r
 plot.K.SOM(Polygonia_SOM)
@@ -651,28 +652,26 @@ plot.K.SOM(Polygonia_SOM)
 
 ### 5.4 Visualize SOM topology and candidate lineages
 
-We next visualize the trained SOM topology and inferred candidate lineages using `plot.model.SOM()`.
+We next plot the trained SOM topology and inferred candidate lineages using `plot.model.SOM()`.
 
 With the recommended `replicate.mode = "representative"`, this is done for a representative replicate rather than simply the first or a random replicate.
 The representative replicate is selected by first identifying the most frequently inferred K across retained replicates and then, among replicates supporting that K, choosing the replicate with the highest mean pairwise Adjusted Rand Index relative to the other candidate replicates.
 
-The top neighbor-distance panel is a U-matrix plot that is commonly used in SOM studies (Ultsch 1993; Vesanto & Alhoniemi 2000; Wehrens & Buydens 2007).
-It shows the distances among adjacent SOM units for the representative replicate.
+The top neighbor-distance panel is a U-matrix plot commonly used in SOM studies (Ultsch 1993; Vesanto & Alhoniemi 2000; Wehrens & Buydens 2007) that shows the distances among adjacent SOM cells.
 Darker areas indicate relatively large distances between adjacent codebook vectors and mark boundaries (“ridges”) between groups. 
 Light areas indicate lower-distance “valleys,” representing more internally similar areas of the map.
-Supported candidate lineages are therefore expected to occupy these lighter valleys separated from one another by darker ridges.
+Supported candidate lineages are expected to occupy these lighter valleys separated from one another by darker ridges.
 
 The bottom clustering panel shows the inferred candidate-lineage boundaries for the same representative replicate.
-Individuals are shown at the SOM units to which they were mapped, and the red boundaries separate the inferred candidate lineages.
+Individuals are shown at the cells to which they were mapped, and the red boundaries separate the inferred candidate lineages.
 Contiguous cluster regions indicate strong correspondence between the inferred clustering and the learned SOM topology.
-Fragmented cluster regions with the same inferred cluster occurring in disconnected parts of the SOM map indicate reduced topological coherence and can reflect imperfect preservation of the underlying multivariate structure by the two-dimensional SOM or an overly fine clustering solution.
+Fragmented cluster regions with the same inferred cluster occurring in disconnected parts of the map indicate reduced topological coherence and can reflect imperfect preservation of the underlying multivariate structure or a fine clustering solution.
 
 Below, we clearly see three yellow valleys that are distinctly separated by dark-blue ridges that correspond closely to the inferred candidate-lineage boundaries in the bottom plot. 
-This strongly supports the three inferred candidate lineages.
-It also provides a clear example of a coherent SOM topology with well-defined and contiguous cluster structure.
-In other empirical datasets, the ridges are often less distinct, the valleys more fragmented, or transitions between candidate lineages more gradual (as in some empirical examples in Schönberger et al. preprint).
-Another characteristic visible in the plot is that some SOM units contain no mapped individuals.
-This is not unusual and is generally not concerning because the SOM grid represents a smoothed topological surface of the data, so that empty or sparsely occupied units can occur between more strongly occupied regions.
+This strongly supports the three inferred candidate lineages and provides a great example of a coherent SOM topology with well-defined and contiguous cluster structure.
+In other empirical datasets, the ridges are often less distinct, the valleys more fragmented, or transitions between candidate lineages more gradual (Schönberger et al. preprint).
+Another characteristic visible in the plot is that some cells contain no mapped individuals.
+This is not unusual and is generally not concerning because the grid represents a smoothed topological surface of the data, so that empty or sparsely occupied cells can occur between more strongly occupied regions.
 
 ```r
 plot.model.SOM(Polygonia_SOM, replicate.mode = "representative")
