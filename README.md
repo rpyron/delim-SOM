@@ -6,16 +6,17 @@ SOMs are unsupervised machine-learning models that organize high-dimensional dat
 Different sources of information, such as genomic, morphological, environmental, or spatial data, are retained as separate layers while jointly contributing to the same map.
 Any data that can be represented quantitatively for a common set of individuals can be incorporated, including continuous, binary, categorical, and count data.
 
+First, a SOM grid is constructed with dimensions based on the input data. 
 Each cell in the grid is represented by a codebook vector that summarizes the local multivariate "average" of the individuals mapped to it.
 During training, individuals are repeatedly matched to the most similar cell, and that cell and its neighbors are updated toward their measurements.
 Over many training steps, this produces an organized map where similar individuals become represented in nearby regions and dissimilar individuals farther apart (Kohonen 1998, 2014).
-Because the observations are summarized by few codebook vectors, SOMs can reduce sensitivity to noise and reveal broader structure in complex datasets.
+This can reduce sensitivity to noise and reveal broader structure in complex datasets.
 After SOM training, the codebook vectors are clustered into groups that are interpreted as candidate lineages (Pyron et al. 2023).
 
 The framework does not require predefined species assignments and explicitly permits K = 1, so subdivision is only inferred when supported (Janes et al. 2017; Pyron et al. 2023).
 Multiple SOM replicates quantify support for alternative K values and the stability of individual assignments.
 Data layers are automatically balanced so that no single layer dominates the analysis.
-The method is also robust to missing data, because individual matching and codebook-vector updates use only observed variables, allowing the contribution of incomplete individuals without global imputation (Samad & Harp 1992).
+The method is also robust to missing data.
 Our package relies heavily on the *kohonen* *R* package (Wehrens & Buydens 2007; Wehrens & Kruisselbrink 2018).
 
 Overall, *delimSOM* allows heterogeneous evidence to be analyzed jointly within a single framework, incorporating multiple dimensions of ecological and evolutionary divergence to delimit candidate lineages.
@@ -44,8 +45,6 @@ With *delimSOM* 2.0 (Schönberger et al. preprint), we expand the original frame
 
 Current *R* package version: `2.0.0.9000`
 
-For bug reports, feedback, or questions, please contact Daniel Schönberger: daniel.schoenberger@uky.edu.
-
 
 # A) Basic tutorial
 
@@ -66,7 +65,7 @@ packageVersion("delimSOM")
 
 Input data should be supplied as one or multiple numeric matrices or data frames.
 Rows should represent individuals and columns variables.
-For multilayer analyses, use individual identifiers as row names in every layer.
+For multilayer analyses, individual identifiers as row names are required in every layer.
 Missing values should be represented as `NA`.
 
 Single-layer example input:
@@ -112,7 +111,7 @@ Supported inputs include VCF, `genind`, `genlight`, numeric SNP-dosage matrices,
 Retained biallelic loci are converted to numeric dosage data, with diploid genotypes encoded as 0/1/2 and haploid genotypes as 0/1.
 The function returns a numeric matrix with individuals as rows and retained biallelic loci as columns, ready for SOM training.
 
-Below we show a VCF example using the recommended default filters:
+Below we show a VCF example using the recommended default filters.
 This filtering first removes loci with >70% missing data, then individuals with >50% missing data, followed by a final locus filter of >50% missing data. 
 Singleton and invariant loci are also removed by default.
 
@@ -124,7 +123,7 @@ SNP_data <- process.SNP.data.SOM(vcf.path = "data/data.vcf",
                                  missing.individuals.cutoff = 0.5)
 ```
 
-Other supported genetic input formats can be supplied as follows:
+Other supported genetic input formats can be processed as follows:
 
 ```r
 # genind object
@@ -173,9 +172,9 @@ binary_data <- make.cols.binary.SOM(dataframe = categorical_data,
 ### 3.3 Continuous data
 
 Continuous environmental, morphological, or other numeric data can be filtered with `remove.lowCV.multicollinearity.SOM()`.
-This function removes variables with negligible variation or strong correlations.
+This function removes variables with low variation or strong correlations.
 By default, binary and count variables with prevalence <0.05 are removed, non-binary variables with a coefficient of variation ≤0.05 are removed, followed by iterative removal of variables with pairwise absolute Spearman correlations >0.9.
-Specific columns can be ignored for filtering but retained in the dataset using `exclude.cols`, for example coordinates or identifiers.
+Specific columns can be ignored for filtering but retained in the dataset using `exclude.cols` (e.g., coordinates or identifiers).
 
 Example using the recommended default filters:
 
@@ -232,8 +231,8 @@ SOM_results$optim_k_summary
 
 # B) Empirical example: *Polygonia* anglewing butterflies
 
-This tutorial section demonstrates the main steps of the *delim-SOM* 2.0 workflow based on the empirical case study 1 presented in our study (Schönberger et al. preprint).
-The example includes four broadly sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species (Lepidoptera: Nymphalidae) from Dupuis et al. (2018).
+This tutorial section demonstrates the main steps of the *delim-SOM* workflow based on one empirical case study presented in our study (Schönberger et al. preprint).
+The system includes four sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species from Dupuis et al. (2018).
 
 The figure below (Fig. 5 in Dupuis et al. 2018) shows their main results and the four inferred species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*:
 A) geographic sampling localities, 
@@ -246,14 +245,14 @@ C) STRUCTURE results based on 961 SNPs, including the overall K = 4 clustering a
 
 For our *delim-SOM* 2.0 reanalysis, we analyzed 200 individuals shared across the six data layers:
 
-1. genome-wide genotyping-by-sequencing (GBS) SNPs
+1. genome-wide SNPs from genotyping-by-sequencing (GBS)
 2. mitochondrial COI
-3. continuous morphology (RGB wing-color measurements)
+3. continuous morphology (wing-color measurements)
 4. categorical morphology (visually scored wing characters and morphotype)
 5. environmental variables
 6. spatial variables
 
-To follow this tutorial side-by-side, the example data can be downloaded here:
+To follow this tutorial side-by-side, the files for this empirical example can be downloaded here:
 
 ```text
 https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_2018
@@ -262,7 +261,7 @@ https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_
 
 ## 1. Set paths
 
-Here, we define the path to the directory containing the empirical example datasets.
+First, we define the path to the directory containing the empirical example datasets.
 
 ```r
 #### Set environment ###########################################################
@@ -289,13 +288,13 @@ dim(Polygonia_metadata)
 head(Polygonia_metadata, n = 2)
 ```
 
-We see that the metadata contain species identity, specimen ID, geographic coordinates, and morphotype information for 265 individuals.
+We see that the metadata contains species identity, specimen ID, geographic coordinates, and morphotype information for 265 individuals.
 Specimen identifiers are used as row names and allow the metadata to be matched to the other data layers throughout the analysis.
 
 
 ```text
 [1] 265   5
-        Species        ID   Latitude Longitude Morphotype
+          Species      ID   Latitude Longitude Morphotype
 8301 Polygonia faunus 8301   50.921  -114.527  Contrasted
 8302 Polygonia faunus 8302   50.921  -114.527  Contrasted
 ```
@@ -312,14 +311,13 @@ Polygonia_SNP <- process.SNP.data.SOM(vcf.path = file.path(example_dir, "Polygon
                                       missing.loci.cutoff.lenient = 0.7,
                                       missing.loci.cutoff.final = 0.5,
                                       missing.individuals.cutoff = 0.5)
-
 rownames(Polygonia_SNP) <- sub(".*?(\\d+)$", "\\1", rownames(Polygonia_SNP))
 
 dim(Polygonia_SNP)
 print(Polygonia_SNP[1:2, 1:10])
 ```
 
-This retains all 961 biallelic SNPs as variables (columns) and 237 of the original 241 individuals (rows), with four individuals removed due to more than 50% missing data:
+This retains all 961 biallelic SNPs as variables (columns) from 237 of the original 241 individuals (rows), with four individuals removed due to more than 50% missing data:
 
 ```text
 [1] 237 961
@@ -331,10 +329,10 @@ This retains all 961 biallelic SNPs as variables (columns) and 237 of the origin
 
 ### 2.3 Process mitochondrial COI data
 
-Second, we import and process the aligned mitochondrial COI sequences. As before, we use `process.SNP.data.SOM()` with the recommended default settings.
-The function converts the sequence alignment to biallelic SNP variables.
-Then, we use `sub()` to retain only the numeric specimen identifier, as before.
-Duplicate specimen identifiers are removed by retaining the first occurrence, and the output is evaluated.
+Third, we import and process the aligned mitochondrial COI sequences. 
+As before, we use `process.SNP.data.SOM()` with the recommended defaults to convert the sequence alignment to biallelic SNPs.
+Then, we use `sub()` to retain only the numeric specimen identifier.
+Duplicate specimen identifiers are removed and the output is evaluated.
 
 ```r
 #### Process COI data ##########################################################
@@ -342,7 +340,6 @@ Polygonia_COI <- process.SNP.data.SOM(nexus.path = file.path(example_dir, "Polyg
                                       missing.loci.cutoff.lenient = 0.7,
                                       missing.loci.cutoff.final = 0.5,
                                       missing.individuals.cutoff = 0.5)
-
 Polygonia_COI_numeric_rownames <- sub(".*?(\\d+)$", "\\1", rownames(Polygonia_COI))
 Polygonia_COI <- Polygonia_COI[!duplicated(Polygonia_COI_numeric_rownames), , drop = FALSE]
 rownames(Polygonia_COI) <- Polygonia_COI_numeric_rownames[!duplicated(Polygonia_COI_numeric_rownames)]
@@ -364,7 +361,7 @@ This retains 213 biallelic COI variables or SNPs (columns) from the original 1,3
 ### 2.4 Prepare continuous wing-color morphology
 
 This section imports and processes the continuous morphology data containing RGB color measurements from six dorsal and ventral wing regions.
-The specimen identifiers are used as row names, and the non-morphological `Name` and `Species` columns are removed.
+The specimen identifiers are used as row names (confusingly stored as `Species` column in the original dataset), and the non-morphological `Name` and `Species` columns are removed.
 We then filter the continuous wing-color variables for low variation and high pairwise absolute Spearman correlations using the defaults in `remove.lowCV.multicollinearity.SOM()`.
 Lastly, we evaluate the output.
 
@@ -388,7 +385,7 @@ Filtering removes three of the original eighteen continuous wing-color variables
 8302 111.30 51.86 19.38 151.62  91.75 12.01 167.63 124.57 33.41 59.09
 ```
 
-The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral wing regions (spots 11-16 in their figure) used for the RGB measurements and the average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
+The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral wing regions (spots 11-16 in their figure) used for the RGB measurements and their average red, green, and blue luminance values for each species, with (c) and (s) denoting the contrasted and smeared morphotypes, respectively.
 
 <p align="center">
   <img src="figures/Figure_Dupuis_et_al_2018_Fig3.png">
@@ -397,11 +394,12 @@ The figure below (Fig. 3 in Dupuis et al. 2018) shows the six dorsal and ventral
 
 ### 2.5 Prepare categorical wing morphology
 
-We next import and prepare the visually scored wing characters and combine them with the morphotype data.
+We next import and process the visually scored wing characters and combine them with the morphotype data.
 
 The figure below (Fig. 2 in Dupuis et al. 2018) shows the ten visually scored characters on the dorsal and ventral wing surfaces and the proportion of each character state across species.
+The authors chose these characters and regions based on diagnostic features in field guides.
 The labels 1–10 indicate the scored wing characters, while (c) and (s) denote the contrasted and smeared forms of *P. faunus* and *P. satyrus*, respectively.
-We can see that most characters are binary, but three (1, 4, 5) are ordinal and one (8) is nominal.
+We can see that most characters are binary, but three (spots 1, 4, 5) are ordinal and one (spot 8) is nominal.
 
 <p align="center">
   <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="800">
