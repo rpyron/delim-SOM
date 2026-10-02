@@ -65,7 +65,7 @@ packageVersion("delimSOM")
 
 Input data should be supplied as one or multiple numeric matrices or data frames.
 Rows should represent individuals and columns variables.
-For multilayer analyses, individual identifiers as row names are required in every layer.
+For multilayer analyses, individual identifiers as rownames are required in every layer.
 Missing values should be represented as `NA`.
 
 Single-layer example input:
@@ -289,7 +289,7 @@ head(Polygonia_metadata, n = 2)
 ```
 
 We see that the metadata contains species identity, specimen ID, geographic coordinates, and morphotype information for 265 individuals.
-Specimen identifiers are used as row names and allow the metadata to be matched to the other data layers throughout the analysis.
+Specimen identifiers are used as rownames and allow the metadata to be matched to the other data layers throughout the analysis.
 
 
 ```text
@@ -303,7 +303,7 @@ Specimen identifiers are used as row names and allow the metadata to be matched 
 ### 2.2 Process genome-wide SNP data
 
 We next import and process the VCF file containing GBS-derived genome-wide SNPs using `process.SNP.data.SOM()` with the recommended default settings. 
-We then use `sub()` to simplify the row names by retaining only the numeric specimen identifier, and evaluate the output.
+We then use `sub()` to simplify the rownames by retaining only the numeric specimen identifier, and evaluate the output.
 
 ```r
 #### Process SNP data ##########################################################
@@ -361,7 +361,7 @@ This retains 213 biallelic COI variables or SNPs (columns) from the original 1,3
 ### 2.4 Prepare continuous wing-color morphology
 
 This section imports and processes the continuous morphology data containing RGB color measurements from six dorsal and ventral wing regions.
-The specimen identifiers are used as row names (confusingly stored as `Species` column in the original dataset), and the non-morphological `Name` and `Species` columns are removed.
+The specimen identifiers are used as rownames (confusingly stored as `Species` column in the original dataset), and the non-morphological `Name` and `Species` columns are removed.
 We then filter the continuous wing-color variables for low variation and high pairwise absolute Spearman correlations using the defaults in `remove.lowCV.multicollinearity.SOM()`.
 Lastly, we evaluate the output.
 
@@ -405,7 +405,7 @@ Most characters are binary, but three are ordinal (spots 1, 4, 5) and one is nom
   <img src="figures/Figure_Dupuis_et_al_2018_Fig2.png" width="800">
 </p>
 
-We first import the visually scored wing characters and use the specimen identifiers as row names.
+We first import the visually scored wing characters and use the specimen identifiers as rownames.
 We remove the `Name` and `Species` columns and rename the ten wing characters for clarity.
 The binary and ordinal characters are left untouched.
 However, we treat wing character 8 as nominal and therefore convert its four states into four binary indicator variables and remove the original wing character 8 variable.
@@ -434,8 +434,8 @@ Polygonia_wing_scores$Wing_character_8 <- NULL
 ```
 
 Morphotype data are then extracted from the metadata.
-We ensure that the specimen identifiers of both datasets are stored as character row names and combine the wing-character and morphotype data using their shared specimen identifiers.
-The shared specimen identifiers are restored as row names after merging.
+We ensure that the specimen identifiers of both datasets are stored as character rownames and combine the wing-character and morphotype data using their shared specimen identifiers.
+The shared specimen identifiers are restored as rownames after merging.
 Finally, morphotype is converted into binary indicator variables using `make.cols.binary.SOM()` with `append.to.original = TRUE`, and the original morphotype variable is removed.
 
 ```r
@@ -719,10 +719,11 @@ plot.structure.SOM(Polygonia_SOM, bottom.margin = 3.5)
   <img src="figures/Figure_structure.png">
 </p>
 
-We can also extract and evaluate the replicate-consensus cluster assignment coefficients directly.
+We can also extract and evaluate the replicate-consensus cluster assignment coefficients.
 These are stored in the `$ancestry_matrix` component of the clustering output.
 Furthermore, it is often useful to combine these coefficients with species labels to compare the inferred candidate-lineage assignments with existing species hypotheses.
-Because the individual IDs are stored as row names in both the ancestry matrix and `Polygonia_metadata`, we can match the species names to the corresponding individuals.
+
+In our example, the individual IDs are stored as rownames in both the ancestry matrix and `Polygonia_metadata` so we can match the species names to the corresponding individuals.
 We can then inspect the dataframe:
   
   ```r
@@ -743,16 +744,18 @@ head(Polygonia_ancestry)
 
 Evaluating this data frame together with the STRUCTURE-like barplot reveals that the purple and blue clusters correspond to *P. satyrus* (purple) and *P. faunus* (blue), respectively. 
 However, *P. gracilis* and *P. progne* are both predominantly assigned to the green cluster, corresponding to a single candidate lineage.
-These two species are separated only by a small proportion of replicates, with *P. gracilis* receiving the yellow cluster component and *P. progne* the blue cluster component.
+These two species are separated only by a small proportion of replicates, with *P. gracilis* receiving the yellow and *P. progne* the blue cluster component.
 
 
 ### 5.6 Plot geographic assignments
 
-`plot.map.SOM()` maps the replicate-consensus assignment coefficients to the geographic coordinates of each individual as pie charts.
-This function requires two objects as input:
-the SOM output object (here `Polygonia_SOM`) and a data frame containing the sample coordinates with row names matching those in the SOM output (here based on the spatial layer `Polygonia_spatial`).
-Several additional plotting arguments are available, as shown below, and may require some fine-tuning to obtain an aesthetically pleasing map.
-Because the four *Polygonia* species in our empirical example are broadly sympatric, this plot is less informative for distinguishing their geographic distributions because many of the pie charts overlap.
+`plot.map.SOM()` displays replicate-consensus assignment coefficients as pie charts at the geographic coordinates of each individual.
+This function requires two inputs:
+the SOM output object (`Polygonia_SOM`) and a data frame containing the sample coordinates with rownames matching those in the SOM output (`Polygonia_spatial`).
+The function automatically matches the rownames and only plots shared individuals.
+
+As shown below, additional plotting arguments are available and may require some fine-tuning to create an aesthetic map.
+In our case, the four *Polygonia* species are broadly sympatric, making this plot is less informative for distinguishing their geographic distributions due to the overlapping pie charts.
 
 ```r
 plot.map.SOM(SOM.output = Polygonia_SOM,
@@ -777,12 +780,14 @@ plot.map.SOM(SOM.output = Polygonia_SOM,
 
 `clustering.SOM()` calculates two complementary measures of variable importance that can be visualized using `plot.variable.importance.SOM()`.
 
-`mode = "Cluster.separation"` visualizes cluster-separation importance and is generally the more relevant measure for identifying which variables distinguish the inferred candidate lineages.
+First, `mode = "Cluster.separation"` visualizes cluster-separation importance and is generally the more relevant measure for identifying which variables distinguish the inferred candidate lineages.
 It uses an ANOVA-like η² effect size to quantify how strongly each variable is associated with separation among the inferred clusters.
 Higher η² values indicate that a larger proportion of variation in that variable is associated with the inferred cluster structure.
+Note that η² provides an overall measure of cluster separation and does not indicate which specific clusters a variable separates most strongly.
 
 Here, we use `bottom.margin` and `left.margin` to adjust the plot margins depending on the length of the variable labels.
-We also use `bars.threshold.N` to set the threshold for omitting variable labels and boxplot whiskers for layers containing more than twenty displayed variables, which reduces visual clutter.
+We also use `bars.threshold.N` to set the threshold for omitting variable labels and boxplot whiskers for layers containing more than twenty displayed variables.
+This allows large layers such as SNP datasets to be visualized more clearly.
 
 ```r
 plot.variable.importance.SOM(Polygonia_SOM,
@@ -797,11 +802,11 @@ plot.variable.importance.SOM(Polygonia_SOM,
 </p>
 
 
-Second, `mode = "Map.variance"` visualizes map-variance importance, which quantifies how strongly each variable varies across the trained SOM map, irrespective of whether this variation corresponds directly to the final cluster boundaries.
-Higher values therefore indicate greater variation of a variable across the SOM map, which may reflect cluster separation, continuous gradients, or within-cluster variation.
-Map variance is primarily intended as a complementary measure to cluster-separation importance because strong variation across the SOM does not necessarily mean that a variable strongly distinguishes the inferred candidate lineages.
-If a variable shows both high η² cluster-separation importance and map variance, this provides additional evidence for its importance because the variable both varies strongly across the SOM map and is aligned with the inferred cluster structure.
-Map variance is also particularly useful when K = 1, for which cluster-separation importance cannot be calculated because no between-cluster partition exists. 
+Second, `mode = "Map.variance"` visualizes map-variance importance, which quantifies how strongly each variable varies across the trained SOM map (i.e., irrespective of whether this variation corresponds directly to the cluster boundaries).
+Higher values indicate greater variation in a variable across the map.
+Map variance is primarily intended as a complementary measure to cluster-separation importance:
+if a variable shows both high η² cluster-separation importance and map variance, this provides additional evidence for its importance because the variable both varies strongly across the map and is aligned with the inferred cluster structure.
+Map variance is also particularly useful when K = 1, since cluster-separation importance cannot be calculated in this case (because no between-cluster partition exists). 
 
 As above, we use `bottom.margin`, `left.margin`, and `bars.threshold.N` to modify the plot.
 
@@ -985,7 +990,7 @@ Polygonia gracilis gracilis     Polygonia gracilis zephyrus     Polygonia progne
 
 ## Important considerations
 
-- Ensure that row names uniquely and consistently identify individuals across all layers.
+- Ensure that rownames uniquely and consistently identify individuals across all layers.
 - Encode missing values as `NA`.
 - Preprocess variables to transform skewness and remove low-information and strongly redundant predictors.
 - Inspect support across alternative values of K rather than relying only on the most frequently selected K.
@@ -1270,12 +1275,15 @@ Clustering can also be rerun for a single K value using `set.k`, which bypasses 
 This is often useful if many K values are supported or if the automatic K-selection does not work well (e.g., because a distinct BIC elbow is not detected).
 Fixed-K analyses should be used to inspect or test specific alternative solutions rather than to replace evaluation of the full K-support profile.
 
-For example, forcing a three-lineage solution:
+For example, forcing a three-lineage solution and then examining the assignment coefficients for this K = 3 solution:
 
 ```r
 SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
                                  set.k = 3,
                                  clustering.method = "kmeans+BICelbow")
+
+plot.structure.SOM(SOM_results_K3)
+head(SOM_results_K3$ancestry_matrix)                                 
 ```
 
 Specific K values can also be inspected using `plot.model.SOM()` without rerunning SOM training:
