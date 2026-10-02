@@ -1139,7 +1139,7 @@ Both default to `0.5`, corresponding to a maximum of 50% missing data per indivi
 Our analyses show that *delimSOM* is relatively robust to substantial missingness (Schönberger et al. preprint).
 Specifically, performance declined only marginally as the proportion of missing data increased to approximately 50%, but decreased more sharply beyond this threshold.
 This robustness is facilitated by how missing data are handled during SOM training.
-After individuals and variables with excessive missingness are removed, best-matching units are identified using only the observed dimensions, and codebook updates are restricted to those dimensions.
+After individuals and variables with excessive missingness are removed, the most similar SOM cell for each sample is identified using only the observed dimensions, and codebook updates are restricted to those dimensions.
 Incomplete observations can therefore still contribute to SOM training without requiring global imputation across heterogeneous data layers (Cottrell & Letrémy 2005; Kohonen 2001; Samad & Harp 1992; Wehrens & Buydens 2007).
 
 These results support `0.5` as our recommended default filtering threshold, retaining incomplete data while excluding individuals and variables with very high missingness.
@@ -1151,21 +1151,21 @@ Based on our simulation results, we do not recommend increasing these thresholds
 No single clustering method is expected to perform best for every possible data structure because performance depends on geometry, dimensionality, noise, overlap, and parameterization (Omran et al. 2007; Rodriguez et al. 2019).
 *delimSOM* 2.0 therefore implements six clustering and K-selection methods in `clustering.SOM()`: 
 
-- `"kmeans+BICelbow"`: k-means clustering with K selected from the BIC elbow.
-- `"kmeans+BICthreshold"`: k-means clustering with K selected using a minimum BIC-improvement threshold.
-- `"GMM+BICthreshold"`: Gaussian mixture modeling with K selected using a minimum BIC-improvement threshold.
-- `"hierarchical+DB"`: hierarchical clustering with K selected using the Davies–Bouldin index.
-- `"HDBSCAN"`: density-based clustering that can identify clusters without specifying K directly.
-- `"OPTICS+Silhouette"`: OPTICS density-based clustering with the clustering solution evaluated using Silhouette scores.
+- `"kmeans+BICelbow"`: k-means clustering with K selected from the BIC elbow
+- `"kmeans+BICthreshold"`: k-means clustering with K selected using a minimum BIC-improvement threshold
+- `"GMM+BICthreshold"`: Gaussian mixture modeling with K selected using a minimum BIC-improvement threshold
+- `"hierarchical+DB"`: hierarchical clustering with K selected using the Davies–Bouldin index
+- `"HDBSCAN"`: density-based clustering that can identify clusters without specifying K directly
+- `"OPTICS+Silhouette"`: OPTICS density-based clustering with the clustering solution evaluated using Silhouette scores
 
-Our testing (Schönberger et al. preprint) showed that the two k-means/BIC approaches provided the best overall balance of lineage recovery, assignment accuracy, and computational efficiency.
-We therefore recommend `"kmeans+BICelbow"` as the primary starting point, while alternative methods can provide useful complementary analyses.
-`"kmeans+BICthreshold"` performed similarly well, and `"GMM+BICthreshold"` also showed high lineage recovery and assignment accuracy but generally required longer computation times.
+Our testing showed that the two k-means/BIC approaches provided the best overall balance of lineage recovery, assignment accuracy, and computational efficiency (Schönberger et al. preprint).
+We therefore recommend `"kmeans+BICelbow"` as the primary approach, while using alternative methods for complementary analyses.
 
-By contrast, we do not generally recommend using `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"`.
-Hierarchical clustering showed high recovery and assignment accuracy but was prohibitively slow, whereas HDBSCAN and OPTICS were computationally faster but less reliable.
+Alongside `"kmeans+BICelbow"`, `"kmeans+BICthreshold"` performed similarly well, and `"GMM+BICthreshold"` also showed high lineage recovery and assignment accuracy but required substantially longer computation times.
+By contrast, we generally do not recommend `"hierarchical+DB"`, `"HDBSCAN"`, or `"OPTICS+Silhouette"`.
+Hierarchical clustering showed high lineage recovery and assignment accuracy but was prohibitively slow, whereas HDBSCAN and OPTICS were computationally faster but less reliable.
 
-The alternative clustering methods can be compared using the same trained SOM:
+The alternative clustering methods can be compared using the same trained SOM object:
 
 ```r
 SOM_kmeans_BICthreshold <- clustering.SOM(SOM.output = SOM_tr,
@@ -1193,7 +1193,7 @@ SOM_OPTICS_Silhouette$optim_k_summary
 ## Neighborhood function
 
 `train.SOM()` allows either `"gaussian"` or `"bubble"` neighborhood functions via `training.neighborhoods`.
-The bubble function applies equal influence to all SOM units within the neighborhood radius, whereas the Gaussian function applies progressively less influence with increasing distance from the best-matching unit (Kohonen 1998).
+The bubble function applies equal influence to all SOM cells within the neighborhood radius, whereas the Gaussian function applies progressively less influence with increasing distance from the cell most similar to the current individual (Kohonen 1998).
 For both functions, the neighborhood radius decreases during training, shifting from broad map organization to finer local refinement (Kohonen 2014; Wehrens & Kruisselbrink 2018).
 Our analyses (Schönberger et al. preprint) showed that the Gaussian neighborhood more reliably recovered the correct number of lineages and produced lower topographic error, whereas the bubble neighborhood produced lower quantization error and shorter runtimes.
 We therefore recommend the Gaussian neighborhood as the primary option because it more reliably recovered the correct number of lineages and better preserved SOM topology.
@@ -1217,7 +1217,7 @@ By default, `train.SOM()` uses an initial learning rate of `0.5` and a final lea
 These default values performed well in our analyses and experience.
 
 Optional learning-rate tuning can be enabled with `learning.rate.tuning = TRUE`.
-When enabled, `train.SOM()` tests alternative initial and final learning-rate combinations and selects the combination with the lowest mean quantization error, which measures how closely samples are represented by their best-matching SOM units.
+When enabled, `train.SOM()` tests alternative initial and final learning-rate combinations and selects the combination with the lowest mean quantization error, which measures how closely samples are represented by their most similar SOM cells.
 
 ```r
 SOM_tr_tuned <- train.SOM(input_data = SOM_data,
@@ -1234,9 +1234,9 @@ Learning-rate tuning may be useful for small datasets or short exploratory analy
 
 By default, `grid.size = NULL`, so `train.SOM()` automatically determines both the size and shape of the SOM grid based on sample size and the structure of the input data.
 
-The default `grid.multiplier = 5` controls the approximate number of SOM units relative to sample size.
-Larger values produce finer maps with more SOM units, whereas smaller values produce coarser maps.
-A grid that is too coarse can merge distinct structure, whereas an overly fine grid can fragment clusters, increase the number of empty units, and increase computation time (Kohonen 1998, 2014; Vesanto 1999).
+The default `grid.multiplier = 5` controls the approximate number of SOM cells relative to sample size.
+Larger values produce finer maps with more SOM cells, whereas smaller values produce coarser maps.
+A grid that is too coarse can merge distinct structure, whereas an overly fine grid can fragment clusters, increase the number of empty cells, and increase computation time (Kohonen 1998, 2014; Vesanto 1999).
 We therefore generally recommend retaining the automatic grid construction unless there is a specific reason to modify map resolution.
 For datasets with relatively few samples, `train.SOM()` may abort if the automatically generated grid is too large and return a message recommending a smaller `grid.multiplier`.
 In this case, decrease `grid.multiplier` until an appropriate grid can be constructed.
