@@ -43,7 +43,7 @@ We have now released version 2.0 of the delim-SOM framework!
 The species-delimitation framework was originally introduced by Pyron et al. (2023) for genetic data and subsequently extended by Pyron (2023) to multilayer SOMs for integrative species delimitation by presenting *delimSOM*.
 With *delimSOM* 2.0 (Schönberger et al. preprint), we expand the original framework into a comprehensive *R* package with improved data preprocessing and SOM training, new clustering and K-selection approaches, extensive diagnostics and visualizations, and revised variable- and layer-importance analyses.
 
-Current *R* package version: `2.0.0.9000`
+Current *R* package version: `2.0`
 
 
 # A) Basic tutorial
@@ -1396,9 +1396,7 @@ R. Alexander Pyron: rpyron@gwu.edu
 
 - Samad, T., & Harp, S. (1992). Self–organization with partial data. *Network: Computation in Neural Systems*, 3(2), 205–212. https://doi.org/10.1088/0954-898X/3/2/008
 
-- Schönberger, D., MacDonald, Z. G., Schmidt, B. C., & Dupuis, J. R. (2026). NicheDiv: A DAPC framework to quantify niche divergence across highly multivariate environmental space. *bioRxiv*. https://doi.org/10.64898/2026.06.19.733388
-
-- Schönberger, D., Pyron, R. A., & Dupuis, J. R. (2026). *delim-SOM 2.0*: Fully integrative species delimitation with machine learning and flexible diverse data types of biological and other data. *bioRxiv*.
+- Schönberger, D., MacDonald, Z. G., Schmidt, B. C., & Dupuis, J. R. (2026). *NicheDiv*: A DAPC framework to quantify niche divergence across highly multivariate environmental space. *bioRxiv*. https://doi.org/10.64898/2026.06.19.733388
 
 - Ultsch, A. (1993). Self-organizing neural networks for visualisation and classification. In *Information and classification. Studies in classification, data analysis and knowledge organization* (pp. 307–313). Springer. https://doi.org/10.1007/978-3-642-50974-2_31
 
@@ -1406,16 +1404,16 @@ R. Alexander Pyron: rpyron@gwu.edu
 
 - Vesanto, J., & Alhoniemi, E. (2000). Clustering of the self-organizing map. *IEEE Transactions on Neural Networks*, 11(3), 586–600. https://doi.org/10.1109/72.846731
 
-- Wehrens, R., & Buydens, L. M. C. (2007). Self- and super-organizing maps in R: The kohonen package. *Journal of Statistical Software*, 21(5). https://doi.org/10.18637/jss.v021.i05
+- Wehrens, R., & Buydens, L. M. C. (2007). Self- and super-organizing maps in *R*: The kohonen package. *Journal of Statistical Software*, 21(5). https://doi.org/10.18637/jss.v021.i05
 
-- Wehrens, R., & Kruisselbrink, J. (2018). Flexible self-organizing maps in kohonen 3.0. *Journal of Statistical Software*, 87(7). https://doi.org/10.18637/jss.v087.i07
+- Wehrens, R., & Kruisselbrink, J. (2018). Flexible self-organizing maps in *kohonen* 3.0. *Journal of Statistical Software*, 87(7). https://doi.org/10.18637/jss.v087.i07
 
 
 # Citation
 
-Please cite the *delimSOM* framework as follows:
+Please cite the *delimSOM* 2.0 framework as follows:
 
-Schönberger, D., Pyron, R. A., & Dupuis, J. R. Fully integrative species delimitation with machine learning: Using self-organizing maps to infer candidate lineages from genetic, phenotypic, spatial, and environmental data in *delim-SOM* 2.0. *bioRxiv*
+Schönberger, D., Pyron, R. A., & Dupuis, J. R. Fully integrative species delimitation with machine learning and diverse data types in *delimSOM* 2.0. *bioRxiv*. https://doi.org/10.64898/2026.10.04.756574
 
 
 # License
