@@ -1,6 +1,6 @@
 Package: delimSOM
 Type: Package
-Title: Self-organizing maps for fully integrative species delimitation
+Title: Self-Organizing Maps for Fully Integrative Species Delimitation
 Version: 2.0
 Authors@R: c(
     person(
@@ -20,8 +20,8 @@ Authors@R: c(
         role = "aut"
     )
     )
-Description: Tools for fully integrative species delimitation using unsupervised 
-machine learning with self-organizing maps.
+Description: Tools for fully integrative species delimitation using unsupervised
+    machine learning with self-organizing maps.
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
