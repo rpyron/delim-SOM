@@ -1,8 +1,7 @@
 #### Set environment ###########################################################
 rm(list = ls()) #clear environment
-#setwd("C:/Users/danie/Desktop/PhD research/SOM package")
-setwd("./")
-source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
+setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
+source("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/R_code/2026_10_05_delim-SOM_2.0_functions.R")
 
 
 
@@ -50,7 +49,7 @@ colnames(MORPH) <- c(paste("Trait", 1:n_morph), "Trait_constant")
 ## Simulate k3 data for each cluster (simulating k = 3)
 n_clusters <- 3 #number of clusters
 n_k3_test <- 50  #number of traits
-clusters <- sample(1:n_clusters, n_individuals, replace = T) #assign each individual to cluster
+clusters <- sample(1:n_clusters, n_individuals, replace = TRUE) #assign each individual to cluster
 k3_test <- matrix(NA, nrow = n_individuals, ncol = n_k3_test)
 colnames(k3_test) <- paste("Trait", 1:n_k3_test)
 rownames(k3_test) <- paste0("Individual", 1:n_individuals)
@@ -64,7 +63,8 @@ for (i in 1:n_clusters) { #assign data for each cluster with some random variati
   k3_test[cluster_indices, ] <- matrix(rnorm(length(cluster_indices) * n_k3_test, mean = k3_test_means[[paste0("cluster_", i)]], sd = 3),
                                        nrow = length(cluster_indices),
                                        ncol = n_k3_test)}
-na_indices_k3_test <- sample(1:(n_individuals * n_k3_test), size = round(n_k3_test * n_individuals * 0.2), replace = F) #introduce some missing valuesk3_test[na_indices_k3_test] <- NA
+na_indices_k3_test <- sample(1:(n_individuals * n_k3_test), size = round(n_k3_test * n_individuals * 0.2), replace = FALSE) #introduce some missing values#
+k3_test[na_indices_k3_test] <- NA
 k3_test <- as.data.frame(k3_test)
 par(mfrow = c(3, 1))
 hist(k3_test$`Trait 1`, breaks = 30, main = "Histogram of Trait 1") #plot histograms for trait 1
@@ -120,7 +120,7 @@ try(SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), max.NA.row 
 try(SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), max.NA.row = 0.5, max.NA.col = 0.1)) #will fail
 SOM_multi_ENV_k3_Alleles <- train.SOM(list(ENV, MORPH, Alleles), N.replicates = 10,
                                       message.N.replicates = 5, grid.size = c(2, 2))
-SOM_multi_ENV_k3_Alleles_2 <- train.SOM(list(ENV, MORPH, Alleles), save.SOM.results = T, message.N.replicates = 5, grid.multiplier = 2)
+SOM_multi_ENV_k3_Alleles_2 <- train.SOM(list(ENV, MORPH, Alleles), save.SOM.results = TRUE, message.N.replicates = 5, grid.multiplier = 2)
 
 
 ## Evaluate SOM object structures for one dataset after SOM training
@@ -247,22 +247,29 @@ plot.variable.importance.SOM(SOM_single_TestD, mode = "Map.variance")
 try(plot.variable.importance.SOM(SOM_single_ENV)) #will fail
 plot.variable.importance.SOM(SOM_single_k3)
 plot.variable.importance.SOM(SOM_single_k3_2)
-plot.variable.importance.SOM(SOM_multi_ENV_k3_Alleles, top.margin = 2, bar.label.font.size = 0.4, 
-                             bars.threshold.N = 200, mode = "Map.variance")
-plot.variable.importance.SOM(SOM_multi_MORPH_ENV, top.margin = 6, bar.label.font.size = 0.5, 
+plot.variable.importance.SOM(SOM_multi_ENV_k3_Alleles, 
+                             top.margin = 2,
+                             bar.label.font.size = 0.4, 
+                             bars.threshold.N = 200, 
+                             mode = "Map.variance")
+plot.variable.importance.SOM(SOM_multi_MORPH_ENV, 
+                             top.margin = 6,
+                             bar.label.font.size = 0.5, 
                              mode = "Map.variance")
 
 
 ## Test layer importance layer plot
 plot.layer.importance.varimp.SOM(SOM_single_Alleles) 
 plot.layer.importance.varimp.SOM(SOM_single_TestD)
-plot.layer.importance.varimp.SOM(SOM_single_TestD, add.boxplot.whiskers = F)
+plot.layer.importance.varimp.SOM(SOM_single_TestD, 
+                                 add.boxplot.whiskers = FALSE)
 plot.layer.importance.varimp.SOM(SOM_single_ENV)
 plot.layer.importance.varimp.SOM(SOM_single_k3)
 plot.layer.importance.varimp.SOM(SOM_single_k3_2)
 plot.layer.importance.varimp.SOM(SOM_multi_ENV_k3_Alleles)
 
-er.importance.varimp.SOM(SOM_multi_ENV_k3_Alleles, col.pal = viridis::rocket)
+plot.layer.importance.varimp.SOM(SOM_multi_ENV_k3_Alleles, 
+                                 col.pal = viridis::rocket)
 plot.layer.importance.varimp.SOM(SOM_multi_MORPH_ENV)
 
 
@@ -270,5 +277,7 @@ plot.layer.importance.varimp.SOM(SOM_multi_MORPH_ENV)
 try(plot.layer.importance.leaveoneout.SOM(SOM_single_Alleles)) #will fail because of single layer
 plot.layer.importance.leaveoneout.SOM(SOM_single_TestD)
 plot.layer.importance.leaveoneout.SOM(SOM_multi_ENV_k3_Alleles, 
-                                      add.points = F, col.pal = viridis::rocket, save = T)
+                                      add.points = FALSE,
+                                      col.pal = viridis::rocket, 
+                                      save = TRUE)
 plot.layer.importance.leaveoneout.SOM(SOM_multi_MORPH_ENV)

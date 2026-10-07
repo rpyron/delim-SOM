@@ -1,15 +1,14 @@
-################################################################################
-#### Set environment
-################################################################################
+#### Set environment and load packages #########################################
 
 rm(list = ls()) #clear environment
+gc()
 setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
-source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
+source("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/R_code/2026_10_05_delim-SOM_2.0_functions.R")
 
 
-#################################################################################
+
+
 #### Create function to simulate simple test data
-################################################################################
 
 ## Create function to simulate two layers with user-defined numbers of clusters and mean cluster distances
 simulate.simple.layers.SOM <- function(N.samples = 40, #number of samples
@@ -28,55 +27,23 @@ simulate.simple.layers.SOM <- function(N.samples = 40, #number of samples
                                                                    "layer1_nested_within_layer2"), #relationship between layer-specific sample memberships
                                        seed = 1 #random seed
 ) {
-  if (!is.numeric(N.samples) || length(N.samples) != 1 || N.samples < 2 || N.samples %% 1 != 0) {
-    stop("'N.samples' must be a single integer >= 2.")
-  }
-  if (!is.numeric(N.variables.layer1) || length(N.variables.layer1) != 1 || N.variables.layer1 < 1 || N.variables.layer1 %% 1 != 0) {
-    stop("'N.variables.layer1' must be a single integer >= 1.")
-  }
-  if (!is.numeric(N.variables.layer2) || length(N.variables.layer2) != 1 || N.variables.layer2 < 1 || N.variables.layer2 %% 1 != 0) {
-    stop("'N.variables.layer2' must be a single integer >= 1.")
-  }
-  if (!is.numeric(layer1.K) || length(layer1.K) != 1 || layer1.K < 1 || layer1.K %% 1 != 0) {
-    stop("'layer1.K' must be a single integer >= 1.")
-  }
-  if (!is.numeric(layer2.K) || length(layer2.K) != 1 || layer2.K < 1 || layer2.K %% 1 != 0) {
-    stop("'layer2.K' must be a single integer >= 1.")
-  }
-  if (layer1.K > N.samples) {
-    stop("'layer1.K' cannot be larger than 'N.samples'.")
-  }
-  if (layer2.K > N.samples) {
-    stop("'layer2.K' cannot be larger than 'N.samples'.")
-  }
-  if (!is.numeric(layer1.mean.cluster.distance) || length(layer1.mean.cluster.distance) != 1 || layer1.mean.cluster.distance < 0) {
-    stop("'layer1.mean.cluster.distance' must be a single numeric value >= 0.")
-  }
-  if (!is.numeric(layer2.mean.cluster.distance) || length(layer2.mean.cluster.distance) != 1 || layer2.mean.cluster.distance < 0) {
-    stop("'layer2.mean.cluster.distance' must be a single numeric value >= 0.")
-  }
-  if (!is.numeric(layer1.within.cluster.sd) || length(layer1.within.cluster.sd) != 1 || layer1.within.cluster.sd < 0) {
-    stop("'layer1.within.cluster.sd' must be a single numeric value >= 0.")
-  }
-  if (!is.numeric(layer2.within.cluster.sd) || length(layer2.within.cluster.sd) != 1 || layer2.within.cluster.sd < 0) {
-    stop("'layer2.within.cluster.sd' must be a single numeric value >= 0.")
-  }
-  if (!is.numeric(prop.differentiated.variables.layer1) || length(prop.differentiated.variables.layer1) != 1 || prop.differentiated.variables.layer1 <= 0 || prop.differentiated.variables.layer1 > 1) {
-    stop("'prop.differentiated.variables.layer1' must be a single numeric value > 0 and <= 1.")
-  }
-  if (!is.numeric(prop.differentiated.variables.layer2) || length(prop.differentiated.variables.layer2) != 1 || prop.differentiated.variables.layer2 <= 0 || prop.differentiated.variables.layer2 > 1) {
-    stop("'prop.differentiated.variables.layer2' must be a single numeric value > 0 and <= 1.")
-  }
-  if (!is.numeric(seed) || length(seed) != 1) {
-    stop("'seed' must be a single numeric value.")
-  }
+  if (!is.numeric(N.samples) || length(N.samples) != 1 || N.samples < 2 || N.samples %% 1 != 0) stop("'N.samples' must be a single integer >= 2")
+  if (!is.numeric(N.variables.layer1) || length(N.variables.layer1) != 1 || N.variables.layer1 < 1 || N.variables.layer1 %% 1 != 0) stop("'N.variables.layer1' must be a single integer >= 1")
+  if (!is.numeric(N.variables.layer2) || length(N.variables.layer2) != 1 || N.variables.layer2 < 1 || N.variables.layer2 %% 1 != 0) stop("'N.variables.layer2' must be a single integer >= 1")
+  if (!is.numeric(layer1.K) || length(layer1.K) != 1 || layer1.K < 1 || layer1.K %% 1 != 0) stop("'layer1.K' must be a single integer >= 1")
+  if (!is.numeric(layer2.K) || length(layer2.K) != 1 || layer2.K < 1 || layer2.K %% 1 != 0) stop("'layer2.K' must be a single integer >= 1")
+  if (layer1.K > N.samples) stop("'layer1.K' cannot be larger than 'N.samples'")
+  if (layer2.K > N.samples) stop("'layer2.K' cannot be larger than 'N.samples'")
+  if (!is.numeric(layer1.mean.cluster.distance) || length(layer1.mean.cluster.distance) != 1 || layer1.mean.cluster.distance < 0) stop("'layer1.mean.cluster.distance' must be a single numeric value >= 0")
+  if (!is.numeric(layer2.mean.cluster.distance) || length(layer2.mean.cluster.distance) != 1 || layer2.mean.cluster.distance < 0) stop("'layer2.mean.cluster.distance' must be a single numeric value >= 0")
+  if (!is.numeric(layer1.within.cluster.sd) || length(layer1.within.cluster.sd) != 1 || layer1.within.cluster.sd < 0) stop("'layer1.within.cluster.sd' must be a single numeric value >= 0")
+  if (!is.numeric(layer2.within.cluster.sd) || length(layer2.within.cluster.sd) != 1 || layer2.within.cluster.sd < 0) stop("'layer2.within.cluster.sd' must be a single numeric value >= 0")
+  if (!is.numeric(prop.differentiated.variables.layer1) || length(prop.differentiated.variables.layer1) != 1 || prop.differentiated.variables.layer1 <= 0 || prop.differentiated.variables.layer1 > 1) stop("'prop.differentiated.variables.layer1' must be a single numeric value > 0 and <= 1")
+  if (!is.numeric(prop.differentiated.variables.layer2) || length(prop.differentiated.variables.layer2) != 1 || prop.differentiated.variables.layer2 <= 0 || prop.differentiated.variables.layer2 > 1) stop("'prop.differentiated.variables.layer2' must be a single numeric value > 0 and <= 1")
+  if (!is.numeric(seed) || length(seed) != 1) stop("'seed' must be a single numeric value")
   between.layer.structure <- match.arg(between.layer.structure)
-  if (between.layer.structure == "layer2_nested_within_layer1" && layer2.K < layer1.K) {
-    stop("For 'layer2_nested_within_layer1', 'layer2.K' must be >= 'layer1.K'.")
-  }
-  if (between.layer.structure == "layer1_nested_within_layer2" && layer1.K < layer2.K) {
-    stop("For 'layer1_nested_within_layer2', 'layer1.K' must be >= 'layer2.K'.")
-  }
+  if (between.layer.structure == "layer2_nested_within_layer1" && layer2.K < layer1.K) stop("For 'layer2_nested_within_layer1', 'layer2.K' must be >= 'layer1.K'")
+  if (between.layer.structure == "layer1_nested_within_layer2" && layer1.K < layer2.K) stop("For 'layer1_nested_within_layer2', 'layer1.K' must be >= 'layer2.K'")
   base::set.seed(seed)
   sample.names <- paste0("Sample_", seq_len(N.samples))
   variable.names.layer1 <- paste0("Layer1_Var_", seq_len(N.variables.layer1))
@@ -294,9 +261,8 @@ simulate.simple.layers.SOM <- function(N.samples = 40, #number of samples
 
 
 
-################################################################################
-#### k3 test
-################################################################################
+
+#### k3 test ###################################################################
 
 ## No layer difference -> result: no difference in layer importance as expected
 sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
@@ -308,7 +274,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
@@ -326,7 +292,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
@@ -345,7 +311,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
@@ -364,7 +330,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
@@ -382,7 +348,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
@@ -400,7 +366,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
@@ -418,7 +384,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
@@ -436,7 +402,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
@@ -445,9 +411,8 @@ plot.layer.importance.leaveoneout.SOM(test)
 
 
 
-################################################################################
-#### k2 test
-################################################################################
+
+#### k2 test ###################################################################
 
 ## No mean distance for Layer 2 but 10x more N -> results: higher importance of layer 1 as expected but support for k1 and k2
 sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
@@ -461,14 +426,14 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 30,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
 plot.layer.distance.scale.SOM(test)
 plot.layer.importance.leaveoneout.SOM(test)
 
-Layer2.long <- data.frame(sample = rownames(Layer2), cluster = sim.data$layer2.group.labels, Layer2, check.names = F)
+Layer2.long <- data.frame(sample = rownames(Layer2), cluster = sim.data$layer2.group.labels, Layer2, check.names = FALSE)
 Layer2.long <- reshape2::melt(Layer2.long, id.vars = c("sample", "cluster"), variable.name = "variable", value.name = "value")
 ggplot2::ggplot(Layer2.long[Layer2.long$variable %in% colnames(Layer2)[1:12], ], ggplot2::aes(x = value, color = cluster, fill = cluster)) + ggplot2::geom_density(alpha = 0.25) + ggplot2::facet_wrap(~variable, scales = "free", ncol = 4)
 
@@ -491,7 +456,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 50,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)
@@ -512,7 +477,7 @@ sim.data <- simulate.simple.layers.SOM(N.variables.layer1 = 50,
 Layer1 <- sim.data$layer1
 Layer2 <- sim.data$layer2
 test <- train.SOM(input_data = list(Layer1, Layer2),
-                  parallel = F, verbose = F)
+                  parallel = FALSE, verbose = FALSE)
 test <- clustering.SOM(SOM.output = test, clustering.method = "kmeans+BICelbow")
 test$optim_k_summary
 plot.layer.importance.varimp.SOM(test)

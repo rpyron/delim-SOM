@@ -2,8 +2,9 @@
 
 rm(list = ls()) #clear environment
 gc()
-setwd("C:/Users/danie/Desktop/Phd research/Manuscripts/SOM package")
-source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
+setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
+source("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/R_code/2026_10_05_delim-SOM_2.0_functions.R")
+
 
 
 
@@ -30,21 +31,28 @@ dir.create(results.root.directory, recursive = TRUE, showWarnings = FALSE) #crea
 
 
 ## Set main parameters
-override <- FALSE #rerun all VCFs once because the result-table structure was changed; set to FALSE after a complete successful run
+override <- TRUE #rerun all VCFs once because the result-table structure was changed; set to FALSE after a complete successful run
 max_k <- 2
 expected.mig.tags <- c("0", "1e-6", "4e-6", "7e-6") #define expected migration-rate filename tags
+expected.mig.index.by.tag <- c("0" = 1L, "1e-6" = 2L, "4e-6" = 3L, "7e-6" = 4L) #define expected migration-scenario indices
+expected.n.tdiv <- 301 #expected number of divergence times
+expected.max.tdiv <- 250000 #expected maximum divergence time
+expected.n.snps <- 3000 #expected number of SNPs per VCF
+expected.n.vcf.files <- expected.n.tdiv * length(expected.mig.tags) #expected total number of VCF files
+expected.tdiv.values <- floor(seq(0, expected.max.tdiv, length.out = expected.n.tdiv) + 0.5) #expected divergence-time grid
+
 clustering_method_SOM <- "kmeans+BICelbow"
 
 deNovo.kmeans.BIC.thresh <- 4 #minimum BIC improvement required to choose K2
 deNovo.kmeans.n.iter <- 10000 #maximum number of k-means iterations
-deNovo.kmeans.n.start <- 1000 #number of random starts for de novo k-means/BIC
+deNovo.kmeans.n.start <- 2000 #number of random starts for de novo k-means/BIC
 deNovo.kmeans.max.n.clust <- 2 #maximum number of clusters tested by de novo k-means/BIC
 deNovo.kmeans.max.proportion.PCs <- 0.9 #maximum proportion of possible PCs retained for de novo k-means/BIC
 deNovo.kmeans.center <- TRUE #center genotype matrix before PCA for de novo k-means/BIC
 deNovo.kmeans.scale <- FALSE #scale genotype matrix before PCA for de novo k-means/BIC
 
 sNMF.K.values <- 1:2 #candidate K values
-sNMF.repetitions <- 50 #number of sNMF replicate runs per K
+sNMF.repetitions <- 100 #number of sNMF replicate runs per K
 sNMF.ploidy <- 2 #diploid SNP data
 sNMF.cross.entropy.thresh <- 0 #minimum K2 cross-entropy improvement required; 0 means any improvement
 sNMF.seed <- 1 #random seed
@@ -75,6 +83,7 @@ plot.output.units <- "cm" #plot output units
 Fst_plot_point_size <- 1.7 #Fst plot point size
 Fst_plot_point_alpha <- 0.4 #Fst plot point transparency
 Fst_plot_line_width <- 2 #Fst loess line width
+
 
 
 
@@ -153,6 +162,26 @@ unexpected.mig.tags <- setdiff(unique(vcf.metadata.table$mig.tag), expected.mig.
 if (length(unexpected.mig.tags) > 0) stop(paste("Unexpected migration-rate VCF combinations:", paste(unexpected.mig.tags, collapse = ", ")))
 
 
+## Check exact expected simulation design
+if (nrow(vcf.metadata.table) != expected.n.vcf.files) stop(paste("Expected", expected.n.vcf.files, "VCF files but found", nrow(vcf.metadata.table)))
+observed.tdiv.values <- sort(unique(vcf.metadata.table$tdiv)) #extract observed divergence-time grid
+if (length(observed.tdiv.values) != expected.n.tdiv) stop(paste("Expected", expected.n.tdiv, "unique divergence times but found", length(observed.tdiv.values)))
+if (!identical(observed.tdiv.values, as.numeric(expected.tdiv.values))) stop("Observed divergence-time grid does not exactly match expected 0-250000 simulation grid")
+expected.mig.indices <- unname(expected.mig.index.by.tag[vcf.metadata.table$mig.tag]) #get expected migration-scenario index for each VCF
+invalid.mig.index.rows <- which(vcf.metadata.table$mig.index != expected.mig.indices)
+if (length(invalid.mig.index.rows) > 0) stop("At least one VCF has an incorrect sim index for its migration rate")
+vcf.variant.counts <- vapply(vcf.metadata.table$full.path, function(current.vcf.path) {
+  current.lines <- readLines(current.vcf.path, warn = FALSE)
+  sum(!startsWith(current.lines, "#"))
+}, integer(1)) #count variant rows in each VCF
+invalid.snp.count.files <- vcf.metadata.table$file[vcf.variant.counts != expected.n.snps]
+if (length(invalid.snp.count.files) > 0) {
+  invalid.snp.count.message <- paste(utils::head(paste0(invalid.snp.count.files, " (", vcf.variant.counts[vcf.variant.counts != expected.n.snps], " SNPs)"), 20), collapse = ", ")
+  if (length(invalid.snp.count.files) > 20) invalid.snp.count.message <- paste0(invalid.snp.count.message, ", ...")
+  stop(paste("VCFs do not contain exactly", expected.n.snps, "SNPs:", invalid.snp.count.message))
+}
+
+
 ## Check that VCFs are balanced across migration combinations by divergence time
 mig.tdiv.list <- split(vcf.metadata.table$tdiv, vcf.metadata.table$mig.tag) #split divergence times by migration rate
 reference.tdiv.set <- sort(unique(vcf.metadata.table$tdiv)) #define reference divergence-time set
@@ -189,6 +218,7 @@ cat("Unique simulated divergence times:", nrow(simulated.tdiv.table), "\n\n")
 vcf.mig.file.count.table
 simulated.tdiv.summary.table
 head(simulated.tdiv.table)
+
 
 
 
@@ -784,7 +814,6 @@ coerce.optim.k.summary.to.data.frame <- function(optim.k.summary) {
 }
 
 
-
 ## Create function to extract row-level k proportions from optim_k_summary
 extract.k.proportions.from.summary <- function(optim.k.summary.table, max.k) {
   k.proportion.vector <- rep(0, max.k)
@@ -801,7 +830,6 @@ extract.k.proportions.from.summary <- function(optim.k.summary.table, max.k) {
   }
   return(k.proportion.vector)
 }
-
 
 
 ## Create function to stop when intermediate result contains error
@@ -971,7 +999,7 @@ run.SOM.workflow.for.one.vcf <- function(vcf.file.path, vcf.file.metadata, sampl
   n.samples.processed <- if (!is.null(dim(genind.object.processed))) nrow(genind.object.processed) else NA_integer_ #store number of processed samples
   n.loci.processed <- if (!is.null(dim(genind.object.processed))) ncol(genind.object.processed) else NA_integer_ #store number of processed loci
   trained.SOM.object <- train.SOM(genind.object.processed, parallel = FALSE, verbose = FALSE, grid.multiplier = SOM_grid_multiplier) #train SOM on full processed SNP matrix
-  genind.SOM.object <- clustering.SOM(trained.SOM.object, verbose = FALSE, save.SOM.results = FALSE, clustering.method = clustering_method_SOM, max.k = max_k) #cluster full SOM object after QE and TE filtering
+  genind.SOM.object <- clustering.SOM(trained.SOM.object, verbose = FALSE, save.SOM.results = FALSE, clustering.method = clustering_method_SOM, max.k = max_k, calculate.soft.ancestry = FALSE, calculate.variable.importance = FALSE) #cluster SOM codebook vectors after QE and TE filtering
   optim.k.summary.table <- coerce.optim.k.summary.to.data.frame(genind.SOM.object$optim_k_summary) #coerce optim_k_summary to data frame
   k.proportion.vector <- extract.k.proportions.from.summary(optim.k.summary.table, max.k = max_k) #extract row-level K proportions
   result.summary.row <- data.frame(file = vcf.file.metadata$file,
@@ -1339,6 +1367,7 @@ calculate.and.append.Fst <- function(vcf.metadata.table, result.table, optim.k.r
   optim.k.result.table$fst.error <- fst.table$fst.error[match(optim.k.result.table$file, fst.table$file)] #add Fst error message
   return(list(result.table = result.table, optim.k.result.table = optim.k.result.table, fst.table = fst.table))
 }
+
 
 
 

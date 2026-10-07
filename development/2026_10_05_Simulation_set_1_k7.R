@@ -2,9 +2,8 @@
 
 ## Set environment
 rm(list = ls()) #clear environment
-#setwd("./")
 setwd("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package")
-source("https://raw.githubusercontent.com/rpyron/delim-SOM/refs/heads/dev2.0/R/2026_04_07_delim-SOM_2.0_functions.R")
+source("C:/Users/danie/Desktop/PhD research/Manuscripts/SOM package/R_code/2026_10_05_delim-SOM_2.0_functions.R")
 
 
 ## Install and load required R packages
@@ -26,10 +25,10 @@ for (package_name in required_packages) {
 
 
 #### Set main simulation parameters ############################################
-simulation_k3_dir <- file.path("Simulations", "Simulation_set_1", "k3")
-if (!dir.exists(simulation_k3_dir)) dir.create(simulation_k3_dir, recursive = TRUE)
+simulation_k7_dir <- file.path("Simulations", "Simulation_set_1", "k7")
+if (!dir.exists(simulation_k7_dir)) dir.create(simulation_k7_dir, recursive = TRUE)
 
-N_individuals <- 60 #number of individuals
+N_individuals <- 140 #number of individuals
 N_SNP_loci <- 1000 #number of SNP loci
 N_morph_traits <- 15 #number of morphological traits
 N_climate_variables <- 30 #number of climatic variables
@@ -1018,19 +1017,19 @@ save.partial.results <- function(result_list, combined_csv, combined_rds) {
 #### Create/load simulations ###################################################
 
 ## Set shared simulation parameters
-N_clusters <- 3
+N_clusters <- 7
 training_neighborhoods_SOM <- "gaussian"
-max_k_SOM <- 8
+max_k_SOM <- 12
 
 
 ## Create intermediate output directory
-intermediate_results_dir <- file.path(simulation_k3_dir, "Intermediate_results")
+intermediate_results_dir <- file.path(simulation_k7_dir, "Intermediate_results")
 if (!dir.exists(intermediate_results_dir)) dir.create(intermediate_results_dir, recursive = TRUE)
 
 
 ## File paths for saving/loading shared complete simulations
-sim_data_base_file <- file.path(simulation_k3_dir, "Sim_data_base_complete.rds")
-sim_failed_base_csv <- file.path(simulation_k3_dir, "Sim_data_base_complete_failed_simulations.csv")
+sim_data_base_file <- file.path(simulation_k7_dir, "Sim_data_base_complete.rds")
+sim_failed_base_csv <- file.path(simulation_k7_dir, "Sim_data_base_complete_failed_simulations.csv")
 
 
 ## Load saved complete base simulations or simulate once
@@ -1067,13 +1066,13 @@ clustering_methods <- c(
 
 
 ## Set parameters
-N_clusters <- 3
+N_clusters <- 7
 training_neighborhoods_SOM <- "gaussian"
-max_k_SOM <- 8
+max_k_SOM <- 12
 
 
 ## File paths for saving/loading
-sim_results_clustering_methods_csv <- file.path(simulation_k3_dir, "Sim_results_clustering_methods.csv")
+sim_results_clustering_methods_csv <- file.path(simulation_k7_dir, "Sim_results_clustering_methods.csv")
 sim_results_clustering_methods_rds <- file.path(intermediate_results_dir, "Sim_results_clustering_methods_partial.rds")
 if (file.exists(sim_results_clustering_methods_csv)) file.remove(sim_results_clustering_methods_csv)
 if (file.exists(sim_results_clustering_methods_rds)) file.remove(sim_results_clustering_methods_rds)
@@ -1156,6 +1155,11 @@ summary_sim_stats_clustering_methods <- full_sim_stats_clustering_methods %>%
   as.data.frame()
 print(summary_sim_stats_clustering_methods)
 
+## Count inferred K values for kmeans+BIC approaches
+table(full_sim_stats_clustering_methods$K_inferred[full_sim_stats_clustering_methods$clustering_method == "kmeans+BICelbow"])
+table(full_sim_stats_clustering_methods$K_inferred[full_sim_stats_clustering_methods$clustering_method == "kmeans+BICthreshold"])
+
+
 
 ## Plot results
 clustering_methods_ARI_model_plot <- plot.categorical.gaussian.benchmark.model(input_data = full_sim_stats_clustering_methods,
@@ -1212,13 +1216,13 @@ clustering_methods_Time_model_plot$plot
 ## Set parameters                                                                 
 N_steps_values <- c(20, 50, 100, 200, 500, 1000, 2000)
 clustering_method <- "kmeans+BICelbow"
-N_clusters <- 3
+N_clusters <- 7
 training_neighborhoods_SOM <- "gaussian"
-max_k_SOM <- 8
+max_k_SOM <- 12
 
 
 ## File paths for saving/loading
-sim_results_N_steps_csv <- file.path(simulation_k3_dir, "Sim_results_N_steps.csv")
+sim_results_N_steps_csv <- file.path(simulation_k7_dir, "Sim_results_N_steps.csv")
 sim_results_N_steps_rds <- file.path(intermediate_results_dir, "Sim_results_N_steps_partial.rds")
 if (file.exists(sim_results_N_steps_csv)) file.remove(sim_results_N_steps_csv)
 if (file.exists(sim_results_N_steps_rds)) file.remove(sim_results_N_steps_rds)
@@ -1388,16 +1392,16 @@ N_steps_Time_model_plot$plot
 ## Set parameters
 clustering_method <- "kmeans+BICelbow"
 missing_data_props <- c(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
-N_clusters <- 3
+N_clusters <- 7
 training_neighborhoods_SOM <- "gaussian"
-max_k_SOM <- 8
+max_k_SOM <- 12
 
 
 ## File paths for saving/loading
-sim_data_NA_file <- file.path(simulation_k3_dir, "Sim_data_NA.rds")
+sim_data_NA_file <- file.path(simulation_k7_dir, "Sim_data_NA.rds")
 sim_data_NA_dir <- file.path(intermediate_results_dir, "NA_threshold_data")
 if (!dir.exists(sim_data_NA_dir)) dir.create(sim_data_NA_dir, recursive = TRUE)
-sim_results_NA_csv <- file.path(simulation_k3_dir, "Sim_results_NA.csv")
+sim_results_NA_csv <- file.path(simulation_k7_dir, "Sim_results_NA.csv")
 sim_results_NA_rds <- file.path(intermediate_results_dir, "Sim_results_NA_partial.rds")
 
 
@@ -1571,12 +1575,12 @@ NA_TE_model_plot$plot
 ## Set neighborhood functions to test
 neighborhoods <- c("gaussian", "bubble")
 clustering_method <- "kmeans+BICelbow"
-N_clusters <- 3
-max_k_SOM <- 8
+N_clusters <- 7
+max_k_SOM <- 12
 
 
 ## File paths for saving/loading
-sim_results_neighborhoods_csv <- file.path(simulation_k3_dir, "Sim_results_neighborhoods.csv")
+sim_results_neighborhoods_csv <- file.path(simulation_k7_dir, "Sim_results_neighborhoods.csv")
 sim_results_neighborhoods_rds <- file.path(intermediate_results_dir, "Sim_results_neighborhoods_partial.rds")
 if (file.exists(sim_results_neighborhoods_csv)) file.remove(sim_results_neighborhoods_csv)
 if (file.exists(sim_results_neighborhoods_rds)) file.remove(sim_results_neighborhoods_rds)
@@ -1739,13 +1743,13 @@ learning_rate_tuning_values <- c(FALSE, TRUE)
 
 ## Set parameters
 clustering_method <- "kmeans+BICelbow"
-N_clusters <- 3
+N_clusters <- 7
 training_neighborhoods_SOM <- "gaussian"
-max_k_SOM <- 8
+max_k_SOM <- 12
 
 
 ## File paths for saving/loading
-sim_results_learning_rate_tuning_csv <- file.path(simulation_k3_dir, "Sim_results_learning_rate_tuning.csv")
+sim_results_learning_rate_tuning_csv <- file.path(simulation_k7_dir, "Sim_results_learning_rate_tuning.csv")
 sim_results_learning_rate_tuning_rds <- file.path(intermediate_results_dir, "Sim_results_learning_rate_tuning_partial.rds")
 
 
