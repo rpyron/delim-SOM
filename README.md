@@ -755,7 +755,7 @@ the SOM output object (`Polygonia_SOM`) and a data frame containing the sample c
 The function automatically matches the rownames and only plots shared individuals.
 
 As shown below, additional plotting arguments are available and may require some fine-tuning to create an aesthetic map.
-In our case, the four *Polygonia* species are broadly sympatric, making this plot is less informative for distinguishing their geographic distributions due to the overlapping pie charts.
+In our case, the four *Polygonia* species are broadly sympatric, which makes this plot less informative for distinguishing their geographic distributions due to the overlapping pie charts.
 
 ```r
 plot.map.SOM(SOM.output = Polygonia_SOM,
@@ -1311,7 +1311,7 @@ SOM_results <- clustering.SOM(SOM.output = SOM_tr,
                               save.SOM.results = TRUE,
                               save.SOM.results.name = "SOM_kmeans.Rdata")
 
-SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(SOM_output = SOM_results,
+SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(SOM.output = SOM_results,
                                                               save.leave.one.layer.out.results = TRUE,
                                                               save.leave.one.layer.out.results.name = "SOM_layer_importance.Rdata")
 ```
