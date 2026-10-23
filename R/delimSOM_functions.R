@@ -19,7 +19,7 @@
 #' @param N.steps A single positive integer giving the number of SOM
 #'   training iterations (epochs). Default: `100`.
 #' @param N.replicates A single positive integer giving the number of SOM
-#'   replicats to train. Default: `110`.
+#'   replicates to train. Default: `110`.
 #' @param parallel Logical; if `TRUE`, replicate SOMs are trained in parallel.
 #'   Default: `TRUE`.
 #' @param N.cores A single positive integer giving the number of cores to use

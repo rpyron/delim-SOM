@@ -93,6 +93,25 @@ SOM_data_single <- genomic_matrix
 Multilayer example input (requires a list):
 
 ```r
+# Define illustrative morphology and spatial data
+morphology_matrix <- matrix(c(12.1, 5.0,
+                              11.8, 5.1,
+                              12.3, 5.2,
+                              11.9, 4.9),
+                            nrow = 4,
+                            byrow = TRUE,
+                            dimnames = list(rownames(genomic_matrix),
+                                            c("Wing_length", "Body_length")))
+
+spatial_matrix <- matrix(c(-113.0, 50.1,
+                           -113.2, 50.2,
+                           -113.4, 50.3,
+                           -113.6, 50.4),
+                         nrow = 4,
+                         byrow = TRUE,
+                         dimnames = list(rownames(genomic_matrix),
+                                         c("Longitude", "Latitude")))
+
 SOM_data_multi <- list(
   Genomic = genomic_matrix,
   Morphology = morphology_matrix,
@@ -194,6 +213,17 @@ For multilayer analyses, only individuals shared across all layers are retained.
 
 ### 4.1 SOM training
 
+For this reproducible demonstration, we generate simulated SNP data for 100 individuals and 60 loci. These random data illustrate the workflow and do not represent biological species structure.
+
+```r
+set.seed(1)
+SOM_data <- matrix(sample(0:2, 100 * 60, replace = TRUE),
+                   nrow = 100,
+                   ncol = 60,
+                   dimnames = list(paste0("Individual_", 1:100),
+                                   paste0("SNP_", 1:60)))
+```
+
 First, we train multiple SOM maps using the recommended defaults. 
 
 `N.steps` controls the number of training iterations for each SOM, while `N.replicates` controls the number of independently trained SOMs.
@@ -255,7 +285,7 @@ For our *delim-SOM* 2.0 reanalysis, we analyzed 200 individuals shared across th
 To follow this tutorial side-by-side, the files for this empirical example can be downloaded here:
 
 ```text
-https://github.com/rpyron/delim-SOM/tree/dev2.0/Empirical_examples/Dupuis_et_al_2018
+https://github.com/rpyron/delim-SOM/tree/main/Empirical_examples/Dupuis_et_al_2018
 ```
 
 
@@ -1419,4 +1449,4 @@ Schönberger, D., Pyron, R. A., & Dupuis, J. R. Fully integrative species delimi
 # License
 
 *delimSOM* is released under the GPL-3 License.
-See the `LICENSE` file for details.
+See the `License` field in `DESCRIPTION` for details.

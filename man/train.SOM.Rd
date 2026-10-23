@@ -38,7 +38,7 @@ All retained columns must be numeric after non-numeric columns are removed.}
 training iterations (epochs). Default: \code{100}.}
 
 \item{N.replicates}{A single positive integer giving the number of SOM
-replicats to train. Default: \code{110}.}
+replicates to train. Default: \code{110}.}
 
 \item{parallel}{Logical; if \code{TRUE}, replicate SOMs are trained in parallel.
 Default: \code{TRUE}.}
