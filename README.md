@@ -1449,4 +1449,4 @@ Schönberger, D., Pyron, R. A., & Dupuis, J. R. Fully integrative species delimi
 # License
 
 *delimSOM* is released under the GPL-3 License.
-See the `License` field in `DESCRIPTION` for details.
+See the [LICENSE.md](LICENSE.md) file for details.
