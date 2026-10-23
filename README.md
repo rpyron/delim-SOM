@@ -54,7 +54,7 @@ Install and load the *delimSOM* *R* package:
 
 ```r
 if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
-remotes::install_github("rpyron/delim-SOM", ref = "dev2.0")
+remotes::install_github("rpyron/delim-SOM")
 
 library(delimSOM)
 packageVersion("delimSOM")
