@@ -55,6 +55,13 @@ jobs:
           echo "LDFLAGS += -L${OMP_PREFIX}/lib -lomp" >> ~/.R/Makevars
           Rscript -e 'install.packages("kohonen", repos = "https://cloud.r-project.org", type = "source")'
 
+      - name: Install XQuartz for SVG plots on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install --cask xquartz
+          test -f /opt/X11/lib/libSM.6.dylib
+          test -f /opt/X11/lib/libXrender.1.dylib
+          Rscript -e 'svg_file <- tempfile(fileext = ".svg"); grDevices::svg(svg_file); graphics::plot(1:5); grDevices::dev.off(); stopifnot(file.exists(svg_file), file.info(svg_file)$size > 100)'
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
