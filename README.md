@@ -43,7 +43,7 @@ We have now released version 2.0 of the delim-SOM framework!
 The species-delimitation framework was originally introduced by Pyron et al. (2023) for genetic data and subsequently extended by Pyron (2023) to multilayer SOMs for integrative species delimitation by presenting *delimSOM*.
 With *delimSOM* 2.0 (Schönberger et al. preprint), we expand the original framework into a comprehensive *R* package with improved data preprocessing and SOM training, new clustering and K-selection approaches, extensive diagnostics and visualizations, and revised variable- and layer-importance analyses.
 
-Current *R* package version: `2.0`
+Current *R* package version: `2.1.0`
 
 
 # A) Basic tutorial
@@ -265,6 +265,9 @@ SOM_results$optim_k_summary
 
 This tutorial section demonstrates the main steps of the *delim-SOM* workflow based on one empirical case study presented in our study (Schönberger et al. preprint).
 The system includes four sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species from Dupuis et al. (2018).
+
+The delimSOM figures and numerical outputs in this example were generated with package version 2.0.
+Rerunning the analysis with 2.1.0 may change which maps are retained and the pooled assignment coefficients.
 
 The figure below (Fig. 5 in Dupuis et al. 2018) shows their main results and the four inferred species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*:
 A) geographic sampling localities, 
@@ -1304,7 +1307,8 @@ By default, alternative K values from one to `max.k` are evaluated and the optim
 Clustering can be rerun for a single K value using `set.k`.
 This is often useful if many K values are supported or if the automatic K-selection does not work well (e.g., because a distinct BIC elbow is not detected).
 
-In the example below, we force a three-lineage solution and then examine the assignment coefficients for this K = 3 solution:
+In the example below, we fit three grid clusters and examine the assignment coefficients.
+Some grid clusters may have no mapped specimens, so the number of occupied specimen groups can be smaller than three.
 
 ```r
 SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
