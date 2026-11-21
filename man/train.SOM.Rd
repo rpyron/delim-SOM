@@ -353,6 +353,8 @@ best-matching units, whereas topographic error is the proportion of samples
 whose first- and second-best matching units are not adjacent (Kiviluoto, 1996;
 Sun, 2000). Because low quantization error can occur despite topological
 distortion, it alone should not be treated as sufficient evidence of a good SOM.
+Distances used to identify the second-best unit follow \code{kohonen}'s
+missing-data scaling and Tanimoto threshold.
 }
 \examples{
 \dontrun{

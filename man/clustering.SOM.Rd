@@ -345,7 +345,8 @@ inferred cluster based on its distances to the SOM units assigned to those
 clusters. Closer clusters receive larger values, whereas more distant clusters
 receive smaller values. These soft assignments are derived from weighted
 sample-to-unit distances across SOM layers, transformed into similarity
-weights, and summed within SOM-unit clusters. The matrices are relabeled using
+weights, and summed within SOM-unit clusters. Layer distances use \code{kohonen}'s
+missing-data scaling and Tanimoto threshold. The matrices are relabeled using
 the same Hungarian label mappings and describe assignment uncertainty within
 individual replicates. They are primarily used by
 \code{plot.layer.importance.leaveoneout.SOM}.

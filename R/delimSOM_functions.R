@@ -258,6 +258,8 @@
 #' whose first- and second-best matching units are not adjacent (Kiviluoto, 1996;
 #' Sun, 2000). Because low quantization error can occur despite topological
 #' distortion, it alone should not be treated as sufficient evidence of a good SOM.
+#' Distances used to identify the second-best unit follow `kohonen`'s
+#' missing-data scaling and Tanimoto threshold.
 #'
 #' @return A named list containing:
 #' \describe{
@@ -1118,62 +1120,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     learning.rate.final <- tuning_values_best$learning_rate_final
   }
 
-  # Create function to calculate topographic error
-  calculate.topographic.error <- function(som_model) {
-    codes <- kohonen::getCodes(som_model)
-    if (!is.list(codes)) codes <- list(codes)
-    data_layers <- som_model$data
-    if (!is.list(data_layers)) data_layers <- list(data_layers)
-    whatmap <- if (!is.null(som_model$whatmap)) som_model$whatmap else seq_along(codes)
-    codes <- codes[whatmap]
-    data_layers <- data_layers[whatmap]
-    dist_fcts <- som_model$dist.fcts[whatmap]
-    user_weights <- som_model$user.weights[whatmap]
-    distance_weights <- som_model$distance.weights[whatmap]
-    combined_weights <- as.numeric(user_weights) * as.numeric(distance_weights)
-    if (length(combined_weights) == 0 || any(!is.finite(combined_weights)) || sum(combined_weights) <= 0) return(NA_real_)
-    combined_weights <- combined_weights / sum(combined_weights)
-    unit_distance_matrix <- kohonen::unit.distances(som_model$grid)
-    adjacency_matrix <- unit_distance_matrix <= 1 + sqrt(.Machine$double.eps)
-    diag(adjacency_matrix) <- FALSE
-    distance_matrix <- matrix(0, nrow = nrow(data_layers[[1]]), ncol = nrow(codes[[1]]))
-    calculate.layer.distance <- function(sample_values, code_matrix, distance_function) {
-      apply(code_matrix, 1, function(code_values) {
-        observed <- is.finite(sample_values) & is.finite(code_values)
-        if (mean(!observed) > som_model$maxNA.fraction) return(Inf)
-        sample_values <- sample_values[observed]
-        code_values <- code_values[observed]
-        if (length(sample_values) == 0) return(Inf)
-        if (distance_function == "sumofsquares") return(sum((sample_values - code_values)^2))
-        if (distance_function == "euclidean") return(sqrt(sum((sample_values - code_values)^2)))
-        if (distance_function == "manhattan") return(sum(abs(sample_values - code_values)))
-        if (distance_function == "tanimoto") {
-          sample_values <- sample_values > 0.5
-          code_values <- code_values > 0.5
-          return(mean(sample_values != code_values))
-        }
-        stop(sprintf("Topographic error aborted: unsupported distance function '%s'", distance_function))
-      })
-    }
-    for (i in seq_along(data_layers)) {
-      layer_distance_matrix <- t(apply(as.matrix(data_layers[[i]]), 1, calculate.layer.distance, code_matrix = as.matrix(codes[[i]]), distance_function = dist_fcts[[i]]))
-      distance_matrix <- distance_matrix + combined_weights[i] * layer_distance_matrix
-    }
-    best_units <- as.integer(som_model$unit.classif)
-    if (length(best_units) != nrow(distance_matrix)) return(NA_real_)
-    second_best_units <- vapply(seq_along(best_units), function(i) {
-      distances <- distance_matrix[i, ]
-      if (!is.finite(best_units[i]) || best_units[i] < 1 || best_units[i] > length(distances)) return(NA_integer_)
-      if (sum(is.finite(distances)) < 2) return(NA_integer_)
-      distances[best_units[i]] <- Inf
-      if (!any(is.finite(distances))) return(NA_integer_)
-      which.min(distances)
-    }, integer(1))
-    valid_units <- is.finite(best_units) & is.finite(second_best_units)
-    if (!any(valid_units)) return(NA_real_)
-    mean(!adjacency_matrix[cbind(best_units[valid_units], second_best_units[valid_units])], na.rm = TRUE)
-  }
-
   # Free memory
   invisible(gc())
 
@@ -1210,7 +1156,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     quantization_error <- mean(som_model$distances, na.rm = TRUE)
 
     # Store topographic error
-    topographic_error <- calculate.topographic.error(som_model)
+    topographic_error <- calculate.topographic.error.SOM(som_model)
 
     # Return results
     return(list(
@@ -1241,7 +1187,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       parallel_cluster,
       varlist = c("messager",
                   "replicate_som",
-                  "calculate.topographic.error",
                   "input_data",
                   "SOM_output_grid",
                   "N.replicates",
@@ -1367,6 +1312,105 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   messager("")
   messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
+}
+
+
+compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix, codebook_matrix,
+                                                       distance_function,
+                                                       max_missing_fraction = 1,
+                                                       use_crossproduct = FALSE) {
+  sample_matrix <- as.matrix(sample_matrix)
+  codebook_matrix <- as.matrix(codebook_matrix)
+  storage.mode(sample_matrix) <- "numeric"
+  storage.mode(codebook_matrix) <- "numeric"
+  n_samples <- nrow(sample_matrix)
+  n_units <- nrow(codebook_matrix)
+  n_vars <- ncol(sample_matrix)
+  if (n_samples == 0L || n_units == 0L || n_vars == 0L || ncol(codebook_matrix) != n_vars) {
+    stop("SOM distances require non-empty sample and codebook matrices with the same number of columns")
+  }
+  if (!distance_function %in% c("sumofsquares", "euclidean", "manhattan", "tanimoto")) {
+    stop("Unsupported SOM distance function: ", distance_function)
+  }
+
+  squared <- distance_function %in% c("sumofsquares", "euclidean")
+  tanimoto <- distance_function == "tanimoto"
+  sample_observed <- is.finite(sample_matrix)
+  codebook_observed <- is.finite(codebook_matrix)
+  distance_names <- list(rownames(sample_matrix), rownames(codebook_matrix))
+
+  # Keep the complete-data shortcut for soft assignments. Runner-up ranking
+  # uses direct differences to avoid cancellation when units are nearly tied.
+  if (use_crossproduct && squared && all(sample_observed) && all(codebook_observed)) {
+    norms <- outer(rowSums(sample_matrix^2), rowSums(codebook_matrix^2), "+")
+    distances <- pmax(norms - 2 * tcrossprod(sample_matrix, codebook_matrix), 0)
+    dimnames(distances) <- distance_names
+    return(if (distance_function == "euclidean") sqrt(distances) else distances)
+  }
+
+  if (tanimoto) {
+    # kohonen places an exact 0.5 on different sides for samples and codes.
+    sample_matrix <- sample_matrix > 0.5
+    codebook_matrix <- codebook_matrix >= 0.5
+  }
+  distances <- matrix(NA_real_, n_samples, n_units, dimnames = distance_names)
+  for (unit in seq_len(n_units)) {
+    observed <- sample_observed &
+      matrix(codebook_observed[unit, ], n_samples, n_vars, byrow = TRUE)
+    observed_count <- rowSums(observed)
+    comparable <- observed_count > 0L & (n_vars - observed_count) / n_vars <= max_missing_fraction
+    code_values <- matrix(codebook_matrix[unit, ], n_samples, n_vars, byrow = TRUE)
+    differences <- sample_matrix - code_values
+    differences[!observed] <- 0
+    totals <- rowSums(if (squared) differences^2 else abs(differences))[comparable]
+    counts <- observed_count[comparable]
+    scaled <- if (tanimoto) totals / counts else totals * (n_vars / counts)
+    distances[comparable, unit] <- if (distance_function == "euclidean") sqrt(scaled) else scaled
+  }
+  distances
+}
+
+
+calculate.topographic.error.SOM <- function(som_model) {
+  codes <- kohonen::getCodes(som_model)
+  if (!is.list(codes)) codes <- list(codes)
+  data_layers <- som_model$data
+  if (!is.list(data_layers)) data_layers <- list(data_layers)
+  whatmap <- som_model$whatmap
+  if (is.null(whatmap)) whatmap <- seq_along(codes)
+  codes <- codes[whatmap]
+  data_layers <- data_layers[whatmap]
+  distance_functions <- som_model$dist.fcts[whatmap]
+  combined_weights <- som_model$user.weights[whatmap] * som_model$distance.weights[whatmap]
+  if (length(combined_weights) == 0L || any(!is.finite(combined_weights)) ||
+      sum(combined_weights) <= 0) return(NA_real_)
+  combined_weights <- combined_weights / sum(combined_weights)
+
+  unit_distances <- kohonen::unit.distances(som_model$grid)
+  adjacent <- unit_distances <= 1 + sqrt(.Machine$double.eps)
+  diag(adjacent) <- FALSE
+  distances <- matrix(0, nrow(data_layers[[1L]]), nrow(codes[[1L]]))
+  for (i in seq_along(data_layers)) {
+    layer_distances <- compute.layer.sample.to.unit.distance.SOM(
+      data_layers[[i]], codes[[i]], distance_functions[[i]],
+      max_missing_fraction = som_model$maxNA.fraction
+    )
+    distances <- distances + combined_weights[i] * layer_distances
+  }
+
+  best_units <- as.integer(som_model$unit.classif)
+  if (length(best_units) != nrow(distances)) return(NA_real_)
+  second_best_units <- vapply(seq_along(best_units), function(i) {
+    best <- best_units[i]
+    scores <- distances[i, ]
+    if (is.na(best) || best < 1L || best > length(scores) ||
+        sum(is.finite(scores)) < 2L) return(NA_integer_)
+    scores[best] <- Inf
+    which.min(scores)
+  }, integer(1))
+  valid_units <- !is.na(second_best_units)
+  if (!any(valid_units)) return(NA_real_)
+  mean(!adjacent[cbind(best_units[valid_units], second_best_units[valid_units])])
 }
 
 
@@ -1648,7 +1692,8 @@ check.SOM.result.destination <- function(path, overwrite) {
 #' clusters. Closer clusters receive larger values, whereas more distant clusters
 #' receive smaller values. These soft assignments are derived from weighted
 #' sample-to-unit distances across SOM layers, transformed into similarity
-#' weights, and summed within SOM-unit clusters. The matrices are relabeled using
+#' weights, and summed within SOM-unit clusters. Layer distances use `kohonen`'s
+#' missing-data scaling and Tanimoto threshold. The matrices are relabeled using
 #' the same Hungarian label mappings and describe assignment uncertainty within
 #' individual replicates. They are primarily used by
 #' `plot.layer.importance.leaveoneout.SOM`.
@@ -2088,94 +2133,6 @@ clustering.SOM <- function(SOM.output,
     ))
   }
 
-  # Function to calculate layer-wise sample-to-unit distances
-  compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
-                                                        codebook_matrix,
-                                                        distance_function = "sumofsquares"
-  ) {
-
-    # Validate and coerce input matrices
-    sample_matrix <- as.matrix(sample_matrix)
-    codebook_matrix <- as.matrix(codebook_matrix)
-    storage.mode(sample_matrix) <- "numeric"
-    storage.mode(codebook_matrix) <- "numeric"
-    if (nrow(sample_matrix) == 0 || ncol(sample_matrix) == 0) stop("Soft assignment calculation aborted: sample_matrix is empty")
-    if (nrow(codebook_matrix) == 0 || ncol(codebook_matrix) == 0) stop("Soft assignment calculation aborted: codebook_matrix is empty")
-    if (ncol(sample_matrix) != ncol(codebook_matrix)) stop("Soft assignment calculation aborted: sample_matrix and codebook_matrix must have identical numbers of columns")
-
-    # Extract dimensions
-    n_samples <- nrow(sample_matrix) #number of samples
-    n_units <- nrow(codebook_matrix) #number of SOM units
-    n_vars <- ncol(sample_matrix) #number of variables
-
-    # Initialize distance matrix
-    distance_matrix <- matrix(NA_real_,
-                              nrow = n_samples,
-                              ncol = n_units,
-                              dimnames = list(rownames(sample_matrix), rownames(codebook_matrix)))
-
-    # Pre-compute finite mask for samples once (reused across all units)
-    sample_finite <- is.finite(sample_matrix) #logical matrix: n_samples x n_vars
-
-    # Calculate distances using sum of squares (Euclidean)
-    if (distance_function %in% c("sumofsquares", "euclidean")) {
-      if (!anyNA(sample_matrix) && !anyNA(codebook_matrix)) { #fast BLAS path when no missing values present
-        a_sq <- rowSums(sample_matrix ^ 2) #squared row norms for samples
-        b_sq <- rowSums(codebook_matrix ^ 2) #squared row norms for codebook vectors
-        cross <- tcrossprod(sample_matrix, codebook_matrix) #cross-product matrix: n_samples x n_units
-        d_sq <- outer(a_sq, b_sq, "+") - 2 * cross #squared Euclidean distances via expansion
-        distance_matrix <- if (distance_function == "sumofsquares") pmax(d_sq, 0) else sqrt(pmax(d_sq, 0)) #calculate requested distance and guard against floating point negatives
-        rownames(distance_matrix) <- rownames(sample_matrix) #restore rownames after matrix operations
-      } else { #fallback path for data with missing values
-        for (unit_index in seq_len(n_units)) {
-          current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
-          valid_values <- sample_finite & matrix(is.finite(current_codebook_vector), n_samples, n_vars, byrow = TRUE) #valid (non-missing) positions
-          diffs <- sample_matrix - matrix(current_codebook_vector, n_samples, n_vars, byrow = TRUE) #element-wise differences
-          diffs[!valid_values] <- 0 #zero out missing positions before summing
-          has_valid <- rowSums(valid_values) > 0L #samples with at least one valid value
-          current_distance_vector <- if (distance_function == "sumofsquares") rowSums(diffs ^ 2) else sqrt(rowSums(diffs ^ 2)) #calculate requested distance over valid positions
-          current_distance_vector[!has_valid] <- NA_real_ #set fully missing samples to NA
-          distance_matrix[, unit_index] <- current_distance_vector #store distances
-        }
-      }
-    }
-
-    # Calculate distances using Manhattan distance
-    if (distance_function == "manhattan") {
-      for (unit_index in seq_len(n_units)) {
-        current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
-        valid_values <- sample_finite & matrix(is.finite(current_codebook_vector), n_samples, n_vars, byrow = TRUE) #valid (non-missing) positions
-        abs_diffs <- abs(sample_matrix - matrix(current_codebook_vector, n_samples, n_vars, byrow = TRUE)) #absolute element-wise differences
-        abs_diffs[!valid_values] <- 0 #zero out missing positions before summing
-        current_distance_vector <- rowSums(abs_diffs) #Manhattan distance over valid positions
-        current_distance_vector[rowSums(valid_values) == 0L] <- NA_real_ #set fully missing samples to NA
-        distance_matrix[, unit_index] <- current_distance_vector #store distances
-      }
-    }
-
-    # Calculate distances using Tanimoto distance
-    if (distance_function == "tanimoto") {
-      sample_bin <- sample_finite & (sample_matrix > 0.5) #binarize samples using kohonen's 0.5 boundary
-      for (unit_index in seq_len(n_units)) {
-        current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
-        codebook_finite <- is.finite(current_codebook_vector) #finite positions in codebook vector
-        code_bin <- matrix(codebook_finite & (current_codebook_vector > 0.5), n_samples, n_vars, byrow = TRUE) #binarize codebook vector using kohonen's 0.5 boundary
-        valid_values <- sample_finite & matrix(codebook_finite, n_samples, n_vars, byrow = TRUE) #valid non-missing positions
-        mismatch_values <- xor(sample_bin, code_bin) & valid_values #positions where binarized sample and codebook states differ
-        n_valid_values <- rowSums(valid_values) #number of valid positions per sample
-        current_distance_vector <- rowSums(mismatch_values) / n_valid_values #normalized Hamming distance matching kohonen's tanimoto behavior
-        current_distance_vector[n_valid_values == 0L] <- NA_real_ #fully missing comparisons are unavailable
-        distance_matrix[, unit_index] <- current_distance_vector #store distances
-      }
-    }
-
-    # Stop if unsupported distance function is specified
-    if (!distance_function %in% c("sumofsquares", "euclidean", "manhattan", "tanimoto")) stop("Soft assignment calculation aborted: unsupported distance function in compute.layer.sample.to.unit.distance.SOM")
-
-    # Return results
-    return(distance_matrix) #return distance matrix
-  }
-
   # Create function to calculate integrated sample-to-unit distances across SOM layers
   compute.sample.to.unit.distance.matrix.SOM <- function(som_model,
                                                          layer.distance.functions,
@@ -2219,7 +2176,8 @@ clustering.SOM <- function(SOM.output,
       layer_distance_matrices[[layer_index]] <- compute.layer.sample.to.unit.distance.SOM(
         sample_matrix = sample_matrix,
         codebook_matrix = codebook_matrix,
-        distance_function = layer.distance.functions[layer_index]
+        distance_function = layer.distance.functions[layer_index],
+        use_crossproduct = TRUE
       )
     }
 
