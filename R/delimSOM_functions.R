@@ -5465,8 +5465,9 @@ plot.K.SOM <- function(SOM.output,
 #' occupied regions (Vesanto & Alhoniemi, 2000; Wehrens & Buydens, 2007).
 #'
 #' The lower panel shows the selected replicate's sample-to-unit mappings and
-#' SOM-unit cluster assignments. Occupied clusters use synchronized specimen
-#' colors. Grid clusters with no hard specimen assignments are shown in gray
+#' SOM-unit cluster assignments. Occupied clusters use colors indexed by the
+#' selected replicate's stored specimen labels in `cluster_assignment`.
+#' Grid clusters with no hard specimen assignments are shown in gray
 #' and identified in the legend. Boundaries follow the original grid-cluster
 #' partition. Compact and contiguous cluster regions indicate that
 #' the inferred partition corresponds closely to the SOM topology. Fragmented
@@ -5766,7 +5767,7 @@ plot.model.SOM <- function(SOM.output,
   unit_classif <- as.integer(som_model$unit.classif)
   if (length(unit_classif) == 0 || anyNA(unit_classif) || any(!is.finite(unit_classif)) || any(unit_classif < 1) || any(unit_classif > number_of_units)) stop("Plotting aborted: selected som_model contains invalid sample-to-unit assignments")
 
-  # Synchronize selected replicate cluster labels with structure-plot cluster labels
+  # Use the selected replicate's stored specimen labels for occupied cluster colors.
   if (is.null(SOM.output$cluster_assignment)) stop("Plotting aborted: SOM.output is missing cluster_assignment required for synchronized cluster colors")
   cluster_assignment <- as.matrix(SOM.output$cluster_assignment)
   if (is.null(replicate_name) || is.na(replicate_name) || replicate_name == "") stop("Plotting aborted: selected SOM replicate has no replicate name")
@@ -5788,36 +5789,14 @@ plot.model.SOM <- function(SOM.output,
   occupied_cluster_labels <- sort(unique(original_sample_cluster_labels))
   occupied_k <- length(occupied_cluster_labels)
   if (occupied_k > palette_k) stop("Plotting aborted: selected replicate contains more occupied clusters than the reference K")
-  if (!is.null(set.k) || occupied_k == palette_k) {
-    synchronized_sample_cluster_labels <- as.integer(cluster_assignment[sample_names, replicate_name])
-    if (anyNA(synchronized_sample_cluster_labels) || any(!is.finite(synchronized_sample_cluster_labels)) || any(synchronized_sample_cluster_labels < 1) || any(synchronized_sample_cluster_labels > palette_k)) stop("Plotting aborted: cluster_assignment contains invalid synchronized cluster labels")
-    synchronized_cluster_labels <- sort(unique(synchronized_sample_cluster_labels))
-    if (occupied_k != length(synchronized_cluster_labels)) stop("Plotting aborted: occupied and synchronized cluster counts do not match")
-    cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = occupied_cluster_labels),
-                                   factor(synchronized_sample_cluster_labels, levels = synchronized_cluster_labels))
-    if (any(rowSums(cluster_label_overlap > 0) != 1) || any(colSums(cluster_label_overlap > 0) != 1)) stop("Plotting aborted: SOM cluster labels do not map uniquely to synchronized cluster labels")
-    cluster_label_map <- synchronized_cluster_labels[max.col(cluster_label_overlap, ties.method = "first")]
-  } else {
-    replicate_k_values <- apply(cluster_assignment, 2, function(current_cluster_assignment) {
-      current_cluster_assignment <- as.integer(current_cluster_assignment)
-      current_cluster_assignment <- current_cluster_assignment[is.finite(current_cluster_assignment) & !is.na(current_cluster_assignment) & current_cluster_assignment >= 1]
-      length(unique(current_cluster_assignment))
-    })
-    reference_replicate_indices <- which(replicate_k_values == palette_k)
-    if (length(reference_replicate_indices) == 0) stop("Plotting aborted: no cluster_assignment replicates match the highest supported K")
-    reference_cluster_assignment <- cluster_assignment[sample_names, reference_replicate_indices, drop = FALSE]
-    if (anyNA(reference_cluster_assignment) || any(!is.finite(reference_cluster_assignment)) || any(reference_cluster_assignment < 1) || any(reference_cluster_assignment > palette_k)) stop("Plotting aborted: highest-K cluster_assignment contains invalid cluster labels")
-    reference_consensus_labels <- apply(reference_cluster_assignment, 1, function(current_cluster_assignment) {
-      cluster_counts <- tabulate(as.integer(current_cluster_assignment), nbins = palette_k)
-      which.max(cluster_counts)
-    })
-    cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = occupied_cluster_labels),
-                                   factor(reference_consensus_labels, levels = seq_len(palette_k)))
-    cluster_label_map <- as.integer(clue::solve_LSAP(cluster_label_overlap, maximum = TRUE))
-  }
-  if (anyNA(cluster_label_map) || any(cluster_label_map < 1L | cluster_label_map > palette_k)) {
-    stop("Plotting aborted: SOM cluster-label synchronization failed")
-  }
+  synchronized_sample_cluster_labels <- as.integer(cluster_assignment[sample_names, replicate_name])
+  if (anyNA(synchronized_sample_cluster_labels) || any(!is.finite(synchronized_sample_cluster_labels)) || any(synchronized_sample_cluster_labels < 1) || any(synchronized_sample_cluster_labels > palette_k)) stop("Plotting aborted: cluster_assignment contains invalid synchronized cluster labels")
+  synchronized_cluster_labels <- sort(unique(synchronized_sample_cluster_labels))
+  if (occupied_k != length(synchronized_cluster_labels)) stop("Plotting aborted: occupied and synchronized cluster counts do not match")
+  cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = occupied_cluster_labels),
+                                 factor(synchronized_sample_cluster_labels, levels = synchronized_cluster_labels))
+  if (any(rowSums(cluster_label_overlap > 0) != 1) || any(colSums(cluster_label_overlap > 0) != 1)) stop("Plotting aborted: SOM cluster labels do not map uniquely to synchronized cluster labels")
+  cluster_label_map <- synchronized_cluster_labels[max.col(cluster_label_overlap, ties.method = "first")]
   names(cluster_label_map) <- occupied_cluster_labels
   unoccupied_units <- !som_cluster %in% occupied_cluster_labels
   unoccupied_color <- "#D9D9D9"

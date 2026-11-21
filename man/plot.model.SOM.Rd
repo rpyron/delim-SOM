@@ -195,8 +195,9 @@ units can also arise through topological smoothing between more strongly
 occupied regions (Vesanto & Alhoniemi, 2000; Wehrens & Buydens, 2007).
 
 The lower panel shows the selected replicate's sample-to-unit mappings and
-SOM-unit cluster assignments. Occupied clusters use synchronized specimen
-colors. Grid clusters with no hard specimen assignments are shown in gray
+SOM-unit cluster assignments. Occupied clusters use colors indexed by the
+selected replicate's stored specimen labels in \code{cluster_assignment}.
+Grid clusters with no hard specimen assignments are shown in gray
 and identified in the legend. Boundaries follow the original grid-cluster
 partition. Compact and contiguous cluster regions indicate that
 the inferred partition corresponds closely to the SOM topology. Fragmented
