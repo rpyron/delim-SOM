@@ -13,8 +13,12 @@
 #' error diagnostics.
 #'
 #' @param input_data A matrix, data frame, or list of matrices/data frames.
-#' 	 For multi-layer input, all layers must have row names, and
-#'   row names are used to identify the shared samples retained across layers.
+#'   Each layer in multi-layer input must have explicit specimen IDs as row
+#'   names. IDs must be unique within a layer, non-missing, and non-blank.
+#'   Shared specimens are matched by ID. For an unnamed single layer, including
+#'   a data frame with automatic row numbers, IDs such as `sample_1` are
+#'   assigned by input row position before filtering, with a message when
+#'   `verbose = TRUE`.
 #'   All retained columns must be numeric after non-numeric columns are removed.
 #' @param N.steps A single positive integer giving the number of SOM
 #'   training iterations (epochs). Default: `100`.
@@ -68,15 +72,12 @@
 #'   Default: `"gaussian"`.
 #' @param save.SOM.results Logical; if `TRUE`, the returned SOM result object is
 #'   saved as an `.Rdata` file. Default: `FALSE`.
-#' @param save.SOM.results.name Optional character string giving the output file
-#'   name used when saving or loading SOM results. If `NULL`, a default name is
-#'   generated from the input object name(s). File names supplied by the user
-#'   must end in `.Rdata`.
-#' @param overwrite.SOM.results Logical; if `FALSE` and a file named
-#'   `save.SOM.results.name` already exists, the function loads the existing
-#'   `SOM_results` object and skips SOM training. If `TRUE`, training is run and
-#'   saved results are overwritten when `save.SOM.results = TRUE`. Default:
-#'   `FALSE`.
+#' @param save.SOM.results.name Path to an `.Rdata` results file. When saving
+#'   with a `NULL` path, a default name is generated from the input object name(s).
+#'   Reuse requires an explicit path.
+#' @param overwrite.SOM.results Logical; permit replacing an existing file
+#'   when `save.SOM.results = TRUE`. By default, a save request fails if
+#'   the file exists.
 #' @param verbose Logical; if `TRUE`, processing messages and warnings
 #'   are printed. Default: `TRUE`.
 #' @param message.N.replicates A single positive integer giving the frequency of
@@ -85,6 +86,10 @@
 #' @param set.seed.N A single positive integer used as the base seed for
 #'   reproducible learning-rate tuning and replicate SOM training.
 #'   Default: `1`.
+#' @param reuse.SOM.results Logical; if `TRUE`, return the saved `SOM_results`
+#'   object from `save.SOM.results.name`. Supply the path and leave saving and
+#'   overwriting disabled. The saved result is returned independently of any
+#'   input data or training settings supplied. Default: `FALSE`.
 #'
 #' @details
 #' train.SOM implements the SOM-training stage of the delim-SOM workflow. A
@@ -201,19 +206,22 @@
 #' (Vesanto, 1999) that usually works well, but optimal map size is data-dependent
 #' and should ideally be evaluated empirically (Kohonen, 2013). Users can increase
 #' resolution by increasing `grid.multiplier` and make the grid coarser by
-#' decreasing `grid.multiplier`. Hexagonal grids are used because they provide
+#' decreasing `grid.multiplier`. If the automatic grid would have more units
+#' than retained samples, its dimensions are reduced to fit, with a message when
+#' `verbose = TRUE`. The minimum grid is 2 x 2, which requires at least four
+#' retained samples. Hexagonal grids are used because they provide
 #' more even neighborhood relationships and are commonly recommended for SOM
 #' visualization and training (Kohonen, 1995, 1998, 2013; Vesanto & Alhoniemi, 2000).
 #'
 #' By default, the grid shape reflects the dominant shape of the retained data
 #' rather than being forced to be square (Kohonen, 2013). For single-layer data,
-#' the aspect ratio is estimated from the first two eigenvalues of the covariance
-#' structure. For multi-layer data, the dominant joint structure is estimated
-#' with multiple factor analysis (Lê et al., 2008) so that the grid shape is
-#' informed by the grouped dataset rather than by any single layer alone. If the
-#' covariance or multiple-factor-analysis calculation fails, a square or
-#' square-like aspect ratio is used. Grid dimensions can also be specified
-#' manually with `grid.size`.
+#' the aspect ratio is the ratio of the two largest singular values of the
+#' centered data, equivalent to the square root of the ratio of the two largest
+#' covariance eigenvalues. For multi-layer data, multiple factor analysis
+#' (Lê et al., 2008) estimates the dominant structure across the grouped data.
+#' A square-like aspect ratio is used when two usable axes of variation cannot
+#' be estimated. Grid dimensions can also be specified manually with
+#' `grid.size`.
 #'
 #' Codebook vectors are initialized stochastically by randomly selecting retained
 #' samples without replacement. Sensitivity to stochastic initialization is
@@ -257,6 +265,8 @@
 #' whose first- and second-best matching units are not adjacent (Kiviluoto, 1996;
 #' Sun, 2000). Because low quantization error can occur despite topological
 #' distortion, it alone should not be treated as sufficient evidence of a good SOM.
+#' Distances used to identify the second-best unit follow `kohonen`'s
+#' missing-data scaling and Tanimoto threshold.
 #'
 #' @return A named list containing:
 #' \describe{
@@ -456,15 +466,25 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
                       training.neighborhoods = "gaussian", #neighborhood function used for SOM training (options: "gaussian" or "bubble")
                       save.SOM.results = FALSE, #whether to save SOM results to file
                       save.SOM.results.name = NULL, #file name for saving SOM results (if NULL, default name based on input_data is generated; if save.SOM.results = TRUE)
-                      overwrite.SOM.results = FALSE, #if FALSE, existing results are loaded instead of re-running SOM
+                      overwrite.SOM.results = FALSE, #whether saving can replace an existing file
                       verbose = TRUE, #whether to show messages
                       message.N.replicates = 20, #frequency of progress messages during training (message is printed every message.N.replicates iterations)
-                      set.seed.N = 1 #set seed for reproducibility
+                      set.seed.N = 1, #set seed for reproducibility
+                      reuse.SOM.results = FALSE
 ) {
 
   # Set messages
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("train.SOM aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
+
+  validate.SOM.result.options(save.SOM.results, save.SOM.results.name,
+                              overwrite.SOM.results, reuse.SOM.results)
+  if (reuse.SOM.results) {
+    required_fields <- c("distance_weights_matrix", "learning_values_list",
+                         "som_models", "quantization_error", "topographic_error")
+    messager("Reading saved SOM training results from ", save.SOM.results.name)
+    return(load.SOM.results(save.SOM.results.name, required_fields, "training"))
+  }
 
   # Start processing input data
   messager("PROCESSING INPUT DATA ...")
@@ -515,13 +535,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || is.na(max.NA.row) || !is.finite(max.NA.row) || max.NA.row < 0 || max.NA.row > 1) stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.5)")
   if (!is.numeric(max.NA.col) || length(max.NA.col) != 1 || is.na(max.NA.col) || !is.finite(max.NA.col) || max.NA.col < 0 || max.NA.col > 1) stop("Data processing aborted: max.NA.col must be a single numeric value between 0 and 1 (recommended: 0.5)")
   if (!is.character(training.neighborhoods) || length(training.neighborhoods) != 1 || is.na(training.neighborhoods) || !(training.neighborhoods %in% c("gaussian", "bubble"))) stop("Data processing aborted: training.neighborhoods must be 'gaussian' or 'bubble'")
-  if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Data processing aborted: save.SOM.results must be TRUE or FALSE")
-  if (save.SOM.results && !is.null(save.SOM.results.name)) {
-    if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") stop("Data processing aborted: save.SOM.results.name must be non-empty character string (file path) if provided")
-    valid_ext <- tolower(tools::file_ext(save.SOM.results.name)) #extract extension
-    if (valid_ext != "rdata") stop("Data processing aborted: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
-  }
-  if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) stop("Data processing aborted: overwrite.SOM.results must be TRUE or FALSE")
   if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || !is.finite(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Data processing aborted: message.N.replicates must be a single positive integer (>= 1)")
   if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || !is.finite(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Data processing aborted: set.seed.N must be a single positive integer (>= 1)")
 
@@ -550,7 +563,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (is.null(save.SOM.results.name)) save.SOM.results.name <- paste0("SOM_results_", paste(input_data_names, collapse = "_"), ".Rdata") #assign default saving name if save.SOM.results.name is NULL
 
     # ... for list with one data set
-  } else if (is.list(input_data) && length(input_data) == 1) {
+  } else if (is.list(input_data) && !is.data.frame(input_data) && length(input_data) == 1) {
     if (!is.null(names(input_data)) && names(input_data)[1] != "") {
       input_data_names <- names(input_data)[1]
     } else {
@@ -566,22 +579,24 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (is.null(save.SOM.results.name)) save.SOM.results.name <- paste0("SOM_results_", input_data_names, ".Rdata") #assign default name for savings if save.SOM.results.name is NULL
   }
 
-  # If overwrite.SOM.results is FALSE and file already exists, return saved results
-  if (!overwrite.SOM.results && file.exists(save.SOM.results.name)) {
-    messager("SOM results already exist - loading results from file and skipping SOM run")
-    load(save.SOM.results.name)
-    required_fields <- c("distance_weights_matrix", "learning_values_list", "som_models", "quantization_error", "topographic_error")
-    if (!exists("SOM_results") || !all(required_fields %in% names(SOM_results))) stop("Data processing aborted: could not load SOM results because required objects are missing - check saved file or rerun SOM") #check if structure of SOM_results is correct
-    return(SOM_results)
-  }
+  if (save.SOM.results) check.SOM.result.destination(save.SOM.results.name, overwrite.SOM.results)
 
   # Check and transform data if necessary ...
 
   # ... for multiple datasets
   if (is.list(input_data) && length(input_data) > 1 && !is.data.frame(input_data)) {
 
-    # Ensure each layer has rownames
-    if (any(vapply(input_data, function(x) is.null(rownames(x)), logical(1)))) stop("Data processing aborted: all provided data layers must have matching rownames")
+    # Validate identifiers before intersecting or indexing any layer by ID.
+    layer_names <- names(input_data)
+    for (i in seq_along(input_data)) {
+      layer_label <- paste("Layer", i)
+      if (!is.null(layer_names) && !is.na(layer_names[i]) && nzchar(layer_names[i])) {
+        layer_label <- sprintf("%s (%s)", layer_label, layer_names[i])
+      }
+      ids <- explicit.sample.ids.SOM(input_data[[i]])
+      if (is.null(ids)) stop(layer_label, " must have explicit sample IDs as row names", call. = FALSE)
+      validate.sample.ids.SOM(ids, layer_label)
+    }
 
     # Extract shared samples across all matrices (before filtering)
     all_samples <- unique(unlist(lapply(input_data, rownames)))
@@ -788,12 +803,21 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   } else {
 
     # Unwrap list if needed
-    if (is.list(input_data) && length(input_data) == 1) {
+    if (is.list(input_data) && !is.data.frame(input_data)) {
       mat <- input_data[[1]]
     } else {
       mat <- input_data
     }
+    ids <- explicit.sample.ids.SOM(mat)
+    if (is.null(ids)) {
+      messager("No explicit sample IDs for the single input layer. Assigning IDs such as sample_1 ",
+               "from input row positions before filtering. Set row names to use specimen IDs.")
+      ids <- sprintf("sample_%d", seq_len(nrow(mat)))
+    } else {
+      validate.sample.ids.SOM(ids, "Single input layer")
+    }
     mat <- as.data.frame(mat, stringsAsFactors = FALSE) #convert to dataframe
+    rownames(mat) <- ids
 
     # Remove non-numeric columns
     non_numeric_cols <- which(sapply(mat, function(x) is.factor(x) || is.character(x)))
@@ -967,6 +991,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     # Determine grid size and shape automatically based on number of samples and aspect ratio
   } else {
     n_samples <- nrow(input_data[[1]])
+    if (n_samples < 4L) {
+      stop(sprintf("Aborted SOM grid creation: a minimum 2 x 2 grid requires at least 4 retained samples (found %d)", n_samples))
+    }
     n_units <- round(grid.multiplier * sqrt(n_samples))
 
     # Multi-layer input: use aspect ratio based on MFA (multiple factor analysis)
@@ -1011,7 +1038,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         SOM_grid_aspect_ratio <- 1 #default to 1x1 if not enough usable data
       }
 
-      # Single-layer input: calculate SOM grid aspect ratio from input covariance matrix eigenvalues or if it fails using mean-imputation on columns with less than 25% missingness
+      # Single-layer input: try complete cases, then mean imputation for columns with less than 25% missingness.
     } else {
       mat <- as.matrix(input_data[[1]]) #convert input data to matrix
       mat[is.infinite(mat)] <- NA #set infinite values to NA
@@ -1020,17 +1047,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       row_good <- which(rowSums(!is.na(mat1)) >= 2) #keep rows with at least 2 non-NA
       mat1 <- mat1[row_good, , drop = FALSE] #subset to those rows
       mat_cc <- mat1[complete.cases(mat1), , drop = FALSE] #subset to complete-case rows
-      if (nrow(mat_cc) >= 2 && ncol(mat_cc) >= 2) { #enough complete rows/cols for covariance
-        covariance_mat <- stats::cov(mat_cc) #calculate covariance matrix
-        eigenvalues <- tryCatch(eigen(covariance_mat)$values, error = function(e) c(1, 1)) #get eigenvalues or fallback
-        if (length(eigenvalues) >= 2 && all(is.finite(eigenvalues)) && all(eigenvalues > 0)) {
-          SOM_grid_aspect_ratio <- sqrt(eigenvalues[1] / eigenvalues[2]) #extract aspect ratio from eigenvalues
-        } else {
-          SOM_grid_aspect_ratio <- NA #flag to try next step
-        }
-      } else {
-        SOM_grid_aspect_ratio <- NA #flag to try next step
-      }
+      SOM_grid_aspect_ratio <- estimate.single.layer.aspect.ratio.SOM(mat_cc)
       if (is.na(SOM_grid_aspect_ratio)) { #mean-imputation step: only try if missing data is not excessive (<25% missing overall)
         col_missing_prop <- colMeans(is.na(mat)) #fraction of missing data per column
         col_good2 <- which(col_missing_prop < 0.25 & colSums(!is.na(mat)) >= 2) #columns with <25% missing and at least 2 non-NA
@@ -1041,18 +1058,12 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
             idx <- which(is.na(mat2[, j])) #find missing values in column
             if (length(idx) > 0 && sum(!is.na(mat2[, j])) > 0) mat2[idx, j] <- mean(mat2[, j], na.rm = TRUE) #impute mean if at least one value
           }
-          covariance_mat2 <- stats::cov(mat2) #calculate covariance matrix
-          eigenvalues2 <- tryCatch(eigen(covariance_mat2)$values, error = function(e) c(1, 1)) #extract eigenvalues, fallback if error
-          if (length(eigenvalues2) >= 2 && all(is.finite(eigenvalues2)) && all(eigenvalues2 > 0)) {
-            SOM_grid_aspect_ratio <- sqrt(eigenvalues2[1] / eigenvalues2[2]) #compute aspect ratio
-          } else {
-            SOM_grid_aspect_ratio <- 1 #fallback to square grid
-            messager("Aspect ratio calculation failed (not enough samples or too much NA) - using square/square-like default aspect ratio for SOM grid") #warn if it fails
-          }
-        } else {
-          SOM_grid_aspect_ratio <- 1 #fallback to square grid if not enough usable data
-          messager("Aspect ratio calculation failed (not enough samples or too much NA) - using square/square-like default aspect ratio for SOM grid") #warn if it fails
+          SOM_grid_aspect_ratio <- estimate.single.layer.aspect.ratio.SOM(mat2)
         }
+      }
+      if (is.na(SOM_grid_aspect_ratio)) {
+        SOM_grid_aspect_ratio <- 1
+        messager("Using a square-like SOM grid because two axes of variation could not be estimated")
       }
     }
 
@@ -1060,9 +1071,16 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     ydim <- max(2, round(sqrt(n_units / SOM_grid_aspect_ratio)))
     xdim <- max(2, round(n_units / ydim))
     SOM_grid_units <- xdim * ydim
+    if (!is.finite(SOM_grid_units) || SOM_grid_units > n_samples) {
+      capped_target <- min(n_units, n_samples)
+      ydim <- max(2, round(sqrt(capped_target / SOM_grid_aspect_ratio)))
+      # Rounding both dimensions can still overshoot the retained sample count.
+      xdim <- min(max(2, round(capped_target / ydim)), n_samples %/% ydim)
+      SOM_grid_units <- xdim * ydim
+      messager(sprintf("Reduced automatic SOM grid to %d x %d (%d units) to fit %d retained samples",
+                        xdim, ydim, SOM_grid_units, n_samples))
+    }
     if (xdim > 50 || ydim > 50) messager(sprintf("Computed SOM grid size %d x %d is very large - consider reducing grid.multiplier or set smaller grid.size manually to avoid long training times",  xdim, ydim)) #large grid size
-    if (SOM_grid_units > n_samples) stop(sprintf("Aborted SOM grid creation: SOM grid size %d x %d (%d units) exceeds number of samples (%d) - decrease grid.multiplier or set grid.size manually", xdim, ydim, SOM_grid_units, n_samples)) #grid cell number less than number of samples
-    if (xdim < 2 || ydim < 2) stop(sprintf("Aborted SOM grid creation: SOM grid size %d x %d is smaller than 2 x 2 - increase grid.multiplier or grid.size", xdim, ydim)) #small grid size
     SOM_output_grid <- kohonen::somgrid(xdim = xdim, ydim = ydim, topo = "hexagonal", neighbourhood.fct = training.neighborhoods) #create SOM grid
   }
 
@@ -1121,62 +1139,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     learning.rate.final <- tuning_values_best$learning_rate_final
   }
 
-  # Create function to calculate topographic error
-  calculate.topographic.error <- function(som_model) {
-    codes <- kohonen::getCodes(som_model)
-    if (!is.list(codes)) codes <- list(codes)
-    data_layers <- som_model$data
-    if (!is.list(data_layers)) data_layers <- list(data_layers)
-    whatmap <- if (!is.null(som_model$whatmap)) som_model$whatmap else seq_along(codes)
-    codes <- codes[whatmap]
-    data_layers <- data_layers[whatmap]
-    dist_fcts <- som_model$dist.fcts[whatmap]
-    user_weights <- som_model$user.weights[whatmap]
-    distance_weights <- som_model$distance.weights[whatmap]
-    combined_weights <- as.numeric(user_weights) * as.numeric(distance_weights)
-    if (length(combined_weights) == 0 || any(!is.finite(combined_weights)) || sum(combined_weights) <= 0) return(NA_real_)
-    combined_weights <- combined_weights / sum(combined_weights)
-    unit_distance_matrix <- kohonen::unit.distances(som_model$grid)
-    adjacency_matrix <- unit_distance_matrix <= 1 + sqrt(.Machine$double.eps)
-    diag(adjacency_matrix) <- FALSE
-    distance_matrix <- matrix(0, nrow = nrow(data_layers[[1]]), ncol = nrow(codes[[1]]))
-    calculate.layer.distance <- function(sample_values, code_matrix, distance_function) {
-      apply(code_matrix, 1, function(code_values) {
-        observed <- is.finite(sample_values) & is.finite(code_values)
-        if (mean(!observed) > som_model$maxNA.fraction) return(Inf)
-        sample_values <- sample_values[observed]
-        code_values <- code_values[observed]
-        if (length(sample_values) == 0) return(Inf)
-        if (distance_function == "sumofsquares") return(sum((sample_values - code_values)^2))
-        if (distance_function == "euclidean") return(sqrt(sum((sample_values - code_values)^2)))
-        if (distance_function == "manhattan") return(sum(abs(sample_values - code_values)))
-        if (distance_function == "tanimoto") {
-          sample_values <- sample_values > 0.5
-          code_values <- code_values > 0.5
-          return(mean(sample_values != code_values))
-        }
-        stop(sprintf("Topographic error aborted: unsupported distance function '%s'", distance_function))
-      })
-    }
-    for (i in seq_along(data_layers)) {
-      layer_distance_matrix <- t(apply(as.matrix(data_layers[[i]]), 1, calculate.layer.distance, code_matrix = as.matrix(codes[[i]]), distance_function = dist_fcts[[i]]))
-      distance_matrix <- distance_matrix + combined_weights[i] * layer_distance_matrix
-    }
-    best_units <- as.integer(som_model$unit.classif)
-    if (length(best_units) != nrow(distance_matrix)) return(NA_real_)
-    second_best_units <- vapply(seq_along(best_units), function(i) {
-      distances <- distance_matrix[i, ]
-      if (!is.finite(best_units[i]) || best_units[i] < 1 || best_units[i] > length(distances)) return(NA_integer_)
-      if (sum(is.finite(distances)) < 2) return(NA_integer_)
-      distances[best_units[i]] <- Inf
-      if (!any(is.finite(distances))) return(NA_integer_)
-      which.min(distances)
-    }, integer(1))
-    valid_units <- is.finite(best_units) & is.finite(second_best_units)
-    if (!any(valid_units)) return(NA_real_)
-    mean(!adjacency_matrix[cbind(best_units[valid_units], second_best_units[valid_units])], na.rm = TRUE)
-  }
-
   # Free memory
   invisible(gc())
 
@@ -1213,7 +1175,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     quantization_error <- mean(som_model$distances, na.rm = TRUE)
 
     # Store topographic error
-    topographic_error <- calculate.topographic.error(som_model)
+    topographic_error <- calculate.topographic.error.SOM(som_model)
 
     # Return results
     return(list(
@@ -1244,7 +1206,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       parallel_cluster,
       varlist = c("messager",
                   "replicate_som",
-                  "calculate.topographic.error",
                   "input_data",
                   "SOM_output_grid",
                   "N.replicates",
@@ -1360,6 +1321,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (!dir.exists(dir_path)) dir.create(dir_path, recursive = TRUE) #create directory if it does not exist
 
     # Save results
+    check.SOM.result.destination(save.SOM.results.name, overwrite.SOM.results)
     save(SOM_results, file = save.SOM.results.name)
     if (save.SOM.results && !overwrite.SOM.results) messager("SOM results saved as ", save.SOM.results.name)
     if (save.SOM.results && overwrite.SOM.results) messager("SOM results overwritten as ", save.SOM.results.name)
@@ -1369,6 +1331,236 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   messager("")
   messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
+}
+
+
+estimate.single.layer.aspect.ratio.SOM <- function(data) {
+  if (nrow(data) < 3L || ncol(data) < 2L) return(NA_real_)
+
+  # Singular values of the centered data are proportional to covariance standard deviations.
+  axes <- tryCatch({
+    centered <- scale(data, center = TRUE, scale = FALSE)
+    svd(centered, nu = 0L, nv = 0L)$d[1:2]
+  }, error = function(e) c(NA_real_, NA_real_))
+  if (any(!is.finite(axes))) return(NA_real_)
+
+  rank_tolerance <- max(dim(data)) * .Machine$double.eps * axes[1L]
+  if (axes[2L] <= rank_tolerance) return(NA_real_)
+  axes[1L] / axes[2L]
+}
+
+
+explicit.sample.ids.SOM <- function(layer) {
+  if (is.data.frame(layer) && .row_names_info(layer, 1L) < 0L) return(NULL)
+  rownames(layer)
+}
+
+
+validate.sample.ids.SOM <- function(ids, layer_label) {
+  invalid <- which(is.na(ids) | !nzchar(trimws(ids, whitespace = "[\\h\\v]")))
+  if (length(invalid)) {
+    stop(layer_label, " has missing or blank sample IDs at rows ",
+         paste(utils::head(invalid, 10L), collapse = ", "), call. = FALSE)
+  }
+  duplicates <- which(duplicated(ids) | duplicated(ids, fromLast = TRUE))
+  if (length(duplicates)) {
+    stop(layer_label, " has duplicate sample IDs at rows ",
+         paste(utils::head(duplicates, 10L), collapse = ", "), call. = FALSE)
+  }
+}
+
+
+restore.unnamed.sample.ids.SOM <- function(SOM.output, messager) {
+  models <- SOM.output$som_models
+  first_layers <- lapply(models, function(model) model$data[[1L]])
+  if (!any(vapply(first_layers, function(layer) is.null(rownames(layer)), logical(1)))) {
+    return(SOM.output)
+  }
+
+  # A saved unnamed fit can be matched by position only if its replicates
+  # contain the same single layer in the same row order.
+  reference <- first_layers[[1L]]
+  compatible <- is.matrix(reference) && nrow(reference) > 0L &&
+    all(vapply(models, function(model) {
+      length(model$data) == 1L && identical(model$data[[1L]], reference) &&
+        length(model$unit.classif) == nrow(reference)
+    }, logical(1)))
+  if (!compatible) {
+    stop("Aborted SOM clustering: cannot align unnamed samples across the stored SOM models. Rerun train.SOM with sample IDs.",
+         call. = FALSE)
+  }
+
+  messager("The single-layer SOM fit has no sample IDs. Assigning IDs such as sample_1 ",
+           "from the stored row positions.")
+  rownames(reference) <- sprintf("sample_%d", seq_len(nrow(reference)))
+  for (i in seq_along(models)) models[[i]]$data[[1L]] <- reference
+  SOM.output$som_models <- models
+  if (is.list(SOM.output$input_data) && length(SOM.output$input_data) == 1L &&
+      identical(SOM.output$input_data[[1L]], first_layers[[1L]])) {
+    SOM.output$input_data[[1L]] <- reference
+  }
+  SOM.output
+}
+
+
+compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix, codebook_matrix,
+                                                       distance_function,
+                                                       max_missing_fraction = 1,
+                                                       use_crossproduct = FALSE) {
+  sample_matrix <- as.matrix(sample_matrix)
+  codebook_matrix <- as.matrix(codebook_matrix)
+  storage.mode(sample_matrix) <- "numeric"
+  storage.mode(codebook_matrix) <- "numeric"
+  n_samples <- nrow(sample_matrix)
+  n_units <- nrow(codebook_matrix)
+  n_vars <- ncol(sample_matrix)
+  if (n_samples == 0L || n_units == 0L || n_vars == 0L || ncol(codebook_matrix) != n_vars) {
+    stop("SOM distances require non-empty sample and codebook matrices with the same number of columns")
+  }
+  if (!distance_function %in% c("sumofsquares", "euclidean", "manhattan", "tanimoto")) {
+    stop("Unsupported SOM distance function: ", distance_function)
+  }
+
+  squared <- distance_function %in% c("sumofsquares", "euclidean")
+  tanimoto <- distance_function == "tanimoto"
+  sample_observed <- is.finite(sample_matrix)
+  codebook_observed <- is.finite(codebook_matrix)
+  distance_names <- list(rownames(sample_matrix), rownames(codebook_matrix))
+
+  # Keep the complete-data shortcut for soft assignments. Runner-up ranking
+  # uses direct differences to avoid cancellation when units are nearly tied.
+  if (use_crossproduct && squared && all(sample_observed) && all(codebook_observed)) {
+    norms <- outer(rowSums(sample_matrix^2), rowSums(codebook_matrix^2), "+")
+    distances <- pmax(norms - 2 * tcrossprod(sample_matrix, codebook_matrix), 0)
+    dimnames(distances) <- distance_names
+    return(if (distance_function == "euclidean") sqrt(distances) else distances)
+  }
+
+  if (tanimoto) {
+    # kohonen places an exact 0.5 on different sides for samples and codes.
+    sample_matrix <- sample_matrix > 0.5
+    codebook_matrix <- codebook_matrix >= 0.5
+  }
+  distances <- matrix(NA_real_, n_samples, n_units, dimnames = distance_names)
+  for (unit in seq_len(n_units)) {
+    observed <- sample_observed &
+      matrix(codebook_observed[unit, ], n_samples, n_vars, byrow = TRUE)
+    observed_count <- rowSums(observed)
+    comparable <- observed_count > 0L & (n_vars - observed_count) / n_vars <= max_missing_fraction
+    code_values <- matrix(codebook_matrix[unit, ], n_samples, n_vars, byrow = TRUE)
+    differences <- sample_matrix - code_values
+    differences[!observed] <- 0
+    totals <- rowSums(if (squared) differences^2 else abs(differences))[comparable]
+    counts <- observed_count[comparable]
+    scaled <- if (tanimoto) totals / counts else totals * (n_vars / counts)
+    distances[comparable, unit] <- if (distance_function == "euclidean") sqrt(scaled) else scaled
+  }
+  distances
+}
+
+
+calculate.topographic.error.SOM <- function(som_model) {
+  codes <- kohonen::getCodes(som_model)
+  if (!is.list(codes)) codes <- list(codes)
+  data_layers <- som_model$data
+  if (!is.list(data_layers)) data_layers <- list(data_layers)
+  whatmap <- som_model$whatmap
+  if (is.null(whatmap)) whatmap <- seq_along(codes)
+  codes <- codes[whatmap]
+  data_layers <- data_layers[whatmap]
+  distance_functions <- som_model$dist.fcts[whatmap]
+  combined_weights <- som_model$user.weights[whatmap] * som_model$distance.weights[whatmap]
+  if (length(combined_weights) == 0L || any(!is.finite(combined_weights)) ||
+      sum(combined_weights) <= 0) return(NA_real_)
+  combined_weights <- combined_weights / sum(combined_weights)
+
+  unit_distances <- kohonen::unit.distances(som_model$grid)
+  adjacent <- unit_distances <= 1 + sqrt(.Machine$double.eps)
+  diag(adjacent) <- FALSE
+  distances <- matrix(0, nrow(data_layers[[1L]]), nrow(codes[[1L]]))
+  for (i in seq_along(data_layers)) {
+    layer_distances <- compute.layer.sample.to.unit.distance.SOM(
+      data_layers[[i]], codes[[i]], distance_functions[[i]],
+      max_missing_fraction = som_model$maxNA.fraction
+    )
+    distances <- distances + combined_weights[i] * layer_distances
+  }
+
+  best_units <- as.integer(som_model$unit.classif)
+  if (length(best_units) != nrow(distances)) return(NA_real_)
+  second_best_units <- vapply(seq_along(best_units), function(i) {
+    best <- best_units[i]
+    scores <- distances[i, ]
+    if (is.na(best) || best < 1L || best > length(scores) ||
+        sum(is.finite(scores)) < 2L) return(NA_integer_)
+    scores[best] <- Inf
+    which.min(scores)
+  }, integer(1))
+  valid_units <- !is.na(second_best_units)
+  if (!any(valid_units)) return(NA_real_)
+  mean(!adjacent[cbind(best_units[valid_units], second_best_units[valid_units])])
+}
+
+
+validate.SOM.result.options <- function(save.SOM.results, save.SOM.results.name,
+                                        overwrite.SOM.results, reuse.SOM.results,
+                                        result_name = "SOM.results") {
+  save_option <- paste0("save.", result_name)
+  overwrite_option <- paste0("overwrite.", result_name)
+  reuse_option <- paste0("reuse.", result_name)
+  path_option <- paste0(save_option, ".name")
+  flags <- setNames(list(save.SOM.results, overwrite.SOM.results, reuse.SOM.results),
+                    c(save_option, overwrite_option, reuse_option))
+  for (option in names(flags)) {
+    value <- flags[[option]]
+    if (!is.logical(value) || length(value) != 1L || is.na(value)) {
+      stop(option, " must be TRUE or FALSE", call. = FALSE)
+    }
+  }
+  if (reuse.SOM.results && (save.SOM.results || overwrite.SOM.results)) {
+    stop(reuse_option, " = TRUE requires ", save_option, " and ", overwrite_option, " to be FALSE",
+         call. = FALSE)
+  }
+  if (reuse.SOM.results || (save.SOM.results && !is.null(save.SOM.results.name))) {
+    path <- save.SOM.results.name
+    if (!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(trimws(path))) {
+      stop("Supply an explicit .Rdata file path in ", path_option, call. = FALSE)
+    }
+    if (tolower(tools::file_ext(path)) != "rdata") {
+      stop(path_option, " must end with '.Rdata'", call. = FALSE)
+    }
+  }
+}
+
+
+read.SOM.result.file <- function(path, object_name) {
+  if (!file.exists(path) || dir.exists(path)) {
+    stop("SOM results file does not exist or is not a file: ", path, call. = FALSE)
+  }
+  saved <- new.env(parent = emptyenv())
+  tryCatch(load(path, envir = saved), error = function(error) {
+    stop("Could not read SOM results from ", path, ": ", conditionMessage(error), call. = FALSE)
+  })
+  saved[[object_name]]
+}
+
+
+load.SOM.results <- function(path, required_fields, stage) {
+  results <- read.SOM.result.file(path, "SOM_results")
+  if (!is.list(results) || !all(required_fields %in% names(results)) ||
+      !is.list(results$som_models) || !length(results$som_models)) {
+    stop("File does not contain valid SOM ", stage, " results: ", path, call. = FALSE)
+  }
+  results
+}
+
+
+check.SOM.result.destination <- function(path, overwrite, overwrite_option = "overwrite.SOM.results") {
+  if (dir.exists(path)) stop("SOM results path is a directory: ", path, call. = FALSE)
+  if (!overwrite && file.exists(path)) {
+    stop("SOM results file already exists: ", path,
+         ". Choose another path or set ", overwrite_option, " = TRUE.", call. = FALSE)
+  }
 }
 
 
@@ -1387,6 +1579,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #' 	trained SOM replicate models and the associated processed input data,
 #' 	replicate identifiers, codebook vectors, layer distance functions,
 #' 	quantization-error diagnostics, and topographic-error diagnostics.
+#'   Older unnamed single-layer fits receive IDs such as `sample_1` in stored
+#'   row order when the retained replicates contain the same specimen data in
+#'   the same order. A message is printed when `verbose = TRUE`.
 #' @param max.k A single integer giving the maximum number of clusters to test
 #'   or retain during clustering. Default: `10`.
 #' @param set.k Optional single integer specifying a fixed number of clusters.
@@ -1415,15 +1610,12 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #'   include map-variance and cluster-separation importance. Default: `TRUE`.
 #' @param save.SOM.results Logical; if `TRUE`, the clustered SOM result object is
 #'   saved as an `.Rdata` file. Default: `FALSE`.
-#' @param save.SOM.results.name Optional character string giving the output file
-#'   name used when saving or loading clustered SOM results. File names supplied
-#'   by the user must end in `.Rdata`. If `NULL`, a default name is generated.
-#'   Default: `NULL`.
-#' @param overwrite.SOM.results Logical; if FALSE and a file named
-#' 	 save.SOM.results.name already exists, the function loads the existing
-#' 	 SOM_results object and skips clustering. If TRUE, clustering is run and
-#' 	 saved results are overwritten when save.SOM.results = TRUE. Default:
-#' 	 FALSE.
+#' @param save.SOM.results.name Path to an `.Rdata` results file. When saving
+#'   with a `NULL` path, a default name is generated from the input and
+#'   clustering method. Reuse requires an explicit path.
+#' @param overwrite.SOM.results Logical; permit replacing an existing file
+#'   when `save.SOM.results = TRUE`. By default, a save request fails if
+#'   the file exists.
 #' @param verbose Logical; if `TRUE`, progress messages and warnings are printed.
 #'   Default: `TRUE`.
 #' @param message.N.replicates A single positive integer giving the frequency of
@@ -1431,6 +1623,10 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #' @param set.seed.N A single positive integer used as the base seed for
 #'   reproducible replicate clustering, reference-label generation, and
 #'   permutation-based internal tests. Default: `1`.
+#' @param reuse.SOM.results Logical; if `TRUE`, return the saved `SOM_results`
+#'   object from `save.SOM.results.name`. Supply the path and leave saving and
+#'   overwriting disabled. The saved result is returned independently of any
+#'   trained SOM or clustering settings supplied. Default: `FALSE`.
 #'
 #' @details
 #' `clustering.SOM` implements codebook-vector clustering and infers species
@@ -1564,18 +1760,25 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #' best-matching SOM unit. These hard assignments are stored separately for each
 #' retained replicate. Because numeric cluster labels are arbitrary across
 #' replicate runs, labels are harmonized before replicate-level assignments are
-#' summarized. Reference labels are generated separately for each supported
-#' value of K by applying k-means to the concatenated processed SOM input layers.
-#' Remaining missing or non-finite input values are replaced with 0.5 for this
-#' reference clustering only. Reference partitions are used solely for labeling
-#' and do not replace the delimitation assignments. For each replicate with K of
-#' at least 2, an overlap table is constructed between the replicate-specific
-#' sample assignments and the corresponding reference labels. The Hungarian
+#' summarized. Each replicate uses a reference for its number of occupied
+#' specimen groups. References are generated by applying k-means to the
+#' concatenated processed SOM input layers, with remaining missing or non-finite
+#' values replaced by 0.5 for this step. When the processed data cannot support
+#' a k-means reference of the required size, the first retained replicate with
+#' that occupied count supplies the reference. This choice is reported when
+#' `verbose = TRUE`. An overlap table compares each replicate's hard assignments
+#' with its reference. The Hungarian
 #' assignment algorithm is then used to identify the one-to-one label
 #' correspondence that maximizes agreement (Kuhn, 1955; Munkres, 1957; Hornik,
 #' 2005). This correction is necessary because equivalent partitions can
 #' otherwise receive permuted numeric labels across runs (Jakobsson & Rosenberg,
 #' 2007; Kopelman et al., 2015).
+#'
+#' Starting with the smallest observed occupied K, each reference is matched to
+#' the previous observed K by maximizing shared specimen membership. Matched
+#' groups inherit labels, and additional groups receive new labels. Ordering
+#' groups by specimen ID makes tied matches reproducible. Ties are reported when
+#' `verbose = TRUE` because their label correspondence is ambiguous.
 #'
 #' After label harmonization, the final `ancestry_matrix` is constructed by
 #' calculating, for each sample, the proportion of retained replicate maps in
@@ -1596,21 +1799,22 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #' clusters. Closer clusters receive larger values, whereas more distant clusters
 #' receive smaller values. These soft assignments are derived from weighted
 #' sample-to-unit distances across SOM layers, transformed into similarity
-#' weights, and summed within SOM-unit clusters. The matrices are relabeled using
+#' weights, and summed within SOM-unit clusters. Layer distances use `kohonen`'s
+#' missing-data scaling and Tanimoto threshold. The matrices are relabeled using
 #' the same Hungarian label mappings and describe assignment uncertainty within
 #' individual replicates. They are primarily used by
 #' `plot.layer.importance.leaveoneout.SOM`.
 #'
-#' Two soft-assignment diagnostics are calculated for each retained replicate and
-#' are used primarily by `plot.layer.importance.leaveoneout.SOM`.
+#' Two diagnostics summarize soft assignments for each retained replicate.
 #' The mean assignment margin is the average difference between the largest and
 #' second-largest cluster probabilities; larger values indicate sharper
 #' assignments. Mean normalized assignment entropy measures the average
 #' diffuseness of cluster probabilities after scaling entropy by its maximum for
 #' the replicate-specific number of clusters; larger values indicate more
-#' uncertain or diffuse assignments. Overall means of both diagnostics are also
-#' returned. If `calculate.soft.ancestry = FALSE`, soft ancestry matrices are
-#' not calculated and these diagnostics are returned as missing values.
+#' uncertain or diffuse assignments. Both diagnostics use the map's soft
+#' weights before padding, including weights for grid clusters without hard
+#' specimen assignments. Maps with one grid cluster or unavailable soft
+#' assignments receive `NA`. Overall means use replicates with defined values.
 #'
 #' When `calculate.variable.importance = TRUE`, the function calculates two
 #' complementary variable-importance summaries for each SOM input layer. Values
@@ -1665,22 +1869,26 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #' \item{replicate_ancestry_matrices}{A named list containing one relabeled
 #' replicate-specific soft ancestry matrix per retained replicate when
 #' `calculate.soft.ancestry = TRUE`; otherwise a named list of missing
-#' replicate-specific results.}
+#' replicate-specific results. Soft weights for grid clusters without
+#' hard specimen assignments are retained in columns following the occupied
+#' groups. Those unoccupied columns are specific to each replicate and are
+#' not matched across maps.}
 #' \item{mean_assignment_margin}{A named numeric vector containing the mean
 #' soft-assignment margin for each retained replicate.}
 #' \item{mean_normalized_assignment_entropy}{A named numeric vector containing
 #' the mean normalized soft-assignment entropy for each retained replicate.}
 #' \item{mean_mean_assignment_margin}{The mean assignment margin across
-#' retained replicates, or NA when soft ancestry was not calculated.}
+#' retained replicates with defined margins, or `NA` if none are defined.}
 #' \item{mean_mean_normalized_assignment_entropy}{The mean normalized
-#' assignment entropy across retained replicates, or NA when soft ancestry
-#' was not calculated.}
+#' assignment entropy across retained replicates with defined entropy, or
+#' `NA` if none are defined.}
 #' \item{clustering.SOM.set.seed.N}{The base random seed supplied through
 #' `set.seed.N`.}
 #' \item{clustering.SOM.args}{A list containing the effective arguments used
 #' for clustering.}
 #' \item{optim_k_vals}{A one-row matrix containing the inferred number of
-#' clusters for each retained replicate.}
+#' grid clusters for each retained replicate, including clusters without hard
+#' specimen assignments.}
 #' \item{optim_k_mean}{The mean inferred number of clusters across retained
 #' replicates.}
 #' \item{optim_k_summary}{A matrix containing the count and proportion of
@@ -1948,13 +2156,22 @@ clustering.SOM <- function(SOM.output,
                            message.N.replicates = 20, #frequency of progress messages during clustering (message is printed every message.N.replicates iterations)
                            save.SOM.results = FALSE, #whether to save clustered SOM results to file
                            save.SOM.results.name = NULL, #file name for saving clustered SOM results (if NULL, default name is generated; if save.SOM.results = TRUE)
-                           overwrite.SOM.results = FALSE, #if FALSE, existing clustering results are loaded instead of re-running clustering
-                           set.seed.N = 1 #set seed for reproducibility
+                           overwrite.SOM.results = FALSE, #whether saving can replace an existing file
+                           set.seed.N = 1, #set seed for reproducibility
+                           reuse.SOM.results = FALSE
 ) {
 
   # Set messages
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("clustering.SOM aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
+
+  validate.SOM.result.options(save.SOM.results, save.SOM.results.name,
+                              overwrite.SOM.results, reuse.SOM.results)
+  if (reuse.SOM.results) {
+    required_fields <- c("som_models", "cluster_assignment", "optim_k_vals", "som_clusters")
+    messager("Reading saved SOM clustering results from ", save.SOM.results.name)
+    return(load.SOM.results(save.SOM.results.name, required_fields, "clustering"))
+  }
 
   # Validate input arguments
   if (!is.list(SOM.output) || is.null(SOM.output$som_models) || !is.list(SOM.output$som_models) || length(SOM.output$som_models) < 1) stop("Aborted SOM clustering: SOM.output must be list from train.SOM() with non-empty $som_models")
@@ -1981,13 +2198,6 @@ clustering.SOM <- function(SOM.output,
   if (!is.logical(calculate.soft.ancestry) || length(calculate.soft.ancestry) != 1 || is.na(calculate.soft.ancestry)) stop("Aborted SOM clustering: calculate.soft.ancestry must be TRUE or FALSE")
   if (!is.logical(calculate.variable.importance) || length(calculate.variable.importance) != 1 || is.na(calculate.variable.importance)) stop("Aborted SOM clustering: calculate.variable.importance must be TRUE or FALSE")
   if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || !is.finite(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Aborted SOM clustering: message.N.replicates must be a single positive integer (>= 1)")
-  if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Aborted SOM clustering: save.SOM.results must be TRUE or FALSE")
-  if (save.SOM.results && !is.null(save.SOM.results.name)) {
-    if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") stop("Aborted SOM clustering: save.SOM.results.name must be non-empty character string (file path) if provided")
-    valid_ext <- tolower(tools::file_ext(save.SOM.results.name)) #extract extension
-    if (valid_ext != "rdata") stop("Aborted SOM clustering: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
-  }
-  if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) stop("Aborted SOM clustering: overwrite.SOM.results must be TRUE or FALSE")
   if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || !is.finite(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Aborted SOM clustering: set.seed.N must be a single positive integer (>= 1)")
 
   # Set default save file name
@@ -2001,14 +2211,7 @@ clustering.SOM <- function(SOM.output,
     save.SOM.results.name <- paste0("SOM_clustering_results_", input_data_names, "_", clustering_method_name, ".Rdata")
   }
 
-  # If overwrite.SOM.results is FALSE and file already exists, return saved results
-  if (!overwrite.SOM.results && file.exists(save.SOM.results.name)) {
-    messager("SOM clustering results already exist - loading results from file and skipping SOM clustering")
-    load(save.SOM.results.name)
-    required_fields <- c("cluster_assignment", "optim_k_vals", "som_clusters")
-    if (!exists("SOM_results") || !all(required_fields %in% names(SOM_results))) stop("Aborted SOM clustering: could not load SOM clustering results (results do not contain expected clustering objects) - check saved file or rerun clustering")
-    return(SOM_results)
-  }
+  if (save.SOM.results) check.SOM.result.destination(save.SOM.results.name, overwrite.SOM.results)
 
   # Free memory
   invisible(gc())
@@ -2036,94 +2239,6 @@ clustering.SOM <- function(SOM.output,
       nn.index = matrix(nearest_neighbor_indices, ncol = 1), #match FNN output structure
       nn.dist = matrix(nearest_neighbor_distances, ncol = 1) #match FNN output structure
     ))
-  }
-
-  # Function to calculate layer-wise sample-to-unit distances
-  compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix,
-                                                        codebook_matrix,
-                                                        distance_function = "sumofsquares"
-  ) {
-
-    # Validate and coerce input matrices
-    sample_matrix <- as.matrix(sample_matrix)
-    codebook_matrix <- as.matrix(codebook_matrix)
-    storage.mode(sample_matrix) <- "numeric"
-    storage.mode(codebook_matrix) <- "numeric"
-    if (nrow(sample_matrix) == 0 || ncol(sample_matrix) == 0) stop("Soft assignment calculation aborted: sample_matrix is empty")
-    if (nrow(codebook_matrix) == 0 || ncol(codebook_matrix) == 0) stop("Soft assignment calculation aborted: codebook_matrix is empty")
-    if (ncol(sample_matrix) != ncol(codebook_matrix)) stop("Soft assignment calculation aborted: sample_matrix and codebook_matrix must have identical numbers of columns")
-
-    # Extract dimensions
-    n_samples <- nrow(sample_matrix) #number of samples
-    n_units <- nrow(codebook_matrix) #number of SOM units
-    n_vars <- ncol(sample_matrix) #number of variables
-
-    # Initialize distance matrix
-    distance_matrix <- matrix(NA_real_,
-                              nrow = n_samples,
-                              ncol = n_units,
-                              dimnames = list(rownames(sample_matrix), rownames(codebook_matrix)))
-
-    # Pre-compute finite mask for samples once (reused across all units)
-    sample_finite <- is.finite(sample_matrix) #logical matrix: n_samples x n_vars
-
-    # Calculate distances using sum of squares (Euclidean)
-    if (distance_function %in% c("sumofsquares", "euclidean")) {
-      if (!anyNA(sample_matrix) && !anyNA(codebook_matrix)) { #fast BLAS path when no missing values present
-        a_sq <- rowSums(sample_matrix ^ 2) #squared row norms for samples
-        b_sq <- rowSums(codebook_matrix ^ 2) #squared row norms for codebook vectors
-        cross <- tcrossprod(sample_matrix, codebook_matrix) #cross-product matrix: n_samples x n_units
-        d_sq <- outer(a_sq, b_sq, "+") - 2 * cross #squared Euclidean distances via expansion
-        distance_matrix <- if (distance_function == "sumofsquares") pmax(d_sq, 0) else sqrt(pmax(d_sq, 0)) #calculate requested distance and guard against floating point negatives
-        rownames(distance_matrix) <- rownames(sample_matrix) #restore rownames after matrix operations
-      } else { #fallback path for data with missing values
-        for (unit_index in seq_len(n_units)) {
-          current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
-          valid_values <- sample_finite & matrix(is.finite(current_codebook_vector), n_samples, n_vars, byrow = TRUE) #valid (non-missing) positions
-          diffs <- sample_matrix - matrix(current_codebook_vector, n_samples, n_vars, byrow = TRUE) #element-wise differences
-          diffs[!valid_values] <- 0 #zero out missing positions before summing
-          has_valid <- rowSums(valid_values) > 0L #samples with at least one valid value
-          current_distance_vector <- if (distance_function == "sumofsquares") rowSums(diffs ^ 2) else sqrt(rowSums(diffs ^ 2)) #calculate requested distance over valid positions
-          current_distance_vector[!has_valid] <- NA_real_ #set fully missing samples to NA
-          distance_matrix[, unit_index] <- current_distance_vector #store distances
-        }
-      }
-    }
-
-    # Calculate distances using Manhattan distance
-    if (distance_function == "manhattan") {
-      for (unit_index in seq_len(n_units)) {
-        current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
-        valid_values <- sample_finite & matrix(is.finite(current_codebook_vector), n_samples, n_vars, byrow = TRUE) #valid (non-missing) positions
-        abs_diffs <- abs(sample_matrix - matrix(current_codebook_vector, n_samples, n_vars, byrow = TRUE)) #absolute element-wise differences
-        abs_diffs[!valid_values] <- 0 #zero out missing positions before summing
-        current_distance_vector <- rowSums(abs_diffs) #Manhattan distance over valid positions
-        current_distance_vector[rowSums(valid_values) == 0L] <- NA_real_ #set fully missing samples to NA
-        distance_matrix[, unit_index] <- current_distance_vector #store distances
-      }
-    }
-
-    # Calculate distances using Tanimoto distance
-    if (distance_function == "tanimoto") {
-      sample_bin <- sample_finite & (sample_matrix > 0.5) #binarize samples using kohonen's 0.5 boundary
-      for (unit_index in seq_len(n_units)) {
-        current_codebook_vector <- codebook_matrix[unit_index, ] #extract current codebook vector
-        codebook_finite <- is.finite(current_codebook_vector) #finite positions in codebook vector
-        code_bin <- matrix(codebook_finite & (current_codebook_vector > 0.5), n_samples, n_vars, byrow = TRUE) #binarize codebook vector using kohonen's 0.5 boundary
-        valid_values <- sample_finite & matrix(codebook_finite, n_samples, n_vars, byrow = TRUE) #valid non-missing positions
-        mismatch_values <- xor(sample_bin, code_bin) & valid_values #positions where binarized sample and codebook states differ
-        n_valid_values <- rowSums(valid_values) #number of valid positions per sample
-        current_distance_vector <- rowSums(mismatch_values) / n_valid_values #normalized Hamming distance matching kohonen's tanimoto behavior
-        current_distance_vector[n_valid_values == 0L] <- NA_real_ #fully missing comparisons are unavailable
-        distance_matrix[, unit_index] <- current_distance_vector #store distances
-      }
-    }
-
-    # Stop if unsupported distance function is specified
-    if (!distance_function %in% c("sumofsquares", "euclidean", "manhattan", "tanimoto")) stop("Soft assignment calculation aborted: unsupported distance function in compute.layer.sample.to.unit.distance.SOM")
-
-    # Return results
-    return(distance_matrix) #return distance matrix
   }
 
   # Create function to calculate integrated sample-to-unit distances across SOM layers
@@ -2169,7 +2284,8 @@ clustering.SOM <- function(SOM.output,
       layer_distance_matrices[[layer_index]] <- compute.layer.sample.to.unit.distance.SOM(
         sample_matrix = sample_matrix,
         codebook_matrix = codebook_matrix,
-        distance_function = layer.distance.functions[layer_index]
+        distance_function = layer.distance.functions[layer_index],
+        use_crossproduct = TRUE
       )
     }
 
@@ -2276,14 +2392,10 @@ clustering.SOM <- function(SOM.output,
     # Return missing if K = 1 provides no meaningful separation metric
     if (ncol(assignment_probability_matrix) <= 1) return(NA_real_)
 
-    # Calculate mean normalized assignment entropy
-    safe_assignment_probability_matrix <- pmax(assignment_probability_matrix, .Machine$double.eps)
-    row_entropies <- -rowSums(safe_assignment_probability_matrix * log(safe_assignment_probability_matrix), na.rm = TRUE)
-    normalized_row_entropies <- row_entropies / log(ncol(assignment_probability_matrix))
-    mean_normalized_assignment_entropy <- mean(normalized_row_entropies, na.rm = TRUE)
-
-    # Return mean normalized assignment entropy
-    return(mean_normalized_assignment_entropy)
+    # Zero weights contribute zero because p * log(p) tends to zero at p = 0.
+    row_entropies <- -rowSums(assignment_probability_matrix * log(assignment_probability_matrix),
+                             na.rm = TRUE)
+    mean(row_entropies, na.rm = TRUE) / log(ncol(assignment_probability_matrix))
   }
 
   # Extract number of replicates
@@ -2328,6 +2440,7 @@ clustering.SOM <- function(SOM.output,
   }
 
   # Update number of replicates after optional filtering
+  SOM.output <- restore.unnamed.sample.ids.SOM(SOM.output, messager)
   N.replicates <- length(SOM.output$som_models)
   som_models_for_clustering <- SOM.output$som_models
   layer.distance.functions <- SOM.output$layer.distance.functions
@@ -3015,6 +3128,9 @@ clustering.SOM <- function(SOM.output,
   names(cluster_gridcell_assignments) <- retained_replicates
   replicate_ancestry_matrices <- lapply(results, `[[`, "replicate_ancestry_matrix")
   names(replicate_ancestry_matrices) <- retained_replicates
+  # Calculate diagnostics at each map's actual grid K before adding padding.
+  mean_assignment_margin <- vapply(replicate_ancestry_matrices, calculate.mean.assignment.margin.SOM, numeric(1))
+  mean_normalized_assignment_entropy <- vapply(replicate_ancestry_matrices, calculate.mean.normalized.assignment.entropy.SOM, numeric(1))
 
   # Build multi-layer reference data for Hungarian label synchronization
   processed_input_data <- som_models[[1]]$data
@@ -3023,71 +3139,48 @@ clustering.SOM <- function(SOM.output,
   processed_input_data <- do.call(cbind, processed_input_data)
   processed_input_data[!is.finite(processed_input_data) | is.na(processed_input_data)] <- 0.5
 
-  # Preprocess input data and generate cluster labels
-  base::set.seed(set.seed.N) #set seed for reproducibility
-  max_reference_k <- as.integer(min(max.k, max(as.numeric(optim_k_vals), na.rm = TRUE), nrow(unique(processed_input_data)))) #maximum valid reference K
-  if (!is.finite(max_reference_k) || max_reference_k < 1L) stop("Aborted SOM clustering: no valid reference K available for Hungarian relabeling")
-  cluster_labels <- do.call(cbind, lapply(seq_len(max_reference_k), function(number_of_clusters) stats::kmeans(processed_input_data, centers = number_of_clusters, nstart = 30, iter.max = 1e5)$cluster)) #generate reference cluster labels for Hungarian relabeling
-  rownames(cluster_labels) <- rownames(processed_input_data) #set row names for cluster labels
-  colnames(cluster_labels) <- paste("k", seq_len(max_reference_k), sep = '') #set column names
-
-  # Extract SOM cluster assignments and filter replicates based on maximum K
-  all_k <- apply(cluster_assignment, 2, max, na.rm = TRUE) #calculate maximum K for each replicate (column)
-  if (length(which(optim_k_vals <= max_reference_k)) == 0) stop("Aborted SOM clustering: no replicates have K <= max_reference_k - increase max.k or check input data")
-  assignment_replicate_indices <- which(optim_k_vals <= max_reference_k) #replicates retained for relabeling and ancestry summaries
-  assignment_matrix <- cluster_assignment[, assignment_replicate_indices, drop = FALSE] #filter to keep replicates with K <= max_reference_k
-  replicate_label_maps <- vector("list", ncol(assignment_matrix)) #store replicate-label -> reference-label maps
+  # Reference size is determined by the hard specimen groups in each map.
+  assignment_matrix <- cluster_assignment
+  occupied_counts <- apply(cluster_assignment, 2L, function(labels) length(unique(labels)))
+  # Hartigan-Wong k-means requires fewer centers than rows when K > 1.
+  max_reference_k <- min(max(occupied_counts), nrow(unique(processed_input_data)),
+                         max(1L, nrow(processed_input_data) - 1L))
+  base::set.seed(set.seed.N)
+  reference_labels <- lapply(seq_len(max_reference_k), function(k) {
+    stats::kmeans(processed_input_data, centers = k, nstart = 30, iter.max = 1e5)$cluster
+  })
+  for (k in sort(unique(occupied_counts[occupied_counts > max_reference_k]))) {
+    reference_replicate <- match(k, occupied_counts)
+    labels <- cluster_assignment[, reference_replicate]
+    reference_labels[[k]] <- match(labels, unique(labels))
+    messager(sprintf("Using hard assignments from replicate %s as the relabeling reference for %d occupied groups",
+                      retained_replicates[reference_replicate], k))
+  }
+  reference_labels <- align.occupied.k.references.SOM(
+    reference_labels, occupied_counts, rownames(assignment_matrix), messager
+  )
 
   # Relabel across replicates with Hungarian algorithm
-  for (replicate_index in seq_len(ncol(assignment_matrix))) {
-    replicate_k <- max(assignment_matrix[, replicate_index], na.rm = TRUE)
-    if (is.na(replicate_k)) next
-    if (replicate_k < 2) {
-      replicate_label_maps[[replicate_index]] <- seq_len(replicate_k)
-      next
-    }
-    reference_sample_cluster_labels <- cluster_labels[, replicate_k] #reference labels for this K
-    replicate_sample_cluster_labels <- assignment_matrix[, replicate_index] #labels from this replicate
-    cluster_overlap_count_matrix <- table(factor(reference_sample_cluster_labels, levels = 1:replicate_k), base::factor(replicate_sample_cluster_labels, levels = 1:replicate_k)) #create table (rows: ref clusters, cols: replicate clusters; with levels 1:replicate_k)
-    if (nrow(cluster_overlap_count_matrix) != ncol(cluster_overlap_count_matrix)) { #pad overlap table to square if needed for Hungarian algorithm
-      new_size <- max(nrow(cluster_overlap_count_matrix), ncol(cluster_overlap_count_matrix)) #determine new size for square table
-      padded_cluster_overlap_count_matrix <- matrix(0, nrow = new_size, ncol = new_size) #create square matrix of zeros
-      padded_cluster_overlap_count_matrix[1:nrow(cluster_overlap_count_matrix), 1:ncol(cluster_overlap_count_matrix)] <- cluster_overlap_count_matrix #copy original table into upper-left
-      cluster_overlap_count_matrix <- padded_cluster_overlap_count_matrix #update table to padded table
-    }
-    assignment_cost_matrix <- max(cluster_overlap_count_matrix) - cluster_overlap_count_matrix #build cost matrix (max overlap = minimal cost)
-    reference_cluster_to_replicate_cluster_map <- as.integer(clue::solve_LSAP(assignment_cost_matrix)) #returns replicate cluster (col) chosen for each reference cluster (row)
-    replicate_cluster_to_reference_cluster_map <- integer(replicate_k) #invert mapping so we can relabel replicate -> reference
-    replicate_cluster_to_reference_cluster_map[reference_cluster_to_replicate_cluster_map] <- seq_len(replicate_k) #replicate_cluster_to_reference_cluster_map[replicate_cluster] = reference_cluster
-    replicate_label_maps[[replicate_index]] <- replicate_cluster_to_reference_cluster_map #store map for optional soft-ancestry relabeling
-    assignment_matrix[, replicate_index] <- as.integer(replicate_cluster_to_reference_cluster_map[replicate_sample_cluster_labels]) #assign new cluster labels to samples
+  replicate_label_maps <- vector("list", ncol(assignment_matrix))
+  for (i in seq_along(replicate_label_maps)) {
+    replicate_labels <- cluster_assignment[, i]
+    label_map <- synchronize.cluster.labels.SOM(
+      replicate_labels, som_clusters[[i]], reference_labels[[occupied_counts[i]]]
+    )
+    replicate_label_maps[[i]] <- label_map
+    assignment_matrix[, i] <- unname(label_map[as.character(replicate_labels)])
   }
 
   # Build ancestry from the re-labelled matrix
   k.max <- max(assignment_matrix, na.rm = TRUE)
   if (isTRUE(calculate.soft.ancestry)) {
-    relabelled_replicate_ancestry_matrices <- lapply(seq_along(assignment_replicate_indices), function(replicate_position) {
-      current_soft_ancestry_matrix <- replicate_ancestry_matrices[[assignment_replicate_indices[replicate_position]]]
-      current_label_map <- replicate_label_maps[[replicate_position]]
-      if (is.null(current_soft_ancestry_matrix) || is.null(current_label_map)) return(NULL)
+    soft_k <- max(lengths(replicate_label_maps))
+    relabelled_replicate_ancestry_matrices <- lapply(seq_along(replicate_label_maps), function(i) {
+      current_soft_ancestry_matrix <- replicate_ancestry_matrices[[i]]
+      if (is.null(current_soft_ancestry_matrix)) return(NULL)
       current_soft_ancestry_matrix <- as.matrix(current_soft_ancestry_matrix)
       current_soft_ancestry_matrix <- current_soft_ancestry_matrix[rownames(assignment_matrix), , drop = FALSE]
-      current_old_labels <- suppressWarnings(as.integer(colnames(current_soft_ancestry_matrix)))
-      if (any(is.na(current_old_labels)) || length(current_old_labels) != ncol(current_soft_ancestry_matrix)) current_old_labels <- seq_len(ncol(current_soft_ancestry_matrix))
-      current_relabelled_soft_ancestry_matrix <- matrix(0,
-                                                        nrow = nrow(current_soft_ancestry_matrix),
-                                                        ncol = k.max,
-                                                        dimnames = list(rownames(current_soft_ancestry_matrix), paste0("Cluster_", seq_len(k.max))))
-      for (old_cluster_index in seq_len(ncol(current_soft_ancestry_matrix))) {
-        old_cluster_label <- current_old_labels[old_cluster_index]
-        if (!is.finite(old_cluster_label) || is.na(old_cluster_label) || old_cluster_label < 1L || old_cluster_label > length(current_label_map)) next
-        new_cluster_label <- current_label_map[old_cluster_label]
-        if (is.finite(new_cluster_label) && !is.na(new_cluster_label) && new_cluster_label >= 1L && new_cluster_label <= k.max) current_relabelled_soft_ancestry_matrix[, new_cluster_label] <- current_relabelled_soft_ancestry_matrix[, new_cluster_label] + current_soft_ancestry_matrix[, old_cluster_index]
-      }
-      current_row_sums <- rowSums(current_relabelled_soft_ancestry_matrix, na.rm = TRUE)
-      valid_rows <- is.finite(current_row_sums) & current_row_sums > 0
-      current_relabelled_soft_ancestry_matrix[valid_rows, ] <- current_relabelled_soft_ancestry_matrix[valid_rows, , drop = FALSE] / current_row_sums[valid_rows]
-      current_relabelled_soft_ancestry_matrix
+      relabel.soft.ancestry.SOM(current_soft_ancestry_matrix, replicate_label_maps[[i]], soft_k)
     })
     names(relabelled_replicate_ancestry_matrices) <- colnames(assignment_matrix)
     relabelled_replicate_ancestry_matrices <- Filter(Negate(is.null), relabelled_replicate_ancestry_matrices)
@@ -3097,10 +3190,6 @@ clustering.SOM <- function(SOM.output,
   ancestry_matrix <- do.call(rbind, prop_list)
   colnames(ancestry_matrix) <- paste0("Cluster_", seq_len(ncol(ancestry_matrix)))
   rownames(ancestry_matrix) <- rownames(assignment_matrix)
-  mean_assignment_margin <- vapply(replicate_ancestry_matrices, calculate.mean.assignment.margin.SOM, numeric(1))
-  names(mean_assignment_margin) <- names(replicate_ancestry_matrices)
-  mean_normalized_assignment_entropy <- vapply(replicate_ancestry_matrices, calculate.mean.normalized.assignment.entropy.SOM, numeric(1))
-  names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 
   # Calculate median map variance (neuron-weighted) and median eta squared (cluster separation effect size) for each variable in each layer
   if (isTRUE(calculate.variable.importance)) {
@@ -3283,6 +3372,7 @@ clustering.SOM <- function(SOM.output,
       dir.create(dir_path, recursive = TRUE) #create directory if it does not exist
       messager(paste("Specified directory", dir_path, "did not exist and was created"))
     }
+    check.SOM.result.destination(save.SOM.results.name, overwrite.SOM.results)
     save(SOM_results, file = save.SOM.results.name)
     if (save.SOM.results && !overwrite.SOM.results) messager("SOM clustering results saved as ", save.SOM.results.name)
     if (save.SOM.results && overwrite.SOM.results) messager("SOM clustering results overwritten as ", save.SOM.results.name)
@@ -3292,6 +3382,81 @@ clustering.SOM <- function(SOM.output,
   messager("")
   messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
+}
+
+
+align.occupied.k.references.SOM <- function(references, occupied_counts, specimen_ids, messager) {
+  observed_k <- sort(unique(occupied_counts))
+  if (length(observed_k) < 2L) return(references)
+
+  specimen_order <- order(specimen_ids, method = "radix")
+  previous <- references[[observed_k[1L]]]
+  for (k in observed_k[-1L]) {
+    current <- references[[k]]
+    # Specimen order makes the assignment solver's tie-breaking independent of raw labels.
+    previous_groups <- unique(previous[specimen_order])
+    current_groups <- unique(current[specimen_order])
+    current_indices <- match(current, current_groups)
+    overlap <- table(match(previous, previous_groups), current_indices)
+    matched <- as.integer(clue::solve_LSAP(overlap, maximum = TRUE))
+    if (has.tied.overlap.match.SOM(overlap, matched)) {
+      messager(sprintf("Cross-K label matching is tied for occupied K = %d and %d. Matching uses specimen ID order.",
+                        length(previous_groups), k))
+    }
+
+    labels <- integer(k)
+    labels[matched] <- previous_groups
+    labels[labels == 0L] <- seq.int(length(previous_groups) + 1L, k)
+    previous <- references[[k]] <- labels[current_indices]
+  }
+  references
+}
+
+
+has.tied.overlap.match.SOM <- function(overlap, matched) {
+  # Shift scores so setting one matched edge to zero forbids it at the best score.
+  scores <- overlap + 1L
+  rows <- seq_along(matched)
+  best <- sum(scores[cbind(rows, matched)])
+  for (row in rows) {
+    alternative_scores <- scores
+    alternative_scores[row, matched[row]] <- 0L
+    alternative <- as.integer(clue::solve_LSAP(alternative_scores, maximum = TRUE))
+    if (sum(alternative_scores[cbind(rows, alternative)]) == best) return(TRUE)
+  }
+  FALSE
+}
+
+
+# Hard assignments align occupied groups by overlap. Empty groups have no overlap
+# evidence, so their soft weights stay in separate, per-map columns after those.
+synchronize.cluster.labels.SOM <- function(specimen_labels, grid_labels, reference_labels) {
+  labels <- sort(unique(grid_labels))
+  occupied <- sort(unique(specimen_labels))
+  empty <- setdiff(unique(grid_labels), occupied)
+  if (length(empty)) {
+    # Grid order breaks overlap ties independently of the original label numbers.
+    occupied <- unique(grid_labels[grid_labels %in% occupied])
+  }
+  k <- length(occupied)
+  overlap <- table(factor(reference_labels, levels = seq_len(k)),
+                   factor(specimen_labels, levels = occupied))
+  reference_to_replicate <- as.integer(clue::solve_LSAP(overlap, maximum = TRUE))
+  mapping <- setNames(integer(length(labels)), labels)
+  mapping[as.character(occupied[reference_to_replicate])] <- seq_len(k)
+  mapping[as.character(empty)] <- k + seq_along(empty)
+  mapping
+}
+
+relabel.soft.ancestry.SOM <- function(weights, label_map, width) {
+  columns <- unname(label_map[colnames(weights)])
+  if (length(columns) != length(label_map) || anyNA(columns) || anyDuplicated(columns)) {
+    stop("Soft assignment columns do not match the SOM grid-cluster labels")
+  }
+  output <- matrix(0, nrow(weights), width,
+                   dimnames = list(rownames(weights), paste0("Cluster_", seq_len(width))))
+  output[, columns] <- weights
+  output
 }
 
 
@@ -5256,7 +5421,7 @@ plot.K.SOM <- function(SOM.output,
 #' @param plot.title.font.size A single positive numeric value giving the panel
 #'   title font size in points. Default: `9.1`.
 #' @param legend.font.size A single positive numeric value giving the
-#'   neighbor-distance legend font size in points. Default: `7`.
+#'   legend font size in points. Default: `7`.
 #' @param verbose Logical; if `TRUE`, plotting and validation messages are
 #'   printed. Default: `TRUE`.
 #'
@@ -5300,10 +5465,11 @@ plot.K.SOM <- function(SOM.output,
 #' occupied regions (Vesanto & Alhoniemi, 2000; Wehrens & Buydens, 2007).
 #'
 #' The lower panel shows the selected replicate's sample-to-unit mappings and
-#' SOM-unit cluster assignments. Cluster labels are converted to consecutive
-#' integers for plotting, which changes only their displayed colors and not the
-#' underlying partition. Boundaries are added between clusters when more than
-#' one cluster is present. Compact and contiguous cluster regions indicate that
+#' SOM-unit cluster assignments. Occupied clusters use colors indexed by the
+#' selected replicate's stored specimen labels in `cluster_assignment`.
+#' Grid clusters with no hard specimen assignments are shown in gray
+#' and identified in the legend. Boundaries follow the original grid-cluster
+#' partition. Compact and contiguous cluster regions indicate that
 #' the inferred partition corresponds closely to the SOM topology. Fragmented
 #' cluster regions may indicate weak separation, gradual transitions, or an
 #' overly fine partition.
@@ -5415,7 +5581,7 @@ plot.model.SOM <- function(SOM.output,
                            title.clusters = "SOM clusters", #title of cluster plot (bottom)
                            title.neighbor.dist = "SOM neighbor distances", #title of neighbor distances plot
                            plot.title.font.size = 9.1, #font size of plot titles in points
-                           legend.font.size = 7, #font size of neighbor-distance legend in points
+                           legend.font.size = 7, #font size of legends in points
                            verbose = TRUE #whether to print messages
 ) {
 
@@ -5601,7 +5767,7 @@ plot.model.SOM <- function(SOM.output,
   unit_classif <- as.integer(som_model$unit.classif)
   if (length(unit_classif) == 0 || anyNA(unit_classif) || any(!is.finite(unit_classif)) || any(unit_classif < 1) || any(unit_classif > number_of_units)) stop("Plotting aborted: selected som_model contains invalid sample-to-unit assignments")
 
-  # Synchronize selected replicate cluster labels with structure-plot cluster labels
+  # Use the selected replicate's stored specimen labels for occupied cluster colors.
   if (is.null(SOM.output$cluster_assignment)) stop("Plotting aborted: SOM.output is missing cluster_assignment required for synchronized cluster colors")
   cluster_assignment <- as.matrix(SOM.output$cluster_assignment)
   if (is.null(replicate_name) || is.na(replicate_name) || replicate_name == "") stop("Plotting aborted: selected SOM replicate has no replicate name")
@@ -5612,9 +5778,7 @@ plot.model.SOM <- function(SOM.output,
   } else {
     palette_k <- as.integer(set.k)
   }
-  selected_k <- length(unique(som_cluster))
   if (!is.finite(palette_k) || palette_k < 1) stop("Plotting aborted: no valid reference K is available for cluster colors")
-  if (selected_k > palette_k) stop("Plotting aborted: selected replicate contains more clusters than the reference K")
   som_data <- som_model$data
   if (!is.list(som_data)) som_data <- list(som_data)
   if (length(som_data) == 0 || is.null(rownames(som_data[[1]]))) stop("Plotting aborted: sample names could not be extracted from selected som_model")
@@ -5622,40 +5786,22 @@ plot.model.SOM <- function(SOM.output,
   if (length(sample_names) != length(unit_classif)) stop("Plotting aborted: number of sample names does not match unit.classif")
   if (is.null(rownames(cluster_assignment)) || any(!(sample_names %in% rownames(cluster_assignment)))) stop("Plotting aborted: selected SOM replicate samples are missing from cluster_assignment")
   original_sample_cluster_labels <- som_cluster[unit_classif]
-  original_cluster_labels <- sort(unique(som_cluster))
-  if (!is.null(set.k) || selected_k == palette_k) {
-    synchronized_sample_cluster_labels <- as.integer(cluster_assignment[sample_names, replicate_name])
-    if (anyNA(synchronized_sample_cluster_labels) || any(!is.finite(synchronized_sample_cluster_labels)) || any(synchronized_sample_cluster_labels < 1) || any(synchronized_sample_cluster_labels > palette_k)) stop("Plotting aborted: cluster_assignment contains invalid synchronized cluster labels")
-    synchronized_cluster_labels <- sort(unique(synchronized_sample_cluster_labels))
-    if (length(original_cluster_labels) != length(synchronized_cluster_labels)) stop("Plotting aborted: original and synchronized cluster counts do not match")
-    cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = original_cluster_labels),
-                                   factor(synchronized_sample_cluster_labels, levels = synchronized_cluster_labels))
-    if (any(rowSums(cluster_label_overlap) == 0)) stop("Plotting aborted: at least one SOM cluster contains no samples and cannot be synchronized")
-    if (any(rowSums(cluster_label_overlap > 0) != 1) || any(colSums(cluster_label_overlap > 0) != 1)) stop("Plotting aborted: SOM cluster labels do not map uniquely to synchronized cluster labels")
-    cluster_label_map <- synchronized_cluster_labels[max.col(cluster_label_overlap, ties.method = "first")]
-    names(cluster_label_map) <- original_cluster_labels
-  } else {
-    replicate_k_values <- apply(cluster_assignment, 2, function(current_cluster_assignment) {
-      current_cluster_assignment <- as.integer(current_cluster_assignment)
-      current_cluster_assignment <- current_cluster_assignment[is.finite(current_cluster_assignment) & !is.na(current_cluster_assignment) & current_cluster_assignment >= 1]
-      length(unique(current_cluster_assignment))
-    })
-    reference_replicate_indices <- which(replicate_k_values == palette_k)
-    if (length(reference_replicate_indices) == 0) stop("Plotting aborted: no cluster_assignment replicates match the highest supported K")
-    reference_cluster_assignment <- cluster_assignment[sample_names, reference_replicate_indices, drop = FALSE]
-    if (anyNA(reference_cluster_assignment) || any(!is.finite(reference_cluster_assignment)) || any(reference_cluster_assignment < 1) || any(reference_cluster_assignment > palette_k)) stop("Plotting aborted: highest-K cluster_assignment contains invalid cluster labels")
-    reference_consensus_labels <- apply(reference_cluster_assignment, 1, function(current_cluster_assignment) {
-      cluster_counts <- tabulate(as.integer(current_cluster_assignment), nbins = palette_k)
-      which.max(cluster_counts)
-    })
-    cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = original_cluster_labels),
-                                   factor(reference_consensus_labels, levels = seq_len(palette_k)))
-    if (any(rowSums(cluster_label_overlap) == 0)) stop("Plotting aborted: at least one SOM cluster contains no samples and cannot be matched to highest-K clusters")
-    cluster_label_map <- as.integer(clue::solve_LSAP(cluster_label_overlap, maximum = TRUE))
-    names(cluster_label_map) <- original_cluster_labels
-  }
-  som_cluster <- as.integer(cluster_label_map[as.character(som_cluster)])
-  if (anyNA(som_cluster) || any(!is.finite(som_cluster)) || any(som_cluster < 1) || any(som_cluster > palette_k)) stop("Plotting aborted: SOM cluster-label synchronization failed")
+  occupied_cluster_labels <- sort(unique(original_sample_cluster_labels))
+  occupied_k <- length(occupied_cluster_labels)
+  if (occupied_k > palette_k) stop("Plotting aborted: selected replicate contains more occupied clusters than the reference K")
+  synchronized_sample_cluster_labels <- as.integer(cluster_assignment[sample_names, replicate_name])
+  if (anyNA(synchronized_sample_cluster_labels) || any(!is.finite(synchronized_sample_cluster_labels)) || any(synchronized_sample_cluster_labels < 1) || any(synchronized_sample_cluster_labels > palette_k)) stop("Plotting aborted: cluster_assignment contains invalid synchronized cluster labels")
+  synchronized_cluster_labels <- sort(unique(synchronized_sample_cluster_labels))
+  if (occupied_k != length(synchronized_cluster_labels)) stop("Plotting aborted: occupied and synchronized cluster counts do not match")
+  cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = occupied_cluster_labels),
+                                 factor(synchronized_sample_cluster_labels, levels = synchronized_cluster_labels))
+  if (any(rowSums(cluster_label_overlap > 0) != 1) || any(colSums(cluster_label_overlap > 0) != 1)) stop("Plotting aborted: SOM cluster labels do not map uniquely to synchronized cluster labels")
+  cluster_label_map <- synchronized_cluster_labels[max.col(cluster_label_overlap, ties.method = "first")]
+  names(cluster_label_map) <- occupied_cluster_labels
+  unoccupied_units <- !som_cluster %in% occupied_cluster_labels
+  unoccupied_color <- "#D9D9D9"
+  unit_colors <- col.pal.clusters(palette_k)[cluster_label_map[as.character(som_cluster)]]
+  unit_colors[unoccupied_units] <- unoccupied_color
 
   # Calculate SOM neighbor distances
   nd_plot <- calc.unit.neighbor.dist(som_model)
@@ -5711,31 +5857,30 @@ plot.model.SOM <- function(SOM.output,
        cex = legend_relative_font_size,
        palette.name = function(n) rev(col.pal.neighbor.dist(n)))
 
-  # Set color palette for bottom plot
-  som_cluster <- as.integer(som_cluster)
-  if (anyNA(som_cluster) || !all(is.finite(som_cluster)) || any(som_cluster < 1) || any(som_cluster > palette_k)) stop("Plotting aborted: som_cluster contains invalid cluster assignments")
-
-  # Count clusters in selected replicate
-  number_of_clusters <- length(unique(som_cluster))
-
-  # Assign cluster colors
-  cluster_colors <- col.pal.clusters(palette_k)
-  SOM_cluster_plot_col <- cluster_colors[som_cluster]
-
   # Plot SOM clusters
-  par(fig = c(shift.plot.clusters, 1, 0, 0.5), new = TRUE)
+  legend_height <- if (any(unoccupied_units)) 0.06 else 0
+  par(fig = c(shift.plot.clusters, 1, legend_height, 0.5), new = TRUE)
   par(cex.main = plot_title_relative_font_size, font.main = 2)
   plot(x = som_model,
        shape = cluster.shape.clusters,
        type = "mapping",
-       bgcol = SOM_cluster_plot_col,
+       bgcol = unit_colors,
        main = if (is.null(title.clusters)) "" else title.clusters,
        pchs = point.shape.clusters,
        cex = point.size.clusters,
        col = point.col.clusters)
 
   # Add boundaries of SOM clusters
-  if (number_of_clusters > 1) kohonen::add.cluster.boundaries(som_model, som_cluster, lwd = boundary.lwd.clusters, col = boundary.col.clusters)
+  if (length(unique(som_cluster)) > 1L) {
+    kohonen::add.cluster.boundaries(som_model, som_cluster, lwd = boundary.lwd.clusters,
+                                   col = boundary.col.clusters)
+  }
+  if (legend_height > 0) {
+    par(fig = c(shift.plot.clusters, 1, 0, legend_height), mar = rep(0, 4), new = TRUE)
+    graphics::plot.new()
+    graphics::legend("center", legend = "No hard specimen assignments", fill = unoccupied_color,
+                     border = "black", bty = "n", cex = legend_relative_font_size)
+  }
 
   # Close graphics device
   if (save) {
@@ -8683,10 +8828,8 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #'   end with `".Rdata"`. If `NULL`, a default name is generated from the input
 #'   layer names. Default: `NULL`.
 #' @param overwrite.leave.one.layer.out.results Logical; if `TRUE`, existing
-#'   leave-one-layer-out results are recalculated and overwritten. If `FALSE`,
-#'   `save.leave.one.layer.out.results = TRUE`, and the results file already
-#'   exists, the saved results are loaded and the reruns are skipped. Default:
-#'   `FALSE`.
+#'   leave-one-layer-out results can be replaced when saving. If `FALSE`, an
+#'   existing destination causes an error when saving. Default: `FALSE`.
 #' @param save Logical; if `TRUE`, the plot is saved to a file. Default:
 #'   `FALSE`.
 #' @param overwrite Logical; if `TRUE`, an existing plot file with the same name
@@ -8729,6 +8872,11 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #'   `20`.
 #' @param verbose Logical; if `TRUE`, progress, plotting, and file-handling
 #'   messages are printed. Default: `TRUE`.
+#' @param reuse.leave.one.layer.out.results Logical; if `TRUE`, load and plot
+#'   saved leave-one-layer-out results. Requires an explicit
+#'   `save.leave.one.layer.out.results.name` and both
+#'   `save.leave.one.layer.out.results` and
+#'   `overwrite.leave.one.layer.out.results` set to `FALSE`. Default: `FALSE`.
 #'
 #' @details
 #' `plot.layer.importance.leaveoneout.SOM` evaluates the contribution of each
@@ -8770,7 +8918,8 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #' that the omitted layer introduced conflicting or uncertain assignment signal.
 #' Assignment-margin change is calculated only when replicate-specific soft
 #' assignment matrices are available for both the retained baseline replicate
-#' and its matched leave-one-layer-out replicate.
+#' and its matched leave-one-layer-out replicate, and both have at least two
+#' grid clusters.
 #'
 #' Failed reruns and their error messages are retained in the replicate-level
 #' results but excluded from summaries and plots. Layer summaries report the
@@ -8871,7 +9020,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   right.margin = 2, #right outer margin
                                                   save.leave.one.layer.out.results = TRUE, #whether to save leave-one-layer-out results to file
                                                   save.leave.one.layer.out.results.name = NULL, #file name for saving leave-one-layer-out results; if NULL, default name is generated
-                                                  overwrite.leave.one.layer.out.results = FALSE, #if FALSE, existing results are loaded instead of re-running
+                                                  overwrite.leave.one.layer.out.results = FALSE, #whether to replace existing results when saving
                                                   save = FALSE, #whether to save plot
                                                   overwrite = TRUE, #whether to overwrite plot if it already exists
                                                   plot.type = "svg", #plot file type (options: "svg", "png", "jpg")
@@ -8888,12 +9037,17 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   axis.ticks.font.size = 7, #font size of y-axis numeric tick labels in points
                                                   add.boxplot.whiskers = TRUE, #whether to show boxplot whiskers
                                                   message.N.replicates = 20, #frequency of progress messages during leave-one-layer-out SOM reruns
-                                                  verbose = TRUE #whether to print messages
+                                                  verbose = TRUE, #whether to print messages
+                                                  reuse.leave.one.layer.out.results = FALSE
 ) {
 
   # Set messages
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
+
+  validate.SOM.result.options(save.leave.one.layer.out.results, save.leave.one.layer.out.results.name,
+                              overwrite.leave.one.layer.out.results, reuse.leave.one.layer.out.results,
+                              result_name = "leave.one.layer.out.results")
 
   # Reset plotting parameters
   old_device <- dev.cur()
@@ -8993,12 +9147,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Leave-one-layer-out layer importance aborted: left.margin must be a single non-negative numeric value")
   if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Leave-one-layer-out layer importance aborted: top.margin must be a single non-negative numeric value")
   if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Leave-one-layer-out layer importance aborted: right.margin must be a single non-negative numeric value")
-  if (!is.logical(save.leave.one.layer.out.results) || length(save.leave.one.layer.out.results) != 1 || is.na(save.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results must be TRUE or FALSE")
-  if (save.leave.one.layer.out.results && !is.null(save.leave.one.layer.out.results.name)) {
-    if (!is.character(save.leave.one.layer.out.results.name) || length(save.leave.one.layer.out.results.name) != 1 || is.na(save.leave.one.layer.out.results.name) || trimws(save.leave.one.layer.out.results.name) == "") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must be a non-empty character string if provided")
-    if (tolower(tools::file_ext(save.leave.one.layer.out.results.name)) != "rdata") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must end with '.Rdata'")
-  }
-  if (!is.logical(overwrite.leave.one.layer.out.results) || length(overwrite.leave.one.layer.out.results) != 1 || is.na(overwrite.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: overwrite.leave.one.layer.out.results must be TRUE or FALSE")
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Leave-one-layer-out layer importance aborted: save must be TRUE or FALSE")
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Leave-one-layer-out layer importance aborted: overwrite must be TRUE or FALSE")
   if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(tolower(plot.type) %in% c("svg", "png", "jpg"))) stop("Leave-one-layer-out layer importance aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
@@ -9289,7 +9437,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   }
 
   # Set default saving name if needed
-  if (is.null(save.leave.one.layer.out.results.name)) {
+  if (save.leave.one.layer.out.results && is.null(save.leave.one.layer.out.results.name)) {
     input_layer_names <- names(input_data)
     save.leave.one.layer.out.results.name <- paste0("leave_one_layer_out_results_", paste(input_layer_names, collapse = "_"), ".Rdata")
   }
@@ -9300,15 +9448,23 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     file.name <- paste0("leave_one_layer_out_layer_importance_", paste(input_layer_names, collapse = "_"), ".", plot.type)
   }
 
-  # Load existing results if requested
-  if (save.leave.one.layer.out.results && !overwrite.leave.one.layer.out.results && file.exists(save.leave.one.layer.out.results.name)) {
-    messager("Leave-one-layer-out results already exist - loading results from file and skipping re-run")
-    load(save.leave.one.layer.out.results.name)
-    if (!exists("leave.one.layer.out.results")) stop("Leave-one-layer-out layer importance aborted: loaded file does not contain object 'leave.one.layer.out.results'")
-    if (!is.list(leave.one.layer.out.results) || is.null(leave.one.layer.out.results$layer.summary) || is.null(leave.one.layer.out.results$replicate.matched.results)) stop("Leave-one-layer-out layer importance aborted: loaded leave.one.layer.out.results object is malformed")
+  # Load existing results only when explicitly requested.
+  if (reuse.leave.one.layer.out.results) {
+    messager("Reading saved leave-one-layer-out results from ", save.leave.one.layer.out.results.name)
+    leave.one.layer.out.results <- read.SOM.result.file(save.leave.one.layer.out.results.name,
+                                                        "leave.one.layer.out.results")
+    if (!is.list(leave.one.layer.out.results) || !is.data.frame(leave.one.layer.out.results$layer.summary) ||
+        !is.data.frame(leave.one.layer.out.results$replicate.matched.results)) {
+      stop("File does not contain valid leave-one-layer-out results: ",
+           save.leave.one.layer.out.results.name, call. = FALSE)
+    }
     layer_summary_table <- leave.one.layer.out.results$layer.summary
     replicate_matched_results_table <- leave.one.layer.out.results$replicate.matched.results
   } else {
+    if (save.leave.one.layer.out.results) {
+      check.SOM.result.destination(save.leave.one.layer.out.results.name, overwrite.leave.one.layer.out.results,
+                                   "overwrite.leave.one.layer.out.results")
+    }
 
     # Create function to fit one matched single-replicate leave-one-layer-out SOM
     fit.single.replicate.leave.one.layer.out.SOM <- function(input_data_for_SOM,
@@ -9531,7 +9687,9 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         baseline_mean_assignment_margin <- NA_real_
         leave_one_layer_out_mean_assignment_margin <- NA_real_
         delta.mean.assignment.margin <- NA_real_
-        if (!is.null(baseline_assignment_probability_matrix) && !is.null(leave_one_layer_out_assignment_probability_matrix)) {
+        comparable_k <- isTRUE(baseline_modal_k >= 2L && leave_one_layer_out_modal_k >= 2L)
+        if (comparable_k && !is.null(baseline_assignment_probability_matrix) &&
+            !is.null(leave_one_layer_out_assignment_probability_matrix)) {
           shared_assignment_probability_sample_names <- intersect(rownames(baseline_assignment_probability_matrix),
                                                                   rownames(leave_one_layer_out_assignment_probability_matrix))
           if (length(shared_assignment_probability_sample_names) >= 2) {
@@ -9609,6 +9767,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       }
 
       # Save results
+      check.SOM.result.destination(save.leave.one.layer.out.results.name, overwrite.leave.one.layer.out.results,
+                                   "overwrite.leave.one.layer.out.results")
       save(leave.one.layer.out.results, file = save.leave.one.layer.out.results.name)
       if (!overwrite.leave.one.layer.out.results) messager("Leave-one-layer-out results saved as ", save.leave.one.layer.out.results.name)
       if (overwrite.leave.one.layer.out.results) messager("Leave-one-layer-out results overwritten as ", save.leave.one.layer.out.results.name)

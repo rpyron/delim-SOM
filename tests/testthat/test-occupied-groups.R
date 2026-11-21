@@ -1,0 +1,215 @@
+occupied_group_model <- function(specimens, codes, winners) {
+  list(data = list(specimens), codes = list(codes), unit.classif = winners,
+       user.weights = 1, distance.weights = 1)
+}
+
+fit_occupied_group_models <- function(models, set.k = NULL, max.k = 3L, verbose = FALSE,
+                                      calculate.soft.ancestry = TRUE) {
+  ids <- names(models)
+  trained <- list(
+    som_models = models, replicate_ids = ids,
+    codebook_vectors = list(do.call(rbind, lapply(models, function(model) model$codes[[1L]]))),
+    quantization_error = setNames(rep(0, length(ids)), ids),
+    topographic_error = setNames(rep(0, length(ids)), ids),
+    layer.distance.functions = "sumofsquares"
+  )
+  delimSOM::clustering.SOM(
+    trained, set.k = set.k, max.k = max.k, clustering.method = "kmeans+BICthreshold",
+    BIC.thresh = 3, quantization.error.quantile = NULL, topographic.error.quantile = NULL,
+    calculate.variable.importance = FALSE, calculate.soft.ancestry = calculate.soft.ancestry,
+    verbose = verbose
+  )
+}
+
+occupied_group_fixture <- function() {
+  profiles <- rep(c(0, .42), each = 3L)
+  specimens <- cbind(x = profiles, y = profiles)
+  rownames(specimens) <- paste0("s", seq_len(nrow(specimens)))
+  first <- c(0, .02, .42, .9)
+  second <- c(0, .02, .98, 1)
+  list(
+    R1 = occupied_group_model(specimens, cbind(x = first, y = first), rep(c(1L, 3L), each = 3L)),
+    R2 = occupied_group_model(specimens, cbind(x = second, y = second), rep(c(1L, 2L), each = 3L))
+  )
+}
+
+first_seen_labels <- function(labels) match(labels, unique(labels))
+
+expected_grid_bic <- function(model, groups) {
+  codes <- model$codes[[1L]]
+  withinss <- sum(vapply(split(seq_len(nrow(codes)), groups), function(indices) {
+    group <- codes[indices, , drop = FALSE]
+    sum(sweep(group, 2L, colMeans(group))^2)
+  }, numeric(1)))
+  n_units <- nrow(codes)
+  n_units * log((withinss + .Machine$double.eps) / n_units) +
+    log(n_units) * length(unique(groups))
+}
+
+expected_soft_weight <- function(model, units) {
+  samples <- model$data[[1L]]
+  codes <- model$codes[[1L]]
+  distances <- vapply(seq_len(nrow(codes)), function(i) {
+    rowSums(sweep(samples, 2L, codes[i, ])^2)
+  }, numeric(nrow(samples)))
+  weights <- exp(-distances / median(distances))
+  unname(rowSums(weights[, units, drop = FALSE]) / rowSums(weights))
+}
+
+test_that("a grid with three clusters can have only two occupied specimen groups", {
+  models <- occupied_group_fixture()["R1"]
+  expect_equal(nrow(unique(models$R1$data[[1L]])), 2L)
+  fit <- fit_occupied_group_models(models, set.k = 3L)
+
+  grid <- c(1L, 1L, 2L, 3L)
+  expect_equal(unname(fit$optim_k_vals[1L, "R1"]), 3L)
+  expect_identical(first_seen_labels(fit$som_clusters$R1), grid)
+  expect_equal(unname(fit$BIC_values["k3", "R1"]), expected_grid_bic(models$R1, grid))
+  expect_identical(first_seen_labels(fit$cluster_assignment[, "R1"]), rep(1:2, each = 3L))
+  soft <- fit$replicate_ancestry_matrices$R1
+  expect_equal(unname(soft[, "Cluster_3"]), expected_soft_weight(models$R1, 4L))
+  expect_equal(unname(rowSums(soft)), rep(1, 6L))
+})
+
+test_that("all retained maps contribute to sample summaries in a mixed grid-K run", {
+  models <- occupied_group_fixture()
+  fit <- fit_occupied_group_models(models)
+
+  expect_equal(as.integer(fit$optim_k_vals), c(3L, 2L))
+  expect_identical(colnames(fit$BIC_values), names(models))
+  expect_equal(unname(fit$BIC_values["k3", "R1"]),
+               expected_grid_bic(models$R1, c(1, 1, 2, 3)))
+  expect_equal(unname(fit$BIC_values["k2", "R2"]),
+               expected_grid_bic(models$R2, c(1, 1, 2, 2)))
+  expect_identical(colnames(fit$cluster_assignment), names(models))
+  expect_identical(names(fit$replicate_ancestry_matrices), names(models))
+  expect_identical(first_seen_labels(fit$cluster_assignment[, "R1"]), rep(1:2, each = 3L))
+  expect_equal(unname(fit$cluster_assignment[, "R2"]), rep(1L, 6L))
+  expect_equal(sort(unname(fit$ancestry_matrix[, "Cluster_2"])), rep(c(0, .5), each = 3L))
+  expect_equal(unname(fit$replicate_ancestry_matrices$R2[, "Cluster_2"]),
+               expected_soft_weight(models$R2, 3:4))
+})
+
+test_that("the first hard partition supplies a reference when profiles are insufficient", {
+  specimens <- cbind(x = rep(.5, 6L), y = rep(c(0, 1), c(4L, 2L)))
+  rownames(specimens) <- paste0("s", seq_len(nrow(specimens)))
+  codes <- cbind(x = c(.25, .75, .5, .625, .875, .99),
+                 y = c(0, 0, 1, 1, .625, .625))
+  # The first four specimens are tied between units 1 and 2.
+  first <- c(1L, 1L, 2L, 2L, 3L, 3L)
+  second <- c(2L, 1L, 2L, 2L, 3L, 3L)
+  models <- list(R1 = occupied_group_model(specimens, codes, first),
+                 R2 = occupied_group_model(specimens, codes, second))
+  expect_equal(nrow(unique(specimens)), 2L)
+  expect_message(fit <- fit_occupied_group_models(models, set.k = 4L, max.k = 4L, verbose = TRUE),
+                 "Using hard assignments from replicate R1 as the relabeling reference for 3 occupied groups",
+                 fixed = TRUE)
+
+  grid <- c(1L, 2L, 3L, 3L, 4L, 4L)
+  expect_equal(as.integer(fit$optim_k_vals), c(4L, 4L))
+  expect_equal(unname(fit$BIC_values["k4", ]), rep(expected_grid_bic(models$R1, grid), 2L))
+  expect_identical(lapply(fit$som_clusters, first_seen_labels), list(R1 = grid, R2 = grid))
+  expect_identical(unname(fit$cluster_assignment), unname(cbind(first, second)))
+  expect_equal(unname(fit$replicate_ancestry_matrices$R1[, "Cluster_4"]),
+               expected_soft_weight(models$R1, 5:6))
+  expect_equal(unname(fit$replicate_ancestry_matrices$R2[, "Cluster_4"]),
+               expected_soft_weight(models$R2, 5:6))
+})
+
+test_that("soft diagnostics use each map's grid K before padding", {
+  models <- occupied_group_fixture()
+  models$R3 <- occupied_group_model(
+    models$R1$data[[1L]], cbind(x = c(0, 0, 1, 1), y = c(0, 1, 0, 1)), rep(1L, 6L)
+  )
+  fit <- fit_occupied_group_models(models)
+  weights <- fit$replicate_ancestry_matrices
+  expect_equal(as.integer(fit$optim_k_vals), c(3L, 2L, 1L))
+  expect_identical(vapply(weights, ncol, integer(1)), c(R1 = 3L, R2 = 3L, R3 = 3L))
+  expect_equal(as.numeric(weights$R3[, 1L]), rep(1, 6L))
+  expect_equal(as.numeric(weights$R3[, -1L]), numeric(12L))
+
+  # R2 has one occupied specimen group, but both grid clusters carry soft mass.
+  expect_length(unique(fit$cluster_assignment[, "R2"]), 1L)
+  expect_true(all(weights$R2[, 2L] > 0))
+  r2_entropy <- mean(apply(weights$R2[, 1:2, drop = FALSE], 1L, function(p) {
+    -sum(p * log(p)) / log(2)
+  }))
+  r1_entropy <- mean(apply(weights$R1, 1L, function(p) -sum(p * log(p)) / log(3)))
+  expected_entropy <- c(R1 = r1_entropy, R2 = r2_entropy, R3 = NA_real_)
+  expected_margin <- c(
+    R1 = mean(apply(weights$R1, 1L, function(p) -diff(sort(p, decreasing = TRUE)[1:2]))),
+    R2 = mean(abs(weights$R2[, 1L] - weights$R2[, 2L])),
+    R3 = NA_real_
+  )
+  expect_equal(fit$mean_normalized_assignment_entropy, expected_entropy)
+  expect_equal(fit$mean_assignment_margin, expected_margin)
+  expect_equal(fit$mean_mean_normalized_assignment_entropy, mean(expected_entropy, na.rm = TRUE))
+  expect_equal(fit$mean_mean_assignment_margin, mean(expected_margin, na.rm = TRUE))
+
+  r2_only <- fit_occupied_group_models(models["R2"])
+  expect_equal(fit$mean_normalized_assignment_entropy["R2"], r2_only$mean_normalized_assignment_entropy)
+  expect_equal(fit$mean_assignment_margin["R2"], r2_only$mean_assignment_margin)
+})
+
+test_that("soft diagnostics are missing for all-one-cluster runs or disabled soft assignments", {
+  models <- occupied_group_fixture()
+  expected <- c(R1 = NA_real_, R2 = NA_real_)
+  for (fit in list(fit_occupied_group_models(models, set.k = 1L),
+                   fit_occupied_group_models(models, calculate.soft.ancestry = FALSE))) {
+    expect_identical(fit$mean_assignment_margin, expected)
+    expect_identical(fit$mean_normalized_assignment_entropy, expected)
+    expect_identical(fit$mean_mean_assignment_margin, NA_real_)
+    expect_identical(fit$mean_mean_normalized_assignment_entropy, NA_real_)
+  }
+})
+
+test_that("a split across K retains the labels of continuing specimen groups", {
+  group_sizes <- c(6L, 3L, 3L)
+  profiles <- rep(c(0, .62, .90), group_sizes)
+  specimens <- cbind(x = profiles, y = profiles)
+  rownames(specimens) <- sprintf("s%02d", seq_len(nrow(specimens)))
+  unsplit <- c(0, .02, .98, 1)
+  split <- c(0, .02, .62, .90)
+  models <- list(
+    R1 = occupied_group_model(specimens, cbind(x = unsplit, y = unsplit),
+                              rep(c(1L, 3L, 3L), group_sizes)),
+    R2 = occupied_group_model(specimens, cbind(x = unsplit, y = unsplit),
+                              rep(c(1L, 3L, 3L), group_sizes)),
+    R3 = occupied_group_model(specimens, cbind(x = split, y = split),
+                              rep(c(1L, 3L, 4L), group_sizes))
+  )
+  expect_message(fit <- fit_occupied_group_models(models, verbose = TRUE),
+                 "Cross-K label matching is tied for occupied K = 2 and 3", fixed = TRUE)
+  expect_equal(as.integer(fit$optim_k_vals), c(2L, 2L, 3L))
+  expect_equal(first_seen_labels(fit$cluster_assignment[, "R3"]),
+               rep(1:3, group_sizes))
+
+  intact <- fit$cluster_assignment["s01", "R1"]
+  parent <- fit$cluster_assignment["s07", "R1"]
+  expect_equal(unname(fit$ancestry_matrix["s01", paste0("Cluster_", intact)]), 1)
+  expect_equal(unname(fit$ancestry_matrix["s07", paste0("Cluster_", parent)]), 1)
+  expect_equal(unname(fit$ancestry_matrix["s10", paste0("Cluster_", c(parent, 3L))]),
+               c(2/3, 1/3))
+  expect_equal(unname(fit$replicate_ancestry_matrices$R3[, "Cluster_3"]),
+               expected_soft_weight(models$R3, 4L))
+})
+
+test_that("cross-K matching handles skipped K and ignores higher reference label permutations", {
+  ids <- c("s08", "s03", "s07", "s02", "s01", "s06", "s05", "s04")
+  low <- c(2L, 1L, 2L, 1L, 1L, 2L, 2L, 1L)
+  high <- c(4L, 2L, 4L, 3L, 3L, 1L, 1L, 2L)
+  references <- list(NULL, low, NULL, high)
+  aligned <- delimSOM:::align.occupied.k.references.SOM(
+    references, c(4L, 2L, 4L), ids, function(...) NULL
+  )
+  expect_identical(aligned[[2L]], low)
+  expect_identical(aligned[[4L]], c(4L, 3L, 4L, 1L, 1L, 2L, 2L, 3L))
+
+  permuted <- list(NULL, low, NULL, c(4L, 1L, 2L, 3L)[high])
+  expect_identical(delimSOM:::align.occupied.k.references.SOM(
+    permuted, c(2L, 4L), ids, function(...) NULL
+  ), aligned)
+  expect_identical(delimSOM:::align.occupied.k.references.SOM(
+    references, c(4L, 4L), ids, function(...) NULL
+  ), references)
+})

@@ -139,7 +139,7 @@ upper neighbor-distance panel. If \code{NULL}, no title is shown. Default:
 title font size in points. Default: \code{9.1}.}
 
 \item{legend.font.size}{A single positive numeric value giving the
-neighbor-distance legend font size in points. Default: \code{7}.}
+legend font size in points. Default: \code{7}.}
 
 \item{verbose}{Logical; if \code{TRUE}, plotting and validation messages are
 printed. Default: \code{TRUE}.}
@@ -195,10 +195,11 @@ units can also arise through topological smoothing between more strongly
 occupied regions (Vesanto & Alhoniemi, 2000; Wehrens & Buydens, 2007).
 
 The lower panel shows the selected replicate's sample-to-unit mappings and
-SOM-unit cluster assignments. Cluster labels are converted to consecutive
-integers for plotting, which changes only their displayed colors and not the
-underlying partition. Boundaries are added between clusters when more than
-one cluster is present. Compact and contiguous cluster regions indicate that
+SOM-unit cluster assignments. Occupied clusters use colors indexed by the
+selected replicate's stored specimen labels in \code{cluster_assignment}.
+Grid clusters with no hard specimen assignments are shown in gray
+and identified in the legend. Boundaries follow the original grid-cluster
+partition. Compact and contiguous cluster regions indicate that
 the inferred partition corresponds closely to the SOM topology. Fragmented
 cluster regions may indicate weak separation, gradual transitions, or an
 overly fine partition.

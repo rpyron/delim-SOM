@@ -19,14 +19,18 @@ clustering.SOM(
   save.SOM.results = FALSE,
   save.SOM.results.name = NULL,
   overwrite.SOM.results = FALSE,
-  set.seed.N = 1
+  set.seed.N = 1,
+  reuse.SOM.results = FALSE
 )
 }
 \arguments{
 \item{SOM.output}{A list returned by train.SOM. The object must contain
 trained SOM replicate models and the associated processed input data,
 replicate identifiers, codebook vectors, layer distance functions,
-quantization-error diagnostics, and topographic-error diagnostics.}
+quantization-error diagnostics, and topographic-error diagnostics.
+Older unnamed single-layer fits receive IDs such as \code{sample_1} in stored
+row order when the retained replicates contain the same specimen data in
+the same order. A message is printed when \code{verbose = TRUE}.}
 
 \item{max.k}{A single integer giving the maximum number of clusters to test
 or retain during clustering. Default: \code{10}.}
@@ -71,20 +75,22 @@ progress messages during replicate clustering. Default: \code{20}.}
 \item{save.SOM.results}{Logical; if \code{TRUE}, the clustered SOM result object is
 saved as an \code{.Rdata} file. Default: \code{FALSE}.}
 
-\item{save.SOM.results.name}{Optional character string giving the output file
-name used when saving or loading clustered SOM results. File names supplied
-by the user must end in \code{.Rdata}. If \code{NULL}, a default name is generated.
-Default: \code{NULL}.}
+\item{save.SOM.results.name}{Path to an \code{.Rdata} results file. When saving
+with a \code{NULL} path, a default name is generated from the input and
+clustering method. Reuse requires an explicit path.}
 
-\item{overwrite.SOM.results}{Logical; if FALSE and a file named
-save.SOM.results.name already exists, the function loads the existing
-SOM_results object and skips clustering. If TRUE, clustering is run and
-saved results are overwritten when save.SOM.results = TRUE. Default:
-FALSE.}
+\item{overwrite.SOM.results}{Logical; permit replacing an existing file
+when \code{save.SOM.results = TRUE}. By default, a save request fails if
+the file exists.}
 
 \item{set.seed.N}{A single positive integer used as the base seed for
 reproducible replicate clustering, reference-label generation, and
 permutation-based internal tests. Default: \code{1}.}
+
+\item{reuse.SOM.results}{Logical; if \code{TRUE}, return the saved \code{SOM_results}
+object from \code{save.SOM.results.name}. Supply the path and leave saving and
+overwriting disabled. The saved result is returned independently of any
+trained SOM or clustering settings supplied. Default: \code{FALSE}.}
 }
 \value{
 A named list called \code{SOM_results}, extending the input \code{SOM.output}
@@ -115,22 +121,26 @@ replicate-consensus hard-assignment proportions. Rows sum to one.}
 \item{replicate_ancestry_matrices}{A named list containing one relabeled
 replicate-specific soft ancestry matrix per retained replicate when
 \code{calculate.soft.ancestry = TRUE}; otherwise a named list of missing
-replicate-specific results.}
+replicate-specific results. Soft weights for grid clusters without
+hard specimen assignments are retained in columns following the occupied
+groups. Those unoccupied columns are specific to each replicate and are
+not matched across maps.}
 \item{mean_assignment_margin}{A named numeric vector containing the mean
 soft-assignment margin for each retained replicate.}
 \item{mean_normalized_assignment_entropy}{A named numeric vector containing
 the mean normalized soft-assignment entropy for each retained replicate.}
 \item{mean_mean_assignment_margin}{The mean assignment margin across
-retained replicates, or NA when soft ancestry was not calculated.}
+retained replicates with defined margins, or \code{NA} if none are defined.}
 \item{mean_mean_normalized_assignment_entropy}{The mean normalized
-assignment entropy across retained replicates, or NA when soft ancestry
-was not calculated.}
+assignment entropy across retained replicates with defined entropy, or
+\code{NA} if none are defined.}
 \item{clustering.SOM.set.seed.N}{The base random seed supplied through
 \code{set.seed.N}.}
 \item{clustering.SOM.args}{A list containing the effective arguments used
 for clustering.}
 \item{optim_k_vals}{A one-row matrix containing the inferred number of
-clusters for each retained replicate.}
+grid clusters for each retained replicate, including clusters without hard
+specimen assignments.}
 \item{optim_k_mean}{The mean inferred number of clusters across retained
 replicates.}
 \item{optim_k_summary}{A matrix containing the count and proportion of
@@ -307,18 +317,25 @@ After SOM-unit clustering, each sample receives the cluster label of its
 best-matching SOM unit. These hard assignments are stored separately for each
 retained replicate. Because numeric cluster labels are arbitrary across
 replicate runs, labels are harmonized before replicate-level assignments are
-summarized. Reference labels are generated separately for each supported
-value of K by applying k-means to the concatenated processed SOM input layers.
-Remaining missing or non-finite input values are replaced with 0.5 for this
-reference clustering only. Reference partitions are used solely for labeling
-and do not replace the delimitation assignments. For each replicate with K of
-at least 2, an overlap table is constructed between the replicate-specific
-sample assignments and the corresponding reference labels. The Hungarian
+summarized. Each replicate uses a reference for its number of occupied
+specimen groups. References are generated by applying k-means to the
+concatenated processed SOM input layers, with remaining missing or non-finite
+values replaced by 0.5 for this step. When the processed data cannot support
+a k-means reference of the required size, the first retained replicate with
+that occupied count supplies the reference. This choice is reported when
+\code{verbose = TRUE}. An overlap table compares each replicate's hard assignments
+with its reference. The Hungarian
 assignment algorithm is then used to identify the one-to-one label
 correspondence that maximizes agreement (Kuhn, 1955; Munkres, 1957; Hornik,
 2005). This correction is necessary because equivalent partitions can
 otherwise receive permuted numeric labels across runs (Jakobsson & Rosenberg,
 2007; Kopelman et al., 2015).
+
+Starting with the smallest observed occupied K, each reference is matched to
+the previous observed K by maximizing shared specimen membership. Matched
+groups inherit labels, and additional groups receive new labels. Ordering
+groups by specimen ID makes tied matches reproducible. Ties are reported when
+\code{verbose = TRUE} because their label correspondence is ambiguous.
 
 After label harmonization, the final \code{ancestry_matrix} is constructed by
 calculating, for each sample, the proportion of retained replicate maps in
@@ -339,21 +356,22 @@ inferred cluster based on its distances to the SOM units assigned to those
 clusters. Closer clusters receive larger values, whereas more distant clusters
 receive smaller values. These soft assignments are derived from weighted
 sample-to-unit distances across SOM layers, transformed into similarity
-weights, and summed within SOM-unit clusters. The matrices are relabeled using
+weights, and summed within SOM-unit clusters. Layer distances use \code{kohonen}'s
+missing-data scaling and Tanimoto threshold. The matrices are relabeled using
 the same Hungarian label mappings and describe assignment uncertainty within
 individual replicates. They are primarily used by
 \code{plot.layer.importance.leaveoneout.SOM}.
 
-Two soft-assignment diagnostics are calculated for each retained replicate and
-are used primarily by \code{plot.layer.importance.leaveoneout.SOM}.
+Two diagnostics summarize soft assignments for each retained replicate.
 The mean assignment margin is the average difference between the largest and
 second-largest cluster probabilities; larger values indicate sharper
 assignments. Mean normalized assignment entropy measures the average
 diffuseness of cluster probabilities after scaling entropy by its maximum for
 the replicate-specific number of clusters; larger values indicate more
-uncertain or diffuse assignments. Overall means of both diagnostics are also
-returned. If \code{calculate.soft.ancestry = FALSE}, soft ancestry matrices are
-not calculated and these diagnostics are returned as missing values.
+uncertain or diffuse assignments. Both diagnostics use the map's soft
+weights before padding, including weights for grid clusters without hard
+specimen assignments. Maps with one grid cluster or unavailable soft
+assignments receive \code{NA}. Overall means use replicates with defined values.
 
 When \code{calculate.variable.importance = TRUE}, the function calculates two
 complementary variable-importance summaries for each SOM input layer. Values

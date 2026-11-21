@@ -25,13 +25,18 @@ train.SOM(
   overwrite.SOM.results = FALSE,
   verbose = TRUE,
   message.N.replicates = 20,
-  set.seed.N = 1
+  set.seed.N = 1,
+  reuse.SOM.results = FALSE
 )
 }
 \arguments{
 \item{input_data}{A matrix, data frame, or list of matrices/data frames.
-For multi-layer input, all layers must have row names, and
-row names are used to identify the shared samples retained across layers.
+Each layer in multi-layer input must have explicit specimen IDs as row
+names. IDs must be unique within a layer, non-missing, and non-blank.
+Shared specimens are matched by ID. For an unnamed single layer, including
+a data frame with automatic row numbers, IDs such as \code{sample_1} are
+assigned by input row position before filtering, with a message when
+\code{verbose = TRUE}.
 All retained columns must be numeric after non-numeric columns are removed.}
 
 \item{N.steps}{A single positive integer giving the number of SOM
@@ -101,16 +106,13 @@ Default: \code{"gaussian"}.}
 \item{save.SOM.results}{Logical; if \code{TRUE}, the returned SOM result object is
 saved as an \code{.Rdata} file. Default: \code{FALSE}.}
 
-\item{save.SOM.results.name}{Optional character string giving the output file
-name used when saving or loading SOM results. If \code{NULL}, a default name is
-generated from the input object name(s). File names supplied by the user
-must end in \code{.Rdata}.}
+\item{save.SOM.results.name}{Path to an \code{.Rdata} results file. When saving
+with a \code{NULL} path, a default name is generated from the input object name(s).
+Reuse requires an explicit path.}
 
-\item{overwrite.SOM.results}{Logical; if \code{FALSE} and a file named
-\code{save.SOM.results.name} already exists, the function loads the existing
-\code{SOM_results} object and skips SOM training. If \code{TRUE}, training is run and
-saved results are overwritten when \code{save.SOM.results = TRUE}. Default:
-\code{FALSE}.}
+\item{overwrite.SOM.results}{Logical; permit replacing an existing file
+when \code{save.SOM.results = TRUE}. By default, a save request fails if
+the file exists.}
 
 \item{verbose}{Logical; if \code{TRUE}, processing messages and warnings
 are printed. Default: \code{TRUE}.}
@@ -122,6 +124,11 @@ the replicate index is divisible by this value. Default: \code{20}.}
 \item{set.seed.N}{A single positive integer used as the base seed for
 reproducible learning-rate tuning and replicate SOM training.
 Default: \code{1}.}
+
+\item{reuse.SOM.results}{Logical; if \code{TRUE}, return the saved \code{SOM_results}
+object from \code{save.SOM.results.name}. Supply the path and leave saving and
+overwriting disabled. The saved result is returned independently of any
+input data or training settings supplied. Default: \code{FALSE}.}
 }
 \value{
 A named list containing:
@@ -294,19 +301,22 @@ automatic grid sizing follows a practical square-root sample-size heuristic
 (Vesanto, 1999) that usually works well, but optimal map size is data-dependent
 and should ideally be evaluated empirically (Kohonen, 2013). Users can increase
 resolution by increasing \code{grid.multiplier} and make the grid coarser by
-decreasing \code{grid.multiplier}. Hexagonal grids are used because they provide
+decreasing \code{grid.multiplier}. If the automatic grid would have more units
+than retained samples, its dimensions are reduced to fit, with a message when
+\code{verbose = TRUE}. The minimum grid is 2 x 2, which requires at least four
+retained samples. Hexagonal grids are used because they provide
 more even neighborhood relationships and are commonly recommended for SOM
 visualization and training (Kohonen, 1995, 1998, 2013; Vesanto & Alhoniemi, 2000).
 
 By default, the grid shape reflects the dominant shape of the retained data
 rather than being forced to be square (Kohonen, 2013). For single-layer data,
-the aspect ratio is estimated from the first two eigenvalues of the covariance
-structure. For multi-layer data, the dominant joint structure is estimated
-with multiple factor analysis (Lê et al., 2008) so that the grid shape is
-informed by the grouped dataset rather than by any single layer alone. If the
-covariance or multiple-factor-analysis calculation fails, a square or
-square-like aspect ratio is used. Grid dimensions can also be specified
-manually with \code{grid.size}.
+the aspect ratio is the ratio of the two largest singular values of the
+centered data, equivalent to the square root of the ratio of the two largest
+covariance eigenvalues. For multi-layer data, multiple factor analysis
+(Lê et al., 2008) estimates the dominant structure across the grouped data.
+A square-like aspect ratio is used when two usable axes of variation cannot
+be estimated. Grid dimensions can also be specified manually with
+\code{grid.size}.
 
 Codebook vectors are initialized stochastically by randomly selecting retained
 samples without replacement. Sensitivity to stochastic initialization is
@@ -350,6 +360,8 @@ best-matching units, whereas topographic error is the proportion of samples
 whose first- and second-best matching units are not adjacent (Kiviluoto, 1996;
 Sun, 2000). Because low quantization error can occur despite topological
 distortion, it alone should not be treated as sufficient evidence of a good SOM.
+Distances used to identify the second-best unit follow \code{kohonen}'s
+missing-data scaling and Tanimoto threshold.
 }
 \examples{
 \dontrun{

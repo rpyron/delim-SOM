@@ -43,7 +43,7 @@ We have now released version 2.0 of the delim-SOM framework!
 The species-delimitation framework was originally introduced by Pyron et al. (2023) for genetic data and subsequently extended by Pyron (2023) to multilayer SOMs for integrative species delimitation by presenting *delimSOM*.
 With *delimSOM* 2.0 (Schönberger et al. preprint), we expand the original framework into a comprehensive *R* package with improved data preprocessing and SOM training, new clustering and K-selection approaches, extensive diagnostics and visualizations, and revised variable- and layer-importance analyses.
 
-Current *R* package version: `2.0`
+Current *R* package version: `2.1.0`
 
 
 # A) Basic tutorial
@@ -65,7 +65,9 @@ packageVersion("delimSOM")
 
 Input data should be supplied as one or multiple numeric matrices or data frames.
 Rows should represent individuals and columns variables.
-For multilayer analyses, individual identifiers as rownames are required in every layer.
+For multilayer analyses, set explicit specimen IDs as row names in every layer. IDs must be unique within each layer, and every row needs an ID. R's automatic data-frame row numbers do not count as specimen IDs.
+
+For a single layer without row names, training reports that it is assigning IDs such as `sample_1` from the original row positions. These IDs identify the specimens in the clustering output. Set row names before training to use your own specimen IDs.
 Missing values should be represented as `NA`.
 
 Single-layer example input:
@@ -263,6 +265,9 @@ SOM_results$optim_k_summary
 
 This tutorial section demonstrates the main steps of the *delim-SOM* workflow based on one empirical case study presented in our study (Schönberger et al. preprint).
 The system includes four sympatric and morphologically similar western Canadian *Polygonia* anglewing butterfly species from Dupuis et al. (2018).
+
+The delimSOM figures and numerical outputs in this example were generated with package version 2.0.
+Rerunning the analysis with 2.1.0 may change which maps are retained and the pooled assignment coefficients.
 
 The figure below (Fig. 5 in Dupuis et al. 2018) shows their main results and the four inferred species: *Polygonia faunus*, *P. gracilis*, *P. progne*, and *P. satyrus*:
 A) geographic sampling localities, 
@@ -1302,7 +1307,8 @@ By default, alternative K values from one to `max.k` are evaluated and the optim
 Clustering can be rerun for a single K value using `set.k`.
 This is often useful if many K values are supported or if the automatic K-selection does not work well (e.g., because a distinct BIC elbow is not detected).
 
-In the example below, we force a three-lineage solution and then examine the assignment coefficients for this K = 3 solution:
+In the example below, we fit three grid clusters and examine the assignment coefficients.
+Some grid clusters may have no mapped specimens, so the number of occupied specimen groups can be smaller than three.
 
 ```r
 SOM_results_K3 <- clustering.SOM(SOM.output = SOM_tr,
@@ -1328,8 +1334,7 @@ plot.model.SOM(SOM_results,
 ## Saving and reusing results
 
 `train.SOM()`, `clustering.SOM()`, and especially `plot.layer.importance.leaveoneout.SOM()` can require substantial computation time.
-Their results can therefore be saved and automatically reused when corresponding result files from a previous run are already present.
-File names should use `.Rdata` as extension.
+You can save their results to files ending in `.Rdata`.
 
 ```r
 SOM_tr <- train.SOM(input_data = SOM_data,
@@ -1341,13 +1346,30 @@ SOM_results <- clustering.SOM(SOM.output = SOM_tr,
                               save.SOM.results = TRUE,
                               save.SOM.results.name = "SOM_kmeans.Rdata")
 
-SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(SOM.output = SOM_results,
+SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(SOM_output = SOM_results,
                                                               save.leave.one.layer.out.results = TRUE,
                                                               save.leave.one.layer.out.results.name = "SOM_layer_importance.Rdata")
 ```
 
-For `train.SOM()` and `clustering.SOM()`, `overwrite.SOM.results = TRUE` reruns the analysis and overwrites the saved result.
-For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `overwrite.leave.one.layer.out.results`.
+Training and clustering use the data and settings supplied for each run. If you request a save and the destination already exists, choose a different path or set `overwrite.SOM.results = TRUE` to replace the file.
+
+To read a saved training or clustering result, supply its path and set `reuse.SOM.results = TRUE`. This also works with `.Rdata` results saved by earlier versions.
+
+```r
+SOM_tr <- train.SOM(save.SOM.results.name = "SOM_tr.Rdata", reuse.SOM.results = TRUE)
+SOM_results <- clustering.SOM(save.SOM.results.name = "SOM_kmeans.Rdata", reuse.SOM.results = TRUE)
+```
+
+`plot.layer.importance.leaveoneout.SOM()` also requires explicit reuse. When saving, choose a new path or set `overwrite.leave.one.layer.out.results = TRUE` to replace an existing file.
+
+```r
+SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(
+  SOM_output = SOM_results,
+  save.leave.one.layer.out.results = FALSE,
+  save.leave.one.layer.out.results.name = "SOM_layer_importance.Rdata",
+  reuse.leave.one.layer.out.results = TRUE
+)
+```
 
 
 # *delimSOM* 2.0 functions

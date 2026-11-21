@@ -33,7 +33,8 @@
   axis.ticks.font.size = 7,
   add.boxplot.whiskers = TRUE,
   message.N.replicates = 20,
-  verbose = TRUE
+  verbose = TRUE,
+  reuse.leave.one.layer.out.results = FALSE
 )
 }
 \arguments{
@@ -82,10 +83,8 @@ end with \code{".Rdata"}. If \code{NULL}, a default name is generated from the i
 layer names. Default: \code{NULL}.}
 
 \item{overwrite.leave.one.layer.out.results}{Logical; if \code{TRUE}, existing
-leave-one-layer-out results are recalculated and overwritten. If \code{FALSE},
-\code{save.leave.one.layer.out.results = TRUE}, and the results file already
-exists, the saved results are loaded and the reruns are skipped. Default:
-\code{FALSE}.}
+leave-one-layer-out results can be replaced when saving. If \code{FALSE}, an
+existing destination causes an error when saving. Default: \code{FALSE}.}
 
 \item{save}{Logical; if \code{TRUE}, the plot is saved to a file. Default:
 \code{FALSE}.}
@@ -145,6 +144,12 @@ leave-one-layer-out reruns. If \code{NULL}, the value stored in
 
 \item{verbose}{Logical; if \code{TRUE}, progress, plotting, and file-handling
 messages are printed. Default: \code{TRUE}.}
+
+\item{reuse.leave.one.layer.out.results}{Logical; if \code{TRUE}, load and plot
+saved leave-one-layer-out results. Requires an explicit
+\code{save.leave.one.layer.out.results.name} and both
+\code{save.leave.one.layer.out.results} and
+\code{overwrite.leave.one.layer.out.results} set to \code{FALSE}. Default: \code{FALSE}.}
 }
 \value{
 A list with two elements:
@@ -212,7 +217,8 @@ that assignment margins increased after the layer was removed, suggesting
 that the omitted layer introduced conflicting or uncertain assignment signal.
 Assignment-margin change is calculated only when replicate-specific soft
 assignment matrices are available for both the retained baseline replicate
-and its matched leave-one-layer-out replicate.
+and its matched leave-one-layer-out replicate, and both have at least two
+grid clusters.
 
 Failed reruns and their error messages are retained in the replicate-level
 results but excluded from summaries and plots. Layer summaries report the
