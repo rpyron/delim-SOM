@@ -115,7 +115,10 @@ replicate-consensus hard-assignment proportions. Rows sum to one.}
 \item{replicate_ancestry_matrices}{A named list containing one relabeled
 replicate-specific soft ancestry matrix per retained replicate when
 \code{calculate.soft.ancestry = TRUE}; otherwise a named list of missing
-replicate-specific results.}
+replicate-specific results. Soft weights for grid clusters without
+hard specimen assignments are retained in columns following the occupied
+groups. Those unoccupied columns are specific to each replicate and are
+not matched across maps.}
 \item{mean_assignment_margin}{A named numeric vector containing the mean
 soft-assignment margin for each retained replicate.}
 \item{mean_normalized_assignment_entropy}{A named numeric vector containing

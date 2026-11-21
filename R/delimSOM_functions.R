@@ -1665,7 +1665,10 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #' \item{replicate_ancestry_matrices}{A named list containing one relabeled
 #' replicate-specific soft ancestry matrix per retained replicate when
 #' `calculate.soft.ancestry = TRUE`; otherwise a named list of missing
-#' replicate-specific results.}
+#' replicate-specific results. Soft weights for grid clusters without
+#' hard specimen assignments are retained in columns following the occupied
+#' groups. Those unoccupied columns are specific to each replicate and are
+#' not matched across maps.}
 #' \item{mean_assignment_margin}{A named numeric vector containing the mean
 #' soft-assignment margin for each retained replicate.}
 #' \item{mean_normalized_assignment_entropy}{A named numeric vector containing
@@ -3032,7 +3035,6 @@ clustering.SOM <- function(SOM.output,
   colnames(cluster_labels) <- paste("k", seq_len(max_reference_k), sep = '') #set column names
 
   # Extract SOM cluster assignments and filter replicates based on maximum K
-  all_k <- apply(cluster_assignment, 2, max, na.rm = TRUE) #calculate maximum K for each replicate (column)
   if (length(which(optim_k_vals <= max_reference_k)) == 0) stop("Aborted SOM clustering: no replicates have K <= max_reference_k - increase max.k or check input data")
   assignment_replicate_indices <- which(optim_k_vals <= max_reference_k) #replicates retained for relabeling and ancestry summaries
   assignment_matrix <- cluster_assignment[, assignment_replicate_indices, drop = FALSE] #filter to keep replicates with K <= max_reference_k
@@ -3040,54 +3042,27 @@ clustering.SOM <- function(SOM.output,
 
   # Relabel across replicates with Hungarian algorithm
   for (replicate_index in seq_len(ncol(assignment_matrix))) {
-    replicate_k <- max(assignment_matrix[, replicate_index], na.rm = TRUE)
-    if (is.na(replicate_k)) next
-    if (replicate_k < 2) {
-      replicate_label_maps[[replicate_index]] <- seq_len(replicate_k)
-      next
-    }
-    reference_sample_cluster_labels <- cluster_labels[, replicate_k] #reference labels for this K
-    replicate_sample_cluster_labels <- assignment_matrix[, replicate_index] #labels from this replicate
-    cluster_overlap_count_matrix <- table(factor(reference_sample_cluster_labels, levels = 1:replicate_k), base::factor(replicate_sample_cluster_labels, levels = 1:replicate_k)) #create table (rows: ref clusters, cols: replicate clusters; with levels 1:replicate_k)
-    if (nrow(cluster_overlap_count_matrix) != ncol(cluster_overlap_count_matrix)) { #pad overlap table to square if needed for Hungarian algorithm
-      new_size <- max(nrow(cluster_overlap_count_matrix), ncol(cluster_overlap_count_matrix)) #determine new size for square table
-      padded_cluster_overlap_count_matrix <- matrix(0, nrow = new_size, ncol = new_size) #create square matrix of zeros
-      padded_cluster_overlap_count_matrix[1:nrow(cluster_overlap_count_matrix), 1:ncol(cluster_overlap_count_matrix)] <- cluster_overlap_count_matrix #copy original table into upper-left
-      cluster_overlap_count_matrix <- padded_cluster_overlap_count_matrix #update table to padded table
-    }
-    assignment_cost_matrix <- max(cluster_overlap_count_matrix) - cluster_overlap_count_matrix #build cost matrix (max overlap = minimal cost)
-    reference_cluster_to_replicate_cluster_map <- as.integer(clue::solve_LSAP(assignment_cost_matrix)) #returns replicate cluster (col) chosen for each reference cluster (row)
-    replicate_cluster_to_reference_cluster_map <- integer(replicate_k) #invert mapping so we can relabel replicate -> reference
-    replicate_cluster_to_reference_cluster_map[reference_cluster_to_replicate_cluster_map] <- seq_len(replicate_k) #replicate_cluster_to_reference_cluster_map[replicate_cluster] = reference_cluster
-    replicate_label_maps[[replicate_index]] <- replicate_cluster_to_reference_cluster_map #store map for optional soft-ancestry relabeling
-    assignment_matrix[, replicate_index] <- as.integer(replicate_cluster_to_reference_cluster_map[replicate_sample_cluster_labels]) #assign new cluster labels to samples
+    replicate_labels <- assignment_matrix[, replicate_index]
+    grid_labels <- som_clusters[[assignment_replicate_indices[replicate_index]]]
+    occupied_k <- length(unique(replicate_labels))
+    label_map <- synchronize.cluster.labels.SOM(
+      replicate_labels, grid_labels, cluster_labels[, occupied_k]
+    )
+    replicate_label_maps[[replicate_index]] <- label_map
+    assignment_matrix[, replicate_index] <- unname(label_map[as.character(replicate_labels)])
   }
 
   # Build ancestry from the re-labelled matrix
   k.max <- max(assignment_matrix, na.rm = TRUE)
   if (isTRUE(calculate.soft.ancestry)) {
+    soft_k <- max(lengths(replicate_label_maps))
     relabelled_replicate_ancestry_matrices <- lapply(seq_along(assignment_replicate_indices), function(replicate_position) {
       current_soft_ancestry_matrix <- replicate_ancestry_matrices[[assignment_replicate_indices[replicate_position]]]
       current_label_map <- replicate_label_maps[[replicate_position]]
       if (is.null(current_soft_ancestry_matrix) || is.null(current_label_map)) return(NULL)
       current_soft_ancestry_matrix <- as.matrix(current_soft_ancestry_matrix)
       current_soft_ancestry_matrix <- current_soft_ancestry_matrix[rownames(assignment_matrix), , drop = FALSE]
-      current_old_labels <- suppressWarnings(as.integer(colnames(current_soft_ancestry_matrix)))
-      if (any(is.na(current_old_labels)) || length(current_old_labels) != ncol(current_soft_ancestry_matrix)) current_old_labels <- seq_len(ncol(current_soft_ancestry_matrix))
-      current_relabelled_soft_ancestry_matrix <- matrix(0,
-                                                        nrow = nrow(current_soft_ancestry_matrix),
-                                                        ncol = k.max,
-                                                        dimnames = list(rownames(current_soft_ancestry_matrix), paste0("Cluster_", seq_len(k.max))))
-      for (old_cluster_index in seq_len(ncol(current_soft_ancestry_matrix))) {
-        old_cluster_label <- current_old_labels[old_cluster_index]
-        if (!is.finite(old_cluster_label) || is.na(old_cluster_label) || old_cluster_label < 1L || old_cluster_label > length(current_label_map)) next
-        new_cluster_label <- current_label_map[old_cluster_label]
-        if (is.finite(new_cluster_label) && !is.na(new_cluster_label) && new_cluster_label >= 1L && new_cluster_label <= k.max) current_relabelled_soft_ancestry_matrix[, new_cluster_label] <- current_relabelled_soft_ancestry_matrix[, new_cluster_label] + current_soft_ancestry_matrix[, old_cluster_index]
-      }
-      current_row_sums <- rowSums(current_relabelled_soft_ancestry_matrix, na.rm = TRUE)
-      valid_rows <- is.finite(current_row_sums) & current_row_sums > 0
-      current_relabelled_soft_ancestry_matrix[valid_rows, ] <- current_relabelled_soft_ancestry_matrix[valid_rows, , drop = FALSE] / current_row_sums[valid_rows]
-      current_relabelled_soft_ancestry_matrix
+      relabel.soft.ancestry.SOM(current_soft_ancestry_matrix, current_label_map, soft_k)
     })
     names(relabelled_replicate_ancestry_matrices) <- colnames(assignment_matrix)
     relabelled_replicate_ancestry_matrices <- Filter(Negate(is.null), relabelled_replicate_ancestry_matrices)
@@ -3292,6 +3267,38 @@ clustering.SOM <- function(SOM.output,
   messager("")
   messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
+}
+
+
+# Hard assignments align occupied groups by overlap. Empty groups have no overlap
+# evidence, so their soft weights stay in separate, per-map columns after those.
+synchronize.cluster.labels.SOM <- function(specimen_labels, grid_labels, reference_labels) {
+  labels <- sort(unique(grid_labels))
+  occupied <- sort(unique(specimen_labels))
+  empty <- setdiff(unique(grid_labels), occupied)
+  if (length(empty)) {
+    # Grid order breaks overlap ties independently of the original label numbers.
+    occupied <- unique(grid_labels[grid_labels %in% occupied])
+  }
+  k <- length(occupied)
+  overlap <- table(factor(reference_labels, levels = seq_len(k)),
+                   factor(specimen_labels, levels = occupied))
+  reference_to_replicate <- as.integer(clue::solve_LSAP(overlap, maximum = TRUE))
+  mapping <- setNames(integer(length(labels)), labels)
+  mapping[as.character(occupied[reference_to_replicate])] <- seq_len(k)
+  mapping[as.character(empty)] <- k + seq_along(empty)
+  mapping
+}
+
+relabel.soft.ancestry.SOM <- function(weights, label_map, width) {
+  columns <- unname(label_map[colnames(weights)])
+  if (length(columns) != length(label_map) || anyNA(columns) || anyDuplicated(columns)) {
+    stop("Soft assignment columns do not match the SOM grid-cluster labels")
+  }
+  output <- matrix(0, nrow(weights), width,
+                   dimnames = list(rownames(weights), paste0("Cluster_", seq_len(width))))
+  output[, columns] <- weights
+  output
 }
 
 
