@@ -310,13 +310,13 @@ visualization and training (Kohonen, 1995, 1998, 2013; Vesanto & Alhoniemi, 2000
 
 By default, the grid shape reflects the dominant shape of the retained data
 rather than being forced to be square (Kohonen, 2013). For single-layer data,
-the aspect ratio is estimated from the first two eigenvalues of the covariance
-structure. For multi-layer data, the dominant joint structure is estimated
-with multiple factor analysis (Lê et al., 2008) so that the grid shape is
-informed by the grouped dataset rather than by any single layer alone. If the
-covariance or multiple-factor-analysis calculation fails, a square or
-square-like aspect ratio is used. Grid dimensions can also be specified
-manually with \code{grid.size}.
+the aspect ratio is the ratio of the two largest singular values of the
+centered data, equivalent to the square root of the ratio of the two largest
+covariance eigenvalues. For multi-layer data, multiple factor analysis
+(Lê et al., 2008) estimates the dominant structure across the grouped data.
+A square-like aspect ratio is used when two usable axes of variation cannot
+be estimated. Grid dimensions can also be specified manually with
+\code{grid.size}.
 
 Codebook vectors are initialized stochastically by randomly selecting retained
 samples without replacement. Sensitivity to stochastic initialization is

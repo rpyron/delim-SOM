@@ -215,13 +215,13 @@
 #'
 #' By default, the grid shape reflects the dominant shape of the retained data
 #' rather than being forced to be square (Kohonen, 2013). For single-layer data,
-#' the aspect ratio is estimated from the first two eigenvalues of the covariance
-#' structure. For multi-layer data, the dominant joint structure is estimated
-#' with multiple factor analysis (Lê et al., 2008) so that the grid shape is
-#' informed by the grouped dataset rather than by any single layer alone. If the
-#' covariance or multiple-factor-analysis calculation fails, a square or
-#' square-like aspect ratio is used. Grid dimensions can also be specified
-#' manually with `grid.size`.
+#' the aspect ratio is the ratio of the two largest singular values of the
+#' centered data, equivalent to the square root of the ratio of the two largest
+#' covariance eigenvalues. For multi-layer data, multiple factor analysis
+#' (Lê et al., 2008) estimates the dominant structure across the grouped data.
+#' A square-like aspect ratio is used when two usable axes of variation cannot
+#' be estimated. Grid dimensions can also be specified manually with
+#' `grid.size`.
 #'
 #' Codebook vectors are initialized stochastically by randomly selecting retained
 #' samples without replacement. Sensitivity to stochastic initialization is
@@ -1038,7 +1038,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
         SOM_grid_aspect_ratio <- 1 #default to 1x1 if not enough usable data
       }
 
-      # Single-layer input: calculate SOM grid aspect ratio from input covariance matrix eigenvalues or if it fails using mean-imputation on columns with less than 25% missingness
+      # Single-layer input: try complete cases, then mean imputation for columns with less than 25% missingness.
     } else {
       mat <- as.matrix(input_data[[1]]) #convert input data to matrix
       mat[is.infinite(mat)] <- NA #set infinite values to NA
@@ -1047,17 +1047,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
       row_good <- which(rowSums(!is.na(mat1)) >= 2) #keep rows with at least 2 non-NA
       mat1 <- mat1[row_good, , drop = FALSE] #subset to those rows
       mat_cc <- mat1[complete.cases(mat1), , drop = FALSE] #subset to complete-case rows
-      if (nrow(mat_cc) >= 2 && ncol(mat_cc) >= 2) { #enough complete rows/cols for covariance
-        covariance_mat <- stats::cov(mat_cc) #calculate covariance matrix
-        eigenvalues <- tryCatch(eigen(covariance_mat)$values, error = function(e) c(1, 1)) #get eigenvalues or fallback
-        if (length(eigenvalues) >= 2 && all(is.finite(eigenvalues)) && all(eigenvalues > 0)) {
-          SOM_grid_aspect_ratio <- sqrt(eigenvalues[1] / eigenvalues[2]) #extract aspect ratio from eigenvalues
-        } else {
-          SOM_grid_aspect_ratio <- NA #flag to try next step
-        }
-      } else {
-        SOM_grid_aspect_ratio <- NA #flag to try next step
-      }
+      SOM_grid_aspect_ratio <- estimate.single.layer.aspect.ratio.SOM(mat_cc)
       if (is.na(SOM_grid_aspect_ratio)) { #mean-imputation step: only try if missing data is not excessive (<25% missing overall)
         col_missing_prop <- colMeans(is.na(mat)) #fraction of missing data per column
         col_good2 <- which(col_missing_prop < 0.25 & colSums(!is.na(mat)) >= 2) #columns with <25% missing and at least 2 non-NA
@@ -1068,18 +1058,12 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
             idx <- which(is.na(mat2[, j])) #find missing values in column
             if (length(idx) > 0 && sum(!is.na(mat2[, j])) > 0) mat2[idx, j] <- mean(mat2[, j], na.rm = TRUE) #impute mean if at least one value
           }
-          covariance_mat2 <- stats::cov(mat2) #calculate covariance matrix
-          eigenvalues2 <- tryCatch(eigen(covariance_mat2)$values, error = function(e) c(1, 1)) #extract eigenvalues, fallback if error
-          if (length(eigenvalues2) >= 2 && all(is.finite(eigenvalues2)) && all(eigenvalues2 > 0)) {
-            SOM_grid_aspect_ratio <- sqrt(eigenvalues2[1] / eigenvalues2[2]) #compute aspect ratio
-          } else {
-            SOM_grid_aspect_ratio <- 1 #fallback to square grid
-            messager("Aspect ratio calculation failed (not enough samples or too much NA) - using square/square-like default aspect ratio for SOM grid") #warn if it fails
-          }
-        } else {
-          SOM_grid_aspect_ratio <- 1 #fallback to square grid if not enough usable data
-          messager("Aspect ratio calculation failed (not enough samples or too much NA) - using square/square-like default aspect ratio for SOM grid") #warn if it fails
+          SOM_grid_aspect_ratio <- estimate.single.layer.aspect.ratio.SOM(mat2)
         }
+      }
+      if (is.na(SOM_grid_aspect_ratio)) {
+        SOM_grid_aspect_ratio <- 1
+        messager("Using a square-like SOM grid because two axes of variation could not be estimated")
       }
     }
 
@@ -1347,6 +1331,22 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   messager("")
   messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
+}
+
+
+estimate.single.layer.aspect.ratio.SOM <- function(data) {
+  if (nrow(data) < 3L || ncol(data) < 2L) return(NA_real_)
+
+  # Singular values of the centered data are proportional to covariance standard deviations.
+  axes <- tryCatch({
+    centered <- scale(data, center = TRUE, scale = FALSE)
+    svd(centered, nu = 0L, nv = 0L)$d[1:2]
+  }, error = function(e) c(NA_real_, NA_real_))
+  if (any(!is.finite(axes))) return(NA_real_)
+
+  rank_tolerance <- max(dim(data)) * .Machine$double.eps * axes[1L]
+  if (axes[2L] <= rank_tolerance) return(NA_real_)
+  axes[1L] / axes[2L]
 }
 
 
