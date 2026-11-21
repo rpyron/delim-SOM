@@ -212,7 +212,8 @@ that assignment margins increased after the layer was removed, suggesting
 that the omitted layer introduced conflicting or uncertain assignment signal.
 Assignment-margin change is calculated only when replicate-specific soft
 assignment matrices are available for both the retained baseline replicate
-and its matched leave-one-layer-out replicate.
+and its matched leave-one-layer-out replicate, and both have at least two
+grid clusters.
 
 Failed reruns and their error messages are retained in the replicate-level
 results but excluded from summaries and plots. Layer summaries report the

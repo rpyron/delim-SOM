@@ -130,10 +130,10 @@ soft-assignment margin for each retained replicate.}
 \item{mean_normalized_assignment_entropy}{A named numeric vector containing
 the mean normalized soft-assignment entropy for each retained replicate.}
 \item{mean_mean_assignment_margin}{The mean assignment margin across
-retained replicates, or NA when soft ancestry was not calculated.}
+retained replicates with defined margins, or \code{NA} if none are defined.}
 \item{mean_mean_normalized_assignment_entropy}{The mean normalized
-assignment entropy across retained replicates, or NA when soft ancestry
-was not calculated.}
+assignment entropy across retained replicates with defined entropy, or
+\code{NA} if none are defined.}
 \item{clustering.SOM.set.seed.N}{The base random seed supplied through
 \code{set.seed.N}.}
 \item{clustering.SOM.args}{A list containing the effective arguments used
@@ -356,16 +356,16 @@ the same Hungarian label mappings and describe assignment uncertainty within
 individual replicates. They are primarily used by
 \code{plot.layer.importance.leaveoneout.SOM}.
 
-Two soft-assignment diagnostics are calculated for each retained replicate and
-are used primarily by \code{plot.layer.importance.leaveoneout.SOM}.
+Two diagnostics summarize soft assignments for each retained replicate.
 The mean assignment margin is the average difference between the largest and
 second-largest cluster probabilities; larger values indicate sharper
 assignments. Mean normalized assignment entropy measures the average
 diffuseness of cluster probabilities after scaling entropy by its maximum for
 the replicate-specific number of clusters; larger values indicate more
-uncertain or diffuse assignments. Overall means of both diagnostics are also
-returned. If \code{calculate.soft.ancestry = FALSE}, soft ancestry matrices are
-not calculated and these diagnostics are returned as missing values.
+uncertain or diffuse assignments. Both diagnostics use the map's soft
+weights before padding, including weights for grid clusters without hard
+specimen assignments. Maps with one grid cluster or unavailable soft
+assignments receive \code{NA}. Overall means use replicates with defined values.
 
 When \code{calculate.variable.importance = TRUE}, the function calculates two
 complementary variable-importance summaries for each SOM input layer. Values

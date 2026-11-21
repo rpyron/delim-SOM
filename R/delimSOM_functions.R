@@ -1777,16 +1777,16 @@ check.SOM.result.destination <- function(path, overwrite) {
 #' individual replicates. They are primarily used by
 #' `plot.layer.importance.leaveoneout.SOM`.
 #'
-#' Two soft-assignment diagnostics are calculated for each retained replicate and
-#' are used primarily by `plot.layer.importance.leaveoneout.SOM`.
+#' Two diagnostics summarize soft assignments for each retained replicate.
 #' The mean assignment margin is the average difference between the largest and
 #' second-largest cluster probabilities; larger values indicate sharper
 #' assignments. Mean normalized assignment entropy measures the average
 #' diffuseness of cluster probabilities after scaling entropy by its maximum for
 #' the replicate-specific number of clusters; larger values indicate more
-#' uncertain or diffuse assignments. Overall means of both diagnostics are also
-#' returned. If `calculate.soft.ancestry = FALSE`, soft ancestry matrices are
-#' not calculated and these diagnostics are returned as missing values.
+#' uncertain or diffuse assignments. Both diagnostics use the map's soft
+#' weights before padding, including weights for grid clusters without hard
+#' specimen assignments. Maps with one grid cluster or unavailable soft
+#' assignments receive `NA`. Overall means use replicates with defined values.
 #'
 #' When `calculate.variable.importance = TRUE`, the function calculates two
 #' complementary variable-importance summaries for each SOM input layer. Values
@@ -1850,10 +1850,10 @@ check.SOM.result.destination <- function(path, overwrite) {
 #' \item{mean_normalized_assignment_entropy}{A named numeric vector containing
 #' the mean normalized soft-assignment entropy for each retained replicate.}
 #' \item{mean_mean_assignment_margin}{The mean assignment margin across
-#' retained replicates, or NA when soft ancestry was not calculated.}
+#' retained replicates with defined margins, or `NA` if none are defined.}
 #' \item{mean_mean_normalized_assignment_entropy}{The mean normalized
-#' assignment entropy across retained replicates, or NA when soft ancestry
-#' was not calculated.}
+#' assignment entropy across retained replicates with defined entropy, or
+#' `NA` if none are defined.}
 #' \item{clustering.SOM.set.seed.N}{The base random seed supplied through
 #' `set.seed.N`.}
 #' \item{clustering.SOM.args}{A list containing the effective arguments used
@@ -2364,14 +2364,10 @@ clustering.SOM <- function(SOM.output,
     # Return missing if K = 1 provides no meaningful separation metric
     if (ncol(assignment_probability_matrix) <= 1) return(NA_real_)
 
-    # Calculate mean normalized assignment entropy
-    safe_assignment_probability_matrix <- pmax(assignment_probability_matrix, .Machine$double.eps)
-    row_entropies <- -rowSums(safe_assignment_probability_matrix * log(safe_assignment_probability_matrix), na.rm = TRUE)
-    normalized_row_entropies <- row_entropies / log(ncol(assignment_probability_matrix))
-    mean_normalized_assignment_entropy <- mean(normalized_row_entropies, na.rm = TRUE)
-
-    # Return mean normalized assignment entropy
-    return(mean_normalized_assignment_entropy)
+    # Zero weights contribute zero because p * log(p) tends to zero at p = 0.
+    row_entropies <- -rowSums(assignment_probability_matrix * log(assignment_probability_matrix),
+                             na.rm = TRUE)
+    mean(row_entropies, na.rm = TRUE) / log(ncol(assignment_probability_matrix))
   }
 
   # Extract number of replicates
@@ -3104,6 +3100,9 @@ clustering.SOM <- function(SOM.output,
   names(cluster_gridcell_assignments) <- retained_replicates
   replicate_ancestry_matrices <- lapply(results, `[[`, "replicate_ancestry_matrix")
   names(replicate_ancestry_matrices) <- retained_replicates
+  # Calculate diagnostics at each map's actual grid K before adding padding.
+  mean_assignment_margin <- vapply(replicate_ancestry_matrices, calculate.mean.assignment.margin.SOM, numeric(1))
+  mean_normalized_assignment_entropy <- vapply(replicate_ancestry_matrices, calculate.mean.normalized.assignment.entropy.SOM, numeric(1))
 
   # Build multi-layer reference data for Hungarian label synchronization
   processed_input_data <- som_models[[1]]$data
@@ -3160,10 +3159,6 @@ clustering.SOM <- function(SOM.output,
   ancestry_matrix <- do.call(rbind, prop_list)
   colnames(ancestry_matrix) <- paste0("Cluster_", seq_len(ncol(ancestry_matrix)))
   rownames(ancestry_matrix) <- rownames(assignment_matrix)
-  mean_assignment_margin <- vapply(replicate_ancestry_matrices, calculate.mean.assignment.margin.SOM, numeric(1))
-  names(mean_assignment_margin) <- names(replicate_ancestry_matrices)
-  mean_normalized_assignment_entropy <- vapply(replicate_ancestry_matrices, calculate.mean.normalized.assignment.entropy.SOM, numeric(1))
-  names(mean_normalized_assignment_entropy) <- names(replicate_ancestry_matrices)
 
   # Calculate median map variance (neuron-weighted) and median eta squared (cluster separation effect size) for each variable in each layer
   if (isTRUE(calculate.variable.importance)) {
@@ -8867,7 +8862,8 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #' that the omitted layer introduced conflicting or uncertain assignment signal.
 #' Assignment-margin change is calculated only when replicate-specific soft
 #' assignment matrices are available for both the retained baseline replicate
-#' and its matched leave-one-layer-out replicate.
+#' and its matched leave-one-layer-out replicate, and both have at least two
+#' grid clusters.
 #'
 #' Failed reruns and their error messages are retained in the replicate-level
 #' results but excluded from summaries and plots. Layer summaries report the
@@ -9628,7 +9624,9 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
         baseline_mean_assignment_margin <- NA_real_
         leave_one_layer_out_mean_assignment_margin <- NA_real_
         delta.mean.assignment.margin <- NA_real_
-        if (!is.null(baseline_assignment_probability_matrix) && !is.null(leave_one_layer_out_assignment_probability_matrix)) {
+        comparable_k <- isTRUE(baseline_modal_k >= 2L && leave_one_layer_out_modal_k >= 2L)
+        if (comparable_k && !is.null(baseline_assignment_probability_matrix) &&
+            !is.null(leave_one_layer_out_assignment_probability_matrix)) {
           shared_assignment_probability_sample_names <- intersect(rownames(baseline_assignment_probability_matrix),
                                                                   rownames(leave_one_layer_out_assignment_probability_matrix))
           if (length(shared_assignment_probability_sample_names) >= 2) {

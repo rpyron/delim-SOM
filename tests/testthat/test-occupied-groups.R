@@ -3,7 +3,8 @@ occupied_group_model <- function(specimens, codes, winners) {
        user.weights = 1, distance.weights = 1)
 }
 
-fit_occupied_group_models <- function(models, set.k = NULL, max.k = 3L, verbose = FALSE) {
+fit_occupied_group_models <- function(models, set.k = NULL, max.k = 3L, verbose = FALSE,
+                                      calculate.soft.ancestry = TRUE) {
   ids <- names(models)
   trained <- list(
     som_models = models, replicate_ids = ids,
@@ -15,7 +16,8 @@ fit_occupied_group_models <- function(models, set.k = NULL, max.k = 3L, verbose 
   delimSOM::clustering.SOM(
     trained, set.k = set.k, max.k = max.k, clustering.method = "kmeans+BICthreshold",
     BIC.thresh = 3, quantization.error.quantile = NULL, topographic.error.quantile = NULL,
-    calculate.variable.importance = FALSE, verbose = verbose
+    calculate.variable.importance = FALSE, calculate.soft.ancestry = calculate.soft.ancestry,
+    verbose = verbose
   )
 }
 
@@ -112,4 +114,51 @@ test_that("the first hard partition supplies a reference when profiles are insuf
                expected_soft_weight(models$R1, 5:6))
   expect_equal(unname(fit$replicate_ancestry_matrices$R2[, "Cluster_4"]),
                expected_soft_weight(models$R2, 5:6))
+})
+
+test_that("soft diagnostics use each map's grid K before padding", {
+  models <- occupied_group_fixture()
+  models$R3 <- occupied_group_model(
+    models$R1$data[[1L]], cbind(x = c(0, 0, 1, 1), y = c(0, 1, 0, 1)), rep(1L, 6L)
+  )
+  fit <- fit_occupied_group_models(models)
+  weights <- fit$replicate_ancestry_matrices
+  expect_equal(as.integer(fit$optim_k_vals), c(3L, 2L, 1L))
+  expect_identical(vapply(weights, ncol, integer(1)), c(R1 = 3L, R2 = 3L, R3 = 3L))
+  expect_equal(as.numeric(weights$R3[, 1L]), rep(1, 6L))
+  expect_equal(as.numeric(weights$R3[, -1L]), numeric(12L))
+
+  # R2 has one occupied specimen group, but both grid clusters carry soft mass.
+  expect_length(unique(fit$cluster_assignment[, "R2"]), 1L)
+  expect_true(all(weights$R2[, 2L] > 0))
+  r2_entropy <- mean(apply(weights$R2[, 1:2, drop = FALSE], 1L, function(p) {
+    -sum(p * log(p)) / log(2)
+  }))
+  r1_entropy <- mean(apply(weights$R1, 1L, function(p) -sum(p * log(p)) / log(3)))
+  expected_entropy <- c(R1 = r1_entropy, R2 = r2_entropy, R3 = NA_real_)
+  expected_margin <- c(
+    R1 = mean(apply(weights$R1, 1L, function(p) -diff(sort(p, decreasing = TRUE)[1:2]))),
+    R2 = mean(abs(weights$R2[, 1L] - weights$R2[, 2L])),
+    R3 = NA_real_
+  )
+  expect_equal(fit$mean_normalized_assignment_entropy, expected_entropy)
+  expect_equal(fit$mean_assignment_margin, expected_margin)
+  expect_equal(fit$mean_mean_normalized_assignment_entropy, mean(expected_entropy, na.rm = TRUE))
+  expect_equal(fit$mean_mean_assignment_margin, mean(expected_margin, na.rm = TRUE))
+
+  r2_only <- fit_occupied_group_models(models["R2"])
+  expect_equal(fit$mean_normalized_assignment_entropy["R2"], r2_only$mean_normalized_assignment_entropy)
+  expect_equal(fit$mean_assignment_margin["R2"], r2_only$mean_assignment_margin)
+})
+
+test_that("soft diagnostics are missing for all-one-cluster runs or disabled soft assignments", {
+  models <- occupied_group_fixture()
+  expected <- c(R1 = NA_real_, R2 = NA_real_)
+  for (fit in list(fit_occupied_group_models(models, set.k = 1L),
+                   fit_occupied_group_models(models, calculate.soft.ancestry = FALSE))) {
+    expect_identical(fit$mean_assignment_margin, expected)
+    expect_identical(fit$mean_normalized_assignment_entropy, expected)
+    expect_identical(fit$mean_mean_assignment_margin, NA_real_)
+    expect_identical(fit$mean_mean_normalized_assignment_entropy, NA_real_)
+  }
 })
