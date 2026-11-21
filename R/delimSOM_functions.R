@@ -68,15 +68,12 @@
 #'   Default: `"gaussian"`.
 #' @param save.SOM.results Logical; if `TRUE`, the returned SOM result object is
 #'   saved as an `.Rdata` file. Default: `FALSE`.
-#' @param save.SOM.results.name Optional character string giving the output file
-#'   name used when saving or loading SOM results. If `NULL`, a default name is
-#'   generated from the input object name(s). File names supplied by the user
-#'   must end in `.Rdata`.
-#' @param overwrite.SOM.results Logical; if `FALSE` and a file named
-#'   `save.SOM.results.name` already exists, the function loads the existing
-#'   `SOM_results` object and skips SOM training. If `TRUE`, training is run and
-#'   saved results are overwritten when `save.SOM.results = TRUE`. Default:
-#'   `FALSE`.
+#' @param save.SOM.results.name Path to an `.Rdata` results file. When saving
+#'   with a `NULL` path, a default name is generated from the input object name(s).
+#'   Reuse requires an explicit path.
+#' @param overwrite.SOM.results Logical; permit replacing an existing file
+#'   when `save.SOM.results = TRUE`. By default, a save request fails if
+#'   the file exists.
 #' @param verbose Logical; if `TRUE`, processing messages and warnings
 #'   are printed. Default: `TRUE`.
 #' @param message.N.replicates A single positive integer giving the frequency of
@@ -85,6 +82,10 @@
 #' @param set.seed.N A single positive integer used as the base seed for
 #'   reproducible learning-rate tuning and replicate SOM training.
 #'   Default: `1`.
+#' @param reuse.SOM.results Logical; if `TRUE`, return the saved `SOM_results`
+#'   object from `save.SOM.results.name`. Supply the path and leave saving and
+#'   overwriting disabled. The saved result is returned independently of any
+#'   input data or training settings supplied. Default: `FALSE`.
 #'
 #' @details
 #' train.SOM implements the SOM-training stage of the delim-SOM workflow. A
@@ -456,15 +457,25 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
                       training.neighborhoods = "gaussian", #neighborhood function used for SOM training (options: "gaussian" or "bubble")
                       save.SOM.results = FALSE, #whether to save SOM results to file
                       save.SOM.results.name = NULL, #file name for saving SOM results (if NULL, default name based on input_data is generated; if save.SOM.results = TRUE)
-                      overwrite.SOM.results = FALSE, #if FALSE, existing results are loaded instead of re-running SOM
+                      overwrite.SOM.results = FALSE, #whether saving can replace an existing file
                       verbose = TRUE, #whether to show messages
                       message.N.replicates = 20, #frequency of progress messages during training (message is printed every message.N.replicates iterations)
-                      set.seed.N = 1 #set seed for reproducibility
+                      set.seed.N = 1, #set seed for reproducibility
+                      reuse.SOM.results = FALSE
 ) {
 
   # Set messages
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("train.SOM aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
+
+  validate.SOM.result.options(save.SOM.results, save.SOM.results.name,
+                              overwrite.SOM.results, reuse.SOM.results)
+  if (reuse.SOM.results) {
+    required_fields <- c("distance_weights_matrix", "learning_values_list",
+                         "som_models", "quantization_error", "topographic_error")
+    messager("Reading saved SOM training results from ", save.SOM.results.name)
+    return(load.SOM.results(save.SOM.results.name, required_fields, "training"))
+  }
 
   # Start processing input data
   messager("PROCESSING INPUT DATA ...")
@@ -515,13 +526,6 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   if (!is.numeric(max.NA.row) || length(max.NA.row) != 1 || is.na(max.NA.row) || !is.finite(max.NA.row) || max.NA.row < 0 || max.NA.row > 1) stop("Data processing aborted: max.NA.row must be a single numeric value between 0 and 1 (recommended: 0.5)")
   if (!is.numeric(max.NA.col) || length(max.NA.col) != 1 || is.na(max.NA.col) || !is.finite(max.NA.col) || max.NA.col < 0 || max.NA.col > 1) stop("Data processing aborted: max.NA.col must be a single numeric value between 0 and 1 (recommended: 0.5)")
   if (!is.character(training.neighborhoods) || length(training.neighborhoods) != 1 || is.na(training.neighborhoods) || !(training.neighborhoods %in% c("gaussian", "bubble"))) stop("Data processing aborted: training.neighborhoods must be 'gaussian' or 'bubble'")
-  if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Data processing aborted: save.SOM.results must be TRUE or FALSE")
-  if (save.SOM.results && !is.null(save.SOM.results.name)) {
-    if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") stop("Data processing aborted: save.SOM.results.name must be non-empty character string (file path) if provided")
-    valid_ext <- tolower(tools::file_ext(save.SOM.results.name)) #extract extension
-    if (valid_ext != "rdata") stop("Data processing aborted: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
-  }
-  if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) stop("Data processing aborted: overwrite.SOM.results must be TRUE or FALSE")
   if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || !is.finite(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Data processing aborted: message.N.replicates must be a single positive integer (>= 1)")
   if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || !is.finite(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Data processing aborted: set.seed.N must be a single positive integer (>= 1)")
 
@@ -566,14 +570,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (is.null(save.SOM.results.name)) save.SOM.results.name <- paste0("SOM_results_", input_data_names, ".Rdata") #assign default name for savings if save.SOM.results.name is NULL
   }
 
-  # If overwrite.SOM.results is FALSE and file already exists, return saved results
-  if (!overwrite.SOM.results && file.exists(save.SOM.results.name)) {
-    messager("SOM results already exist - loading results from file and skipping SOM run")
-    load(save.SOM.results.name)
-    required_fields <- c("distance_weights_matrix", "learning_values_list", "som_models", "quantization_error", "topographic_error")
-    if (!exists("SOM_results") || !all(required_fields %in% names(SOM_results))) stop("Data processing aborted: could not load SOM results because required objects are missing - check saved file or rerun SOM") #check if structure of SOM_results is correct
-    return(SOM_results)
-  }
+  if (save.SOM.results) check.SOM.result.destination(save.SOM.results.name, overwrite.SOM.results)
 
   # Check and transform data if necessary ...
 
@@ -1360,6 +1357,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (!dir.exists(dir_path)) dir.create(dir_path, recursive = TRUE) #create directory if it does not exist
 
     # Save results
+    check.SOM.result.destination(save.SOM.results.name, overwrite.SOM.results)
     save(SOM_results, file = save.SOM.results.name)
     if (save.SOM.results && !overwrite.SOM.results) messager("SOM results saved as ", save.SOM.results.name)
     if (save.SOM.results && overwrite.SOM.results) messager("SOM results overwritten as ", save.SOM.results.name)
@@ -1369,6 +1367,59 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   messager("")
   messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
+}
+
+
+validate.SOM.result.options <- function(save.SOM.results, save.SOM.results.name,
+                                        overwrite.SOM.results, reuse.SOM.results) {
+  flags <- list(save.SOM.results = save.SOM.results,
+                overwrite.SOM.results = overwrite.SOM.results,
+                reuse.SOM.results = reuse.SOM.results)
+  for (option in names(flags)) {
+    value <- flags[[option]]
+    if (!is.logical(value) || length(value) != 1L || is.na(value)) {
+      stop(option, " must be TRUE or FALSE", call. = FALSE)
+    }
+  }
+  if (reuse.SOM.results && (save.SOM.results || overwrite.SOM.results)) {
+    stop("reuse.SOM.results = TRUE requires save.SOM.results and overwrite.SOM.results to be FALSE",
+         call. = FALSE)
+  }
+  if (reuse.SOM.results || (save.SOM.results && !is.null(save.SOM.results.name))) {
+    path <- save.SOM.results.name
+    if (!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(trimws(path))) {
+      stop("Supply an explicit .Rdata file path in save.SOM.results.name", call. = FALSE)
+    }
+    if (tolower(tools::file_ext(path)) != "rdata") {
+      stop("save.SOM.results.name must end with '.Rdata'", call. = FALSE)
+    }
+  }
+}
+
+
+load.SOM.results <- function(path, required_fields, stage) {
+  if (!file.exists(path) || dir.exists(path)) {
+    stop("SOM results file does not exist or is not a file: ", path, call. = FALSE)
+  }
+  saved <- new.env(parent = emptyenv())
+  tryCatch(load(path, envir = saved), error = function(error) {
+    stop("Could not read SOM results from ", path, ": ", conditionMessage(error), call. = FALSE)
+  })
+  results <- saved$SOM_results
+  if (!is.list(results) || !all(required_fields %in% names(results)) ||
+      !is.list(results$som_models) || !length(results$som_models)) {
+    stop("File does not contain valid SOM ", stage, " results: ", path, call. = FALSE)
+  }
+  results
+}
+
+
+check.SOM.result.destination <- function(path, overwrite) {
+  if (dir.exists(path)) stop("SOM results path is a directory: ", path, call. = FALSE)
+  if (!overwrite && file.exists(path)) {
+    stop("SOM results file already exists: ", path,
+         ". Choose another path or set overwrite.SOM.results = TRUE.", call. = FALSE)
+  }
 }
 
 
@@ -1415,15 +1466,12 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #'   include map-variance and cluster-separation importance. Default: `TRUE`.
 #' @param save.SOM.results Logical; if `TRUE`, the clustered SOM result object is
 #'   saved as an `.Rdata` file. Default: `FALSE`.
-#' @param save.SOM.results.name Optional character string giving the output file
-#'   name used when saving or loading clustered SOM results. File names supplied
-#'   by the user must end in `.Rdata`. If `NULL`, a default name is generated.
-#'   Default: `NULL`.
-#' @param overwrite.SOM.results Logical; if FALSE and a file named
-#' 	 save.SOM.results.name already exists, the function loads the existing
-#' 	 SOM_results object and skips clustering. If TRUE, clustering is run and
-#' 	 saved results are overwritten when save.SOM.results = TRUE. Default:
-#' 	 FALSE.
+#' @param save.SOM.results.name Path to an `.Rdata` results file. When saving
+#'   with a `NULL` path, a default name is generated from the input and
+#'   clustering method. Reuse requires an explicit path.
+#' @param overwrite.SOM.results Logical; permit replacing an existing file
+#'   when `save.SOM.results = TRUE`. By default, a save request fails if
+#'   the file exists.
 #' @param verbose Logical; if `TRUE`, progress messages and warnings are printed.
 #'   Default: `TRUE`.
 #' @param message.N.replicates A single positive integer giving the frequency of
@@ -1431,6 +1479,10 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 #' @param set.seed.N A single positive integer used as the base seed for
 #'   reproducible replicate clustering, reference-label generation, and
 #'   permutation-based internal tests. Default: `1`.
+#' @param reuse.SOM.results Logical; if `TRUE`, return the saved `SOM_results`
+#'   object from `save.SOM.results.name`. Supply the path and leave saving and
+#'   overwriting disabled. The saved result is returned independently of any
+#'   trained SOM or clustering settings supplied. Default: `FALSE`.
 #'
 #' @details
 #' `clustering.SOM` implements codebook-vector clustering and infers species
@@ -1951,13 +2003,22 @@ clustering.SOM <- function(SOM.output,
                            message.N.replicates = 20, #frequency of progress messages during clustering (message is printed every message.N.replicates iterations)
                            save.SOM.results = FALSE, #whether to save clustered SOM results to file
                            save.SOM.results.name = NULL, #file name for saving clustered SOM results (if NULL, default name is generated; if save.SOM.results = TRUE)
-                           overwrite.SOM.results = FALSE, #if FALSE, existing clustering results are loaded instead of re-running clustering
-                           set.seed.N = 1 #set seed for reproducibility
+                           overwrite.SOM.results = FALSE, #whether saving can replace an existing file
+                           set.seed.N = 1, #set seed for reproducibility
+                           reuse.SOM.results = FALSE
 ) {
 
   # Set messages
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("clustering.SOM aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
+
+  validate.SOM.result.options(save.SOM.results, save.SOM.results.name,
+                              overwrite.SOM.results, reuse.SOM.results)
+  if (reuse.SOM.results) {
+    required_fields <- c("som_models", "cluster_assignment", "optim_k_vals", "som_clusters")
+    messager("Reading saved SOM clustering results from ", save.SOM.results.name)
+    return(load.SOM.results(save.SOM.results.name, required_fields, "clustering"))
+  }
 
   # Validate input arguments
   if (!is.list(SOM.output) || is.null(SOM.output$som_models) || !is.list(SOM.output$som_models) || length(SOM.output$som_models) < 1) stop("Aborted SOM clustering: SOM.output must be list from train.SOM() with non-empty $som_models")
@@ -1984,13 +2045,6 @@ clustering.SOM <- function(SOM.output,
   if (!is.logical(calculate.soft.ancestry) || length(calculate.soft.ancestry) != 1 || is.na(calculate.soft.ancestry)) stop("Aborted SOM clustering: calculate.soft.ancestry must be TRUE or FALSE")
   if (!is.logical(calculate.variable.importance) || length(calculate.variable.importance) != 1 || is.na(calculate.variable.importance)) stop("Aborted SOM clustering: calculate.variable.importance must be TRUE or FALSE")
   if (!is.numeric(message.N.replicates) || length(message.N.replicates) != 1 || is.na(message.N.replicates) || !is.finite(message.N.replicates) || message.N.replicates < 1 || (message.N.replicates %% 1 != 0)) stop("Aborted SOM clustering: message.N.replicates must be a single positive integer (>= 1)")
-  if (!is.logical(save.SOM.results) || length(save.SOM.results) != 1 || is.na(save.SOM.results)) stop("Aborted SOM clustering: save.SOM.results must be TRUE or FALSE")
-  if (save.SOM.results && !is.null(save.SOM.results.name)) {
-    if (!is.character(save.SOM.results.name) || length(save.SOM.results.name) != 1 || is.na(save.SOM.results.name) || trimws(save.SOM.results.name) == "") stop("Aborted SOM clustering: save.SOM.results.name must be non-empty character string (file path) if provided")
-    valid_ext <- tolower(tools::file_ext(save.SOM.results.name)) #extract extension
-    if (valid_ext != "rdata") stop("Aborted SOM clustering: save.SOM.results.name must end with '.Rdata'") #abort if not .Rdata
-  }
-  if (!is.logical(overwrite.SOM.results) || length(overwrite.SOM.results) != 1 || is.na(overwrite.SOM.results)) stop("Aborted SOM clustering: overwrite.SOM.results must be TRUE or FALSE")
   if (!is.numeric(set.seed.N) || length(set.seed.N) != 1 || is.na(set.seed.N) || !is.finite(set.seed.N) || set.seed.N < 1 || (set.seed.N %% 1 != 0)) stop("Aborted SOM clustering: set.seed.N must be a single positive integer (>= 1)")
 
   # Set default save file name
@@ -2004,14 +2058,7 @@ clustering.SOM <- function(SOM.output,
     save.SOM.results.name <- paste0("SOM_clustering_results_", input_data_names, "_", clustering_method_name, ".Rdata")
   }
 
-  # If overwrite.SOM.results is FALSE and file already exists, return saved results
-  if (!overwrite.SOM.results && file.exists(save.SOM.results.name)) {
-    messager("SOM clustering results already exist - loading results from file and skipping SOM clustering")
-    load(save.SOM.results.name)
-    required_fields <- c("cluster_assignment", "optim_k_vals", "som_clusters")
-    if (!exists("SOM_results") || !all(required_fields %in% names(SOM_results))) stop("Aborted SOM clustering: could not load SOM clustering results (results do not contain expected clustering objects) - check saved file or rerun clustering")
-    return(SOM_results)
-  }
+  if (save.SOM.results) check.SOM.result.destination(save.SOM.results.name, overwrite.SOM.results)
 
   # Free memory
   invisible(gc())
@@ -3258,6 +3305,7 @@ clustering.SOM <- function(SOM.output,
       dir.create(dir_path, recursive = TRUE) #create directory if it does not exist
       messager(paste("Specified directory", dir_path, "did not exist and was created"))
     }
+    check.SOM.result.destination(save.SOM.results.name, overwrite.SOM.results)
     save(SOM_results, file = save.SOM.results.name)
     if (save.SOM.results && !overwrite.SOM.results) messager("SOM clustering results saved as ", save.SOM.results.name)
     if (save.SOM.results && overwrite.SOM.results) messager("SOM clustering results overwritten as ", save.SOM.results.name)

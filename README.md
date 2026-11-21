@@ -1328,8 +1328,7 @@ plot.model.SOM(SOM_results,
 ## Saving and reusing results
 
 `train.SOM()`, `clustering.SOM()`, and especially `plot.layer.importance.leaveoneout.SOM()` can require substantial computation time.
-Their results can therefore be saved and automatically reused when corresponding result files from a previous run are already present.
-File names should use `.Rdata` as extension.
+You can save their results to files ending in `.Rdata`.
 
 ```r
 SOM_tr <- train.SOM(input_data = SOM_data,
@@ -1346,8 +1345,16 @@ SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(SOM.output = SOM_r
                                                               save.leave.one.layer.out.results.name = "SOM_layer_importance.Rdata")
 ```
 
-For `train.SOM()` and `clustering.SOM()`, `overwrite.SOM.results = TRUE` reruns the analysis and overwrites the saved result.
-For `plot.layer.importance.leaveoneout.SOM()`, the corresponding argument is `overwrite.leave.one.layer.out.results`.
+Training and clustering use the data and settings supplied for each run. If you request a save and the destination already exists, choose a different path or set `overwrite.SOM.results = TRUE` to replace the file.
+
+To read a saved training or clustering result, supply its path and set `reuse.SOM.results = TRUE`. This also works with `.Rdata` results saved by earlier versions.
+
+```r
+SOM_tr <- train.SOM(save.SOM.results.name = "SOM_tr.Rdata", reuse.SOM.results = TRUE)
+SOM_results <- clustering.SOM(save.SOM.results.name = "SOM_kmeans.Rdata", reuse.SOM.results = TRUE)
+```
+
+`plot.layer.importance.leaveoneout.SOM()` reuses existing results when `save.leave.one.layer.out.results = TRUE` and `overwrite.leave.one.layer.out.results = FALSE`.
 
 
 # *delimSOM* 2.0 functions

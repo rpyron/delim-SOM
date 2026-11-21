@@ -19,7 +19,8 @@ clustering.SOM(
   save.SOM.results = FALSE,
   save.SOM.results.name = NULL,
   overwrite.SOM.results = FALSE,
-  set.seed.N = 1
+  set.seed.N = 1,
+  reuse.SOM.results = FALSE
 )
 }
 \arguments{
@@ -71,20 +72,22 @@ progress messages during replicate clustering. Default: \code{20}.}
 \item{save.SOM.results}{Logical; if \code{TRUE}, the clustered SOM result object is
 saved as an \code{.Rdata} file. Default: \code{FALSE}.}
 
-\item{save.SOM.results.name}{Optional character string giving the output file
-name used when saving or loading clustered SOM results. File names supplied
-by the user must end in \code{.Rdata}. If \code{NULL}, a default name is generated.
-Default: \code{NULL}.}
+\item{save.SOM.results.name}{Path to an \code{.Rdata} results file. When saving
+with a \code{NULL} path, a default name is generated from the input and
+clustering method. Reuse requires an explicit path.}
 
-\item{overwrite.SOM.results}{Logical; if FALSE and a file named
-save.SOM.results.name already exists, the function loads the existing
-SOM_results object and skips clustering. If TRUE, clustering is run and
-saved results are overwritten when save.SOM.results = TRUE. Default:
-FALSE.}
+\item{overwrite.SOM.results}{Logical; permit replacing an existing file
+when \code{save.SOM.results = TRUE}. By default, a save request fails if
+the file exists.}
 
 \item{set.seed.N}{A single positive integer used as the base seed for
 reproducible replicate clustering, reference-label generation, and
 permutation-based internal tests. Default: \code{1}.}
+
+\item{reuse.SOM.results}{Logical; if \code{TRUE}, return the saved \code{SOM_results}
+object from \code{save.SOM.results.name}. Supply the path and leave saving and
+overwriting disabled. The saved result is returned independently of any
+trained SOM or clustering settings supplied. Default: \code{FALSE}.}
 }
 \value{
 A named list called \code{SOM_results}, extending the input \code{SOM.output}

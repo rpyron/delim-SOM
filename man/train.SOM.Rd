@@ -25,7 +25,8 @@ train.SOM(
   overwrite.SOM.results = FALSE,
   verbose = TRUE,
   message.N.replicates = 20,
-  set.seed.N = 1
+  set.seed.N = 1,
+  reuse.SOM.results = FALSE
 )
 }
 \arguments{
@@ -101,16 +102,13 @@ Default: \code{"gaussian"}.}
 \item{save.SOM.results}{Logical; if \code{TRUE}, the returned SOM result object is
 saved as an \code{.Rdata} file. Default: \code{FALSE}.}
 
-\item{save.SOM.results.name}{Optional character string giving the output file
-name used when saving or loading SOM results. If \code{NULL}, a default name is
-generated from the input object name(s). File names supplied by the user
-must end in \code{.Rdata}.}
+\item{save.SOM.results.name}{Path to an \code{.Rdata} results file. When saving
+with a \code{NULL} path, a default name is generated from the input object name(s).
+Reuse requires an explicit path.}
 
-\item{overwrite.SOM.results}{Logical; if \code{FALSE} and a file named
-\code{save.SOM.results.name} already exists, the function loads the existing
-\code{SOM_results} object and skips SOM training. If \code{TRUE}, training is run and
-saved results are overwritten when \code{save.SOM.results = TRUE}. Default:
-\code{FALSE}.}
+\item{overwrite.SOM.results}{Logical; permit replacing an existing file
+when \code{save.SOM.results = TRUE}. By default, a save request fails if
+the file exists.}
 
 \item{verbose}{Logical; if \code{TRUE}, processing messages and warnings
 are printed. Default: \code{TRUE}.}
@@ -122,6 +120,11 @@ the replicate index is divisible by this value. Default: \code{20}.}
 \item{set.seed.N}{A single positive integer used as the base seed for
 reproducible learning-rate tuning and replicate SOM training.
 Default: \code{1}.}
+
+\item{reuse.SOM.results}{Logical; if \code{TRUE}, return the saved \code{SOM_results}
+object from \code{save.SOM.results.name}. Supply the path and leave saving and
+overwriting disabled. The saved result is returned independently of any
+input data or training settings supplied. Default: \code{FALSE}.}
 }
 \value{
 A named list containing:
