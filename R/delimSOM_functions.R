@@ -5352,7 +5352,7 @@ plot.K.SOM <- function(SOM.output,
 #' @param plot.title.font.size A single positive numeric value giving the panel
 #'   title font size in points. Default: `9.1`.
 #' @param legend.font.size A single positive numeric value giving the
-#'   neighbor-distance legend font size in points. Default: `7`.
+#'   legend font size in points. Default: `7`.
 #' @param verbose Logical; if `TRUE`, plotting and validation messages are
 #'   printed. Default: `TRUE`.
 #'
@@ -5396,10 +5396,10 @@ plot.K.SOM <- function(SOM.output,
 #' occupied regions (Vesanto & Alhoniemi, 2000; Wehrens & Buydens, 2007).
 #'
 #' The lower panel shows the selected replicate's sample-to-unit mappings and
-#' SOM-unit cluster assignments. Cluster labels are converted to consecutive
-#' integers for plotting, which changes only their displayed colors and not the
-#' underlying partition. Boundaries are added between clusters when more than
-#' one cluster is present. Compact and contiguous cluster regions indicate that
+#' SOM-unit cluster assignments. Occupied clusters use synchronized specimen
+#' colors. Grid clusters with no hard specimen assignments are shown in gray
+#' and identified in the legend. Boundaries follow the original grid-cluster
+#' partition. Compact and contiguous cluster regions indicate that
 #' the inferred partition corresponds closely to the SOM topology. Fragmented
 #' cluster regions may indicate weak separation, gradual transitions, or an
 #' overly fine partition.
@@ -5511,7 +5511,7 @@ plot.model.SOM <- function(SOM.output,
                            title.clusters = "SOM clusters", #title of cluster plot (bottom)
                            title.neighbor.dist = "SOM neighbor distances", #title of neighbor distances plot
                            plot.title.font.size = 9.1, #font size of plot titles in points
-                           legend.font.size = 7, #font size of neighbor-distance legend in points
+                           legend.font.size = 7, #font size of legends in points
                            verbose = TRUE #whether to print messages
 ) {
 
@@ -5708,9 +5708,7 @@ plot.model.SOM <- function(SOM.output,
   } else {
     palette_k <- as.integer(set.k)
   }
-  selected_k <- length(unique(som_cluster))
   if (!is.finite(palette_k) || palette_k < 1) stop("Plotting aborted: no valid reference K is available for cluster colors")
-  if (selected_k > palette_k) stop("Plotting aborted: selected replicate contains more clusters than the reference K")
   som_data <- som_model$data
   if (!is.list(som_data)) som_data <- list(som_data)
   if (length(som_data) == 0 || is.null(rownames(som_data[[1]]))) stop("Plotting aborted: sample names could not be extracted from selected som_model")
@@ -5718,18 +5716,18 @@ plot.model.SOM <- function(SOM.output,
   if (length(sample_names) != length(unit_classif)) stop("Plotting aborted: number of sample names does not match unit.classif")
   if (is.null(rownames(cluster_assignment)) || any(!(sample_names %in% rownames(cluster_assignment)))) stop("Plotting aborted: selected SOM replicate samples are missing from cluster_assignment")
   original_sample_cluster_labels <- som_cluster[unit_classif]
-  original_cluster_labels <- sort(unique(som_cluster))
-  if (!is.null(set.k) || selected_k == palette_k) {
+  occupied_cluster_labels <- sort(unique(original_sample_cluster_labels))
+  occupied_k <- length(occupied_cluster_labels)
+  if (occupied_k > palette_k) stop("Plotting aborted: selected replicate contains more occupied clusters than the reference K")
+  if (!is.null(set.k) || occupied_k == palette_k) {
     synchronized_sample_cluster_labels <- as.integer(cluster_assignment[sample_names, replicate_name])
     if (anyNA(synchronized_sample_cluster_labels) || any(!is.finite(synchronized_sample_cluster_labels)) || any(synchronized_sample_cluster_labels < 1) || any(synchronized_sample_cluster_labels > palette_k)) stop("Plotting aborted: cluster_assignment contains invalid synchronized cluster labels")
     synchronized_cluster_labels <- sort(unique(synchronized_sample_cluster_labels))
-    if (length(original_cluster_labels) != length(synchronized_cluster_labels)) stop("Plotting aborted: original and synchronized cluster counts do not match")
-    cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = original_cluster_labels),
+    if (occupied_k != length(synchronized_cluster_labels)) stop("Plotting aborted: occupied and synchronized cluster counts do not match")
+    cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = occupied_cluster_labels),
                                    factor(synchronized_sample_cluster_labels, levels = synchronized_cluster_labels))
-    if (any(rowSums(cluster_label_overlap) == 0)) stop("Plotting aborted: at least one SOM cluster contains no samples and cannot be synchronized")
     if (any(rowSums(cluster_label_overlap > 0) != 1) || any(colSums(cluster_label_overlap > 0) != 1)) stop("Plotting aborted: SOM cluster labels do not map uniquely to synchronized cluster labels")
     cluster_label_map <- synchronized_cluster_labels[max.col(cluster_label_overlap, ties.method = "first")]
-    names(cluster_label_map) <- original_cluster_labels
   } else {
     replicate_k_values <- apply(cluster_assignment, 2, function(current_cluster_assignment) {
       current_cluster_assignment <- as.integer(current_cluster_assignment)
@@ -5744,14 +5742,18 @@ plot.model.SOM <- function(SOM.output,
       cluster_counts <- tabulate(as.integer(current_cluster_assignment), nbins = palette_k)
       which.max(cluster_counts)
     })
-    cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = original_cluster_labels),
+    cluster_label_overlap <- table(factor(original_sample_cluster_labels, levels = occupied_cluster_labels),
                                    factor(reference_consensus_labels, levels = seq_len(palette_k)))
-    if (any(rowSums(cluster_label_overlap) == 0)) stop("Plotting aborted: at least one SOM cluster contains no samples and cannot be matched to highest-K clusters")
     cluster_label_map <- as.integer(clue::solve_LSAP(cluster_label_overlap, maximum = TRUE))
-    names(cluster_label_map) <- original_cluster_labels
   }
-  som_cluster <- as.integer(cluster_label_map[as.character(som_cluster)])
-  if (anyNA(som_cluster) || any(!is.finite(som_cluster)) || any(som_cluster < 1) || any(som_cluster > palette_k)) stop("Plotting aborted: SOM cluster-label synchronization failed")
+  if (anyNA(cluster_label_map) || any(cluster_label_map < 1L | cluster_label_map > palette_k)) {
+    stop("Plotting aborted: SOM cluster-label synchronization failed")
+  }
+  names(cluster_label_map) <- occupied_cluster_labels
+  unoccupied_units <- !som_cluster %in% occupied_cluster_labels
+  unoccupied_color <- "#D9D9D9"
+  unit_colors <- col.pal.clusters(palette_k)[cluster_label_map[as.character(som_cluster)]]
+  unit_colors[unoccupied_units] <- unoccupied_color
 
   # Calculate SOM neighbor distances
   nd_plot <- calc.unit.neighbor.dist(som_model)
@@ -5807,31 +5809,30 @@ plot.model.SOM <- function(SOM.output,
        cex = legend_relative_font_size,
        palette.name = function(n) rev(col.pal.neighbor.dist(n)))
 
-  # Set color palette for bottom plot
-  som_cluster <- as.integer(som_cluster)
-  if (anyNA(som_cluster) || !all(is.finite(som_cluster)) || any(som_cluster < 1) || any(som_cluster > palette_k)) stop("Plotting aborted: som_cluster contains invalid cluster assignments")
-
-  # Count clusters in selected replicate
-  number_of_clusters <- length(unique(som_cluster))
-
-  # Assign cluster colors
-  cluster_colors <- col.pal.clusters(palette_k)
-  SOM_cluster_plot_col <- cluster_colors[som_cluster]
-
   # Plot SOM clusters
-  par(fig = c(shift.plot.clusters, 1, 0, 0.5), new = TRUE)
+  legend_height <- if (any(unoccupied_units)) 0.06 else 0
+  par(fig = c(shift.plot.clusters, 1, legend_height, 0.5), new = TRUE)
   par(cex.main = plot_title_relative_font_size, font.main = 2)
   plot(x = som_model,
        shape = cluster.shape.clusters,
        type = "mapping",
-       bgcol = SOM_cluster_plot_col,
+       bgcol = unit_colors,
        main = if (is.null(title.clusters)) "" else title.clusters,
        pchs = point.shape.clusters,
        cex = point.size.clusters,
        col = point.col.clusters)
 
   # Add boundaries of SOM clusters
-  if (number_of_clusters > 1) kohonen::add.cluster.boundaries(som_model, som_cluster, lwd = boundary.lwd.clusters, col = boundary.col.clusters)
+  if (length(unique(som_cluster)) > 1L) {
+    kohonen::add.cluster.boundaries(som_model, som_cluster, lwd = boundary.lwd.clusters,
+                                   col = boundary.col.clusters)
+  }
+  if (legend_height > 0) {
+    par(fig = c(shift.plot.clusters, 1, 0, legend_height), mar = rep(0, 4), new = TRUE)
+    graphics::plot.new()
+    graphics::legend("center", legend = "No hard specimen assignments", fill = unoccupied_color,
+                     border = "black", bty = "n", cex = legend_relative_font_size)
+  }
 
   # Close graphics device
   if (save) {
