@@ -13,8 +13,12 @@
 #' error diagnostics.
 #'
 #' @param input_data A matrix, data frame, or list of matrices/data frames.
-#' 	 For multi-layer input, all layers must have row names, and
-#'   row names are used to identify the shared samples retained across layers.
+#'   Each layer in multi-layer input must have explicit specimen IDs as row
+#'   names. IDs must be unique within a layer, non-missing, and non-blank.
+#'   Shared specimens are matched by ID. For an unnamed single layer, including
+#'   a data frame with automatic row numbers, IDs such as `sample_1` are
+#'   assigned by input row position before filtering, with a message when
+#'   `verbose = TRUE`.
 #'   All retained columns must be numeric after non-numeric columns are removed.
 #' @param N.steps A single positive integer giving the number of SOM
 #'   training iterations (epochs). Default: `100`.
@@ -556,7 +560,7 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     if (is.null(save.SOM.results.name)) save.SOM.results.name <- paste0("SOM_results_", paste(input_data_names, collapse = "_"), ".Rdata") #assign default saving name if save.SOM.results.name is NULL
 
     # ... for list with one data set
-  } else if (is.list(input_data) && length(input_data) == 1) {
+  } else if (is.list(input_data) && !is.data.frame(input_data) && length(input_data) == 1) {
     if (!is.null(names(input_data)) && names(input_data)[1] != "") {
       input_data_names <- names(input_data)[1]
     } else {
@@ -579,8 +583,17 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   # ... for multiple datasets
   if (is.list(input_data) && length(input_data) > 1 && !is.data.frame(input_data)) {
 
-    # Ensure each layer has rownames
-    if (any(vapply(input_data, function(x) is.null(rownames(x)), logical(1)))) stop("Data processing aborted: all provided data layers must have matching rownames")
+    # Validate identifiers before intersecting or indexing any layer by ID.
+    layer_names <- names(input_data)
+    for (i in seq_along(input_data)) {
+      layer_label <- paste("Layer", i)
+      if (!is.null(layer_names) && !is.na(layer_names[i]) && nzchar(layer_names[i])) {
+        layer_label <- sprintf("%s (%s)", layer_label, layer_names[i])
+      }
+      ids <- explicit.sample.ids.SOM(input_data[[i]])
+      if (is.null(ids)) stop(layer_label, " must have explicit sample IDs as row names", call. = FALSE)
+      validate.sample.ids.SOM(ids, layer_label)
+    }
 
     # Extract shared samples across all matrices (before filtering)
     all_samples <- unique(unlist(lapply(input_data, rownames)))
@@ -787,12 +800,21 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
   } else {
 
     # Unwrap list if needed
-    if (is.list(input_data) && length(input_data) == 1) {
+    if (is.list(input_data) && !is.data.frame(input_data)) {
       mat <- input_data[[1]]
     } else {
       mat <- input_data
     }
+    ids <- explicit.sample.ids.SOM(mat)
+    if (is.null(ids)) {
+      messager("No explicit sample IDs for the single input layer. Assigning IDs such as sample_1 ",
+               "from input row positions before filtering. Set row names to use specimen IDs.")
+      ids <- sprintf("sample_%d", seq_len(nrow(mat)))
+    } else {
+      validate.sample.ids.SOM(ids, "Single input layer")
+    }
     mat <- as.data.frame(mat, stringsAsFactors = FALSE) #convert to dataframe
+    rownames(mat) <- ids
 
     # Remove non-numeric columns
     non_numeric_cols <- which(sapply(mat, function(x) is.factor(x) || is.character(x)))
@@ -1315,6 +1337,59 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
 }
 
 
+explicit.sample.ids.SOM <- function(layer) {
+  if (is.data.frame(layer) && .row_names_info(layer, 1L) < 0L) return(NULL)
+  rownames(layer)
+}
+
+
+validate.sample.ids.SOM <- function(ids, layer_label) {
+  invalid <- which(is.na(ids) | !nzchar(trimws(ids, whitespace = "[\\h\\v]")))
+  if (length(invalid)) {
+    stop(layer_label, " has missing or blank sample IDs at rows ",
+         paste(utils::head(invalid, 10L), collapse = ", "), call. = FALSE)
+  }
+  duplicates <- which(duplicated(ids) | duplicated(ids, fromLast = TRUE))
+  if (length(duplicates)) {
+    stop(layer_label, " has duplicate sample IDs at rows ",
+         paste(utils::head(duplicates, 10L), collapse = ", "), call. = FALSE)
+  }
+}
+
+
+restore.unnamed.sample.ids.SOM <- function(SOM.output, messager) {
+  models <- SOM.output$som_models
+  first_layers <- lapply(models, function(model) model$data[[1L]])
+  if (!any(vapply(first_layers, function(layer) is.null(rownames(layer)), logical(1)))) {
+    return(SOM.output)
+  }
+
+  # A saved unnamed fit can be matched by position only if its replicates
+  # contain the same single layer in the same row order.
+  reference <- first_layers[[1L]]
+  compatible <- is.matrix(reference) && nrow(reference) > 0L &&
+    all(vapply(models, function(model) {
+      length(model$data) == 1L && identical(model$data[[1L]], reference) &&
+        length(model$unit.classif) == nrow(reference)
+    }, logical(1)))
+  if (!compatible) {
+    stop("Aborted SOM clustering: cannot align unnamed samples across the stored SOM models. Rerun train.SOM with sample IDs.",
+         call. = FALSE)
+  }
+
+  messager("The single-layer SOM fit has no sample IDs. Assigning IDs such as sample_1 ",
+           "from the stored row positions.")
+  rownames(reference) <- sprintf("sample_%d", seq_len(nrow(reference)))
+  for (i in seq_along(models)) models[[i]]$data[[1L]] <- reference
+  SOM.output$som_models <- models
+  if (is.list(SOM.output$input_data) && length(SOM.output$input_data) == 1L &&
+      identical(SOM.output$input_data[[1L]], first_layers[[1L]])) {
+    SOM.output$input_data[[1L]] <- reference
+  }
+  SOM.output
+}
+
+
 compute.layer.sample.to.unit.distance.SOM <- function(sample_matrix, codebook_matrix,
                                                        distance_function,
                                                        max_missing_fraction = 1,
@@ -1482,6 +1557,9 @@ check.SOM.result.destination <- function(path, overwrite) {
 #' 	trained SOM replicate models and the associated processed input data,
 #' 	replicate identifiers, codebook vectors, layer distance functions,
 #' 	quantization-error diagnostics, and topographic-error diagnostics.
+#'   Older unnamed single-layer fits receive IDs such as `sample_1` in stored
+#'   row order when the retained replicates contain the same specimen data in
+#'   the same order. A message is printed when `verbose = TRUE`.
 #' @param max.k A single integer giving the maximum number of clusters to test
 #'   or retain during clustering. Default: `10`.
 #' @param set.k Optional single integer specifying a fixed number of clusters.
@@ -2336,6 +2414,7 @@ clustering.SOM <- function(SOM.output,
   }
 
   # Update number of replicates after optional filtering
+  SOM.output <- restore.unnamed.sample.ids.SOM(SOM.output, messager)
   N.replicates <- length(SOM.output$som_models)
   som_models_for_clustering <- SOM.output$som_models
   layer.distance.functions <- SOM.output$layer.distance.functions

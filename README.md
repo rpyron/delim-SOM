@@ -65,7 +65,9 @@ packageVersion("delimSOM")
 
 Input data should be supplied as one or multiple numeric matrices or data frames.
 Rows should represent individuals and columns variables.
-For multilayer analyses, individual identifiers as rownames are required in every layer.
+For multilayer analyses, set explicit specimen IDs as row names in every layer. IDs must be unique within each layer, and every row needs an ID. R's automatic data-frame row numbers do not count as specimen IDs.
+
+For a single layer without row names, training reports that it is assigning IDs such as `sample_1` from the original row positions. These IDs identify the specimens in the clustering output. Set row names before training to use your own specimen IDs.
 Missing values should be represented as `NA`.
 
 Single-layer example input:

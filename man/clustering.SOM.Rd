@@ -27,7 +27,10 @@ clustering.SOM(
 \item{SOM.output}{A list returned by train.SOM. The object must contain
 trained SOM replicate models and the associated processed input data,
 replicate identifiers, codebook vectors, layer distance functions,
-quantization-error diagnostics, and topographic-error diagnostics.}
+quantization-error diagnostics, and topographic-error diagnostics.
+Older unnamed single-layer fits receive IDs such as \code{sample_1} in stored
+row order when the retained replicates contain the same specimen data in
+the same order. A message is printed when \code{verbose = TRUE}.}
 
 \item{max.k}{A single integer giving the maximum number of clusters to test
 or retain during clustering. Default: \code{10}.}

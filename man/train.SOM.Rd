@@ -31,8 +31,12 @@ train.SOM(
 }
 \arguments{
 \item{input_data}{A matrix, data frame, or list of matrices/data frames.
-For multi-layer input, all layers must have row names, and
-row names are used to identify the shared samples retained across layers.
+Each layer in multi-layer input must have explicit specimen IDs as row
+names. IDs must be unique within a layer, non-missing, and non-blank.
+Shared specimens are matched by ID. For an unnamed single layer, including
+a data frame with automatic row numbers, IDs such as \code{sample_1} are
+assigned by input row position before filtering, with a message when
+\code{verbose = TRUE}.
 All retained columns must be numeric after non-numeric columns are removed.}
 
 \item{N.steps}{A single positive integer giving the number of SOM
