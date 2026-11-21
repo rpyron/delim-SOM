@@ -301,7 +301,10 @@ automatic grid sizing follows a practical square-root sample-size heuristic
 (Vesanto, 1999) that usually works well, but optimal map size is data-dependent
 and should ideally be evaluated empirically (Kohonen, 2013). Users can increase
 resolution by increasing \code{grid.multiplier} and make the grid coarser by
-decreasing \code{grid.multiplier}. Hexagonal grids are used because they provide
+decreasing \code{grid.multiplier}. If the automatic grid would have more units
+than retained samples, its dimensions are reduced to fit, with a message when
+\code{verbose = TRUE}. The minimum grid is 2 x 2, which requires at least four
+retained samples. Hexagonal grids are used because they provide
 more even neighborhood relationships and are commonly recommended for SOM
 visualization and training (Kohonen, 1995, 1998, 2013; Vesanto & Alhoniemi, 2000).
 

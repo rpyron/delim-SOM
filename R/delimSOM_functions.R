@@ -206,7 +206,10 @@
 #' (Vesanto, 1999) that usually works well, but optimal map size is data-dependent
 #' and should ideally be evaluated empirically (Kohonen, 2013). Users can increase
 #' resolution by increasing `grid.multiplier` and make the grid coarser by
-#' decreasing `grid.multiplier`. Hexagonal grids are used because they provide
+#' decreasing `grid.multiplier`. If the automatic grid would have more units
+#' than retained samples, its dimensions are reduced to fit, with a message when
+#' `verbose = TRUE`. The minimum grid is 2 x 2, which requires at least four
+#' retained samples. Hexagonal grids are used because they provide
 #' more even neighborhood relationships and are commonly recommended for SOM
 #' visualization and training (Kohonen, 1995, 1998, 2013; Vesanto & Alhoniemi, 2000).
 #'
@@ -988,6 +991,9 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     # Determine grid size and shape automatically based on number of samples and aspect ratio
   } else {
     n_samples <- nrow(input_data[[1]])
+    if (n_samples < 4L) {
+      stop(sprintf("Aborted SOM grid creation: a minimum 2 x 2 grid requires at least 4 retained samples (found %d)", n_samples))
+    }
     n_units <- round(grid.multiplier * sqrt(n_samples))
 
     # Multi-layer input: use aspect ratio based on MFA (multiple factor analysis)
@@ -1081,9 +1087,16 @@ train.SOM <- function(input_data, #one matrix/dataframe or multiple matrices/dat
     ydim <- max(2, round(sqrt(n_units / SOM_grid_aspect_ratio)))
     xdim <- max(2, round(n_units / ydim))
     SOM_grid_units <- xdim * ydim
+    if (!is.finite(SOM_grid_units) || SOM_grid_units > n_samples) {
+      capped_target <- min(n_units, n_samples)
+      ydim <- max(2, round(sqrt(capped_target / SOM_grid_aspect_ratio)))
+      # Rounding both dimensions can still overshoot the retained sample count.
+      xdim <- min(max(2, round(capped_target / ydim)), n_samples %/% ydim)
+      SOM_grid_units <- xdim * ydim
+      messager(sprintf("Reduced automatic SOM grid to %d x %d (%d units) to fit %d retained samples",
+                        xdim, ydim, SOM_grid_units, n_samples))
+    }
     if (xdim > 50 || ydim > 50) messager(sprintf("Computed SOM grid size %d x %d is very large - consider reducing grid.multiplier or set smaller grid.size manually to avoid long training times",  xdim, ydim)) #large grid size
-    if (SOM_grid_units > n_samples) stop(sprintf("Aborted SOM grid creation: SOM grid size %d x %d (%d units) exceeds number of samples (%d) - decrease grid.multiplier or set grid.size manually", xdim, ydim, SOM_grid_units, n_samples)) #grid cell number less than number of samples
-    if (xdim < 2 || ydim < 2) stop(sprintf("Aborted SOM grid creation: SOM grid size %d x %d is smaller than 2 x 2 - increase grid.multiplier or grid.size", xdim, ydim)) #small grid size
     SOM_output_grid <- kohonen::somgrid(xdim = xdim, ydim = ydim, topo = "hexagonal", neighbourhood.fct = training.neighborhoods) #create SOM grid
   }
 
