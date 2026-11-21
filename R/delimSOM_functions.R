@@ -1774,6 +1774,12 @@ check.SOM.result.destination <- function(path, overwrite, overwrite_option = "ov
 #' otherwise receive permuted numeric labels across runs (Jakobsson & Rosenberg,
 #' 2007; Kopelman et al., 2015).
 #'
+#' Starting with the smallest observed occupied K, each reference is matched to
+#' the previous observed K by maximizing shared specimen membership. Matched
+#' groups inherit labels, and additional groups receive new labels. Ordering
+#' groups by specimen ID makes tied matches reproducible. Ties are reported when
+#' `verbose = TRUE` because their label correspondence is ambiguous.
+#'
 #' After label harmonization, the final `ancestry_matrix` is constructed by
 #' calculating, for each sample, the proportion of retained replicate maps in
 #' which it is assigned to each relabeled cluster. These values are somewhat
@@ -3150,6 +3156,9 @@ clustering.SOM <- function(SOM.output,
     messager(sprintf("Using hard assignments from replicate %s as the relabeling reference for %d occupied groups",
                       retained_replicates[reference_replicate], k))
   }
+  reference_labels <- align.occupied.k.references.SOM(
+    reference_labels, occupied_counts, rownames(assignment_matrix), messager
+  )
 
   # Relabel across replicates with Hungarian algorithm
   replicate_label_maps <- vector("list", ncol(assignment_matrix))
@@ -3373,6 +3382,49 @@ clustering.SOM <- function(SOM.output,
   messager("")
   messager("FINISHED SUCCESSFULLY")
   return(SOM_results)
+}
+
+
+align.occupied.k.references.SOM <- function(references, occupied_counts, specimen_ids, messager) {
+  observed_k <- sort(unique(occupied_counts))
+  if (length(observed_k) < 2L) return(references)
+
+  specimen_order <- order(specimen_ids, method = "radix")
+  previous <- references[[observed_k[1L]]]
+  for (k in observed_k[-1L]) {
+    current <- references[[k]]
+    # Specimen order makes the assignment solver's tie-breaking independent of raw labels.
+    previous_groups <- unique(previous[specimen_order])
+    current_groups <- unique(current[specimen_order])
+    current_indices <- match(current, current_groups)
+    overlap <- table(match(previous, previous_groups), current_indices)
+    matched <- as.integer(clue::solve_LSAP(overlap, maximum = TRUE))
+    if (has.tied.overlap.match.SOM(overlap, matched)) {
+      messager(sprintf("Cross-K label matching is tied for occupied K = %d and %d. Matching uses specimen ID order.",
+                        length(previous_groups), k))
+    }
+
+    labels <- integer(k)
+    labels[matched] <- previous_groups
+    labels[labels == 0L] <- seq.int(length(previous_groups) + 1L, k)
+    previous <- references[[k]] <- labels[current_indices]
+  }
+  references
+}
+
+
+has.tied.overlap.match.SOM <- function(overlap, matched) {
+  # Shift scores so setting one matched edge to zero forbids it at the best score.
+  scores <- overlap + 1L
+  rows <- seq_along(matched)
+  best <- sum(scores[cbind(rows, matched)])
+  for (row in rows) {
+    alternative_scores <- scores
+    alternative_scores[row, matched[row]] <- 0L
+    alternative <- as.integer(clue::solve_LSAP(alternative_scores, maximum = TRUE))
+    if (sum(alternative_scores[cbind(rows, alternative)]) == best) return(TRUE)
+  }
+  FALSE
 }
 
 

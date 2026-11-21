@@ -331,6 +331,12 @@ correspondence that maximizes agreement (Kuhn, 1955; Munkres, 1957; Hornik,
 otherwise receive permuted numeric labels across runs (Jakobsson & Rosenberg,
 2007; Kopelman et al., 2015).
 
+Starting with the smallest observed occupied K, each reference is matched to
+the previous observed K by maximizing shared specimen membership. Matched
+groups inherit labels, and additional groups receive new labels. Ordering
+groups by specimen ID makes tied matches reproducible. Ties are reported when
+\code{verbose = TRUE} because their label correspondence is ambiguous.
+
 After label harmonization, the final \code{ancestry_matrix} is constructed by
 calculating, for each sample, the proportion of retained replicate maps in
 which it is assigned to each relabeled cluster. These values are somewhat

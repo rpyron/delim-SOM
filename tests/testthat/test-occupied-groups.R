@@ -162,3 +162,54 @@ test_that("soft diagnostics are missing for all-one-cluster runs or disabled sof
     expect_identical(fit$mean_mean_normalized_assignment_entropy, NA_real_)
   }
 })
+
+test_that("a split across K retains the labels of continuing specimen groups", {
+  group_sizes <- c(6L, 3L, 3L)
+  profiles <- rep(c(0, .62, .90), group_sizes)
+  specimens <- cbind(x = profiles, y = profiles)
+  rownames(specimens) <- sprintf("s%02d", seq_len(nrow(specimens)))
+  unsplit <- c(0, .02, .98, 1)
+  split <- c(0, .02, .62, .90)
+  models <- list(
+    R1 = occupied_group_model(specimens, cbind(x = unsplit, y = unsplit),
+                              rep(c(1L, 3L, 3L), group_sizes)),
+    R2 = occupied_group_model(specimens, cbind(x = unsplit, y = unsplit),
+                              rep(c(1L, 3L, 3L), group_sizes)),
+    R3 = occupied_group_model(specimens, cbind(x = split, y = split),
+                              rep(c(1L, 3L, 4L), group_sizes))
+  )
+  expect_message(fit <- fit_occupied_group_models(models, verbose = TRUE),
+                 "Cross-K label matching is tied for occupied K = 2 and 3", fixed = TRUE)
+  expect_equal(as.integer(fit$optim_k_vals), c(2L, 2L, 3L))
+  expect_equal(first_seen_labels(fit$cluster_assignment[, "R3"]),
+               rep(1:3, group_sizes))
+
+  intact <- fit$cluster_assignment["s01", "R1"]
+  parent <- fit$cluster_assignment["s07", "R1"]
+  expect_equal(unname(fit$ancestry_matrix["s01", paste0("Cluster_", intact)]), 1)
+  expect_equal(unname(fit$ancestry_matrix["s07", paste0("Cluster_", parent)]), 1)
+  expect_equal(unname(fit$ancestry_matrix["s10", paste0("Cluster_", c(parent, 3L))]),
+               c(2/3, 1/3))
+  expect_equal(unname(fit$replicate_ancestry_matrices$R3[, "Cluster_3"]),
+               expected_soft_weight(models$R3, 4L))
+})
+
+test_that("cross-K matching handles skipped K and ignores higher reference label permutations", {
+  ids <- c("s08", "s03", "s07", "s02", "s01", "s06", "s05", "s04")
+  low <- c(2L, 1L, 2L, 1L, 1L, 2L, 2L, 1L)
+  high <- c(4L, 2L, 4L, 3L, 3L, 1L, 1L, 2L)
+  references <- list(NULL, low, NULL, high)
+  aligned <- delimSOM:::align.occupied.k.references.SOM(
+    references, c(4L, 2L, 4L), ids, function(...) NULL
+  )
+  expect_identical(aligned[[2L]], low)
+  expect_identical(aligned[[4L]], c(4L, 3L, 4L, 1L, 1L, 2L, 2L, 3L))
+
+  permuted <- list(NULL, low, NULL, c(4L, 1L, 2L, 3L)[high])
+  expect_identical(delimSOM:::align.occupied.k.references.SOM(
+    permuted, c(2L, 4L), ids, function(...) NULL
+  ), aligned)
+  expect_identical(delimSOM:::align.occupied.k.references.SOM(
+    references, c(4L, 4L), ids, function(...) NULL
+  ), references)
+})
