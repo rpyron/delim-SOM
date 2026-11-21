@@ -1342,7 +1342,7 @@ SOM_results <- clustering.SOM(SOM.output = SOM_tr,
                               save.SOM.results = TRUE,
                               save.SOM.results.name = "SOM_kmeans.Rdata")
 
-SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(SOM.output = SOM_results,
+SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(SOM_output = SOM_results,
                                                               save.leave.one.layer.out.results = TRUE,
                                                               save.leave.one.layer.out.results.name = "SOM_layer_importance.Rdata")
 ```
@@ -1356,7 +1356,16 @@ SOM_tr <- train.SOM(save.SOM.results.name = "SOM_tr.Rdata", reuse.SOM.results = 
 SOM_results <- clustering.SOM(save.SOM.results.name = "SOM_kmeans.Rdata", reuse.SOM.results = TRUE)
 ```
 
-`plot.layer.importance.leaveoneout.SOM()` reuses existing results when `save.leave.one.layer.out.results = TRUE` and `overwrite.leave.one.layer.out.results = FALSE`.
+`plot.layer.importance.leaveoneout.SOM()` also requires explicit reuse. When saving, choose a new path or set `overwrite.leave.one.layer.out.results = TRUE` to replace an existing file.
+
+```r
+SOM_layer_importance <- plot.layer.importance.leaveoneout.SOM(
+  SOM_output = SOM_results,
+  save.leave.one.layer.out.results = FALSE,
+  save.leave.one.layer.out.results.name = "SOM_layer_importance.Rdata",
+  reuse.leave.one.layer.out.results = TRUE
+)
+```
 
 
 # *delimSOM* 2.0 functions

@@ -125,3 +125,93 @@ test_that("explicit reuse validates the path and saved results", {
                  "does not contain valid SOM clustering results")
   })
 })
+
+fit_leave_one_layer_out_test_som <- function(n_replicates) {
+  specimens <- result_test_specimens
+  trained <- delimSOM::train.SOM(
+    list(first = specimens[, 1:2], second = specimens[, 3:4]),
+    N.steps = 12L, N.replicates = n_replicates, grid.size = c(2, 2),
+    parallel = FALSE, verbose = FALSE
+  )
+  cluster_result_test_som(trained, 2L)
+}
+
+plot_leave_one_layer_out_result_test <- function(fit, ...) {
+  plot_path <- tempfile(fileext = ".pdf")
+  grDevices::pdf(plot_path, width = 12, height = 8)
+  device <- grDevices::dev.cur()
+  on.exit({
+    grDevices::dev.off(device)
+    unlink(plot_path)
+  })
+  delimSOM::plot.layer.importance.leaveoneout.SOM(
+    fit, add.points = FALSE, verbose = FALSE, ...
+  )
+}
+
+test_that("leave-one-layer-out saving cannot silently reuse results from another fit", {
+  with_temporary_results_dir({
+    original <- plot_leave_one_layer_out_result_test(fit_leave_one_layer_out_test_som(2L))
+    path <- "leave_one_layer_out_results_first_second.Rdata"
+    checksum <- tools::md5sum(path)
+    current_fit <- fit_leave_one_layer_out_test_som(3L)
+
+    expect_equal(nrow(original$replicate.matched.results), 4L)
+    expect_error(plot_leave_one_layer_out_result_test(current_fit),
+                 "SOM results file already exists", fixed = TRUE)
+    current <- plot_leave_one_layer_out_result_test(current_fit,
+                                                    save.leave.one.layer.out.results = FALSE)
+    expect_equal(nrow(current$replicate.matched.results), 6L)
+    expect_true(all(is.na(current$replicate.matched.results$error)))
+
+    reused <- plot_leave_one_layer_out_result_test(
+      current_fit, save.leave.one.layer.out.results = FALSE,
+      save.leave.one.layer.out.results.name = path, reuse.leave.one.layer.out.results = TRUE
+    )
+    expect_identical(reused, original)
+    expect_identical(tools::md5sum(path), checksum)
+
+    replaced <- plot_leave_one_layer_out_result_test(
+      current_fit, overwrite.leave.one.layer.out.results = TRUE
+    )
+    expect_identical(replaced, current)
+    saved <- new.env(parent = emptyenv())
+    load(path, envir = saved)
+    expect_identical(saved$leave.one.layer.out.results, current)
+  })
+})
+
+test_that("leave-one-layer-out reuse requires a valid explicit result file", {
+  expect_error(
+    plot_leave_one_layer_out_result_test(NULL, reuse.leave.one.layer.out.results = TRUE),
+    "requires save.leave.one.layer.out.results and overwrite.leave.one.layer.out.results to be FALSE",
+    fixed = TRUE
+  )
+  expect_error(
+    plot_leave_one_layer_out_result_test(NULL, save.leave.one.layer.out.results = FALSE,
+                                         reuse.leave.one.layer.out.results = TRUE),
+    "Supply an explicit .Rdata file path", fixed = TRUE
+  )
+
+  with_temporary_results_dir({
+    fit <- fit_leave_one_layer_out_test_som(1L)
+    expect_error(
+      plot_leave_one_layer_out_result_test(
+        fit, save.leave.one.layer.out.results = FALSE,
+        save.leave.one.layer.out.results.name = "missing.Rdata",
+        reuse.leave.one.layer.out.results = TRUE
+      ),
+      "SOM results file does not exist", fixed = TRUE
+    )
+    leave.one.layer.out.results <- list(layer.summary = NULL)
+    save(leave.one.layer.out.results, file = "malformed.Rdata")
+    expect_error(
+      plot_leave_one_layer_out_result_test(
+        fit, save.leave.one.layer.out.results = FALSE,
+        save.leave.one.layer.out.results.name = "malformed.Rdata",
+        reuse.leave.one.layer.out.results = TRUE
+      ),
+      "File does not contain valid leave-one-layer-out results", fixed = TRUE
+    )
+  })
+})

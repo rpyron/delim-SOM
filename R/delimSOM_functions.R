@@ -1503,10 +1503,14 @@ calculate.topographic.error.SOM <- function(som_model) {
 
 
 validate.SOM.result.options <- function(save.SOM.results, save.SOM.results.name,
-                                        overwrite.SOM.results, reuse.SOM.results) {
-  flags <- list(save.SOM.results = save.SOM.results,
-                overwrite.SOM.results = overwrite.SOM.results,
-                reuse.SOM.results = reuse.SOM.results)
+                                        overwrite.SOM.results, reuse.SOM.results,
+                                        result_name = "SOM.results") {
+  save_option <- paste0("save.", result_name)
+  overwrite_option <- paste0("overwrite.", result_name)
+  reuse_option <- paste0("reuse.", result_name)
+  path_option <- paste0(save_option, ".name")
+  flags <- setNames(list(save.SOM.results, overwrite.SOM.results, reuse.SOM.results),
+                    c(save_option, overwrite_option, reuse_option))
   for (option in names(flags)) {
     value <- flags[[option]]
     if (!is.logical(value) || length(value) != 1L || is.na(value)) {
@@ -1514,22 +1518,22 @@ validate.SOM.result.options <- function(save.SOM.results, save.SOM.results.name,
     }
   }
   if (reuse.SOM.results && (save.SOM.results || overwrite.SOM.results)) {
-    stop("reuse.SOM.results = TRUE requires save.SOM.results and overwrite.SOM.results to be FALSE",
+    stop(reuse_option, " = TRUE requires ", save_option, " and ", overwrite_option, " to be FALSE",
          call. = FALSE)
   }
   if (reuse.SOM.results || (save.SOM.results && !is.null(save.SOM.results.name))) {
     path <- save.SOM.results.name
     if (!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(trimws(path))) {
-      stop("Supply an explicit .Rdata file path in save.SOM.results.name", call. = FALSE)
+      stop("Supply an explicit .Rdata file path in ", path_option, call. = FALSE)
     }
     if (tolower(tools::file_ext(path)) != "rdata") {
-      stop("save.SOM.results.name must end with '.Rdata'", call. = FALSE)
+      stop(path_option, " must end with '.Rdata'", call. = FALSE)
     }
   }
 }
 
 
-load.SOM.results <- function(path, required_fields, stage) {
+read.SOM.result.file <- function(path, object_name) {
   if (!file.exists(path) || dir.exists(path)) {
     stop("SOM results file does not exist or is not a file: ", path, call. = FALSE)
   }
@@ -1537,7 +1541,12 @@ load.SOM.results <- function(path, required_fields, stage) {
   tryCatch(load(path, envir = saved), error = function(error) {
     stop("Could not read SOM results from ", path, ": ", conditionMessage(error), call. = FALSE)
   })
-  results <- saved$SOM_results
+  saved[[object_name]]
+}
+
+
+load.SOM.results <- function(path, required_fields, stage) {
+  results <- read.SOM.result.file(path, "SOM_results")
   if (!is.list(results) || !all(required_fields %in% names(results)) ||
       !is.list(results$som_models) || !length(results$som_models)) {
     stop("File does not contain valid SOM ", stage, " results: ", path, call. = FALSE)
@@ -1546,11 +1555,11 @@ load.SOM.results <- function(path, required_fields, stage) {
 }
 
 
-check.SOM.result.destination <- function(path, overwrite) {
+check.SOM.result.destination <- function(path, overwrite, overwrite_option = "overwrite.SOM.results") {
   if (dir.exists(path)) stop("SOM results path is a directory: ", path, call. = FALSE)
   if (!overwrite && file.exists(path)) {
     stop("SOM results file already exists: ", path,
-         ". Choose another path or set overwrite.SOM.results = TRUE.", call. = FALSE)
+         ". Choose another path or set ", overwrite_option, " = TRUE.", call. = FALSE)
   }
 }
 
@@ -8788,10 +8797,8 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #'   end with `".Rdata"`. If `NULL`, a default name is generated from the input
 #'   layer names. Default: `NULL`.
 #' @param overwrite.leave.one.layer.out.results Logical; if `TRUE`, existing
-#'   leave-one-layer-out results are recalculated and overwritten. If `FALSE`,
-#'   `save.leave.one.layer.out.results = TRUE`, and the results file already
-#'   exists, the saved results are loaded and the reruns are skipped. Default:
-#'   `FALSE`.
+#'   leave-one-layer-out results can be replaced when saving. If `FALSE`, an
+#'   existing destination causes an error when saving. Default: `FALSE`.
 #' @param save Logical; if `TRUE`, the plot is saved to a file. Default:
 #'   `FALSE`.
 #' @param overwrite Logical; if `TRUE`, an existing plot file with the same name
@@ -8834,6 +8841,11 @@ plot.layer.importance.varimp.SOM <- function(SOM.output, #clustered SOM output f
 #'   `20`.
 #' @param verbose Logical; if `TRUE`, progress, plotting, and file-handling
 #'   messages are printed. Default: `TRUE`.
+#' @param reuse.leave.one.layer.out.results Logical; if `TRUE`, load and plot
+#'   saved leave-one-layer-out results. Requires an explicit
+#'   `save.leave.one.layer.out.results.name` and both
+#'   `save.leave.one.layer.out.results` and
+#'   `overwrite.leave.one.layer.out.results` set to `FALSE`. Default: `FALSE`.
 #'
 #' @details
 #' `plot.layer.importance.leaveoneout.SOM` evaluates the contribution of each
@@ -8977,7 +8989,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   right.margin = 2, #right outer margin
                                                   save.leave.one.layer.out.results = TRUE, #whether to save leave-one-layer-out results to file
                                                   save.leave.one.layer.out.results.name = NULL, #file name for saving leave-one-layer-out results; if NULL, default name is generated
-                                                  overwrite.leave.one.layer.out.results = FALSE, #if FALSE, existing results are loaded instead of re-running
+                                                  overwrite.leave.one.layer.out.results = FALSE, #whether to replace existing results when saving
                                                   save = FALSE, #whether to save plot
                                                   overwrite = TRUE, #whether to overwrite plot if it already exists
                                                   plot.type = "svg", #plot file type (options: "svg", "png", "jpg")
@@ -8994,12 +9006,17 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
                                                   axis.ticks.font.size = 7, #font size of y-axis numeric tick labels in points
                                                   add.boxplot.whiskers = TRUE, #whether to show boxplot whiskers
                                                   message.N.replicates = 20, #frequency of progress messages during leave-one-layer-out SOM reruns
-                                                  verbose = TRUE #whether to print messages
+                                                  verbose = TRUE, #whether to print messages
+                                                  reuse.leave.one.layer.out.results = FALSE
 ) {
 
   # Set messages
   if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) stop("Leave-one-layer-out layer importance aborted: verbose must be TRUE or FALSE")
   messager <- function(...) if (isTRUE(verbose)) message(...)
+
+  validate.SOM.result.options(save.leave.one.layer.out.results, save.leave.one.layer.out.results.name,
+                              overwrite.leave.one.layer.out.results, reuse.leave.one.layer.out.results,
+                              result_name = "leave.one.layer.out.results")
 
   # Reset plotting parameters
   old_device <- dev.cur()
@@ -9099,12 +9116,6 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   if (!is.numeric(left.margin) || length(left.margin) != 1 || is.na(left.margin) || left.margin < 0) stop("Leave-one-layer-out layer importance aborted: left.margin must be a single non-negative numeric value")
   if (!is.numeric(top.margin) || length(top.margin) != 1 || is.na(top.margin) || top.margin < 0) stop("Leave-one-layer-out layer importance aborted: top.margin must be a single non-negative numeric value")
   if (!is.numeric(right.margin) || length(right.margin) != 1 || is.na(right.margin) || right.margin < 0) stop("Leave-one-layer-out layer importance aborted: right.margin must be a single non-negative numeric value")
-  if (!is.logical(save.leave.one.layer.out.results) || length(save.leave.one.layer.out.results) != 1 || is.na(save.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results must be TRUE or FALSE")
-  if (save.leave.one.layer.out.results && !is.null(save.leave.one.layer.out.results.name)) {
-    if (!is.character(save.leave.one.layer.out.results.name) || length(save.leave.one.layer.out.results.name) != 1 || is.na(save.leave.one.layer.out.results.name) || trimws(save.leave.one.layer.out.results.name) == "") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must be a non-empty character string if provided")
-    if (tolower(tools::file_ext(save.leave.one.layer.out.results.name)) != "rdata") stop("Leave-one-layer-out layer importance aborted: save.leave.one.layer.out.results.name must end with '.Rdata'")
-  }
-  if (!is.logical(overwrite.leave.one.layer.out.results) || length(overwrite.leave.one.layer.out.results) != 1 || is.na(overwrite.leave.one.layer.out.results)) stop("Leave-one-layer-out layer importance aborted: overwrite.leave.one.layer.out.results must be TRUE or FALSE")
   if (!is.logical(save) || length(save) != 1 || is.na(save)) stop("Leave-one-layer-out layer importance aborted: save must be TRUE or FALSE")
   if (!is.logical(overwrite) || length(overwrite) != 1 || is.na(overwrite)) stop("Leave-one-layer-out layer importance aborted: overwrite must be TRUE or FALSE")
   if (!is.character(plot.type) || length(plot.type) != 1 || is.na(plot.type) || !(tolower(plot.type) %in% c("svg", "png", "jpg"))) stop("Leave-one-layer-out layer importance aborted: plot.type must be one of 'svg', 'png', or 'jpg'")
@@ -9395,7 +9406,7 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
   }
 
   # Set default saving name if needed
-  if (is.null(save.leave.one.layer.out.results.name)) {
+  if (save.leave.one.layer.out.results && is.null(save.leave.one.layer.out.results.name)) {
     input_layer_names <- names(input_data)
     save.leave.one.layer.out.results.name <- paste0("leave_one_layer_out_results_", paste(input_layer_names, collapse = "_"), ".Rdata")
   }
@@ -9406,15 +9417,23 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
     file.name <- paste0("leave_one_layer_out_layer_importance_", paste(input_layer_names, collapse = "_"), ".", plot.type)
   }
 
-  # Load existing results if requested
-  if (save.leave.one.layer.out.results && !overwrite.leave.one.layer.out.results && file.exists(save.leave.one.layer.out.results.name)) {
-    messager("Leave-one-layer-out results already exist - loading results from file and skipping re-run")
-    load(save.leave.one.layer.out.results.name)
-    if (!exists("leave.one.layer.out.results")) stop("Leave-one-layer-out layer importance aborted: loaded file does not contain object 'leave.one.layer.out.results'")
-    if (!is.list(leave.one.layer.out.results) || is.null(leave.one.layer.out.results$layer.summary) || is.null(leave.one.layer.out.results$replicate.matched.results)) stop("Leave-one-layer-out layer importance aborted: loaded leave.one.layer.out.results object is malformed")
+  # Load existing results only when explicitly requested.
+  if (reuse.leave.one.layer.out.results) {
+    messager("Reading saved leave-one-layer-out results from ", save.leave.one.layer.out.results.name)
+    leave.one.layer.out.results <- read.SOM.result.file(save.leave.one.layer.out.results.name,
+                                                        "leave.one.layer.out.results")
+    if (!is.list(leave.one.layer.out.results) || !is.data.frame(leave.one.layer.out.results$layer.summary) ||
+        !is.data.frame(leave.one.layer.out.results$replicate.matched.results)) {
+      stop("File does not contain valid leave-one-layer-out results: ",
+           save.leave.one.layer.out.results.name, call. = FALSE)
+    }
     layer_summary_table <- leave.one.layer.out.results$layer.summary
     replicate_matched_results_table <- leave.one.layer.out.results$replicate.matched.results
   } else {
+    if (save.leave.one.layer.out.results) {
+      check.SOM.result.destination(save.leave.one.layer.out.results.name, overwrite.leave.one.layer.out.results,
+                                   "overwrite.leave.one.layer.out.results")
+    }
 
     # Create function to fit one matched single-replicate leave-one-layer-out SOM
     fit.single.replicate.leave.one.layer.out.SOM <- function(input_data_for_SOM,
@@ -9717,6 +9736,8 @@ plot.layer.importance.leaveoneout.SOM <- function(SOM_output, #clustered SOM out
       }
 
       # Save results
+      check.SOM.result.destination(save.leave.one.layer.out.results.name, overwrite.leave.one.layer.out.results,
+                                   "overwrite.leave.one.layer.out.results")
       save(leave.one.layer.out.results, file = save.leave.one.layer.out.results.name)
       if (!overwrite.leave.one.layer.out.results) messager("Leave-one-layer-out results saved as ", save.leave.one.layer.out.results.name)
       if (overwrite.leave.one.layer.out.results) messager("Leave-one-layer-out results overwritten as ", save.leave.one.layer.out.results.name)
